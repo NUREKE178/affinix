@@ -1,13 +1,90 @@
 import { html, useState, useMemo, useEffect } from "../lib/preact.js";
 import { useExperiments } from "../lib/experimentsStore.js";
 import { fetchSessionsForExperiment } from "../lib/participants.js";
+import { fetchLatestAiInsight, generateAiInsight } from "../lib/experiments.js";
 import { navigate } from "../router.js";
-import { Card, SectionHeading, Badge, Select, Button, EmptyState, ConfidenceBadge, LoadingState } from "../components/ui.js";
+import { Card, SectionHeading, Badge, Select, Button, EmptyState, ConfidenceBadge, LoadingState, Spinner } from "../components/ui.js";
 import { Icon } from "../components/icons.js";
 import { generateInsights } from "../lib/insights.js";
 import { researchTypeLabel } from "../lib/questionTypes.js";
 import { useT, useLocale } from "../lib/i18n.js";
 import { withTimeout } from "../lib/async.js";
+
+function AiSummaryCard({ experimentId, t }) {
+  const [row, setRow] = useState(undefined); // undefined = loading, null = none yet
+  const [generating, setGenerating] = useState(false);
+  const [error, setError] = useState(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    setRow(undefined);
+    setError(null);
+    fetchLatestAiInsight(experimentId)
+      .then((r) => { if (!cancelled) setRow(r); })
+      .catch(() => { if (!cancelled) setRow(null); });
+    return () => { cancelled = true; };
+  }, [experimentId]);
+
+  async function onGenerate() {
+    setGenerating(true);
+    setError(null);
+    try {
+      const result = await generateAiInsight(experimentId);
+      setRow(result.row ?? null);
+    } catch (err) {
+      setError(err.message ?? String(err));
+    } finally {
+      setGenerating(false);
+    }
+  }
+
+  const formattedDate = (iso) => {
+    try { return new Date(iso).toLocaleString(); } catch { return iso; }
+  };
+
+  return html`
+    <${Card} className="p-5 mb-5 border-teal-500/25 bg-teal-500/[0.03]">
+      <div class="flex items-center gap-2 mb-3">
+        <div class="flex h-7 w-7 items-center justify-center rounded-lg bg-teal-500/15 text-teal-300"><${Icon} name="sparkle" size=${15} /></div>
+        <h3 class="font-semibold text-slate-100">${t("insights.aiSummary.title")}</h3>
+      </div>
+      <p class="text-xs text-slate-500 mb-4">${t("insights.aiSummary.subtitle")}</p>
+
+      ${row === undefined && html`
+        <div class="flex items-center gap-2 text-sm text-slate-500"><${Spinner} size=${14} /> ${t("common.loading")}</div>
+      `}
+
+      ${row !== undefined && generating && html`
+        <div class="flex items-center gap-2 text-sm text-slate-400"><${Spinner} size=${14} /> ${t("insights.aiSummary.generating")}</div>
+      `}
+
+      ${row !== undefined && !generating && error && html`
+        <div class="rounded-lg border border-rose-500/25 bg-rose-500/[0.06] px-3.5 py-3 text-sm text-rose-300 mb-3">${t("insights.aiSummary.failedTitle")}: ${error}</div>
+      `}
+
+      ${row !== undefined && !generating && !error && (!row || row.status === "failed") && html`
+        <${Button} size="sm" onClick=${onGenerate}>${t("insights.aiSummary.generateCta")}<//>
+      `}
+
+      ${row !== undefined && !generating && !error && row?.status === "not_configured" && html`
+        <div class="rounded-lg border border-amber-500/25 bg-amber-500/[0.06] px-3.5 py-3 text-sm text-amber-200/90">
+          <p class="font-medium mb-1">${t("insights.aiSummary.notConfiguredTitle")}</p>
+          <p class="text-xs text-amber-200/70">${t("insights.aiSummary.notConfiguredBody")}</p>
+        </div>
+      `}
+
+      ${row !== undefined && !generating && !error && row?.status === "ready" && html`
+        <div>
+          <p class="text-sm text-slate-200 leading-relaxed whitespace-pre-line">${row.output?.text}</p>
+          <div class="flex items-center justify-between mt-4 pt-3 border-t border-black/30">
+            <span class="text-[11px] text-slate-600">${t("insights.aiSummary.generatedAt", { date: formattedDate(row.generated_at), model: row.model ?? "" })}</span>
+            <button class="text-xs text-teal-400 hover:text-teal-300" onClick=${onGenerate}>${t("insights.aiSummary.regenerateCta")}</button>
+          </div>
+        </div>
+      `}
+    <//>
+  `;
+}
 
 function ExperimentPicker({ experiments, selectedId, onChange }) {
   return html`
@@ -86,6 +163,8 @@ export function Insights({ params }) {
         <${Icon} name="shield" size=${15} className="shrink-0 mt-0.5" />
         <span>${insights.disclaimer}</span>
       </div>
+
+      <${AiSummaryCard} experimentId=${experiment.id} t=${t} />
 
       <${Card} className="p-5 mb-5">
         <div class="flex items-center gap-2 mb-3">

@@ -1944,3 +1944,154 @@ mobile button is a single, sanely-sized square icon instead of silently
 passing by accident on a hidden, zero-height element. Full regression
 suite (29 scripts) re-run clean, including `test_loading_upgrade.mjs`'s
 known sandbox-timing flake behaving this time.
+
+### Two real bugs found in the live participant flow, from one vague bug report ✅
+
+Reported as "clicking through to question 2 without answering question 1"
+in the live research flow -- no screenshot, no exact repro steps. Rather
+than guess at a fix, built a systematic reproduction harness first: drove
+the real `ParticipantRunner` against a mocked Supabase backend across
+*every* question type (single/multiple choice, yes/no, rating, ranking,
+recall, price perception with and without preset options, both as
+general questions and as per-variant ones) and tried every plausible
+bypass -- Enter key, clicking the background, tabbing to a button and
+activating it with the keyboard. 30 checks, all clean: every question
+type already structurally blocks advancing without a real answer (no
+Continue button exists at all for most types until something is picked;
+the ones that do have one keep it `disabled` until every variant is
+answered).
+
+The actual bug needed a different lever: a configured **time limit**.
+`QuestionTask`'s countdown timer already auto-submitted `value: null` and
+advanced the instant it hit zero, with **no exception for a question
+marked `required`** -- confirmed directly: a 2-second time limit on a
+`required: true` question silently produces a null response and moves to
+the next question the moment the clock runs out, with nothing on screen
+explaining why. A sitting participant watching the countdown would see
+exactly "moved to question 2 without answering question 1."
+
+Fixed in `ParticipantRunner.js`: a required question that times out no
+longer auto-submits -- the countdown still creates real pacing pressure
+(it's visible throughout), but at zero it now shows a plain inline notice
+("Time's up, but this question still needs an answer") and the question
+stays fully interactive until a real answer is given. A question actually
+marked optional (`required: false`) keeps the original auto-skip-on-
+timeout behavior unchanged -- there's no way to create one from the
+builder UI today (every question is hardcoded `required: true` there, so
+this is the only reachable state in practice), but the distinction is
+now real and tested either way, not just coincidentally safe.
+
+**Verified**: the first reproduction harness (30 checks) confirmed no
+other skip path exists anywhere. A second, targeted test confirms the
+actual fix: a required timed-out question stays on screen, shows the
+notice, sends nothing to the backend, and can still be answered for real
+afterward (and that real answer is what gets sent, not a stale null); a
+non-required one still auto-advances with a null response exactly as
+before. 9/9 checks. Full regression suite re-run clean.
+
+### Sidebar collapse-toggle icon no longer sits off the rail's center line ✅
+
+A second screenshot, red arrow traced straight down the collapsed
+sidebar's icon column, with a report that icons visibly shift on hover.
+Measuring every icon's actual horizontal center confirmed the real
+defect directly: `NavItem` correctly switches to `justify-center px-0`
+when the sidebar is collapsed (centering each icon in the narrow rail),
+but the sidebar-mode picker's own wrapper `<div>` was hardcoded to
+`justify-start px-3` regardless of collapsed state -- the one icon in
+the whole column that never recentered, sitting visibly left of every
+other icon's shared line. Fixed by giving it the same collapsed-aware
+class switch `NavItem` already uses.
+
+The separate "icons shift on hover" report didn't reproduce under
+measurement -- hovered every icon in turn and re-measured every other
+icon's position each time; nothing moved (`.sk-nav-item`'s own CSS only
+transitions background/color/box-shadow, never a transform). The most
+likely explanation is this same misalignment: a column that's supposed
+to read as one clean vertical line, with one icon visibly off of it,
+reads as "something's moving" even with nothing animating.
+
+**Verified**: every icon in the collapsed rail (14, including the
+previously-offset picker) now shares the exact same horizontal center,
+0px spread. A second test hovers each icon in turn and confirms no
+icon's position ever changes. A third, pre-existing test had encoded the
+*opposite* assumption from an earlier round (the picker should stay at a
+fixed x between expanded and collapsed) -- correct at the time, but
+structurally incompatible with centering it in a narrower collapsed rail
+that starts at a different x than the expanded layout's left-aligned
+content. Updated that assertion to check what actually matters now (left-
+aligned when expanded, centered with the nav icons when collapsed) rather
+than reverting the fix to satisfy a now-outdated expectation. Full
+regression suite re-run clean.
+
+### Real AI-generated insights, wired to the Claude API ✅
+
+The Insights page's rule-based engine (`lib/insights.js`) was already
+solid -- deterministic, fully explainable, correctly confidence-scored --
+but it only handles structured/choice data, produces a list of templated
+sentences rather than prose a marketer could show their team as-is, and
+never reads open-ended text responses at all. The `generate-insights`
+Edge Function existed only as a scaffold since an earlier round (real
+auth, real org-membership check, a clearly-labeled `not_configured`
+fallback when no AI key is set) with the actual model call left as a
+comment. Wired in for real, via the official Anthropic TypeScript SDK
+(not raw `fetch`, imported the same way this project already imports
+`@supabase/supabase-js` into a Deno Edge Function -- a versioned esm.sh
+URL) and `claude-opus-5-5`.
+
+Deliberately does NOT re-derive the rule-based engine's full statistics
+(confidence intervals, corroboration checks, influence-factor mining) in
+TypeScript -- that would risk the AI quoting a number that quietly
+disagrees with what the researcher sees one click away on the same
+Insights page. Instead the function independently queries (never trusts
+from the caller) just the one number everything else gets read against --
+completed sample size and the primary selection question's own
+per-variant counts, using the exact same question-precedence
+`primarySelectionQuestion()` already uses client-side -- plus up to 40
+raw open-text responses per open-text question, the one kind of data
+nothing else in the app analyzes at all. The system prompt hard-rules
+out stating any number not given verbatim in that data, any causal
+("X caused Y") framing, and dropping the small-sample warning below 30
+completed responses; Claude's job is synthesis and the open-text theme
+read, never arithmetic of its own.
+
+- **`supabase/functions/generate-insights/index.ts`**: full rewrite past
+  the scaffold -- `buildAnalyticsContext()` (verified sample + primary
+  result + capped open-text samples), the real `anthropic.messages.create`
+  call, and three honestly-labeled outcomes stored to `ai_insights`
+  (`ready` with real text, `failed` with a retry-able error, or the
+  pre-existing `not_configured` when no key is set -- never a fabricated
+  result standing in for any of those).
+- **`lib/experiments.js`**: `fetchLatestAiInsight()` (loads any existing
+  result on page open, so it isn't lost on navigation) and
+  `generateAiInsight()` (invokes the function, same auth-forwarding and
+  error-unwrapping pattern already used for the public participant Edge
+  Functions).
+- **`Insights.js`**: a new card above the existing rule-based ones --
+  generate/regenerate button, loading state, the honest "not configured"
+  explanation, error+detail on failure, and the rendered result with its
+  generation timestamp and model name once ready.
+- Full `insights.aiSummary.*` i18n block, all three locales.
+
+**Verified**: 12 Playwright checks against a mocked Edge Function --
+generating actually calls the function once with the right experiment
+id and renders the real returned text; a previously-generated result
+loads and displays on page open with *zero* Edge Function calls (no
+regenerating just to show a cached result); the `not_configured` state
+renders its explanation, never a fabricated insight. The real
+`anthropic.messages.create` call itself is necessarily untested here (no
+API key in this sandbox) -- that boundary is exactly what's mocked.
+Full regression suite (34 scripts) re-run clean, zero failures including
+the previously-flaky loading test.
+
+**Not yet live**: this needs two things only the user can do, neither of
+which is a database migration this time --
+1. Add an `AI_API_KEY` secret (an Anthropic API key) to the Supabase
+   project: Edge Functions -> Secrets in the dashboard, or
+   `supabase secrets set AI_API_KEY=sk-ant-...` via the CLI.
+2. Redeploy the function so the real code (not the old scaffold) is what
+   actually runs: `supabase functions deploy generate-insights`.
+
+Until both are done, the "Generate AI summary" button will correctly and
+honestly report "not configured" rather than silently doing nothing or
+faking a result -- exactly the behavior the original scaffold was built
+around from the start.

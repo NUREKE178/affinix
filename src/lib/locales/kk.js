@@ -524,6 +524,17 @@ export default {
     notFoundTitle: "Эксперимент табылмады",
     participantsError: "Қатысушылар жауаптарын жүктеу мүмкін болмады.",
     confidence: { high: "Жоғары сенімділік", moderate: "Орташа сенімділік", "low-moderate": "Төмен-орташа сенімділік", low: "Төмен сенімділік", none: "Әзірге деректер жоқ" },
+    aiSummary: {
+      title: "Маркетолог үшін AI-резюме",
+      subtitle: "Claude жасаған қысқа резюме — командаға бірден көрсетуге болады, плюс ашық жауаптардағы тақырыптар талдауы (бар болса).",
+      generateCta: "AI-резюме жасау",
+      regenerateCta: "Резюмені жаңарту",
+      generating: "Резюме жасалып жатыр…",
+      notConfiguredTitle: "AI-резюме әлі қосылмаған",
+      notConfiguredBody: "Бұл жұмыс кеңістігі үшін AI-провайдер кілті орнатылмаған. Әкімші мұны Supabase баптауларында қоса алады.",
+      failedTitle: "Резюме жасау сәтсіз аяқталды",
+      generatedAt: "Жасалды: {date} · {model}",
+    },
   },
 
   reports: {
@@ -729,6 +740,7 @@ export default {
     enterAmount: "Соманы енгізіңіз",
     enterAnswer: "Жауапты енгізіңіз…",
     networkError: "Интернет байланысын тексеріп, қайта көріңіз.",
+    timeUpStillRequired: "Уақыт бітті, бірақ бұл сұраққа жауап беруіңіз керек.",
   },
 
   questionTypes: {

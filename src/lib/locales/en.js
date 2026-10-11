@@ -524,6 +524,17 @@ export default {
     notFoundTitle: "Experiment not found",
     participantsError: "Couldn't load participant responses.",
     confidence: { high: "High confidence", moderate: "Moderate confidence", "low-moderate": "Low-to-moderate confidence", low: "Low confidence", none: "No data yet" },
+    aiSummary: {
+      title: "AI summary for marketers",
+      subtitle: "A short summary from Claude you can share with your team right away, plus a theme breakdown of open-text responses if there are any.",
+      generateCta: "Generate AI summary",
+      regenerateCta: "Regenerate summary",
+      generating: "Generating summary…",
+      notConfiguredTitle: "AI summary isn't turned on yet",
+      notConfiguredBody: "No AI provider key is configured for this workspace. An admin can turn this on in the Supabase project settings.",
+      failedTitle: "Couldn't generate a summary",
+      generatedAt: "Generated {date} · {model}",
+    },
   },
 
   reports: {
@@ -729,6 +740,7 @@ export default {
     enterAmount: "Enter an amount",
     enterAnswer: "Type your answer…",
     networkError: "Check your internet connection and try again.",
+    timeUpStillRequired: "Time's up, but this question still needs an answer.",
   },
 
   questionTypes: {

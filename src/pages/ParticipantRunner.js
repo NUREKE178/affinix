@@ -76,6 +76,7 @@ function QuestionTask({ question, variants, onAnswer, timeLimitSeconds, submitti
   const [ranking, setRanking] = useState([]);
   const [text, setText] = useState("");
   const [timeLeft, setTimeLeft] = useState(timeLimitSeconds);
+  const [timeUp, setTimeUp] = useState(false);
   const answeredRef = useRef(false);
   const pendingRef = useRef(null);
 
@@ -85,13 +86,28 @@ function QuestionTask({ question, variants, onAnswer, timeLimitSeconds, submitti
     pendingRef.current = null;
     setSelected(null); setMulti([]); setRatings({}); setYesnos({}); setRanking([]); setText("");
     setTimeLeft(timeLimitSeconds);
+    setTimeUp(false);
   }, [question.id]);
 
+  // A time limit still creates real pacing pressure (the countdown is
+  // visible throughout), but running out of time must never silently
+  // record a non-answer for a question the researcher marked required --
+  // that reads to a participant as the screen randomly skipping ahead,
+  // and leaves the researcher with a null response counted as real data.
+  // Only a question explicitly marked optional auto-advances on timeout;
+  // a required one just stops the clock and asks for a real answer.
   useEffect(() => {
     if (!timeLimitSeconds) return;
     const interval = setInterval(() => {
       setTimeLeft((t) => {
-        if (t <= 0.2) { clearInterval(interval); if (!answeredRef.current) submit(null); return 0; }
+        if (t <= 0.2) {
+          clearInterval(interval);
+          if (!answeredRef.current) {
+            if (question.required === false) submit(null);
+            else setTimeUp(true);
+          }
+          return 0;
+        }
         return t - 0.2;
       });
     }, 200);
@@ -134,6 +150,11 @@ function QuestionTask({ question, variants, onAnswer, timeLimitSeconds, submitti
   return html`
     <div class="slide-up">
       ${timeLimitSeconds && html`<${TimerRing} seconds=${timeLeft} total=${timeLimitSeconds} />`}
+      ${timeUp && html`
+        <div class="flex items-center gap-2 mb-4 -mt-3 text-xs text-amber-400">
+          <${Icon} name="clock" size=${13} /> ${t("participantRunner.timeUpStillRequired")}
+        </div>
+      `}
       <h2 class="text-xl sm:text-2xl font-semibold text-slate-50 leading-snug mb-6">${question.prompt}</h2>
 
       ${isVariantQuestion && (question.type === "single_choice" || question.type === "recall") && html`

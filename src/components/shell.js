@@ -204,7 +204,7 @@ function SidebarContent({ currentPath, onNavigate, collapsed = false, sidebarMod
 
       <div class="border-t border-black/40 py-3 space-y-1.5">
         ${onChangeSidebarMode && html`
-          <div class="flex justify-start px-3">
+          <div class=${`flex ${collapsed ? "justify-center px-0" : "justify-start px-3"}`}>
             <${SidebarModePicker} mode=${sidebarMode} onChange=${onChangeSidebarMode} collapsed=${collapsed} />
           </div>
         `}

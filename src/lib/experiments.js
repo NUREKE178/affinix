@@ -216,3 +216,43 @@ export async function duplicateExperiment(orgId, experiment) {
   };
   return saveExperimentDraft(orgId, copy);
 }
+
+/** Most recent ai_insights row for an experiment, if one has ever been
+ * generated -- lets the Insights page show a previous result on load
+ * instead of always starting from a blank "Generate" button. */
+export async function fetchLatestAiInsight(experimentId) {
+  const sb = requireSupabase();
+  const { data, error } = await sb
+    .from("ai_insights")
+    .select("id, generated_at, model, status, output")
+    .eq("experiment_id", experimentId)
+    .order("generated_at", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+  if (error) throw error;
+  return data;
+}
+
+/** Invokes the generate-insights Edge Function. supabase-js attaches the
+ * signed-in user's own JWT automatically, which the function uses for its
+ * org-membership check -- same auth shape as every other authenticated
+ * Supabase call in this app, just routed through functions.invoke()
+ * instead of .from(). */
+export async function generateAiInsight(experimentId) {
+  const sb = requireSupabase();
+  const { data, error } = await sb.functions.invoke("generate-insights", { body: { experiment_id: experimentId } });
+  if (error) {
+    const detail = error.context?.body ? await readJsonSafely(error.context) : null;
+    throw new Error(detail?.message || detail?.error || error.message || "Network error");
+  }
+  if (data?.error) throw new Error(data.message || data.error);
+  return data;
+}
+
+async function readJsonSafely(response) {
+  try {
+    return await response.json();
+  } catch {
+    return null;
+  }
+}
