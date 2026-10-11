@@ -258,7 +258,7 @@ select.sk-input option:checked {
   background: var(--sk-inset);
   box-shadow: var(--sk-shadow-inset);
 }
-.sk-nav-item[data-active="false"]:hover { background: rgba(255,255,255,.04); }
+.sk-nav-item[data-active="false"]:hover { background: var(--sk-hi-strong); }
 
 /* ---- Badge / indicator light ---------------------------------------------- */
 

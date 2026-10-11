@@ -2161,3 +2161,30 @@ actually valid; jumping backward to step 1 after reaching step 7 remains
 unrestricted and the previously-typed values are still there. Full
 regression suite re-run clean (35 scripts, including this round's new
 one).
+
+### Sidebar: nav items now actually react to hover ✅
+
+Reported against Supabase's own dashboard sidebar as a reference (clean
+spacing, every row visibly lights up under the cursor): ours "looks bad"
+and hovering a nav button did nothing noticeable. The hover effect
+wasn't missing -- `.sk-nav-item[data-active="false"]:hover` has always
+set a background -- it was just tuned to `rgba(255,255,255,.04)`, 4%
+white against the sidebar's near-black gradient (`--sk-sidebar`,
+`#15171e` to `#0e0f13`), which reads as functionally invisible. The
+design system already defines a `--sk-hi-strong: rgba(255,255,255,.14)`
+token for exactly this ("strong highlight") that nothing was actually
+using yet.
+
+- **`styles.css`**: `.sk-nav-item[data-active="false"]:hover` now uses
+  `var(--sk-hi-strong)` instead of the hardcoded 4% value -- a single
+  token swap, 3.5x stronger, clearly visible. Deliberately left the
+  *active* item's styling untouched: its inset-bevel look (`--sk-inset`
+  + `--sk-shadow-inset`) is the app's established "skeuomorphic /
+  physical instrument" language used consistently across buttons, tabs
+  and slots elsewhere, not a bug to fix.
+
+**Verified**: hovering a non-active nav item now measurably changes its
+background (`rgba(0,0,0,0)` -> `rgba(255,255,255,0.14)`, alpha >= 0.1)
+and reverts cleanly when the pointer leaves; the active item's gradient
+background is confirmed unchanged. Full regression suite re-run clean
+(36 scripts).
