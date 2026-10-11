@@ -1,6 +1,6 @@
 import { html, useState, useEffect, useRef } from "../lib/preact.js";
 import { navigate } from "../router.js";
-import { Icon } from "./icons.js";
+import { Icon, Logo } from "./icons.js";
 import { useCurrentOrg } from "../lib/currentOrg.js";
 import { useSession, signOut } from "../lib/auth.js";
 import { useMyProfile, updateMyProfile } from "../lib/profile.js";
@@ -169,8 +169,8 @@ function SidebarContent({ currentPath, onNavigate, collapsed = false, sidebarMod
     <div class="flex h-full flex-col">
       <button type="button" onClick=${() => onNavigate("/app/overview")}
         class=${`flex items-center gap-2.5 overflow-hidden px-5 py-5 text-left hover:opacity-80 transition-opacity ${collapsed ? "justify-center px-0" : "w-full"}`}>
-        <div class="sk-panel-flat flex h-9 w-9 items-center justify-center rounded-lg text-indigo-300 shrink-0">
-          <${Icon} name="logo" size=${18} strokeWidth=${2} />
+        <div class="sk-panel-flat flex h-9 w-9 items-center justify-center rounded-lg shrink-0">
+          <${Logo} size=${18} />
         </div>
         ${!collapsed && html`
           <div class="min-w-0">

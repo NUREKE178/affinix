@@ -55,6 +55,33 @@ body { color-scheme: dark; }
 }
 .sk-pulse-indigo { animation: skPulseIndigo 1.8s ease-in-out infinite; }
 
+/* ---- Logo mark -------------------------------------------------------- */
+/* The resolved point stays quietly alive everywhere the mark appears --
+   same slow breathing glow whether it's static (sidebar, headers) or
+   just finished its one-time reveal (the full-screen loader). */
+.sk-logo-point { animation: skLogoGlow 2.6s ease-in-out infinite; }
+
+/* .sk-logo-animated only: the three paths draw themselves in (shortest,
+   most-converged path last and fastest -- the decision arriving), then
+   the point pops in and settles into the same glow every other instance
+   already has. Path lengths are hand-measured for each line's own
+   geometry so the draw-in has no visible gap or overshoot at its end. */
+.sk-logo-animated .sk-logo-path-1 { stroke-dasharray: 11; stroke-dashoffset: 11; animation: skLogoDraw .5s cubic-bezier(.25,.75,.35,1) .05s forwards; }
+.sk-logo-animated .sk-logo-path-2 { stroke-dasharray: 17; stroke-dashoffset: 17; animation: skLogoDraw .55s cubic-bezier(.25,.75,.35,1) .2s forwards; }
+.sk-logo-animated .sk-logo-path-3 { stroke-dasharray: 13; stroke-dashoffset: 13; animation: skLogoDraw .45s cubic-bezier(.2,.8,.3,1) .38s forwards; }
+.sk-logo-animated .sk-logo-point {
+  opacity: 0;
+  transform: scale(.3);
+  transform-origin: 12px 19px;
+  animation: skLogoPop .5s cubic-bezier(.2,1.8,.3,1) .7s forwards, skLogoGlow 2.6s ease-in-out 1.2s infinite;
+}
+@keyframes skLogoDraw { to { stroke-dashoffset: 0; } }
+@keyframes skLogoPop { to { opacity: 1; transform: scale(1); } }
+@keyframes skLogoGlow {
+  0%, 100% { filter: drop-shadow(0 0 2px rgba(129,140,248,.5)); }
+  50% { filter: drop-shadow(0 0 6px rgba(129,140,248,.9)); }
+}
+
 .stimulus-card { transition: transform .15s ease, box-shadow .15s ease; }
 .stimulus-card:hover { transform: translateY(-2px); }
 
@@ -321,4 +348,7 @@ select.sk-input option:checked {
 
 @media (prefers-reduced-motion: reduce) {
   .sk-btn, .sk-slot, .sk-switch-knob, .sk-tab { transition: none !important; }
+  .sk-logo-path, .sk-logo-point { animation: none !important; }
+  .sk-logo-animated .sk-logo-path { stroke-dashoffset: 0 !important; }
+  .sk-logo-animated .sk-logo-point { opacity: 1 !important; transform: scale(1) !important; }
 }

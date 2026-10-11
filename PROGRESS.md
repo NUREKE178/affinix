@@ -2333,3 +2333,55 @@ label-hiding behavior using "Эксперименты" as its example label text
 three separate places -- updated to a label that's still in the nav
 ("Обзор") rather than reverting the removal to keep an old test string
 alive. Full regression suite re-run clean (38 scripts).
+
+### New logo mark, designed and animated ✅
+
+Requested: a genuinely strong mark, explicitly not "AI-generated-looking,"
+with its own animation. The old mark was a generic isometric-cube line
+icon -- pleasant enough, but that exact silhouette is one of the most
+overused tropes in tech-product logos, arguably closer to the generic
+feel being asked to avoid than a real identity. Prototyped three
+directions standalone (an evolved asymmetric cube, a faceted "D"
+monogram, and converging paths resolving to a point) outside the app
+first, screenshotted each at sidebar/favicon scale before touching any
+real file, and picked the converging-paths direction: it reads clearly
+from 14px up, works on both dark and light backgrounds, and -- unlike
+an arbitrary shape -- the convergence is literally what the product
+does (comparing options, arriving at one decision), which also gives
+the animation a reason to exist instead of motion for its own sake.
+
+- **`components/icons.js`**: new `Logo` component, separate from the
+  generic `Icon`/`PATHS` system -- unlike every other icon it needs
+  more than one color at once (two muted paths + one resolved in the
+  accent indigo), so it can't share `Icon`'s single `currentColor`
+  stroke. Takes an `animated` prop: off (default) renders fully drawn,
+  static except for a slow breathing glow on the resolved point,
+  everywhere the mark is persistent chrome (sidebar, auth headers,
+  onboarding, public profile); on plays the one-time reveal (paths draw
+  themselves in, shortest/most-converged last and fastest, then the
+  point pops in and settles into that same glow) -- used only for the
+  full-screen loader and the landing page's first-impression header,
+  the two places a visitor actually watches it load rather than
+  glancing past it on every navigation.
+- **`styles.css`**: the draw-in (`stroke-dasharray`/`dashoffset`), pop,
+  and glow keyframes, path lengths hand-measured per line so the draw-in
+  has no gap or overshoot at its end. Added to the existing
+  `prefers-reduced-motion: reduce` block alongside the app's other
+  animations -- skips straight to the fully-resolved state rather than
+  leaving the mark stuck invisible mid-reveal for users who've asked
+  for less motion.
+- Replaced all 6 call sites (`shell.js`, `App.js`'s loader,
+  `AuthLayout.js`, `Onboarding.js`, `PublicProfile.js`, `Landing.js`)
+  and the browser-tab favicon (a matching static SVG data URI, since a
+  favicon can't animate) consistently -- no leftover usage of the old
+  mark anywhere.
+
+**Verified**: the mark and all 3 paths + resolved point render at every
+call site; the sidebar's persistent instance is confirmed static (not
+the reveal variant); the landing header's animated instance is confirmed
+*actually* animated -- caught mid-draw shortly after load
+(`stroke-dashoffset > 0`) and fully resolved a moment later, not just a
+CSS class declared but never exercised; `prefers-reduced-motion`
+confirmed to render fully resolved immediately rather than stuck
+invisible; zero console/page errors across the dashboard, landing, and
+both auth routes. Full regression suite re-run clean (39 scripts).

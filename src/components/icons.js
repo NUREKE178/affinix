@@ -12,7 +12,6 @@ const PATHS = {
   reports: html`<path d="M7 2.5h7l4 4v14a1 1 0 0 1-1 1H7a1 1 0 0 1-1-1V3.5a1 1 0 0 1 1-1z"/><path d="M14 2.5v4h4"/><path d="M8.5 13h7M8.5 16.5h7M8.5 9.5h3"/>`,
   team: html`<circle cx="8" cy="8" r="3.3"/><circle cx="16.3" cy="9" r="2.6"/><path d="M2.6 19.5c0-3 2.4-5.3 5.4-5.3s5.4 2.3 5.4 5.3"/><path d="M14 19.5c.2-2.4 1.8-4 3.8-4.4"/>`,
   settings: html`<circle cx="12" cy="12" r="3"/><path d="M19.4 13.5a7.4 7.4 0 0 0 0-3l1.9-1.3-1.5-2.6-2.2.6a7.3 7.3 0 0 0-2.6-1.5l-.3-2.2h-3l-.3 2.2a7.3 7.3 0 0 0-2.6 1.5l-2.2-.6-1.5 2.6 1.9 1.3a7.4 7.4 0 0 0 0 3l-1.9 1.3 1.5 2.6 2.2-.6a7.3 7.3 0 0 0 2.6 1.5l.3 2.2h3l.3-2.2a7.3 7.3 0 0 0 2.6-1.5l2.2.6 1.5-2.6z"/>`,
-  logo: html`<path d="M12 2.5l8 4v11l-8 4-8-4v-11z"/><path d="M4 6.5l8 4 8-4M12 10.5v11"/>`,
   menu: html`<path d="M3.5 6.5h17M3.5 12h17M3.5 17.5h17"/>`,
   close: html`<path d="M5 5l14 14M19 5L5 19"/>`,
   chevronRight: html`<path d="M9 5l7 7-7 7"/>`,
@@ -49,5 +48,28 @@ export function Icon({ name, size = 18, className = "", strokeWidth = 1.8 }) {
     <svg xmlns="http://www.w3.org/2000/svg" width=${size} height=${size} viewBox="0 0 24 24" fill="none"
       stroke="currentColor" stroke-width=${strokeWidth} stroke-linecap="round" stroke-linejoin="round"
       class=${className}>${body}</svg>
+  `;
+}
+
+/** The DecisionOS mark -- three paths of different weight and reach
+ * (what you're comparing) converging on one point (the decision),
+ * rather than a generic isometric-cube "tech logo." A dedicated
+ * component, not a PATHS entry: unlike every other icon it needs more
+ * than one color at once (two muted paths + one resolved in the accent
+ * indigo), so it can't share Icon's single currentColor stroke.
+ * `animated`: the one-time draw-in-and-resolve reveal, for a first-load
+ * moment (the full-screen loader). Every other placement (sidebar,
+ * headers) renders fully drawn and static except for the same slow
+ * breathing glow on the resolved point both modes settle into -- so the
+ * mark stays quietly alive in persistent chrome without being loud. */
+export function Logo({ size = 24, animated = false, className = "" }) {
+  return html`
+    <svg xmlns="http://www.w3.org/2000/svg" width=${size} height=${size} viewBox="0 0 24 24" fill="none"
+      class=${`sk-logo ${animated ? "sk-logo-animated" : ""} ${className}`}>
+      <line class="sk-logo-path sk-logo-path-1" x1="3.5" y1="12" x2="11.5" y2="19" stroke="#475569" stroke-width="2.1" stroke-linecap="round" />
+      <line class="sk-logo-path sk-logo-path-2" x1="9" y1="2.5" x2="11.5" y2="19" stroke="#64748b" stroke-width="2.1" stroke-linecap="round" />
+      <line class="sk-logo-path sk-logo-path-3" x1="20.5" y1="9.5" x2="12.3" y2="19" stroke="#818cf8" stroke-width="2.6" stroke-linecap="round" />
+      <circle class="sk-logo-point" cx="11.9" cy="19.3" r="2.6" fill="#818cf8" />
+    </svg>
   `;
 }

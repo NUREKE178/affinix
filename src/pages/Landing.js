@@ -1,6 +1,6 @@
 import { html, useState } from "../lib/preact.js";
 import { navigate } from "../router.js";
-import { Icon } from "../components/icons.js";
+import { Icon, Logo } from "../components/icons.js";
 import { Button, Badge } from "../components/ui.js";
 import { LanguageSwitch } from "../components/shell.js";
 import { useT } from "../lib/i18n.js";
@@ -77,7 +77,7 @@ export function Landing() {
     <div class="min-h-screen bg-slate-950 text-slate-100">
       <header class="flex items-center justify-between px-6 py-5 lg:px-12 max-w-7xl mx-auto">
         <div class="flex items-center gap-2.5">
-          <div class="sk-panel-flat flex h-9 w-9 items-center justify-center rounded-lg text-indigo-300"><${Icon} name="logo" size=${18} strokeWidth=${2} /></div>
+          <div class="sk-panel-flat flex h-9 w-9 items-center justify-center rounded-lg"><${Logo} size=${18} animated=${true} /></div>
           <span class="font-semibold text-lg tracking-tight">DecisionOS</span>
         </div>
         <div class="hidden sm:flex items-center gap-5">

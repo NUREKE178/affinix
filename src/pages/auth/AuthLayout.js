@@ -1,6 +1,6 @@
 import { html } from "../../lib/preact.js";
 import { navigate } from "../../router.js";
-import { Icon } from "../../components/icons.js";
+import { Logo } from "../../components/icons.js";
 import { LanguageSwitch } from "../../components/shell.js";
 
 export function AuthLayout({ title, subtitle, children, footer }) {
@@ -9,7 +9,7 @@ export function AuthLayout({ title, subtitle, children, footer }) {
       <div class="w-full max-w-sm">
         <div class="flex items-center justify-between mb-8">
           <button onClick=${() => navigate("/")} class="flex items-center gap-2.5">
-            <div class="sk-panel-flat flex h-9 w-9 items-center justify-center rounded-lg text-indigo-300"><${Icon} name="logo" size=${18} strokeWidth=${2} /></div>
+            <div class="sk-panel-flat flex h-9 w-9 items-center justify-center rounded-lg"><${Logo} size=${18} /></div>
             <span class="font-semibold text-lg tracking-tight">DecisionOS</span>
           </button>
           <${LanguageSwitch} />

@@ -26,7 +26,7 @@ import { fetchMyOrganizations } from "./lib/org.js";
 import { IS_CONFIGURED } from "./lib/env.js";
 import { useT } from "./lib/i18n.js";
 import { Button, Spinner } from "./components/ui.js";
-import { Icon } from "./components/icons.js";
+import { Logo } from "./components/icons.js";
 import { withTimeout } from "./lib/async.js";
 import { useAutoUpdate } from "./lib/useAutoUpdate.js";
 
@@ -88,8 +88,8 @@ function FullScreenLoading() {
   const t = useT();
   return html`
     <div class="flex min-h-screen flex-col items-center justify-center gap-5 bg-slate-950">
-      <div class="sk-panel-flat sk-pulse-indigo flex h-14 w-14 items-center justify-center rounded-2xl text-indigo-300">
-        <${Icon} name="logo" size=${26} strokeWidth=${2} />
+      <div class="sk-panel-flat sk-pulse-indigo flex h-14 w-14 items-center justify-center rounded-2xl">
+        <${Logo} size=${28} animated=${true} />
       </div>
       <div class="flex items-center gap-2.5 text-sm text-slate-500">
         <${Spinner} size=${15} /> ${t("common.loading")}
