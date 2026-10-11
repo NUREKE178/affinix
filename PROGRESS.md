@@ -2306,3 +2306,30 @@ than patched -- it exercised nothing but the removed demo's own flow
 (intro text, picking a tile, completion), so once that feature is gone
 by design there's no replacement behavior left to assert. Full
 regression suite re-run clean (37 scripts).
+
+### Removed Experiments/Results from the sidebar nav, for now ✅
+
+Requested alongside an open question about pivoting toward a seller
+marketplace -- a much bigger, separate decision not acted on here, only
+discussed. The removal itself: deliberately scoped to the *nav*, not
+the feature. `NAV` in `shell.js` dropped the `experiments` and
+`results` entries; their routes, pages, and locale labels are all
+untouched, so this is a one-line-diff revert whenever the direction is
+settled, not a deletion to redo. Left `shell.nav.experiments` /
+`shell.nav.results` in all three locale files for the same reason --
+removing them now would just mean retyping identical translations
+later for no benefit, unlike the demo-and-badge removals earlier this
+round where the underlying feature was gone for good.
+
+**Verified**: sidebar no longer shows "Эксперименты" or "Результаты";
+every other item (Обзор, Участники, Инсайты, Отчёты, and the Community/
+Workspace groups) still renders exactly as before. `/app/experiments`
+and `/app/results` still load correctly when visited by direct URL,
+confirming the routes themselves are untouched. Collapsed-sidebar icon
+alignment re-verified with the shorter list (0px spread, matching the
+careful fix from an earlier round). An existing test
+(`test_sidebar_collapse.mjs`) specifically checked the collapse/expand
+label-hiding behavior using "Эксперименты" as its example label text,
+three separate places -- updated to a label that's still in the nav
+("Обзор") rather than reverting the removal to keep an old test string
+alive. Full regression suite re-run clean (38 scripts).

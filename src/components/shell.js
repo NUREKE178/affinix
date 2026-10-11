@@ -7,11 +7,12 @@ import { useMyProfile, updateMyProfile } from "../lib/profile.js";
 import { useT, useLocale, setLocale, LOCALES } from "../lib/i18n.js";
 import { toast } from "./ui.js";
 
+// "experiments" and "results" removed from the sidebar for now (not
+// deleted -- routes/pages/code are untouched, just unreachable via nav)
+// while the product direction is reconsidered.
 const NAV = [
   { id: "overview", key: "shell.nav.overview", icon: "overview", path: "/app/overview" },
-  { id: "experiments", key: "shell.nav.experiments", icon: "experiments", path: "/app/experiments" },
   { id: "participants", key: "shell.nav.participants", icon: "participants", path: "/app/participants" },
-  { id: "results", key: "shell.nav.results", icon: "results", path: "/app/results" },
   { id: "insights", key: "shell.nav.insights", icon: "insights", path: "/app/insights" },
   { id: "reports", key: "shell.nav.reports", icon: "reports", path: "/app/reports" },
 ];
