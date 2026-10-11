@@ -183,7 +183,7 @@ function ActionButton({ icon, filled = false, label, count, active = false, tone
   `;
 }
 
-function CommentThread({ post, t, currentUserId, canModerate }) {
+function CommentThread({ post, t, currentUserId, canModerate, onCountChange }) {
   const [comments, setComments] = useState([]);
   const [loading, setLoading] = useState(true);
   const [draft, setDraft] = useState("");
@@ -192,7 +192,9 @@ function CommentThread({ post, t, currentUserId, canModerate }) {
   async function load() {
     setLoading(true);
     try {
-      setComments(await fetchComments(post.id));
+      const fresh = await fetchComments(post.id);
+      setComments(fresh);
+      onCountChange(fresh.length);
     } catch (err) {
       toast(err.message ?? String(err), "rose");
     } finally {
@@ -230,7 +232,11 @@ function CommentThread({ post, t, currentUserId, canModerate }) {
   async function onDelete(id) {
     try {
       await deleteComment(id);
-      setComments((prev) => prev.filter((c) => c.id !== id));
+      setComments((prev) => {
+        const next = prev.filter((c) => c.id !== id);
+        onCountChange(next.length);
+        return next;
+      });
       invalidatePosts();
     } catch (err) {
       toast(err.message ?? String(err), "rose");
@@ -278,6 +284,14 @@ function PostCard({ post, t, onHashtagClick, canDelete, canModerate, currentUser
   const [likeBusy, setLikeBusy] = useState(false);
   const [saveBusy, setSaveBusy] = useState(false);
   const [commentsOpen, setCommentsOpen] = useState(false);
+  const [lightboxOpen, setLightboxOpen] = useState(false);
+  // post.commentCount comes from the posts list's own fetch, which can go
+  // stale the moment someone ELSE comments (no realtime on comments, only
+  // on notifications) -- once the thread has actually been fetched, this
+  // holds the true count instead, so the badge and the open thread below
+  // it can never visibly disagree the way they did before this existed.
+  const [liveCommentCount, setLiveCommentCount] = useState(null);
+  const commentCount = liveCommentCount ?? post.commentCount;
 
   async function onToggleLike() {
     if (likeBusy) return;
@@ -327,20 +341,33 @@ function PostCard({ post, t, onHashtagClick, canDelete, canModerate, currentUser
             `}
           </div>
           <p class="text-sm text-slate-300 mt-1 leading-relaxed whitespace-pre-wrap break-words">${renderPostBody(post.body, onHashtagClick)}</p>
-          ${post.imageUrl && html`<img src=${post.imageUrl} class="sk-display rounded-lg mt-3 max-h-96 w-full object-cover" />`}
+          ${post.imageUrl && html`
+            <img src=${post.imageUrl} onClick=${() => setLightboxOpen(true)}
+              class="sk-display rounded-lg mt-3 max-h-96 w-full object-cover cursor-zoom-in" />
+          `}
 
           <div class="flex items-center gap-5 mt-3.5 pt-3 border-t border-black/30">
             <${ActionButton} icon="heart" filled=${post.viewerLiked} active=${post.viewerLiked} tone="rose"
               label=${t("feed.like")} count=${post.likeCount} disabled=${likeBusy} onClick=${onToggleLike} />
             <${ActionButton} icon="comment" active=${commentsOpen}
-              label=${t("feed.comment")} count=${post.commentCount} onClick=${() => setCommentsOpen((v) => !v)} />
+              label=${t("feed.comment")} count=${commentCount} onClick=${() => setCommentsOpen((v) => !v)} />
             <${ActionButton} icon="bookmark" filled=${post.viewerSaved} active=${post.viewerSaved} tone="indigo"
               label=${t("feed.save")} disabled=${saveBusy} onClick=${onToggleSave} className="ml-auto" />
           </div>
 
-          ${commentsOpen && html`<${CommentThread} post=${post} t=${t} currentUserId=${currentUserId} canModerate=${canModerate} />`}
+          ${commentsOpen && html`<${CommentThread} post=${post} t=${t} currentUserId=${currentUserId} canModerate=${canModerate} onCountChange=${setLiveCommentCount} />`}
         </div>
       </div>
+
+      ${lightboxOpen && html`
+        <div class="fixed inset-0 z-50 flex items-center justify-center bg-black/90 p-4" onClick=${(e) => e.target === e.currentTarget && setLightboxOpen(false)}>
+          <button type="button" onClick=${() => setLightboxOpen(false)} aria-label=${t("common.close")}
+            class="absolute top-4 right-4 text-slate-300 hover:text-white">
+            <${Icon} name="close" size=${22} />
+          <//>
+          <img src=${post.imageUrl} class="max-w-full max-h-full object-contain rounded-lg" />
+        </div>
+      `}
     </div>
   `;
 }

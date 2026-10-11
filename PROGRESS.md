@@ -2645,3 +2645,58 @@ instead of the old inline data URI. Full regression suite (42 scripts)
 re-run clean, modulo the one documented `test_loading_upgrade.mjs`
 sandbox-timing flake (reconfirmed intermittent exactly as before, same
 signature).
+
+### A real comment-count bug, clickable post images, and a bell-ring animation ✅
+
+Three reports from one screenshot: a post showing "2" comments with 3
+visibly open underneath it; post images that don't do anything when
+clicked; a request to animate the notification bell.
+
+- **The count mismatch was a real bug, not a display quirk**: `PostCard`'s
+  💬 badge reads `post.commentCount`, a `post_comments(count)` aggregate
+  that comes back with the rest of the POSTS list -- fetched once, and
+  only re-fetched by this viewer's OWN actions (`invalidatePosts()` after
+  liking, saving, or commenting). Comments have no realtime channel (only
+  notifications do), so the moment a *different* person comments, every
+  other open tab's badge is stale until something unrelated happens to
+  trigger a reload -- while the thread itself, when expanded, always
+  fetches the real, current rows directly. Two numbers, two different
+  staleness windows, same card. Fixed by having `CommentThread` report
+  the count it actually just fetched (and each add/delete within it) back
+  up to `PostCard` via `onCountChange`, which prefers that live number
+  over the possibly-stale aggregate the instant it's known -- the badge
+  and the open thread underneath it can no longer visibly disagree.
+- **Post images now open in a full-size view on click** -- a `fixed
+  inset-0` overlay matching the exact same modal idiom this file already
+  uses for delete-confirm and the author-info popover (click the backdrop
+  precisely, via `target === currentTarget`, to close; an explicit X too).
+  Composer's own pre-publish image preview is untouched -- different
+  context (removing a draft, not viewing a post), not what was reported.
+- **The bell rings on live arrival**: `notificationsStore.js` now tracks
+  a `ringSeq` counter (separate from `state`, which `load()` replaces
+  wholesale on every refresh -- a counter living inside it wouldn't
+  survive that) bumped once per realtime INSERT, alongside the sound and
+  OS popup the previous round already added. `shell.js`'s bell diffs the
+  value it's currently seeing against the one it saw last render; a
+  change replays a hand-written `@keyframes skBellRing` for one cycle
+  (pivoted near the icon's top, like a real clapper) and then clears
+  itself -- a one-shot reaction to *this* arrival, not a state that could
+  get stuck on. Added to the existing `prefers-reduced-motion` block
+  alongside the logo's own animations.
+
+**Verified**: new `test_feed_comment_image_bell.mjs` reproduces the exact
+reported mismatch (mocks a post whose aggregate says 2 while
+`post_comments` actually holds 3) and confirms the badge reads the stale
+2 before the thread is opened, all 3 real comments render once it is,
+and the badge then reads 3 -- the inconsistency the report showed is
+gone. The lightbox is confirmed absent beforehand, opens with the exact
+same image on click, and closes both via the backdrop and the explicit
+button. For the bell-ring, the animation mechanics are verified directly
+against the real `styles.css` (not a copy) -- confirmed actually rotated
+partway through its cycle and settled back to no rotation once it
+finished, since that hand-written CSS is the genuinely novel part; the
+plain React state-diffing that triggers it is not independently
+re-verified here, for the same reason as every other realtime-adjacent
+piece this round -- no live backend in this sandbox to drive a real
+arrival end-to-end. Full regression suite re-run clean (43 scripts),
+modulo the one documented `test_loading_upgrade.mjs` flake.

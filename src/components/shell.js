@@ -226,14 +226,28 @@ function SidebarContent({ currentPath, onNavigate, collapsed = false, sidebarMod
 function NotificationsMenu() {
   const t = useT();
   const [open, setOpen] = useState(false);
+  const [ringing, setRinging] = useState(false);
   const ref = useRef(null);
-  const { notifications, loading, unreadCount } = useNotifications();
+  const { notifications, loading, unreadCount, ringSeq } = useNotifications();
+  const seenRingSeq = useRef(ringSeq);
   useEffect(() => {
     if (!open) return;
     function onDocClick(e) { if (ref.current && !ref.current.contains(e.target)) setOpen(false); }
     document.addEventListener("mousedown", onDocClick);
     return () => document.removeEventListener("mousedown", onDocClick);
   }, [open]);
+
+  // Replays the ring on every live arrival after this mounted -- ringSeq
+  // starts equal to seenRingSeq.current on mount (no spurious ring just
+  // from loading whatever notifications already existed), and each
+  // increase past that re-triggers it for exactly one animation cycle.
+  useEffect(() => {
+    if (ringSeq === seenRingSeq.current) return;
+    seenRingSeq.current = ringSeq;
+    setRinging(true);
+    const timer = setTimeout(() => setRinging(false), 650);
+    return () => clearTimeout(timer);
+  }, [ringSeq]);
 
   function onToggle() {
     const opening = !open;
@@ -249,7 +263,7 @@ function NotificationsMenu() {
   return html`
     <div class="relative" ref=${ref}>
       <button class="sk-btn relative h-8 w-8 rounded-lg text-slate-400 hover:text-slate-200" onClick=${onToggle} aria-label=${t("shell.notifications.title")}>
-        <${Icon} name="bell" size=${17} />
+        <${Icon} name="bell" size=${17} className=${ringing ? "sk-bell-ring" : ""} />
         ${unreadCount > 0 && html`<span class="absolute top-1 right-1 h-2 w-2 rounded-full bg-rose-400 border border-slate-950"></span>`}
       </button>
       ${open && html`

@@ -55,6 +55,21 @@ body { color-scheme: dark; }
 }
 .sk-pulse-indigo { animation: skPulseIndigo 1.8s ease-in-out infinite; }
 
+/* A one-time ring, triggered when a notification arrives live (realtime
+   INSERT, not just on open) -- pivoted near the top like a real bell's
+   clapper, so it reads as the bell itself reacting rather than a generic
+   wiggle. Re-added and removed by shell.js per arrival (the animation
+   class itself doesn't repeat; a fresh class toggle is what replays it). */
+@keyframes skBellRing {
+  0%, 100% { transform: rotate(0deg); }
+  10%, 30% { transform: rotate(-14deg); }
+  20%, 40% { transform: rotate(14deg); }
+  50% { transform: rotate(-8deg); }
+  60% { transform: rotate(8deg); }
+  70%, 80% { transform: rotate(0deg); }
+}
+.sk-bell-ring { transform-origin: 50% 15%; animation: skBellRing .6s ease-in-out; }
+
 /* ---- Logo mark -------------------------------------------------------- */
 /* The resolved point stays quietly alive everywhere the mark appears --
    same slow breathing glow whether it's static (sidebar, headers) or
@@ -351,4 +366,5 @@ select.sk-input option:checked {
   .sk-logo-path, .sk-logo-point { animation: none !important; }
   .sk-logo-animated .sk-logo-path { stroke-dashoffset: 0 !important; }
   .sk-logo-animated .sk-logo-point { opacity: 1 !important; transform: scale(1) !important; }
+  .sk-bell-ring { animation: none !important; }
 }

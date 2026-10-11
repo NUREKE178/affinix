@@ -137,18 +137,27 @@ function maybeShowBrowserNotification(n) {
   }
 }
 
+/** Bumped on every live arrival, separate from `state` (which `load()`
+ * replaces wholesale) so it survives that replacement untouched. Exposed
+ * through useNotifications() purely as a change signal -- shell.js's bell
+ * diffs it against the previous value it saw to replay the ring animation,
+ * never reads the number itself for anything meaningful. */
+let ringSeq = 0;
+
 /** A realtime INSERT on `notifications` means a brand new row the current
  * viewer didn't have a moment ago -- reload the resolved list (same
  * reload-on-change shape every other mutation in this store already uses)
  * rather than hand-assembling the new row's author/comment text from the
- * bare payload, then fire the sound + OS popup using the freshly-resolved
- * copy of it. */
+ * bare payload, then fire the sound + OS popup + bell-ring signal using
+ * the freshly-resolved copy of it. */
 async function handleLiveNotification(payload) {
   await load();
   const fresh = state.notifications.find((n) => n.id === payload.new?.id);
   if (!fresh) return;
   playNotificationSound();
   maybeShowBrowserNotification(fresh);
+  ringSeq += 1;
+  notify();
 }
 
 /** One channel for the lifetime of the tab, not one per useNotifications()
@@ -230,5 +239,5 @@ export function useNotifications() {
   }, [userId]);
 
   const unreadCount = state.notifications.filter((n) => !n.isRead).length;
-  return { notifications: state.notifications, loading: state.loading, error: state.error, unreadCount };
+  return { notifications: state.notifications, loading: state.loading, error: state.error, unreadCount, ringSeq };
 }
