@@ -2188,3 +2188,74 @@ background (`rgba(0,0,0,0)` -> `rgba(255,255,255,0.14)`, alpha >= 0.1)
 and reverts cleanly when the pointer leaves; the active item's gradient
 background is confirmed unchanged. Full regression suite re-run clean
 (36 scripts).
+
+### Dashboard polish round: CTA button, empty-state card, header sizing ✅
+
+Four points of feedback against the live Experiments page (empty state),
+with Supabase's own dashboard sidebar as the reference for "clean":
+
+1. The "Новое исследование" (New Research) CTA button "stands out too
+   strongly and is squeezed into the corner."
+2. The empty-state card's border looked "too limited, rough-edged," and
+   icon/font proportions felt unbalanced.
+3. The header's search box and RU/KZ/EN language switch were "too small
+   and positioned too far apart."
+4. The "0 активных" active-count badge -- read literally ("removing it
+   isn't necessary at all"), left untouched.
+
+- **CTA button**: `.sk-btn-primary`'s outer glow opacity cut from `.55`
+  to `.35` (still clearly the primary action, no longer the loudest
+  thing on the page). Tried first to left-align its icon flush with the
+  logo/nav icons above and below it (same instinct as the "squeezed"
+  read), but `.sk-btn` -- the base class every button in the app shares
+  -- sets `justify-content: center` directly in its own CSS, not via a
+  togglable Tailwind class, so overriding only this one instance would
+  have meant fighting a deliberate, system-wide convention for a theory
+  that turned out not to hold up (confirmed empirically: the Tailwind
+  utility toggle was a no-op, the button stayed centered either way).
+  Reverted that path and used the lever that's actually true to the
+  complaint instead -- more outer margin from the sidebar edge (`px-3`
+  -> `px-4` on its wrapper) -- which directly answers "cornered"
+  without making this button inconsistent with every other `.sk-btn` in
+  the app.
+- **Empty-state card** (`EmptyState` in `ui.js`): was `sk-panel-flat` +
+  `rounded-2xl`, while the app's regular `Card` component (used
+  everywhere else) is `sk-panel` + `rounded-xl` -- a real, visible
+  mismatch between how an empty state and a normal content panel read,
+  independent of anyone's taste. Matched `EmptyState` to `Card`'s own
+  treatment exactly (fuller raised shadow, same corner radius) instead
+  of inventing a new style.
+- **Header search bar**: widening `max-w-md` -> `max-w-xl` on the form
+  turned out to change nothing measurable -- the grid's `auto` middle
+  column (the exact mechanism a prior round built and verified for
+  true, offset-independent centering; left untouched here) was sizing
+  off the `<input>`'s own tiny default intrinsic width, never reaching
+  anywhere near the old max-width cap. Gave the `<input>` itself a
+  `min-w-[18rem]`, which inflates the form's real content width and
+  grows the column that sizes off it: measured 274px -> 344px.
+  First shipped this unconditionally and the regression suite caught a
+  real break it introduced: at 640-768px (right where the search box
+  first appears, between `sm` and `lg`) the wider minimum didn't leave
+  enough room for the right-hand cluster, pushing the notifications
+  dropdown up to 156px off-screen
+  (`test_notifications_overflow.mjs`, previously 21/21, now failing at
+  exactly those two widths and no others). The original complaint was
+  unambiguously about a wide desktop view, so scoped the wider minimum
+  to `lg:` and up (`lg:min-w-[18rem]`, no bare `min-w-*`), leaving
+  640-768px exactly as it rendered before this round. Re-verified
+  21/21 again after the fix.
+- **Language switch**: `text-xs` -> `text-sm`, tab padding bumped
+  (`px-2 py-1` -> `px-2.5 py-1.5`). Shared by `Landing.js`'s header too
+  (including its mobile hamburger-overlay rebuild from an earlier
+  round) -- re-verified no horizontal overflow there at both a phone
+  and a desktop width after the size bump.
+
+**Verified**: CTA button's glow opacity and increased outer margin
+measured directly; `EmptyState` confirmed on the real `sk-panel
+rounded-xl` classes; search bar's rendered width measured before/after
+(not just the irrelevant max-width value) at both its narrow and wide
+breakpoints; language-switch font size measured; zero console/page
+errors across every page touched; Landing page checked for new
+overflow at both a mobile and a desktop viewport. Full regression
+suite re-run clean (37 scripts) after fixing the breakpoint regression
+it caught.

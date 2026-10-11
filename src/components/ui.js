@@ -111,7 +111,7 @@ export function LoadingState({ label, className = "" }) {
 
 export function EmptyState({ title, body, action, icon = "sparkle" }) {
   return html`
-    <div class="sk-panel-flat flex flex-col items-center justify-center text-center py-14 px-6 rounded-2xl">
+    <div class="sk-panel flex flex-col items-center justify-center text-center py-14 px-6 rounded-xl">
       <div class="sk-display mb-4 flex h-16 w-16 items-center justify-center rounded-full text-slate-600"><${Icon} name=${icon} size=${26} strokeWidth=${1.4} /></div>
       <h3 class="text-base font-semibold text-slate-200">${title}</h3>
       ${body && html`<p class="text-sm text-slate-500 mt-1.5 max-w-sm">${body}</p>`}

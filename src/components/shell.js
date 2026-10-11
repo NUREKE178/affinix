@@ -180,7 +180,7 @@ function SidebarContent({ currentPath, onNavigate, collapsed = false, sidebarMod
         `}
       </button>
 
-      <div class="px-3 mb-3">
+      <div class="px-4 mb-3">
         <button onClick=${() => onNavigate("/app/experiments/new")}
           title=${collapsed ? t("shell.newResearch") : undefined}
           class=${`sk-btn sk-btn-primary flex w-full items-center justify-center gap-1.5 overflow-hidden whitespace-nowrap rounded-lg text-white text-sm font-medium py-2.5 ${collapsed ? "px-0" : "px-4"}`}>
@@ -256,10 +256,10 @@ export function LanguageSwitch() {
     }
   }
   return html`
-    <div class="sk-tabs flex items-center rounded-lg p-0.5 text-xs font-medium">
+    <div class="sk-tabs flex items-center rounded-lg p-0.5 text-sm font-medium">
       ${LOCALES.map((l) => html`
         <button key=${l.id} disabled=${pending} data-active=${locale === l.id} onClick=${() => choose(l.id)}
-          class=${`sk-tab px-2 py-1 rounded-md disabled:opacity-50 ${locale === l.id ? "text-white" : "text-slate-500 hover:text-slate-300"}`}>${l.label}</button>
+          class=${`sk-tab px-2.5 py-1.5 rounded-md disabled:opacity-50 ${locale === l.id ? "text-white" : "text-slate-500 hover:text-slate-300"}`}>${l.label}</button>
       `)}
     </div>
   `;
@@ -331,10 +331,10 @@ export function Shell({ currentPath, children }) {
           <div class="flex items-center gap-3 justify-self-start">
             <button class="sk-btn md:!hidden h-9 w-9 rounded-lg text-slate-400 shrink-0" onClick=${() => setMobileOpen(true)}><${Icon} name="menu" size=${19} /></button>
           </div>
-          <form onSubmit=${onSearchSubmit} class="sk-display hidden sm:flex items-center gap-2 justify-self-center rounded-lg px-3 py-1.5 text-sm text-slate-400 w-full max-w-md">
-            <${Icon} name="search" size=${15} className="shrink-0" />
+          <form onSubmit=${onSearchSubmit} class="sk-display hidden sm:flex items-center gap-2.5 justify-self-center rounded-lg px-3.5 py-2 text-sm text-slate-400 w-full max-w-xl">
+            <${Icon} name="search" size=${16} className="shrink-0" />
             <input value=${search} onInput=${(e) => setSearch(e.target.value)} placeholder=${t("shell.searchPlaceholder")}
-              class="bg-transparent outline-none placeholder:text-slate-500 w-full text-slate-200" />
+              class="bg-transparent outline-none placeholder:text-slate-500 w-full lg:min-w-[18rem] text-slate-200" />
           </form>
           <div class="flex items-center gap-3 col-start-2 sm:col-start-3 justify-self-center sm:justify-self-end">
             <${LanguageSwitch} />
