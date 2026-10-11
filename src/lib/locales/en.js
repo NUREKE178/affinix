@@ -53,6 +53,7 @@ export default {
     notifications: {
       title: "Notifications",
       empty: "No notifications yet",
+      commentOn: "{name} commented on your post",
     },
     userMenu: {
       profile: "Profile",
@@ -296,10 +297,19 @@ export default {
     loadErrorBody: "Check your connection and try again.",
     emptyTitle: "No posts yet",
     emptyBody: "Be the first to share something with the community.",
-    profanityBlocked: "Your post contains language that isn't allowed. Please edit it and try again.",
+    profanityBlocked: "Your text contains language that isn't allowed. Please edit it and try again.",
     clearFilter: "Clear",
     noHashtagTitle: "No posts with this tag",
     noHashtagBody: "No one has used {tag} yet. Be the first.",
+    like: "Like",
+    comment: "Comment",
+    save: "Save",
+    noComments: "No comments yet",
+    commentPlaceholder: "Write a comment…",
+    commentSubmit: "Send",
+    commentPosted: "Comment posted",
+    commentPostedCensored: "Comment posted. Some words were masked.",
+    deleteComment: "Delete comment",
   },
 
   experiments: {

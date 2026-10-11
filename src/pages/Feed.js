@@ -5,6 +5,7 @@ import { useT } from "../lib/i18n.js";
 import { useMyProfile } from "../lib/profile.js";
 import { getCurrentUser } from "../lib/auth.js";
 import { usePosts, createPost, deletePost, invalidatePosts } from "../lib/postsStore.js";
+import { toggleLike, toggleSave, fetchComments, createComment, deleteComment } from "../lib/postInteractions.js";
 import { uploadPostImage, validateAssetFile } from "../lib/storage.js";
 import { relativeDate } from "../lib/format.js";
 import { withTimeout } from "../lib/async.js";
@@ -169,9 +170,139 @@ function Composer({ t, profile }) {
   `;
 }
 
-function PostCard({ post, t, onHashtagClick, canDelete, onDeleteClick, onAuthorClick }) {
+function ActionButton({ icon, filled = false, label, count, active = false, tone = "slate", onClick, disabled = false, className = "" }) {
+  const toneClass = active
+    ? (tone === "rose" ? "text-rose-400" : tone === "indigo" ? "text-indigo-300" : "text-slate-200")
+    : "text-slate-500 hover:text-slate-300";
+  return html`
+    <button type="button" onClick=${onClick} disabled=${disabled} aria-label=${label} aria-pressed=${active}
+      class=${`flex items-center gap-1.5 text-xs font-medium transition-colors disabled:opacity-50 ${toneClass} ${className}`}>
+      <${Icon} name=${icon} size=${16} filled=${filled} />
+      ${count > 0 && html`<span>${count}</span>`}
+    <//>
+  `;
+}
+
+function CommentThread({ post, t, currentUserId, canModerate }) {
+  const [comments, setComments] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [draft, setDraft] = useState("");
+  const [posting, setPosting] = useState(false);
+
+  async function load() {
+    setLoading(true);
+    try {
+      setComments(await fetchComments(post.id));
+    } catch (err) {
+      toast(err.message ?? String(err), "rose");
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  useEffect(() => { load(); }, [post.id]);
+
+  async function submit(e) {
+    e.preventDefault();
+    const raw = draft.trim();
+    if (!raw || posting) return;
+
+    const mod = moderatePost(raw);
+    if (mod.action === "block") {
+      toast(t("feed.profanityBlocked"), "rose");
+      return;
+    }
+
+    setPosting(true);
+    try {
+      await withTimeout(createComment({ postId: post.id, postAuthorId: post.authorId, body: mod.text }), 15000);
+      setDraft("");
+      await load();
+      invalidatePosts(); // refreshes this card's comment count
+      toast(t(mod.action === "censor" ? "feed.commentPostedCensored" : "feed.commentPosted"), mod.action === "censor" ? "amber" : "emerald");
+    } catch (err) {
+      toast(err.message ?? String(err), "rose");
+    } finally {
+      setPosting(false);
+    }
+  }
+
+  async function onDelete(id) {
+    try {
+      await deleteComment(id);
+      setComments((prev) => prev.filter((c) => c.id !== id));
+      invalidatePosts();
+    } catch (err) {
+      toast(err.message ?? String(err), "rose");
+    }
+  }
+
+  return html`
+    <div class="mt-3 pt-3 border-t border-black/30 space-y-3">
+      ${loading && html`<div class="text-xs text-slate-500">${t("common.loading")}</div>`}
+      ${!loading && comments.length === 0 && html`<div class="text-xs text-slate-500">${t("feed.noComments")}</div>`}
+      ${!loading && comments.map((c) => html`
+        <div key=${c.id} class="flex gap-2.5">
+          <${Avatar} name=${c.authorName} url=${c.authorAvatarUrl} size=${26} />
+          <div class="flex-1 min-w-0">
+            <div class="sk-display rounded-lg px-3 py-2">
+              <div class="flex items-center justify-between gap-2">
+                <span class="text-xs font-medium text-slate-200">${c.authorName ?? t("feed.unknownAuthor")}</span>
+                ${(c.authorId === currentUserId || canModerate) && html`
+                  <button type="button" onClick=${() => onDelete(c.id)} aria-label=${t("feed.deleteComment")}
+                    class="shrink-0 text-slate-600 hover:text-rose-400 transition-colors">
+                    <${Icon} name="trash" size=${12} />
+                  <//>
+                `}
+              </div>
+              <p class="text-sm text-slate-300 mt-0.5 leading-relaxed whitespace-pre-wrap break-words">${c.body}</p>
+            </div>
+            <div class="text-[11px] text-slate-500 mt-1">${relativeDate(c.createdAt)}</div>
+          </div>
+        </div>
+      `)}
+
+      <form onSubmit=${submit} class="flex items-center gap-2.5 pt-1">
+        <input value=${draft} onInput=${(e) => setDraft(e.target.value.slice(0, 1000))}
+          placeholder=${t("feed.commentPlaceholder")}
+          class="sk-input flex-1 rounded-lg px-3 py-2 text-sm text-slate-100 placeholder:text-slate-500" />
+        <${Button} type="submit" size="sm" disabled=${!draft.trim() || posting}>${t("feed.commentSubmit")}<//>
+      </form>
+    </div>
+  `;
+}
+
+function PostCard({ post, t, onHashtagClick, canDelete, canModerate, currentUserId, onDeleteClick, onAuthorClick }) {
   const hasProfile = !!post.authorName;
   const openAuthor = () => hasProfile && onAuthorClick(post);
+  const [likeBusy, setLikeBusy] = useState(false);
+  const [saveBusy, setSaveBusy] = useState(false);
+  const [commentsOpen, setCommentsOpen] = useState(false);
+
+  async function onToggleLike() {
+    if (likeBusy) return;
+    setLikeBusy(true);
+    try {
+      await toggleLike(post.id, post.viewerLiked);
+    } catch (err) {
+      toast(err.message ?? String(err), "rose");
+    } finally {
+      setLikeBusy(false);
+    }
+  }
+
+  async function onToggleSave() {
+    if (saveBusy) return;
+    setSaveBusy(true);
+    try {
+      await toggleSave(post.id, post.viewerSaved);
+    } catch (err) {
+      toast(err.message ?? String(err), "rose");
+    } finally {
+      setSaveBusy(false);
+    }
+  }
+
   return html`
     <div class="sk-panel-flat rounded-xl p-4">
       <div class="flex gap-3">
@@ -197,6 +328,17 @@ function PostCard({ post, t, onHashtagClick, canDelete, onDeleteClick, onAuthorC
           </div>
           <p class="text-sm text-slate-300 mt-1 leading-relaxed whitespace-pre-wrap break-words">${renderPostBody(post.body, onHashtagClick)}</p>
           ${post.imageUrl && html`<img src=${post.imageUrl} class="sk-display rounded-lg mt-3 max-h-96 w-full object-cover" />`}
+
+          <div class="flex items-center gap-5 mt-3.5 pt-3 border-t border-black/30">
+            <${ActionButton} icon="heart" filled=${post.viewerLiked} active=${post.viewerLiked} tone="rose"
+              label=${t("feed.like")} count=${post.likeCount} disabled=${likeBusy} onClick=${onToggleLike} />
+            <${ActionButton} icon="comment" active=${commentsOpen}
+              label=${t("feed.comment")} count=${post.commentCount} onClick=${() => setCommentsOpen((v) => !v)} />
+            <${ActionButton} icon="bookmark" filled=${post.viewerSaved} active=${post.viewerSaved} tone="indigo"
+              label=${t("feed.save")} disabled=${saveBusy} onClick=${onToggleSave} className="ml-auto" />
+          </div>
+
+          ${commentsOpen && html`<${CommentThread} post=${post} t=${t} currentUserId=${currentUserId} canModerate=${canModerate} />`}
         </div>
       </div>
     </div>
@@ -243,7 +385,12 @@ export function Feed() {
         </div>
       `}
 
-      ${loading && html`
+      <!-- Gated on posts.length === 0, not just loading: every like/save/comment
+           reload sets loading=true again via invalidatePosts(), and this list
+           has to stay mounted through that (stale posts, fresh in the
+           background) or every PostCard remounts fresh -- snapping shut
+           whichever card's comment thread was open. -->
+      ${loading && posts.length === 0 && html`
         <div class="space-y-3">
           ${[0, 1].map((i) => html`
             <div key=${i} class="sk-panel-flat rounded-xl p-4">
@@ -273,11 +420,12 @@ export function Feed() {
         <${EmptyState} title=${t("feed.noHashtagTitle")} body=${t("feed.noHashtagBody", { tag: activeHashtag })} icon="search" />
       `}
 
-      ${!loading && !error && visiblePosts.length > 0 && html`
+      ${!error && visiblePosts.length > 0 && html`
         <div class="space-y-3">
           ${visiblePosts.map((post) => html`
             <${PostCard} key=${post.id} post=${post} t=${t} onHashtagClick=${setActiveHashtag}
               canDelete=${post.authorId === currentUserId || !!profile?.is_admin}
+              canModerate=${!!profile?.is_admin} currentUserId=${currentUserId}
               onDeleteClick=${setConfirmDelete} onAuthorClick=${setViewingAuthor} />
           `)}
         </div>

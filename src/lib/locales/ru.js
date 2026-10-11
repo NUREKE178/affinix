@@ -53,6 +53,7 @@ export default {
     notifications: {
       title: "Уведомления",
       empty: "Пока нет уведомлений",
+      commentOn: "{name} прокомментировал(а) ваш пост",
     },
     userMenu: {
       profile: "Профиль",
@@ -296,10 +297,19 @@ export default {
     loadErrorBody: "Проверьте соединение и попробуйте ещё раз.",
     emptyTitle: "Пока нет постов",
     emptyBody: "Станьте первым, кто поделится чем-то в сообществе.",
-    profanityBlocked: "Пост содержит недопустимые слова. Измените текст и попробуйте снова.",
+    profanityBlocked: "Текст содержит недопустимые слова. Измените его и попробуйте снова.",
     clearFilter: "Очистить",
     noHashtagTitle: "Нет постов с этим тегом",
     noHashtagBody: "Пока никто не использовал {tag}. Станьте первым.",
+    like: "Нравится",
+    comment: "Комментировать",
+    save: "Сохранить",
+    noComments: "Пока нет комментариев",
+    commentPlaceholder: "Написать комментарий…",
+    commentSubmit: "Отправить",
+    commentPosted: "Комментарий добавлен",
+    commentPostedCensored: "Комментарий добавлен. Часть слов скрыта звёздочками.",
+    deleteComment: "Удалить комментарий",
   },
 
   experiments: {

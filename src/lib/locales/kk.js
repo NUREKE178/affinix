@@ -53,6 +53,7 @@ export default {
     notifications: {
       title: "Хабарландырулар",
       empty: "Әзірге хабарландырулар жоқ",
+      commentOn: "{name} сіздің жазбаңызға пікір қалдырды",
     },
     userMenu: {
       profile: "Профиль",
@@ -296,10 +297,19 @@ export default {
     loadErrorBody: "Байланысты тексеріп, қайта көріңіз.",
     emptyTitle: "Әзірге жазба жоқ",
     emptyBody: "Қауымдастықта бірінші болып бөлісіңіз.",
-    profanityBlocked: "Жазбада рұқсат етілмеген сөздер бар. Мәтінді өзгертіп, қайта көріңіз.",
+    profanityBlocked: "Мәтінде рұқсат етілмеген сөздер бар. Оны өзгертіп, қайта көріңіз.",
     clearFilter: "Тазалау",
     noHashtagTitle: "Бұл тегпен жазба жоқ",
     noHashtagBody: "{tag} тегін әзірге ешкім қолданбаған. Бірінші болыңыз.",
+    like: "Ұнайды",
+    comment: "Пікір қалдыру",
+    save: "Сақтау",
+    noComments: "Әзірге пікір жоқ",
+    commentPlaceholder: "Пікір жазыңыз…",
+    commentSubmit: "Жіберу",
+    commentPosted: "Пікір қосылды",
+    commentPostedCensored: "Пікір қосылды. Кейбір сөздер жұлдызшамен жасырылды.",
+    deleteComment: "Пікірді өшіру",
   },
 
   experiments: {

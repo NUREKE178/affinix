@@ -39,13 +39,18 @@ const PATHS = {
   card: html`<rect x="2.5" y="5.5" width="19" height="13" rx="2"/><path d="M2.5 10h19"/><path d="M6 14.5h4"/>`,
   globe: html`<circle cx="12" cy="12" r="8.5"/><path d="M3.5 12h17M12 3.5c2.3 2.3 3.5 5.3 3.5 8.5s-1.2 6.2-3.5 8.5c-2.3-2.3-3.5-5.3-3.5-8.5S9.7 5.8 12 3.5z"/>`,
   logout: html`<path d="M9 20H5.5A1.5 1.5 0 0 1 4 18.5v-13A1.5 1.5 0 0 1 5.5 4H9"/><path d="M16 16.5l4.5-4.5L16 7.5"/><path d="M20 12H9"/>`,
+  heart: html`<path d="M12 20.3s-7.3-4.4-9.6-9C1 8.4 2.5 5 6 5c2.3 0 3.9 1.4 6 3.8C14.1 6.4 15.7 5 18 5c3.5 0 5 3.4 3.6 6.3-2.3 4.6-9.6 9-9.6 9z"/>`,
+  bookmark: html`<path d="M6 3.5h12a1 1 0 0 1 1 1V21l-7-4.5L5 21V4.5a1 1 0 0 1 1-1z"/>`,
+  comment: html`<path d="M4 5.5a1.5 1.5 0 0 1 1.5-1.5h13a1.5 1.5 0 0 1 1.5 1.5v9a1.5 1.5 0 0 1-1.5 1.5H9l-4 3.5v-3.5H5.5A1.5 1.5 0 0 1 4 14.5z"/>`,
 };
 
-export function Icon({ name, size = 18, className = "", strokeWidth = 1.8 }) {
+/** `filled`: swaps fill to currentColor for stateful toggles (heart/bookmark
+ * "active" states) -- every other icon stays its default outline. */
+export function Icon({ name, size = 18, className = "", strokeWidth = 1.8, filled = false }) {
   const body = PATHS[name];
   if (!body) return null;
   return html`
-    <svg xmlns="http://www.w3.org/2000/svg" width=${size} height=${size} viewBox="0 0 24 24" fill="none"
+    <svg xmlns="http://www.w3.org/2000/svg" width=${size} height=${size} viewBox="0 0 24 24" fill=${filled ? "currentColor" : "none"}
       stroke="currentColor" stroke-width=${strokeWidth} stroke-linecap="round" stroke-linejoin="round"
       class=${className}>${body}</svg>
   `;

@@ -2385,3 +2385,121 @@ CSS class declared but never exercised; `prefers-reduced-motion`
 confirmed to render fully resolved immediately rather than stuck
 invisible; zero console/page errors across the dashboard, landing, and
 both auth routes. Full regression suite re-run clean (39 scripts).
+
+### Feed social layer: likes, comments, saves, and real notifications ✅
+
+Requested: strict spam/profanity watch on anything new that accepts
+text, likes + comments + saves on every post, and a real notification
+when someone comments on your post. Four new tables
+(`supabase/migrations/0014_post_interactions.sql`): `post_likes`,
+`post_saves`, `post_comments`, `notifications`. RLS mirrors `posts`'
+own conventions throughout -- `post_likes`/`post_comments` are
+platform-wide readable (`using (true)`, same as `posts`), own-row
+write, and `post_comments` gets the same admin-delete-any backstop
+`posts` already has (`is_admin`, 0012) layered alongside delete-own,
+since a comment is exactly as much of an abuse surface as a post body.
+`post_saves` is scoped to the owner's own rows instead -- a private
+bookmark list, not a public count, so nobody else needs to read who
+saved what.
+
+`notifications` is the one table here that breaks the
+"owner column defaults to `auth.uid()`" pattern every other table in
+this schema follows: the party that matters is the *recipient* (the
+post's author), not whoever's running the insert, so `recipient_id`
+can't default to the caller. Left client-settable, that column would
+let any signed-in user spam a notification into anyone's inbox. The
+insert policy validates it server-side instead --
+`recipient_id = (select author_id from posts where id = post_id)` --
+so a forged recipient is rejected outright, and
+`actor_id <> recipient_id` doubles as a hard backstop against
+self-notifications even if the app code's own suppression (below) were
+ever bypassed or buggy.
+
+- **`lib/postsStore.js`**: `fetchPosts()` now pulls `post_likes(count)`
+  / `post_comments(count)` as PostgREST aggregate embeds in the same
+  request, plus two small targeted queries (same "separate query,
+  merge client-side" shape `fetchAuthorsById` already used for authors)
+  for which of the loaded posts the *current viewer* has liked/saved.
+  `fetchAuthorsById` is now exported -- the new modules below reuse it
+  verbatim for comment and notification authors rather than
+  duplicating the same profiles_public lookup.
+- **`lib/postInteractions.js`** (new): `toggleLike`/`toggleSave`
+  (insert-or-delete by the viewer's current state, same no-optimistic-
+  update/reload-after-mutation shape `createPost`/`deletePost` already
+  use), `fetchComments`, `createComment` (takes already-moderated
+  text, same division of labor as `createPost`/`Composer` -- moderation
+  is a UI-layer decision, not baked into the data layer), `deleteComment`.
+- **`lib/notificationsStore.js`** (new): same reactive module-store
+  pattern as `postsStore.js`. `createCommentNotification` skips
+  silently when the commenter *is* the post's author -- notifying
+  yourself about your own comment is noise, and the RLS policy above
+  would reject it anyway, so this is a UX optimization (skip a
+  request that would fail), not the real boundary. `markAllNotificationsRead`,
+  `unreadCount`.
+- **`components/icons.js`**: three new icons (`heart`, `bookmark`,
+  `comment`) and a `filled` prop on the shared `Icon` component
+  (swaps `fill="none"` to `currentColor`) for the liked/saved toggle
+  states -- one small reusable lever instead of a second path per icon.
+- **`pages/Feed.js`**: `PostCard` gets a like/comment/save action row
+  and an expandable `CommentThread` (lazy-loaded on first expand, its
+  own composer reusing `moderatePost()` exactly like the top-level
+  Composer -- one profanity match censors and posts, two or more
+  blocks the comment entirely with the same toast treatment). Comment
+  delete shows for the comment's own author or an admin, mirroring
+  `canDelete` on posts.
+- **`components/shell.js`**: `NotificationsMenu` wired to real data --
+  an unread dot on the bell, a dropdown listing each notification's
+  actor, comment snippet, and relative time, opening the dropdown
+  marks everything read (no per-notification detail view to click
+  through to besides the feed itself, so per-item read-tracking past
+  that point has nothing to attach to).
+- A real bug surfaced and fixed along the way, not just worked around
+  in tests: `Feed`'s top-level render hid the *entire* post list
+  behind `loading && …`, and every mutation here (`invalidatePosts()`
+  after a like/save/comment) sets that `loading` flag again, same as
+  `createPost`/`deletePost` always did. Before this feature, that
+  briefly swapping the whole list for a skeleton on every mutation was
+  invisible -- there was no per-card state to lose. Now there is
+  (`commentsOpen`): every like click was snapping any open comment
+  thread shut, because the skeleton swap unmounts and remounts every
+  `PostCard` from scratch. Fixed at the root: the skeleton now only
+  shows on a genuine first load (`loading && posts.length === 0`), and
+  the post list stays mounted through a background refresh (stale
+  data, refreshing silently), so `PostCard`'s local state survives any
+  mutation the same way `UserMenu`'s open/closed state already
+  survives an org switch.
+- i18n: nine new `feed.*` keys and `shell.notifications.commentOn`
+  across all three locales; reworded the existing `feed.profanityBlocked`
+  from "Пост содержит…" ("The *post* contains…") to a generic "Текст
+  содержит…" ("The *text* contains…") in all three, since that message
+  is now shared between blocked posts and blocked comments and the old
+  wording was factually wrong for the second case.
+
+**Verified**: a new `test_feed_interactions.mjs` (42 checks) covers the
+full surface against a small stateful mock of the new REST endpoints
+(not just canned responses -- insert/delete/update calls actually
+mutate the mock's state, so a toggle-then-reload genuinely round-trips):
+like/save toggle on and off with the count and fill state confirmed
+after each; comment thread loads and renders mocked comments with
+resolved author names; posting a comment on someone else's post fires
+both the `post_comments` insert and a `notifications` insert addressed
+to the real post author; commenting on *your own* post is confirmed to
+send no notification at all; the one-profanity-word (censor-and-post)
+and two-or-more (block-entirely) moderation paths both verified against
+the actual request traffic, not just the toast text; comment delete
+confirmed visible-and-working for the comment's own author, visible for
+an admin on someone else's comment, and absent for a non-admin
+non-author; the notification bell's unread dot, dropdown contents, and
+mark-all-read-on-open all confirmed against real request traffic.
+Screenshots of the action row, open comment thread, and notification
+dropdown reviewed directly, not just asserted. Full regression suite
+(44 scripts, including all 5 pre-existing feed tests) re-run clean
+except the one `test_loading_upgrade.mjs` failure -- this time
+investigated harder than the usual isolated-re-run check, since it hit
+the same two routes three times in a row rather than its usual
+scattered pattern: stashed every change from this round (`git stash -u`)
+and re-ran the exact same test against unmodified `main` -- same two
+routes failed the same way with none of this round's code present,
+which rules out this feature as the cause outright rather than just
+re-confirming the flake in isolation. Stash restored immediately after
+with nothing lost.

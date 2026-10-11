@@ -5,6 +5,8 @@ import { useCurrentOrg } from "../lib/currentOrg.js";
 import { useSession, signOut } from "../lib/auth.js";
 import { useMyProfile, updateMyProfile } from "../lib/profile.js";
 import { useT, useLocale, setLocale, LOCALES } from "../lib/i18n.js";
+import { useNotifications, markAllNotificationsRead } from "../lib/notificationsStore.js";
+import { relativeDate } from "../lib/format.js";
 import { toast } from "./ui.js";
 
 // "experiments" and "results" removed from the sidebar for now (not
@@ -214,23 +216,63 @@ function SidebarContent({ currentPath, onNavigate, collapsed = false, sidebarMod
   `;
 }
 
+/** Opening the dropdown marks everything read immediately (same convention
+ * as most bell menus) rather than requiring a click per item -- there's no
+ * per-notification detail view to click through to, just the feed itself,
+ * so per-item read-tracking after that point would have no UI to attach
+ * to anyway. The per-item dot still reflects whatever was unread at the
+ * moment this list was fetched, so it briefly shows what's new even as
+ * the mark-read request resolves in the background. */
 function NotificationsMenu() {
   const t = useT();
   const [open, setOpen] = useState(false);
   const ref = useRef(null);
+  const { notifications, loading, unreadCount } = useNotifications();
   useEffect(() => {
     if (!open) return;
     function onDocClick(e) { if (ref.current && !ref.current.contains(e.target)) setOpen(false); }
     document.addEventListener("mousedown", onDocClick);
     return () => document.removeEventListener("mousedown", onDocClick);
   }, [open]);
+
+  function onToggle() {
+    const opening = !open;
+    setOpen(opening);
+    if (opening && unreadCount > 0) markAllNotificationsRead();
+  }
+
+  function onItemClick() {
+    setOpen(false);
+    navigate("/app/feed");
+  }
+
   return html`
     <div class="relative" ref=${ref}>
-      <button class="sk-btn h-8 w-8 rounded-lg text-slate-400 hover:text-slate-200" onClick=${() => setOpen((v) => !v)}><${Icon} name="bell" size=${17} /></button>
+      <button class="sk-btn relative h-8 w-8 rounded-lg text-slate-400 hover:text-slate-200" onClick=${onToggle} aria-label=${t("shell.notifications.title")}>
+        <${Icon} name="bell" size=${17} />
+        ${unreadCount > 0 && html`<span class="absolute top-1 right-1 h-2 w-2 rounded-full bg-rose-400 border border-slate-950"></span>`}
+      </button>
       ${open && html`
         <div class="sk-modal fixed right-4 top-[69px] sm:absolute sm:right-0 sm:top-full sm:mt-2 z-40 w-72 max-w-[calc(100vw-2rem)] rounded-xl fade-in">
           <div class="px-4 py-3 border-b border-black/40 text-sm font-medium text-slate-200">${t("shell.notifications.title")}</div>
-          <div class="px-4 py-8 text-center text-sm text-slate-500">${t("shell.notifications.empty")}</div>
+          ${loading && html`<div class="px-4 py-8 text-center text-sm text-slate-500">${t("common.loading")}</div>`}
+          ${!loading && notifications.length === 0 && html`<div class="px-4 py-8 text-center text-sm text-slate-500">${t("shell.notifications.empty")}</div>`}
+          ${!loading && notifications.length > 0 && html`
+            <div class="max-h-80 overflow-y-auto py-1">
+              ${notifications.map((n) => html`
+                <button key=${n.id} type="button" onClick=${onItemClick}
+                  class="flex w-full items-start gap-2.5 px-4 py-2.5 text-left hover:bg-white/5 transition-colors">
+                  <${Avatar} name=${n.actorName} url=${n.actorAvatarUrl} size=${28} />
+                  <div class="min-w-0 flex-1">
+                    <div class="text-xs text-slate-300 leading-snug">${t("shell.notifications.commentOn", { name: n.actorName ?? t("feed.unknownAuthor") })}</div>
+                    ${n.commentBody && html`<div class="text-xs text-slate-500 truncate mt-0.5">«${n.commentBody}»</div>`}
+                    <div class="text-[11px] text-slate-600 mt-0.5">${relativeDate(n.createdAt)}</div>
+                  </div>
+                  ${!n.isRead && html`<span class="mt-1.5 h-1.5 w-1.5 rounded-full bg-indigo-400 shrink-0"></span>`}
+                </button>
+              `)}
+            </div>
+          `}
         </div>
       `}
     </div>

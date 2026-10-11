@@ -1,7 +1,8 @@
 import { useState, useEffect } from "./preact.js";
 import { requireSupabase } from "./supabaseClient.js";
+import { getCurrentUser } from "./auth.js";
 
-function mapPost(row, author) {
+function mapPost(row, author, likedIds, savedIds) {
   return {
     id: row.id,
     authorId: row.author_id,
@@ -14,6 +15,10 @@ function mapPost(row, author) {
     imageUrl: row.image_url ?? null,
     createdAt: row.created_at,
     updatedAt: row.updated_at,
+    likeCount: row.post_likes?.[0]?.count ?? 0,
+    commentCount: row.post_comments?.[0]?.count ?? 0,
+    viewerLiked: likedIds.has(row.id),
+    viewerSaved: savedIds.has(row.id),
   };
 }
 
@@ -25,7 +30,7 @@ function mapPost(row, author) {
  * platform members only (granted to `authenticated`, never `anon`), as a
  * separate query rather than a PostgREST embed (embedding resolves through
  * posts.author_id's real FK, which points at profiles, not at this view). */
-async function fetchAuthorsById(authorIds) {
+export async function fetchAuthorsById(authorIds) {
   if (!authorIds.length) return {};
   const sb = requireSupabase();
   const { data, error } = await sb.from("profiles_public").select("id, full_name, username, avatar_url, role_title, bio").in("id", authorIds);
@@ -33,17 +38,36 @@ async function fetchAuthorsById(authorIds) {
   return Object.fromEntries((data ?? []).map((a) => [a.id, a]));
 }
 
+/** Which of the given posts the CURRENT viewer has a row for in post_likes
+ * or post_saves -- a separate targeted query rather than fighting
+ * PostgREST's embedded-resource filter syntax for a per-viewer flag,
+ * same "fetch main rows, resolve the rest separately, merge client-side"
+ * shape as fetchAuthorsById above. Returns a Set of post ids. */
+async function fetchViewerPostIds(table, postIds) {
+  const userId = getCurrentUser()?.id;
+  if (!userId || !postIds.length) return new Set();
+  const sb = requireSupabase();
+  const { data, error } = await sb.from(table).select("post_id").eq("user_id", userId).in("post_id", postIds);
+  if (error) throw error;
+  return new Set((data ?? []).map((r) => r.post_id));
+}
+
 async function fetchPosts() {
   const sb = requireSupabase();
   const { data, error } = await sb
     .from("posts")
-    .select("*")
+    .select("*, post_likes(count), post_comments(count)")
     .order("created_at", { ascending: false })
     .limit(50);
   if (error) throw error;
   const rows = data ?? [];
-  const authorsById = await fetchAuthorsById([...new Set(rows.map((r) => r.author_id))]);
-  return rows.map((row) => mapPost(row, authorsById[row.author_id]));
+  const postIds = rows.map((r) => r.id);
+  const [authorsById, likedIds, savedIds] = await Promise.all([
+    fetchAuthorsById([...new Set(rows.map((r) => r.author_id))]),
+    fetchViewerPostIds("post_likes", postIds),
+    fetchViewerPostIds("post_saves", postIds),
+  ]);
+  return rows.map((row) => mapPost(row, authorsById[row.author_id], likedIds, savedIds));
 }
 
 /** author_id is never sent -- the column defaults to auth.uid() server-side
