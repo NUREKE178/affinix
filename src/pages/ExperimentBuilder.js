@@ -6,33 +6,21 @@ import { uploadVariantAsset, deleteVariantAsset, pathFromPublicUrl } from "../li
 import { useCurrentOrg } from "../lib/currentOrg.js";
 import { invalidateExperiments } from "../lib/experimentsStore.js";
 import {
-  Card, SectionHeading, Button, Field, TextInput, TextArea, Select, Checkbox, Switch, Badge, EmptyState, toast,
+  Card, SectionHeading, Button, Field, TextInput, TextArea, Select, Checkbox, Switch, Badge, EmptyState, LoadingState, toast,
 } from "../components/ui.js";
 import { Icon } from "../components/icons.js";
 import { researchTypes, questionTypes, typeSupportsVariants, measurementDimensions, questionFromDimension, AGE_RANGES, COUNTRIES, LANGUAGES, INFLUENCE_FACTORS } from "../lib/questionTypes.js";
 import { ParticipantRunner } from "./ParticipantRunner.js";
+import { useT } from "../lib/i18n.js";
 
 const uid = () => crypto.randomUUID();
 
-const STEPS = [
-  { id: 1, label: "Information" },
-  { id: 2, label: "Research type" },
-  { id: 3, label: "Stimuli" },
-  { id: 4, label: "Questions" },
-  { id: 5, label: "Participants" },
-  { id: 6, label: "Settings" },
-  { id: 7, label: "Preview" },
-];
+const STEP_IDS = [1, 2, 3, 4, 5, 6, 7];
+const STEP_KEYS = {
+  1: "info", 2: "researchType", 3: "stimuli", 4: "questions", 5: "participants", 6: "settings", 7: "preview",
+};
 
 const VARIANT_LABELS = ["A", "B", "C", "D"];
-const ASSET_TYPES = [
-  { value: "image", label: "Image" },
-  { value: "video", label: "Video" },
-  { value: "design", label: "Product design" },
-  { value: "ad", label: "Advertisement" },
-  { value: "logo", label: "Logo" },
-  { value: "screenshot", label: "Screenshot" },
-];
 
 function emptyExperiment() {
   return {
@@ -84,7 +72,20 @@ function emptyQuestion(type = "single_choice") {
   };
 }
 
+/** Whether `draft` satisfies step `n`'s own requirement -- the single
+ * source of truth for both the Continue button's disabled state and
+ * whether jumping to a step tab is allowed. Steps with no hard
+ * requirement (5-7) are always valid. */
+function stepIsValid(n, draft) {
+  if (n === 1) return draft.name.trim().length > 0 && draft.objective.trim().length > 0;
+  if (n === 2) return !!draft.researchType;
+  if (n === 3) return draft.variants.filter((v) => v.name.trim()).length >= 2;
+  if (n === 4) return draft.questions.length >= 1;
+  return true;
+}
+
 export function ExperimentBuilder({ params }) {
+  const t = useT();
   const editingId = params?.id ?? null;
   const { org, loading: orgLoading } = useCurrentOrg();
   const [draft, setDraft] = useState(() => ({ ...emptyExperiment(), id: editingId ?? uid() }));
@@ -137,7 +138,20 @@ export function ExperimentBuilder({ params }) {
     }
   }
 
+  // Jumping forward (via a step tab, or next()) is blocked by any
+  // not-yet-satisfied step in between -- previously only the Continue
+  // button's disabled state enforced this, so clicking a step tab
+  // directly skipped the check entirely. Moving to the current step or
+  // backward is always allowed (nothing to validate going back).
   async function goTo(n) {
+    if (n > step) {
+      for (let i = step; i < n; i++) {
+        if (!stepIsValid(i, draft)) {
+          toast(t("builder.incompleteStepToast"), "rose");
+          return;
+        }
+      }
+    }
     try { await persist(); setStep(n); } catch { /* error already toasted */ }
   }
   function next() { goTo(Math.min(7, step + 1)); }
@@ -148,89 +162,83 @@ export function ExperimentBuilder({ params }) {
       const saved = await persist();
       await publishExperiment(saved.id);
       invalidateExperiments();
-      toast("Эксперимент опубликован");
+      toast(t("builder.published"));
       navigate(`/app/experiments/${saved.id}/results`);
     } catch { /* error already toasted */ }
   }
 
-  const canAdvance = useMemo(() => {
-    if (step === 1) return draft.name.trim().length > 0 && draft.objective.trim().length > 0;
-    if (step === 2) return !!draft.researchType;
-    if (step === 3) return draft.variants.filter((v) => v.name.trim()).length >= 2;
-    if (step === 4) return draft.questions.length >= 1;
-    return true;
-  }, [draft, step]);
+  const canAdvance = useMemo(() => stepIsValid(step, draft), [draft, step]);
 
   if (orgLoading || loadingExisting) {
-    return html`<p class="text-sm text-slate-500">Загрузка…</p>`;
+    return html`<${LoadingState} label=${t("common.loading")} />`;
   }
 
   if (loadError === "not_found") {
     return html`<${EmptyState}
-      title="Эксперимент не найден"
-      body="Он мог быть удалён, или у вас нет к нему доступа."
+      title=${t("builder.notFoundTitle")}
+      body=${t("builder.notFoundBody")}
       icon="experiments"
-      action=${html`<${Button} onClick=${() => navigate("/app/experiments")}>К списку экспериментов<//>`}
+      action=${html`<${Button} onClick=${() => navigate("/app/experiments")}>${t("builder.backToList")}<//>`}
     />`;
   }
   if (loadError) {
     return html`<${EmptyState}
-      title="Не удалось загрузить эксперимент"
-      body="Проверьте соединение и попробуйте снова."
+      title=${t("builder.loadErrorTitle")}
+      body=${t("builder.loadErrorBody")}
       icon="shield"
-      action=${html`<${Button} onClick=${() => setRetryTick((n) => n + 1)}>Повторить<//>`}
+      action=${html`<${Button} onClick=${() => setRetryTick((n) => n + 1)}>${t("common.retry")}<//>`}
     />`;
   }
 
   return html`
     <div class="fade-in max-w-5xl">
       <${SectionHeading}
-        title=${editingId ? "Редактировать эксперимент" : "Создать эксперимент"}
-        subtitle="Соберите контролируемый эксперимент за семь шагов."
+        title=${editingId ? t("builder.titleEdit") : t("builder.titleNew")}
+        subtitle=${t("builder.subtitle")}
         action=${html`
           <div class="flex items-center gap-2">
-            ${saved && html`<${Badge} tone="emerald">Сохранено как черновик<//>`}
-            <${Button} variant="secondary" size="sm" disabled=${saving} onClick=${async () => { await persist(); navigate("/app/experiments"); }}>Сохранить и выйти<//>
+            ${saved && html`<${Badge} tone="emerald">${t("builder.savedDraft")}<//>`}
+            <${Button} variant="secondary" size="sm" disabled=${saving} onClick=${async () => { await persist(); navigate("/app/experiments"); }}>${t("builder.saveAndExit")}<//>
           </div>
         `}
       />
 
       <div class="sk-display flex items-center gap-1 overflow-x-auto p-1.5 mb-6 rounded-xl">
-        ${STEPS.map(
-          (s, i) => html`
-            <div key=${s.id} class="flex items-center">
+        ${STEP_IDS.map(
+          (id, i) => html`
+            <div key=${id} class="flex items-center">
               <button
-                onClick=${() => goTo(s.id)}
-                data-active=${step === s.id}
+                onClick=${() => goTo(id)}
+                data-active=${step === id}
                 class=${`sk-tab flex items-center gap-2 rounded-lg px-3 py-1.5 text-sm whitespace-nowrap ${
-                  step === s.id ? "text-white" : step > s.id ? "text-emerald-400" : "text-slate-500"
+                  step === id ? "text-white" : step > id ? "text-emerald-400" : "text-slate-500"
                 }`}
               >
-                <span class=${`flex h-5 w-5 items-center justify-center rounded-full text-[11px] ${step === s.id ? "bg-white/20" : "bg-black/30"}`}>
-                  ${step > s.id ? html`<${Icon} name="check" size=${11} /> ` : s.id}
+                <span class=${`flex h-5 w-5 items-center justify-center rounded-full text-[11px] ${step === id ? "bg-white/20" : "bg-black/30"}`}>
+                  ${step > id ? html`<${Icon} name="check" size=${11} /> ` : id}
                 </span>
-                ${s.label}
+                ${t(`builder.steps.${STEP_KEYS[id]}`)}
               </button>
-              ${i < STEPS.length - 1 && html`<div class="w-3 h-px bg-black/40 mx-0.5"></div>`}
+              ${i < STEP_IDS.length - 1 && html`<div class="w-3 h-px bg-black/40 mx-0.5"></div>`}
             </div>
           `
         )}
       </div>
 
       <${Card} className="p-5 sm:p-7">
-        ${step === 1 && html`<${StepInfo} draft=${draft} patch=${patch} />`}
-        ${step === 2 && html`<${StepResearchType} draft=${draft} patch=${patch} />`}
-        ${step === 3 && html`<${StepStimuli} draft=${draft} patch=${patch} orgId=${org.id} />`}
-        ${step === 4 && html`<${StepQuestions} draft=${draft} patch=${patch} />`}
-        ${step === 5 && html`<${StepParticipants} draft=${draft} patch=${patch} />`}
-        ${step === 6 && html`<${StepSettings} draft=${draft} patch=${patch} />`}
-        ${step === 7 && html`<${StepPreview} draft=${draft} onPublish=${publish} />`}
+        ${step === 1 && html`<${StepInfo} draft=${draft} patch=${patch} t=${t} />`}
+        ${step === 2 && html`<${StepResearchType} draft=${draft} patch=${patch} t=${t} />`}
+        ${step === 3 && html`<${StepStimuli} draft=${draft} patch=${patch} orgId=${org.id} t=${t} />`}
+        ${step === 4 && html`<${StepQuestions} draft=${draft} patch=${patch} t=${t} />`}
+        ${step === 5 && html`<${StepParticipants} draft=${draft} patch=${patch} t=${t} />`}
+        ${step === 6 && html`<${StepSettings} draft=${draft} patch=${patch} t=${t} />`}
+        ${step === 7 && html`<${StepPreview} draft=${draft} onPublish=${publish} t=${t} />`}
 
         <div class="flex items-center justify-between mt-8 pt-5 border-t border-black/40">
-          <${Button} variant="ghost" onClick=${back} disabled=${step === 1 || saving}><${Icon} name="chevronLeft" size=${16}/> Назад<//>
+          <${Button} variant="ghost" onClick=${back} disabled=${step === 1 || saving}><${Icon} name="chevronLeft" size=${16}/> ${t("common.back")}<//>
           ${step < 7
-            ? html`<${Button} onClick=${next} disabled=${!canAdvance || saving}>${saving ? "Сохраняем…" : "Продолжить"} <${Icon} name="chevronRight" size=${16}/><//>`
-            : html`<${Button} variant="primary" onClick=${publish} disabled=${saving}><${Icon} name="play" size=${16}/> ${saving ? "Публикуем…" : "Опубликовать эксперимент"}<//>`}
+            ? html`<${Button} onClick=${next} disabled=${!canAdvance || saving}>${saving ? t("common.saving") : t("common.continue")} <${Icon} name="chevronRight" size=${16}/><//>`
+            : html`<${Button} variant="primary" onClick=${publish} disabled=${saving}><${Icon} name="play" size=${16}/> ${saving ? t("builder.publishing") : t("builder.publishButton")}<//>`}
         </div>
       <//>
     </div>
@@ -238,24 +246,24 @@ export function ExperimentBuilder({ params }) {
 }
 
 // ---- Step 1: Information --------------------------------------------------
-function StepInfo({ draft, patch }) {
+function StepInfo({ draft, patch, t }) {
   return html`
     <div>
-      <${Field} label="Experiment name" required>
-        <${TextInput} value=${draft.name} placeholder="e.g. Sparkling Drink Packaging Study" onInput=${(e) => patch({ name: e.target.value })} />
+      <${Field} label=${t("builder.step1.nameLabel")} required>
+        <${TextInput} value=${draft.name} placeholder=${t("builder.step1.namePlaceholder")} onInput=${(e) => patch({ name: e.target.value })} />
       <//>
-      <${Field} label="Research objective" required hint="What decision will this experiment help you make?">
-        <${TextArea} value=${draft.objective} placeholder="e.g. Identify which packaging direction drives the strongest shelf preference." onInput=${(e) => patch({ objective: e.target.value })} />
+      <${Field} label=${t("builder.step1.objectiveLabel")} required hint=${t("builder.step1.objectiveHint")}>
+        <${TextArea} value=${draft.objective} placeholder=${t("builder.step1.objectivePlaceholder")} onInput=${(e) => patch({ objective: e.target.value })} />
       <//>
       <div class="grid sm:grid-cols-2 gap-x-4">
-        <${Field} label="Product category">
-          <${TextInput} value=${draft.category} placeholder="e.g. Beverages" onInput=${(e) => patch({ category: e.target.value })} />
+        <${Field} label=${t("builder.step1.categoryLabel")}>
+          <${TextInput} value=${draft.category} placeholder=${t("builder.step1.categoryPlaceholder")} onInput=${(e) => patch({ category: e.target.value })} />
         <//>
-        <${Field} label="Target audience">
-          <${TextInput} value=${draft.targetAudience} placeholder="e.g. Adults 18-45 who buy sparkling drinks monthly" onInput=${(e) => patch({ targetAudience: e.target.value })} />
+        <${Field} label=${t("builder.step1.audienceLabel")}>
+          <${TextInput} value=${draft.targetAudience} placeholder=${t("builder.step1.audiencePlaceholder")} onInput=${(e) => patch({ targetAudience: e.target.value })} />
         <//>
       </div>
-      <${Field} label="Description" hint="Optional context for your team.">
+      <${Field} label=${t("builder.step1.descriptionLabel")} hint=${t("builder.step1.descriptionHint")}>
         <${TextArea} value=${draft.description} onInput=${(e) => patch({ description: e.target.value })} />
       <//>
     </div>
@@ -263,12 +271,12 @@ function StepInfo({ draft, patch }) {
 }
 
 // ---- Step 2: Research type -------------------------------------------------
-function StepResearchType({ draft, patch }) {
+function StepResearchType({ draft, patch, t }) {
   return html`
     <div>
-      <p class="text-sm text-slate-400 mb-4">Choose the research type that best matches what you're testing. This tailors defaults for later steps.</p>
+      <p class="text-sm text-slate-400 mb-4">${t("builder.step2.intro")}</p>
       <div class="grid sm:grid-cols-2 gap-3">
-        ${researchTypes().map(
+        ${researchTypes(t).map(
           (rt) => html`
             <button key=${rt.id} onClick=${() => patch({ researchType: rt.id })}
               data-selected=${draft.researchType === rt.id}
@@ -284,8 +292,16 @@ function StepResearchType({ draft, patch }) {
 }
 
 // ---- Step 3: Stimuli / variants --------------------------------------------
-function StepStimuli({ draft, patch, orgId }) {
+function StepStimuli({ draft, patch, orgId, t }) {
   const [uploadingId, setUploadingId] = useState(null);
+  const ASSET_TYPES = [
+    { value: "image", label: t("builder.step3.assetTypes.image") },
+    { value: "video", label: t("builder.step3.assetTypes.video") },
+    { value: "design", label: t("builder.step3.assetTypes.design") },
+    { value: "ad", label: t("builder.step3.assetTypes.ad") },
+    { value: "logo", label: t("builder.step3.assetTypes.logo") },
+    { value: "screenshot", label: t("builder.step3.assetTypes.screenshot") },
+  ];
 
   function updateVariant(id, fields) {
     patch({ variants: draft.variants.map((v) => (v.id === id ? { ...v, ...fields } : v)) });
@@ -319,7 +335,7 @@ function StepStimuli({ draft, patch, orgId }) {
 
   return html`
     <div>
-      <p class="text-sm text-slate-400 mb-4">Загрузите или опишите до 4 вариантов, которые будут сравнивать участники.</p>
+      <p class="text-sm text-slate-400 mb-4">${t("builder.step3.intro")}</p>
       <div class="grid sm:grid-cols-2 gap-4">
         ${draft.variants.map(
           (v) => html`
@@ -331,15 +347,15 @@ function StepStimuli({ draft, patch, orgId }) {
 
               <label class="sk-display flex flex-col items-center justify-center rounded-lg h-28 mb-3 cursor-pointer overflow-hidden">
                 ${uploadingId === v.id
-                  ? html`<span class="text-xs text-slate-500">Загрузка…</span>`
+                  ? html`<span class="text-xs text-slate-500">${t("builder.step3.uploading")}</span>`
                   : v.assetUrl
                   ? html`<img src=${v.assetUrl} class="h-full w-full object-cover" />`
-                  : html`<${Icon} name="upload" size=${18} className="text-slate-500" /><span class="text-xs text-slate-500 mt-1">Загрузить изображение</span>`}
+                  : html`<${Icon} name="upload" size=${18} className="text-slate-500" /><span class="text-xs text-slate-500 mt-1">${t("builder.step3.uploadLabel")}</span>`}
                 <input type="file" accept="image/jpeg,image/png,image/webp,image/gif" class="hidden" disabled=${uploadingId === v.id} onChange=${(e) => onFile(v.id, e.target.files?.[0])} />
               </label>
 
-              <${TextInput} className="mb-2" placeholder="Variant name" value=${v.name} onInput=${(e) => updateVariant(v.id, { name: e.target.value })} />
-              <${TextInput} className="mb-2" placeholder="Short description" value=${v.description} onInput=${(e) => updateVariant(v.id, { description: e.target.value })} />
+              <${TextInput} className="mb-2" placeholder=${t("builder.step3.variantName")} value=${v.name} onInput=${(e) => updateVariant(v.id, { name: e.target.value })} />
+              <${TextInput} className="mb-2" placeholder=${t("builder.step3.variantDescription")} value=${v.description} onInput=${(e) => updateVariant(v.id, { description: e.target.value })} />
               <${Select} options=${ASSET_TYPES} value=${v.assetType} onChange=${(e) => updateVariant(v.id, { assetType: e.target.value })} />
             </div>
           `
@@ -347,7 +363,7 @@ function StepStimuli({ draft, patch, orgId }) {
       </div>
       ${draft.variants.length < 4 && html`
         <button onClick=${addVariant} class="mt-4 flex items-center gap-1.5 text-sm text-indigo-400 hover:text-indigo-300">
-          <${Icon} name="plus" size=${15} /> Add variant ${VARIANT_LABELS[draft.variants.length]}
+          <${Icon} name="plus" size=${15} /> ${t("builder.step3.addVariant", { label: VARIANT_LABELS[draft.variants.length] })}
         </button>
       `}
     </div>
@@ -355,7 +371,7 @@ function StepStimuli({ draft, patch, orgId }) {
 }
 
 // ---- Step 4: Questions ------------------------------------------------------
-function StepQuestions({ draft, patch }) {
+function StepQuestions({ draft, patch, t }) {
   function update(id, fields) {
     patch({ questions: draft.questions.map((q) => (q.id === id ? { ...q, ...fields } : q)) });
   }
@@ -378,15 +394,27 @@ function StepQuestions({ draft, patch }) {
     if (q) patch({ questions: [...draft.questions, q] });
   }
   const presentRoles = new Set(draft.questions.map((q) => q.role).filter(Boolean));
+  const ROLE_OPTIONS = [
+    { value: "", label: t("builder.step4.roleNone") },
+    { value: "selection", label: t("builder.step4.roleSelection") },
+    { value: "attention", label: t("builder.step4.roleAttention") },
+    { value: "trust", label: t("builder.step4.roleTrust") },
+    { value: "quality", label: t("builder.step4.roleQuality") },
+    { value: "premium", label: t("builder.step4.rolePremium") },
+    { value: "clarity", label: t("builder.step4.roleClarity") },
+    { value: "purchase_intention", label: t("builder.step4.rolePurchaseIntention") },
+    { value: "influence", label: t("builder.step4.roleInfluence") },
+    { value: "recall", label: t("builder.step4.roleRecall") },
+  ];
 
   return html`
     <div>
-      <p class="text-sm text-slate-400 mb-4">Add the questions participants will answer after seeing your variants.</p>
+      <p class="text-sm text-slate-400 mb-4">${t("builder.step4.intro")}</p>
 
       <div class="sk-panel-flat rounded-xl p-4 mb-5">
-        <p class="text-xs text-slate-500 mb-3">Or pick what you want to measure — the question is added automatically:</p>
+        <p class="text-xs text-slate-500 mb-3">${t("builder.dimensions.intro")}</p>
         <div class="flex flex-wrap gap-2">
-          ${measurementDimensions().map((d) => html`
+          ${measurementDimensions(t).map((d) => html`
             <button key=${d.id} type="button" onClick=${() => addDimension(d.id)} title=${d.blurb}
               class="sk-slot flex items-center gap-1.5 rounded-lg pl-2.5 pr-3 py-2 text-xs font-medium text-slate-200">
               <${Icon} name=${d.icon} size=${14} className=${presentRoles.has(d.role) ? "text-emerald-400" : "text-indigo-300"} />
@@ -403,46 +431,35 @@ function StepQuestions({ draft, patch }) {
             <div key=${q.id} class="sk-panel-flat rounded-xl p-4">
               <div class="flex items-center gap-2 mb-3">
                 <span class="text-xs font-mono text-slate-500 w-5">${i + 1}.</span>
-                <div class="flex-1"><${TextInput} placeholder="Question prompt" value=${q.prompt} onInput=${(e) => update(q.id, { prompt: e.target.value })} /></div>
+                <div class="flex-1"><${TextInput} placeholder=${t("builder.step4.promptPlaceholder")} value=${q.prompt} onInput=${(e) => update(q.id, { prompt: e.target.value })} /></div>
                 <button onClick=${() => move(q.id, -1)} class="p-1.5 text-slate-500 hover:text-slate-200 disabled:opacity-30" disabled=${i === 0}><${Icon} name="chevronLeft" size=${14} className="rotate-90" /></button>
                 <button onClick=${() => move(q.id, 1)} class="p-1.5 text-slate-500 hover:text-slate-200 disabled:opacity-30" disabled=${i === draft.questions.length - 1}><${Icon} name="chevronRight" size=${14} className="rotate-90" /></button>
                 <button onClick=${() => remove(q.id)} class="p-1.5 text-slate-500 hover:text-rose-400"><${Icon} name="trash" size=${14} /></button>
               </div>
               <div class="grid sm:grid-cols-3 gap-3 pl-7">
-                <${Select} options=${questionTypes().map((qt) => ({ value: qt.id, label: qt.label }))} value=${q.type}
+                <${Select} options=${questionTypes(t).map((qt) => ({ value: qt.id, label: qt.label }))} value=${q.type}
                   onChange=${(e) => update(q.id, emptyQuestionPatch(q, e.target.value))} />
-                <${Select} options=${[{ value: "variants", label: "Applies to variants" }, { value: "general", label: "Fixed options / general" }]}
+                <${Select} options=${[{ value: "variants", label: t("builder.step4.appliesToVariants") }, { value: "general", label: t("builder.step4.appliesToGeneral") }]}
                   value=${q.appliesTo} onChange=${(e) => update(q.id, { appliesTo: e.target.value })} disabled=${!typeSupportsVariants(q.type)} />
-                <${Select} options=${[
-                    { value: "", label: "No special role" },
-                    { value: "selection", label: "Primary selection question" },
-                    { value: "attention", label: "Attention" },
-                    { value: "trust", label: "Trust" },
-                    { value: "quality", label: "Perceived quality" },
-                    { value: "premium", label: "Premium perception" },
-                    { value: "clarity", label: "Clarity" },
-                    { value: "purchase_intention", label: "Purchase intention" },
-                    { value: "influence", label: "Influence factor" },
-                    { value: "recall", label: "Recall" },
-                  ]}
+                <${Select} options=${ROLE_OPTIONS}
                   value=${q.role ?? ""} onChange=${(e) => update(q.id, { role: e.target.value || null })} />
               </div>
               ${(q.type === "single_choice" || q.type === "multiple_choice") && q.appliesTo === "general" && html`
                 <div class="pl-7 mt-3">
-                  <${Field} label="Options (comma-separated)">
+                  <${Field} label=${t("builder.step4.optionsLabel")}>
                     <${TextInput} value=${(q.options ?? []).join(", ")} onInput=${(e) => update(q.id, { options: e.target.value.split(",").map((s) => s.trim()).filter(Boolean) })} />
                   <//>
                 </div>
               `}
               ${q.type === "rating" && html`
                 <div class="pl-7 mt-3 flex items-center gap-2 text-sm text-slate-400">
-                  Scale: 1 to
+                  ${t("builder.step4.scalePrefix")}
                   <${Select} options=${["5", "7", "10"]} value=${String(q.scale?.max ?? 5)} onChange=${(e) => update(q.id, { scale: { min: 1, max: Number(e.target.value) } })} />
                 </div>
               `}
               ${q.type === "price_perception" && html`
                 <div class="pl-7 mt-3">
-                  <${Field} label="Price bands (optional, comma-separated — leave blank for open numeric entry)">
+                  <${Field} label=${t("builder.step4.priceOptionsLabel")}>
                     <${TextInput} value=${(q.options ?? []).join(", ")} onInput=${(e) => update(q.id, { options: e.target.value.trim() ? e.target.value.split(",").map((s) => s.trim()) : null })} />
                   <//>
                 </div>
@@ -452,7 +469,7 @@ function StepQuestions({ draft, patch }) {
         )}
       </div>
       <button onClick=${add} class="mt-4 flex items-center gap-1.5 text-sm text-indigo-400 hover:text-indigo-300">
-        <${Icon} name="plus" size=${15} /> Add question
+        <${Icon} name="plus" size=${15} /> ${t("builder.step4.addQuestion")}
       </button>
     </div>
   `;
@@ -463,7 +480,7 @@ function emptyQuestionPatch(q, newType) {
 }
 
 // ---- Step 5: Participant settings ------------------------------------------
-function StepParticipants({ draft, patch }) {
+function StepParticipants({ draft, patch, t }) {
   const ps = draft.participantSettings;
   function updatePs(fields) { patch({ participantSettings: { ...ps, ...fields } }); }
   function toggleDemo(key) {
@@ -473,19 +490,19 @@ function StepParticipants({ draft, patch }) {
   return html`
     <div>
       <div class="grid sm:grid-cols-2 gap-x-4">
-        <${Field} label="Target participant count" required>
+        <${Field} label=${t("builder.step5.targetCountLabel")} required>
           <${TextInput} type="number" min="1" value=${ps.targetCount} onInput=${(e) => updatePs({ targetCount: Number(e.target.value) || 0 })} />
         <//>
-        <${Field} label="Age range">
+        <${Field} label=${t("builder.step5.ageRangeLabel")}>
           <div class="flex items-center gap-2">
             <${Select} options=${AGE_RANGES} value=${ps.ageRange[0]} onChange=${(e) => updatePs({ ageRange: [e.target.value, ps.ageRange[1]] })} />
-            <span class="text-slate-500">to</span>
+            <span class="text-slate-500">${t("builder.step5.ageRangeTo")}</span>
             <${Select} options=${AGE_RANGES} value=${ps.ageRange[1]} onChange=${(e) => updatePs({ ageRange: [ps.ageRange[0], e.target.value] })} />
           </div>
         <//>
       </div>
 
-      <${Field} label="Countries" hint="Leave empty to allow all countries.">
+      <${Field} label=${t("builder.step5.countriesLabel")} hint=${t("builder.step5.countriesHint")}>
         <div class="flex flex-wrap gap-x-4 gap-y-1">
           ${COUNTRIES.map(
             (c) => html`<${Checkbox} key=${c} label=${c} checked=${ps.countries.includes(c)}
@@ -494,7 +511,7 @@ function StepParticipants({ draft, patch }) {
         </div>
       <//>
 
-      <${Field} label="Languages" hint="Leave empty to allow all languages.">
+      <${Field} label=${t("builder.step5.languagesLabel")} hint=${t("builder.step5.languagesHint")}>
         <div class="flex flex-wrap gap-x-4 gap-y-1">
           ${LANGUAGES.map(
             (l) => html`<${Checkbox} key=${l} label=${l} checked=${ps.languages.includes(l)}
@@ -503,11 +520,11 @@ function StepParticipants({ draft, patch }) {
         </div>
       <//>
 
-      <${Field} label="Optional demographic questions" hint="Keep this minimal — only ask what you need.">
+      <${Field} label=${t("builder.step5.demographicLabel")} hint=${t("builder.step5.demographicHint")}>
         <div class="flex flex-wrap gap-x-5">
-          <${Checkbox} label="Age range" checked=${ps.demographicQuestions.includes("ageRange")} onChange=${() => toggleDemo("ageRange")} />
-          <${Checkbox} label="Country" checked=${ps.demographicQuestions.includes("country")} onChange=${() => toggleDemo("country")} />
-          <${Checkbox} label="Language" checked=${ps.demographicQuestions.includes("language")} onChange=${() => toggleDemo("language")} />
+          <${Checkbox} label=${t("builder.step5.demoAge")} checked=${ps.demographicQuestions.includes("ageRange")} onChange=${() => toggleDemo("ageRange")} />
+          <${Checkbox} label=${t("builder.step5.demoCountry")} checked=${ps.demographicQuestions.includes("country")} onChange=${() => toggleDemo("country")} />
+          <${Checkbox} label=${t("builder.step5.demoLanguage")} checked=${ps.demographicQuestions.includes("language")} onChange=${() => toggleDemo("language")} />
         </div>
       <//>
     </div>
@@ -515,23 +532,23 @@ function StepParticipants({ draft, patch }) {
 }
 
 // ---- Step 6: Experiment settings -------------------------------------------
-function StepSettings({ draft, patch }) {
+function StepSettings({ draft, patch, t }) {
   const s = draft.settings;
   function update(fields) { patch({ settings: { ...s, ...fields } }); }
   return html`
     <div class="divide-y divide-slate-800">
-      <${Switch} label="Randomize variant order" checked=${s.randomizeVariantOrder} onChange=${(v) => update({ randomizeVariantOrder: v })} />
-      <${Switch} label="Randomize question order" checked=${s.randomizeQuestionOrder} onChange=${(v) => update({ randomizeQuestionOrder: v })} />
-      <${Switch} label="Anonymous participation" checked=${s.anonymous} onChange=${(v) => update({ anonymous: v })} />
-      <${Switch} label="Require consent before starting" checked=${s.requireConsent} onChange=${(v) => update({ requireConsent: v })} />
-      <${Switch} label="Prevent duplicate submissions" checked=${s.preventDuplicates} onChange=${(v) => update({ preventDuplicates: v })} />
+      <${Switch} label=${t("builder.step6.randomizeVariants")} checked=${s.randomizeVariantOrder} onChange=${(v) => update({ randomizeVariantOrder: v })} />
+      <${Switch} label=${t("builder.step6.randomizeQuestions")} checked=${s.randomizeQuestionOrder} onChange=${(v) => update({ randomizeQuestionOrder: v })} />
+      <${Switch} label=${t("builder.step6.anonymous")} checked=${s.anonymous} onChange=${(v) => update({ anonymous: v })} />
+      <${Switch} label=${t("builder.step6.requireConsent")} checked=${s.requireConsent} onChange=${(v) => update({ requireConsent: v })} />
+      <${Switch} label=${t("builder.step6.preventDuplicates")} checked=${s.preventDuplicates} onChange=${(v) => update({ preventDuplicates: v })} />
       <div class="py-3">
-        <${Checkbox} label="Set a time limit per task" checked=${s.timeLimitSeconds != null}
+        <${Checkbox} label=${t("builder.step6.timeLimitLabel")} checked=${s.timeLimitSeconds != null}
           onChange=${(e) => update({ timeLimitSeconds: e.target.checked ? 60 : null })} />
         ${s.timeLimitSeconds != null && html`
           <div class="mt-2 pl-6 flex items-center gap-2 text-sm text-slate-400">
             <${TextInput} type="number" min="5" className="w-24" value=${s.timeLimitSeconds} onInput=${(e) => update({ timeLimitSeconds: Number(e.target.value) || 60 })} />
-            seconds per task
+            ${t("builder.step6.timeLimitSuffix")}
           </div>
         `}
       </div>
@@ -540,34 +557,39 @@ function StepSettings({ draft, patch }) {
 }
 
 // ---- Step 7: Preview --------------------------------------------------------
-function StepPreview({ draft, onPublish }) {
+function StepPreview({ draft, onPublish, t }) {
   const [showRunner, setShowRunner] = useState(false);
+  const randomizedParts = [
+    draft.settings.randomizeVariantOrder ? t("builder.step7.randomizedVariants") : "",
+    draft.settings.randomizeQuestionOrder ? t("builder.step7.randomizedQuestions") : "",
+  ].filter(Boolean);
+  const randomizedOrderText = randomizedParts.length ? randomizedParts.join(" + ") : t("builder.step7.randomizedOff");
   return html`
     <div>
       <div class="grid sm:grid-cols-2 gap-5">
         <div>
-          <h3 class="font-semibold text-slate-100">${draft.name || "Untitled experiment"}</h3>
+          <h3 class="font-semibold text-slate-100">${draft.name || t("builder.step7.untitled")}</h3>
           <p class="text-sm text-slate-400 mt-1">${draft.objective}</p>
           <dl class="mt-4 space-y-2 text-sm">
-            <div class="flex justify-between"><dt class="text-slate-500">Research type</dt><dd class="text-slate-200">${draft.researchType || "—"}</dd></div>
-            <div class="flex justify-between"><dt class="text-slate-500">Variants</dt><dd class="text-slate-200">${draft.variants.length}</dd></div>
-            <div class="flex justify-between"><dt class="text-slate-500">Questions</dt><dd class="text-slate-200">${draft.questions.length}</dd></div>
-            <div class="flex justify-between"><dt class="text-slate-500">Target participants</dt><dd class="text-slate-200">${draft.participantSettings.targetCount}</dd></div>
-            <div class="flex justify-between"><dt class="text-slate-500">Randomized order</dt><dd class="text-slate-200">${draft.settings.randomizeVariantOrder ? "Variants" : ""}${draft.settings.randomizeVariantOrder && draft.settings.randomizeQuestionOrder ? " + " : ""}${draft.settings.randomizeQuestionOrder ? "Questions" : ""}${!draft.settings.randomizeVariantOrder && !draft.settings.randomizeQuestionOrder ? "Off" : ""}</dd></div>
+            <div class="flex justify-between"><dt class="text-slate-500">${t("builder.step7.researchType")}</dt><dd class="text-slate-200">${draft.researchType || "—"}</dd></div>
+            <div class="flex justify-between"><dt class="text-slate-500">${t("builder.step7.variants")}</dt><dd class="text-slate-200">${draft.variants.length}</dd></div>
+            <div class="flex justify-between"><dt class="text-slate-500">${t("builder.step7.questions")}</dt><dd class="text-slate-200">${draft.questions.length}</dd></div>
+            <div class="flex justify-between"><dt class="text-slate-500">${t("builder.step7.targetParticipants")}</dt><dd class="text-slate-200">${draft.participantSettings.targetCount}</dd></div>
+            <div class="flex justify-between"><dt class="text-slate-500">${t("builder.step7.randomizedOrder")}</dt><dd class="text-slate-200">${randomizedOrderText}</dd></div>
           </dl>
         </div>
         <div class="sk-panel-flat rounded-xl p-4">
-          <div class="text-sm font-medium text-slate-200 mb-2">Before you publish</div>
+          <div class="text-sm font-medium text-slate-200 mb-2">${t("builder.step7.beforePublish")}</div>
           <ul class="text-sm text-slate-500 space-y-1.5">
-            <li class="flex gap-2"><${Icon} name=${draft.name && draft.objective ? "check" : "close"} size=${14} className=${draft.name && draft.objective ? "text-emerald-400 mt-0.5" : "text-rose-400 mt-0.5"} /> Experiment info complete</li>
-            <li class="flex gap-2"><${Icon} name=${draft.variants.filter((v) => v.name).length >= 2 ? "check" : "close"} size=${14} className=${draft.variants.filter((v) => v.name).length >= 2 ? "text-emerald-400 mt-0.5" : "text-rose-400 mt-0.5"} /> At least 2 named variants</li>
-            <li class="flex gap-2"><${Icon} name=${draft.questions.length >= 1 ? "check" : "close"} size=${14} className=${draft.questions.length >= 1 ? "text-emerald-400 mt-0.5" : "text-rose-400 mt-0.5"} /> At least 1 question</li>
+            <li class="flex gap-2"><${Icon} name=${draft.name && draft.objective ? "check" : "close"} size=${14} className=${draft.name && draft.objective ? "text-emerald-400 mt-0.5" : "text-rose-400 mt-0.5"} /> ${t("builder.step7.checkInfo")}</li>
+            <li class="flex gap-2"><${Icon} name=${draft.variants.filter((v) => v.name).length >= 2 ? "check" : "close"} size=${14} className=${draft.variants.filter((v) => v.name).length >= 2 ? "text-emerald-400 mt-0.5" : "text-rose-400 mt-0.5"} /> ${t("builder.step7.checkVariants")}</li>
+            <li class="flex gap-2"><${Icon} name=${draft.questions.length >= 1 ? "check" : "close"} size=${14} className=${draft.questions.length >= 1 ? "text-emerald-400 mt-0.5" : "text-rose-400 mt-0.5"} /> ${t("builder.step7.checkQuestions")}</li>
           </ul>
         </div>
       </div>
 
       <div class="mt-5">
-        <${Button} variant="secondary" onClick=${() => setShowRunner(true)}><${Icon} name="play" size=${15}/> Preview exact participant experience<//>
+        <${Button} variant="secondary" onClick=${() => setShowRunner(true)}><${Icon} name="play" size=${15}/> ${t("builder.step7.previewButton")}<//>
       </div>
     </div>
 

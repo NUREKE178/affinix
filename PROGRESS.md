@@ -2095,3 +2095,69 @@ Until both are done, the "Generate AI summary" button will correctly and
 honestly report "not configured" rather than silently doing nothing or
 faking a result -- exactly the behavior the original scaffold was built
 around from the start.
+
+### ExperimentBuilder: wired to i18n + fixed a real step-skip validation gap ✅
+
+Two bugs reported from the live wizard ("Создать эксперимент"): (1) some
+of the page was in English regardless of which language was selected --
+the Information step's field labels/placeholders were hardcoded English
+while the nav buttons were hardcoded Russian; (2) you could leave the
+Information step empty and still move on to the next step.
+
+Root cause of (1): `ExperimentBuilder.js` (the 7-step experiment-creation
+wizard, 580+ lines) had **zero i18n wiring** -- no `useT()` import, no
+`t()` calls anywhere -- apparently missed entirely during the earlier
+i18n pass. The step-2 research-type cards happened to render correctly
+anyway, purely as a side effect of `questionTypes.js`'s `researchTypes(t)`
+falling back to the app's current locale when called with no `t` (a
+fallback meant to keep *unmigrated* call sites safe, not a substitute for
+real wiring) -- which is exactly why only part of the page looked wrong
+and the rest looked fine, instead of the whole page being obviously
+broken.
+
+Root cause of (2): the step tabs (1-7 across the top) call `goTo(n)`
+directly on click. Only the *Continue* button's `disabled` state ever
+checked whether the current step's required fields were filled in --
+clicking a step tab skipped that check entirely and jumped straight
+there, empty fields and all.
+
+Fixed both in one pass, deliberately *reusing* rather than duplicating
+existing translation content: a `builder.*` locale namespace already
+existed with near-complete, well-translated RU/KK/EN copy for this exact
+page (titles, all 7 steps, dimension labels) -- drafted in the earlier
+i18n phase but, consistent with the wiring gap above, never actually
+referenced by the component (`grep` for `builder\.` outside `locales/`
+returned nothing). Rewired the whole file to call `t("builder...")` /
+`t("common...")` throughout instead of inventing a parallel namespace,
+and added only the 12 keys that were genuinely missing (an incomplete-
+step toast, not-found/load-error copy matching the existing pattern from
+`Results.js`, a publish-success toast, and 5 missing question "role"
+labels -- attention/trust/quality/clarity/purchase-intention, alongside
+the 5 that already existed) to all three locale files.
+
+- **`src/pages/ExperimentBuilder.js`**: added `useT()`; every step
+  component now takes `t` as a prop and uses it for every label,
+  placeholder, hint and button. New `stepIsValid(n, draft)` -- a single
+  pure function (name+objective filled / research type picked / >=2
+  named variants / >=1 question) used by *both* the Continue button's
+  `disabled` state and the new `goTo(n)` guard: jumping forward now
+  re-validates every step being skipped over and blocks with a toast if
+  any of them is incomplete; jumping backward or to the current step is
+  still always free (nothing to validate going back).
+- **`src/lib/locales/{ru,kk,en}.js`**: added the 12 missing `builder.*`
+  keys (699 keys/locale, parity confirmed).
+
+**Verified**: 34 Playwright checks. Across all three locales: zero raw
+`key.path`-style leakage anywhere on the page, the title/step-tabs/field
+labels/nav buttons all render in the selected language, and clicking
+Continue drives a full real save round trip (create experiment, write
+variants, re-fetch, re-render step 2) with zero console errors in any
+language -- not just a static render check. Separately, the exact
+reported skip: clicking step tabs 3/4/5/7 directly while an earlier
+required step is still incomplete is blocked every time (step stays put,
+toast explains why); filling in each gated step (1, 2, 3, 4) and then
+jumping forward past all of them in one click succeeds once they're
+actually valid; jumping backward to step 1 after reaching step 7 remains
+unrestricted and the previously-typed values are still there. Full
+regression suite re-run clean (35 scripts, including this round's new
+one).
