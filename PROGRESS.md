@@ -2503,3 +2503,46 @@ routes failed the same way with none of this round's code present,
 which rules out this feature as the cause outright rather than just
 re-confirming the flake in isolation. Stash restored immediately after
 with nothing lost.
+
+### Fixed: comment "Send" button pushed off-screen on mobile ✅
+
+User-reported, with a screenshot from a real phone (KZ locale, the
+comment thread open under a post) -- the "Жіберу" button was shoved
+almost entirely past the right edge of the viewport, only a sliver of
+its label still visible.
+
+Root cause: the comment composer added in the previous round
+(`CommentThread` in `pages/Feed.js`) lays the `<input>` and the submit
+`Button` out side by side in one flex row (`<form class="flex
+items-center gap-2.5">`). The input had `flex-1` but not `min-w-0`.
+Flexbox's default `min-width: auto` means a flex item won't shrink
+below its own content's intrinsic minimum size *regardless* of
+`flex-1`/`flex-shrink` -- for a bare `<input>` that intrinsic minimum
+is wide enough on its own to not leave room for a sibling button in a
+narrow card, so the row overflowed its container instead of the input
+actually shrinking to make space. This is a different-looking instance
+of the same family of bug already documented in this file for a CSS
+Grid `auto` track: the fix is never on an ancestor's `max-width`, it's
+an explicit `min-width` (here, `min-w-0`) on the element that's
+actually refusing to shrink. The top-level Composer never hit this
+because its layout is stacked (textarea on its own row, the publish
+button below in a separate row) -- CommentThread is the first place
+this codebase puts a text input and a button in the *same* flex row.
+
+Fix: `min-w-0` added to the comment `<input>` so it can actually give
+up space; `shrink-0` added to the submit `Button` so it always renders
+at its natural size once the input does. Two-line diff, same lever
+already proven in this file, just applied to the new component that
+needed it.
+
+**Verified**: new `test_comment_input_overflow.mjs` opens a comment
+thread (KZ locale, matching the report) at 360/390/412px -- the three
+viewport widths spanning small-to-large Android phones -- and measures
+the submit button's actual bounding box at each: fully inside the
+viewport (not clipped past the right edge) and still a real, readable
+width (not squashed to a sliver), at all three. Screenshot at 390px
+reviewed directly against the original report -- the button now sits
+fully inside the card with room to spare. Full regression suite
+re-run clean (41 scripts, including the two new feed tests from this
+session plus this one), modulo the same documented
+`test_loading_upgrade.mjs` sandbox-timing flake.
