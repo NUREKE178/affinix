@@ -183,7 +183,7 @@ function ActionButton({ icon, filled = false, label, count, active = false, tone
   `;
 }
 
-function CommentThread({ post, t, currentUserId, canModerate, onCountChange }) {
+function CommentThread({ post, t, currentUserId, canModerate, onCountChange, onAuthorClick }) {
   const [comments, setComments] = useState([]);
   const [loading, setLoading] = useState(true);
   const [draft, setDraft] = useState("");
@@ -247,13 +247,22 @@ function CommentThread({ post, t, currentUserId, canModerate, onCountChange }) {
     <div class="mt-3 pt-3 border-t border-black/30 space-y-3">
       ${loading && html`<div class="text-xs text-slate-500">${t("common.loading")}</div>`}
       ${!loading && comments.length === 0 && html`<div class="text-xs text-slate-500">${t("feed.noComments")}</div>`}
-      ${!loading && comments.map((c) => html`
-        <div key=${c.id} class="flex gap-2.5">
-          <${Avatar} name=${c.authorName} url=${c.authorAvatarUrl} size=${26} />
+      ${!loading && comments.map((c) => {
+        const hasProfile = !!c.authorName;
+        const openAuthor = () => hasProfile && onAuthorClick(c);
+        return html`
+        <div key=${c.id} class="flex gap-2.5 items-start">
+          <button type="button" onClick=${openAuthor} disabled=${!hasProfile}
+            class=${`shrink-0 rounded-full ${hasProfile ? "cursor-pointer hover:opacity-80 transition-opacity" : "cursor-default"}`}>
+            <${Avatar} name=${c.authorName} url=${c.authorAvatarUrl} size=${26} />
+          <//>
           <div class="flex-1 min-w-0">
             <div class="sk-display rounded-lg px-3 py-2">
               <div class="flex items-center justify-between gap-2">
-                <span class="text-xs font-medium text-slate-200">${c.authorName ?? t("feed.unknownAuthor")}</span>
+                <button type="button" onClick=${openAuthor} disabled=${!hasProfile}
+                  class=${`text-xs font-medium text-slate-200 ${hasProfile ? "hover:underline cursor-pointer" : "cursor-default"}`}>
+                  ${c.authorName ?? t("feed.unknownAuthor")}
+                <//>
                 ${(c.authorId === currentUserId || canModerate) && html`
                   <button type="button" onClick=${() => onDelete(c.id)} aria-label=${t("feed.deleteComment")}
                     class="shrink-0 text-slate-600 hover:text-rose-400 transition-colors">
@@ -266,7 +275,8 @@ function CommentThread({ post, t, currentUserId, canModerate, onCountChange }) {
             <div class="text-[11px] text-slate-500 mt-1">${relativeDate(c.createdAt)}</div>
           </div>
         </div>
-      `)}
+      `;
+      })}
 
       <form onSubmit=${submit} class="flex items-center gap-2.5 pt-1">
         <input value=${draft} onInput=${(e) => setDraft(e.target.value.slice(0, 1000))}
@@ -319,7 +329,7 @@ function PostCard({ post, t, onHashtagClick, canDelete, canModerate, currentUser
 
   return html`
     <div class="sk-panel-flat rounded-xl p-4">
-      <div class="flex gap-3">
+      <div class="flex gap-3 items-start">
         <button type="button" onClick=${openAuthor} disabled=${!hasProfile}
           class=${`shrink-0 rounded-full ${hasProfile ? "cursor-pointer hover:opacity-80 transition-opacity" : "cursor-default"}`}>
           <${Avatar} name=${post.authorName} url=${post.authorAvatarUrl} size=${32} />
@@ -355,7 +365,7 @@ function PostCard({ post, t, onHashtagClick, canDelete, canModerate, currentUser
               label=${t("feed.save")} disabled=${saveBusy} onClick=${onToggleSave} className="ml-auto" />
           </div>
 
-          ${commentsOpen && html`<${CommentThread} post=${post} t=${t} currentUserId=${currentUserId} canModerate=${canModerate} onCountChange=${setLiveCommentCount} />`}
+          ${commentsOpen && html`<${CommentThread} post=${post} t=${t} currentUserId=${currentUserId} canModerate=${canModerate} onCountChange=${setLiveCommentCount} onAuthorClick=${onAuthorClick} />`}
         </div>
       </div>
 

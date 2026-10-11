@@ -2751,3 +2751,84 @@ role" badge; and -- so the fix isn't just coincidentally hiding
 separately, still correctly reads "owner". Full regression suite
 re-run clean (44 scripts), modulo the one documented
 `test_loading_upgrade.mjs` flake.
+
+### Clickable comment authors, a real avatar-centering bug, and closing a real owner-escalation gap ✅
+
+Three requests, the last one landing right after the previous round's
+role-scoping fix: lock "owner" to one specific account; let a comment's
+avatar/name open that person's profile, same as a post's already does;
+and a screenshot showing a post's avatar sitting at the vertical middle
+of the whole card instead of beside the author's name.
+
+**Avatar centering was a real CSS bug, confirmed both ways.** `PostCard`'s
+outer row was `<div class="flex gap-3">` -- no `items-start`, unlike
+`Composer`'s own identical avatar+content row, which already has it. A
+flex item's default cross-axis alignment is `stretch`; the avatar's
+wrapping `<button>` stretched to the row's full height (which can be
+substantial -- image, action row, an open comment thread), and the
+button's own centered content then put the avatar at the middle of
+*that*, not its top. Confirmed empirically, not just reasoned about:
+temporarily removed `items-start` and re-measured -- the avatar's
+vertical center landed exactly on the card's vertical center
+(`avatarMidY === cardMidY`, both 447.6px in the test fixture), i.e.
+pixel-identical to the reported bug; restored it and the two diverged by
+250px, avatar back at the top next to the name. One class, `items-start`,
+fixes it.
+
+**Comment authors are now clickable**, reusing the exact popover a post's
+own author already opens (`Feed()`'s `viewingAuthor` state) -- no new UI
+surface. `postInteractions.js`'s `mapComment()` now carries
+`authorRoleTitle`/`authorBio` through (the data was already fetched by
+`fetchAuthorsById`, just not passed along before), so a comment author's
+popover shows the same role/bio a post author's does. Both the avatar and
+the name in `CommentThread` are now buttons wired to the same
+`onAuthorClick` prop `PostCard` already receives from `Feed()`.
+
+**The owner-lock scope**: per discussion, scoped per-organization (each
+org's own creator is and stays its owner; someone creating their own,
+separate org still becomes its owner the normal way) rather than a single
+platform-wide identity. Investigating *how* to enforce "no one else can
+become owner" found a real, currently-live gap, not a hypothetical one:
+`"members: owner/admin can change roles"` (0002_rls.sql) is an UPDATE
+policy with a `using` clause but no `with check` -- in Postgres RLS that
+means it gates which rows can be targeted, but places no constraint
+whatsoever on the new values. Any admin could already
+`update organization_members set role = 'owner' ...` on themselves or
+anyone else, server-side, with nothing stopping it -- Team.js's UI
+already hides this (its role dropdowns exclude "owner" everywhere, and an
+owner's row isn't shown as editable at all), but the client was never the
+real boundary here, and a direct API call bypassing the UI was not
+blocked. `add_member_by_email()` (0006_team.sql) had the same shape of
+gap -- `member_role` was inserted straight from the caller's own
+parameter, unvalidated.
+
+New migration `0016_single_owner_per_org.sql`: the update policy now
+reads `using (... and role <> 'owner') with check (role <> 'owner')` --
+an owner's own row can never be the target of this policy, and no update
+under it can ever set a new role of 'owner' either, both directions
+closed. `add_member_by_email()` now rejects `member_role = 'owner'`
+outright. The one path deliberately left untouched is "members: creator
+can seat themselves as owner" (already correctly scoped: only the org's
+real creator, only themselves, only once, at creation) -- that's the
+*only* way "owner" can ever be assigned now, for any org, which is what
+makes this a per-org rule rather than a single hardcoded identity. The
+migration also reconciles existing data to that invariant before
+enforcing it going forward: demotes any row that holds 'owner' in an org
+it didn't create (a safety net -- the only insert path for 'owner' was
+already creator-only, so this should be a no-op) and ensures every org's
+actual creator currently holds 'owner'.
+
+**Verified**: the avatar fix with a before/after pixel measurement (see
+above) via `test_avatar_align_comment_profile.mjs`, which also confirms
+clicking a comment's avatar *and* its name both open the popover with the
+right name and role title. The owner-lock migration is pure SQL with no
+client-side change (Team.js's UI already excluded "owner" correctly) --
+verified by careful re-reading of the policy logic and the exact
+Postgres RLS semantics it depends on (`using` vs. `with check`), not by a
+Playwright test; this sandbox has no live Postgres/RLS to actually fire a
+rejected update against, the same limitation as every other RLS change
+this session. One pre-existing test's selector went stale from the
+comment-author markup change (`span` → `button`, now that it's
+clickable) -- updated to match, not reverted. Full regression suite
+re-run clean (45 scripts), modulo the one documented
+`test_loading_upgrade.mjs` flake.

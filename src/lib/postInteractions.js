@@ -42,6 +42,12 @@ function mapComment(row, author) {
     authorId: row.author_id,
     authorName: author?.full_name ?? null,
     authorAvatarUrl: author?.avatar_url ?? null,
+    // role_title/bio are already part of fetchAuthorsById's own select
+    // (postsStore.js) -- carried through here too so a comment's author can
+    // be opened in the same viewingAuthor popover a post's author already
+    // uses, with no separate fetch.
+    authorRoleTitle: author?.role_title ?? null,
+    authorBio: author?.bio ?? null,
     body: row.body,
     createdAt: row.created_at,
   };
