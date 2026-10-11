@@ -2546,3 +2546,102 @@ fully inside the card with room to spare. Full regression suite
 re-run clean (41 scripts, including the two new feed tests from this
 session plus this one), modulo the same documented
 `test_loading_upgrade.mjs` sandbox-timing flake.
+
+### Notifications go live: realtime delivery, a sound, and OS push permission ✅
+
+Three concrete asks: a comment notification shouldn't need a manual
+page refresh to show up; it should have a sound; the site should ask
+for OS-notification permission.
+
+- **`supabase/migrations/0015_notifications_realtime.sql`**: `alter
+  publication supabase_realtime add table notifications;` -- opts the
+  table into Supabase's realtime publication (equivalent to the
+  Database -> Replication toggle in the dashboard). No RLS change
+  needed: `postgres_changes` events are filtered through the same
+  `notifications_select_own` policy (0014) the table already has, so a
+  subscriber can only ever receive rows addressed to them.
+- **`lib/notificationsStore.js`**: `subscribeToLiveNotifications(userId)`
+  opens one `postgres_changes` channel (`event: "INSERT"`, filtered to
+  `recipient_id=eq.<viewer>`) for the lifetime of the tab, guarded by a
+  module-level singleton so re-mounting the bell never opens a second
+  socket. On a live INSERT, reloads the resolved notifications list
+  (same reload-on-change shape every mutation in this store already
+  uses) rather than hand-assembling the new row's author/comment text
+  from the bare realtime payload, then fires a synthesized two-tone
+  chime (Web Audio, no external audio asset -- same hand-built posture
+  as the icon set) and, if permission was granted, an OS-level
+  `Notification` popup reusing the exact same `shell.notifications.commentOn`
+  copy as the in-app dropdown. `requestNotificationPermission()` asks
+  once per browser profile (guarded on `Notification.permission ===
+  "default"`, which is only ever true before the visitor has answered
+  at all) -- never re-prompts once decided either way.
+- **A real race condition found before it shipped, not just in a
+  demo**: the first working version called `getCurrentUser()`
+  synchronously inside `useNotifications()`'s mount effect to get the
+  id to subscribe with. `auth.js`'s own session hydration is async (a
+  localStorage read) and, on a cold page load, routinely hasn't
+  resolved by the time that effect first fires -- so the subscription
+  silently never happened on a fresh visit, only on a client-side
+  navigation where a previous page had already warmed the session.
+  Caught by a test assertion that should have been trivially true
+  (`requestPermission` called once on mount) intermittently reading as
+  "never called" -- traced to `getCurrentUser()` returning `null` at
+  that exact moment. Fixed the same way `profile.js`'s
+  `useMyProfile()` already solves this identical race: drive the
+  subscribe off `useSession()`'s *reactive* `user`, in a
+  `useEffect(..., [userId])` that re-fires once the id actually
+  resolves, instead of a one-shot synchronous read at first mount.
+- **`favicon.svg`** (new file) + `index.html`: the browser-tab icon was
+  an inline `data:image/svg+xml` URI with nowhere else to point to --
+  extracted to a real file so the OS notification popup's `icon` option
+  can reference the same mark instead of either duplicating a long data
+  URI in JS or shipping the popup with no icon at all.
+
+**A second real bug, this one in the test suite itself, not the app**:
+the realtime subscribe now fires on every authenticated page, and this
+sandbox's egress proxy rejects the real websocket host -- Chromium logs
+that failed handshake as a console error regardless of how gracefully
+`supabase-js` handles it internally, which started tripping the "zero
+console errors" check nearly every existing authenticated-route test
+already had. Confirmed the actual subscribe attempt was firing
+correctly first (a throwaway diagnostic with a patched `window.WebSocket`
+constructor showed the real, correctly-targeted connection attempt,
+twice -- supabase-js's own reconnect), which narrowed this to a test-
+environment gap, not an app bug. Fixed at the test-infrastructure level
+with `page.routeWebSocket("**/realtime/v1/**", () => {})` (mock-intercepts
+the socket -- it opens and stays silent, no real network attempt, no
+console error) added to every `newPage()`/mock-setup block across all
+42 scripts in the regression suite, including ones with more than one
+page per file (missed on the first mechanical pass, caught by three
+files still failing after it; one of those also had a second,
+unrelated bug this surfaced -- a block that called `page.routeWebSocket`
+on an already-`browser.close()`'d `page` instead of that block's own
+`page2`, fixed to reference the right variable). `page.on("websocket")`
+does not fire for a mock-intercepted connection (confirmed empirically,
+not assumed) -- `test_realtime_notifications.mjs`'s own verification
+that a subscribe attempt really happens goes through the same patched-
+constructor technique instead.
+
+**What this sandbox genuinely cannot verify**: an actual live push over
+a real realtime connection (no Supabase backend reachable here), so the
+sound and OS-popup code paths that only fire from `handleLiveNotification`
+are verified by code review and by confirming the subscribe attempt
+targets the right endpoint with the right event filter, not by watching
+a live notification actually arrive end-to-end. This is the same
+category of gap as every Supabase migration handed to the user this
+session -- follows the standard, documented `postgres_changes` API, not
+a novel mechanism, so it should work once 0015 is applied, but it is a
+claim resting on following the documented contract, not on having
+watched it happen here.
+
+**Verified**: `test_realtime_notifications.mjs` (new) confirms
+`Notification.requestPermission()` fires exactly once on mount when
+not yet decided, is never re-asked after navigating to another page or
+when already granted, and that a real subscribe attempt is made
+targeting this project's correct realtime endpoint. `favicon.svg`
+confirmed served with the right content type and containing the real
+mark, and `index.html`'s icon link confirmed pointing at the file
+instead of the old inline data URI. Full regression suite (42 scripts)
+re-run clean, modulo the one documented `test_loading_upgrade.mjs`
+sandbox-timing flake (reconfirmed intermittent exactly as before, same
+signature).
