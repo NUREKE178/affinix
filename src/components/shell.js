@@ -2,7 +2,6 @@ import { html, useState, useEffect, useRef } from "../lib/preact.js";
 import { navigate } from "../router.js";
 import { Icon } from "./icons.js";
 import { useCurrentOrg } from "../lib/currentOrg.js";
-import { useExperiments } from "../lib/experimentsStore.js";
 import { useSession, signOut } from "../lib/auth.js";
 import { useMyProfile, updateMyProfile } from "../lib/profile.js";
 import { useT, useLocale, setLocale, LOCALES } from "../lib/i18n.js";
@@ -284,8 +283,6 @@ export function Shell({ currentPath, children }) {
   // over it -- that growth is a transient visual state, never persisted.
   const [hoverPeek, setHoverPeek] = useState(false);
   const [search, setSearch] = useState("");
-  const { experiments } = useExperiments();
-  const activeCount = experiments.filter((e) => e.status === "published").length;
 
   const onNavigate = (path) => { setMobileOpen(false); navigate(path); };
 
@@ -338,9 +335,6 @@ export function Shell({ currentPath, children }) {
           </form>
           <div class="flex items-center gap-3 col-start-2 sm:col-start-3 justify-self-center sm:justify-self-end">
             <${LanguageSwitch} />
-            <span class="sk-badge hidden sm:inline-flex items-center gap-1.5 rounded-full border border-emerald-500/30 bg-emerald-500/10 px-2.5 py-1 text-xs text-emerald-300">
-              <span class="h-1.5 w-1.5 rounded-full bg-emerald-400"></span> ${t("shell.activeCount", { count: activeCount })}
-            </span>
             <${NotificationsMenu} />
           </div>
           <button onClick=${() => navigate("/profile")} class="md:hidden col-start-3 justify-self-end">

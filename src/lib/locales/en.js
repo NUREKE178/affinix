@@ -50,7 +50,6 @@ export default {
       hover: "Expand on hover",
     },
     searchPlaceholder: "Search research…",
-    activeCount: "{count} active",
     notifications: {
       title: "Notifications",
       empty: "No notifications yet",
@@ -67,23 +66,6 @@ export default {
     createResearch: "Create research",
     heroTitle: "Find out which design people actually choose",
     heroSubtitle: "Compare packaging, ads, logos and interface variants. Collect participant responses and decide based on behavioral data.",
-    ctaSecondary: "See how it works",
-    demo: {
-      badge: "Demo",
-      hint: "Try it yourself — takes 20 seconds",
-      variantLabel: "Variant {label}",
-      variants: { A: "Classic", B: "Minimal", C: "Eco", D: "Premium" },
-      questionTitle: "Which variant would you choose?",
-      keyboardHint: "You can also press keys 1–4",
-      completeTitle: "This is exactly what a participant sees",
-      completeBody: "One short question, an honest choice, no filler text. A real study can run 5–8 tasks like this and collect responses from hundreds of participants.",
-      restart: "Try again",
-      intro: {
-        title: "See exactly what a participant sees",
-        body: "You'll be shown 4 packaging variants. Pick the one you like best — just one short question.",
-        cta: "Start demo",
-      },
-    },
     workflow: {
       title: "From stimulus to decision",
       subtitle: "One workflow that turns visual variants into a grounded decision.",

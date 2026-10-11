@@ -2259,3 +2259,50 @@ errors across every page touched; Landing page checked for new
 overflow at both a mobile and a desktop viewport. Full regression
 suite re-run clean (37 scripts) after fixing the breakpoint regression
 it caught.
+
+### Removed the active-count badge and the homepage demo; a real CSS bug found along the way ✅
+
+Three requests, the first two unambiguous removals, the third "make the
+landing header look more like Supabase's":
+
+- **Dashboard header's "0 активных" badge**: removed outright (`shell.js`),
+  along with the `useExperiments`/`activeCount` wiring and the
+  `shell.activeCount` locale key that existed for nothing else once it
+  was gone.
+- **Homepage interactive demo**: removed the whole `HomepageDemo` /
+  `DemoStimulus` components and the `#demo` section from `Landing.js` --
+  a real, previously-shipped feature (A/B/C/D variant picker, keyboard
+  shortcuts, the works), not just a card. The hero's secondary CTA
+  existed only to scroll to that section, so it would have become a
+  silent dead click left in place; removed it too rather than leave a
+  button that does nothing. Dropped the now-fully-orphaned
+  `landing.demo.*` block and `landing.ctaSecondary` key from all three
+  locales (699 -> 682 keys/locale, parity re-confirmed).
+- **Landing header, closer to the Supabase reference**: investigating
+  "make it look similar" surfaced a real, pre-existing bug, not a style
+  preference -- the mobile hamburger button has been visibly rendering
+  at *every* viewport width, desktop included, since it was built. Its
+  `sm:hidden` and the base `.sk-btn` class's own unconditional
+  `display:inline-flex` are equal-specificity CSS, and `styles.css`
+  loads after `vendor/tailwind.css` in `index.html`, so `.sk-btn`'s
+  declaration always won the cascade regardless of viewport --
+  `sm:hidden` never once actually hid it. Fixed with the same
+  important-modifier pattern already used correctly elsewhere in the
+  codebase for this exact conflict (`shell.js`'s own mobile button uses
+  `md:!hidden`): changed to `sm:!hidden`. That alone visibly decluttered
+  the desktop header to look much closer to the reference; also widened
+  the gap between the language switch / login / CTA cluster (`gap-3` ->
+  `gap-5`) to match its airier spacing.
+
+**Verified**: badge text and element both confirmed gone from the
+dashboard header; demo section text, the dead secondary CTA, and the
+`#demo` DOM node all confirmed gone from Landing while the primary CTA
+remains; the hamburger button measured hidden at 1280px and *visible*
+at 375px (the critical regression check -- confirming the fix narrows
+the bug rather than breaking the real mobile case), clicking it at
+375px still opens the mobile menu overlay correctly. One existing test
+(`test_demo_single_question.mjs`) retired from the active suite rather
+than patched -- it exercised nothing but the removed demo's own flow
+(intro text, picking a tile, completion), so once that feature is gone
+by design there's no replacement behavior left to assert. Full
+regression suite re-run clean (37 scripts).

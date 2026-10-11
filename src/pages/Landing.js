@@ -1,116 +1,9 @@
-import { html, useState, useEffect, useRef } from "../lib/preact.js";
+import { html, useState } from "../lib/preact.js";
 import { navigate } from "../router.js";
 import { Icon } from "../components/icons.js";
 import { Button, Badge } from "../components/ui.js";
 import { LanguageSwitch } from "../components/shell.js";
 import { useT } from "../lib/i18n.js";
-
-const DEMO_VARIANTS = [
-  { id: "A", grad: "linear-gradient(160deg,#f97316 0%,#7c2d12 100%)", accent: "#fed7aa", dot: "#f97316" },
-  { id: "B", grad: "linear-gradient(160deg,#e2e8f0 0%,#64748b 100%)", accent: "#1e293b", dot: "#94a3b8" },
-  { id: "C", grad: "linear-gradient(160deg,#4ade80 0%,#14532d 100%)", accent: "#dcfce7", dot: "#4ade80" },
-  { id: "D", grad: "linear-gradient(160deg,#312e81 0%,#020617 100%)", accent: "#fbbf24", dot: "#818cf8" },
-];
-
-function DemoStimulus({ v, t }) {
-  return html`
-    <div class="sk-display rounded-xl h-32 sm:h-40 relative overflow-hidden m-1.5 mb-0">
-      <div class="absolute inset-3 rounded-lg" style=${{ background: v.grad }}>
-        <div class="absolute left-0 right-0 bottom-3 h-2 mx-3 rounded-full opacity-80" style=${{ background: v.accent }}></div>
-      </div>
-    </div>
-    <div class="px-3 py-2.5">
-      <div class="text-xs font-semibold text-slate-500">${t("landing.demo.variantLabel", { label: v.id })}</div>
-      <div class="text-sm font-medium text-slate-100">${t(`landing.demo.variants.${v.id}`)}</div>
-    </div>
-  `;
-}
-
-function HomepageDemo() {
-  const t = useT();
-  const [phase, setPhase] = useState("intro"); // intro | question | done
-  const [pick, setPick] = useState(null);
-  const rootRef = useRef(null);
-
-  useEffect(() => {
-    function onKey(e) {
-      if (phase !== "question") return;
-      const active = document.activeElement?.tagName;
-      if (active === "INPUT" || active === "TEXTAREA") return;
-      const idx = ["1", "2", "3", "4"].indexOf(e.key);
-      if (idx === -1) return;
-      const el = rootRef.current?.querySelectorAll("[data-demo-slot]")?.[idx];
-      el?.click();
-    }
-    window.addEventListener("keydown", onKey);
-    return () => window.removeEventListener("keydown", onKey);
-  }, [phase]);
-
-  function choose(variantId) {
-    setPick(variantId);
-    setTimeout(() => setPhase("done"), 500);
-  }
-
-  function restart() {
-    setPick(null);
-    setPhase("question");
-  }
-
-  return html`
-    <div ref=${rootRef} class="sk-panel rounded-2xl p-5 sm:p-8">
-      <div class="flex flex-wrap items-center justify-between gap-3 mb-6">
-        <${Badge} tone="amber">${t("landing.demo.badge")}<//>
-        <span class="text-xs text-slate-500">${t("landing.demo.hint")}</span>
-      </div>
-
-      ${phase === "intro" && html`
-        <div class="fade-in text-center max-w-md mx-auto py-6">
-          <button type="button" onClick=${() => setPhase("question")} aria-label=${t("landing.demo.intro.cta")}
-            class="sk-display sk-breathe mx-auto h-20 w-20 rounded-2xl flex items-center justify-center text-amber-300 mb-6 hover:text-amber-200 transition-colors">
-            <${Icon} name="play" size=${30} />
-          </button>
-          <h3 class="text-2xl font-semibold text-slate-50">${t("landing.demo.intro.title")}</h3>
-          <p class="text-sm text-slate-400 mt-3 leading-relaxed">${t("landing.demo.intro.body")}</p>
-          <div class="flex items-center justify-center gap-2 mt-5">
-            ${DEMO_VARIANTS.map((v) => html`<span key=${v.id} class="h-2 w-2 rounded-full" style=${{ background: v.dot }}></span>`)}
-          </div>
-          <div class="mt-6">
-            <${Button} size="lg" className="sk-btn-hero" onClick=${() => setPhase("question")}><${Icon} name="play" size=${16} /> ${t("landing.demo.intro.cta")}<//>
-          </div>
-        </div>
-      `}
-
-      ${phase === "question" && html`
-        <div class="fade-in">
-          <h3 class="text-xl sm:text-2xl font-semibold text-slate-50 text-center mb-6">${t("landing.demo.questionTitle")}</h3>
-          <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 max-w-2xl mx-auto">
-            ${DEMO_VARIANTS.map((v) => html`
-              <button key=${v.id} data-demo-slot type="button"
-                data-selected=${pick === v.id}
-                onClick=${() => choose(v.id)}
-                class="sk-slot text-left rounded-2xl overflow-hidden">
-                <${DemoStimulus} v=${v} t=${t} />
-              </button>
-            `)}
-          </div>
-          <p class="text-center text-xs text-slate-600 mt-5">${t("landing.demo.keyboardHint")}</p>
-        </div>
-      `}
-
-      ${phase === "done" && html`
-        <div class="fade-in text-center max-w-md mx-auto py-4">
-          <div class="sk-display mx-auto h-14 w-14 rounded-xl flex items-center justify-center text-emerald-300 mb-5"><${Icon} name="check" size=${24} /></div>
-          <h3 class="text-xl font-semibold text-slate-50">${t("landing.demo.completeTitle")}</h3>
-          <p class="text-sm text-slate-400 mt-3 leading-relaxed">${t("landing.demo.completeBody")}</p>
-          <div class="mt-6 flex flex-wrap items-center justify-center gap-3">
-            <${Button} onClick=${() => navigate("/register")}><${Icon} name="plus" size=${16} /> ${t("landing.createResearch")}<//>
-            <${Button} variant="secondary" onClick=${restart}>${t("landing.demo.restart")}<//>
-          </div>
-        </div>
-      `}
-    </div>
-  `;
-}
 
 function ReportMetric({ label, value }) {
   return html`
@@ -187,12 +80,12 @@ export function Landing() {
           <div class="sk-panel-flat flex h-9 w-9 items-center justify-center rounded-lg text-indigo-300"><${Icon} name="logo" size=${18} strokeWidth=${2} /></div>
           <span class="font-semibold text-lg tracking-tight">DecisionOS</span>
         </div>
-        <div class="hidden sm:flex items-center gap-3">
+        <div class="hidden sm:flex items-center gap-5">
           <${LanguageSwitch} />
           <${Button} variant="ghost" size="sm" onClick=${() => navigate("/login")}>${t("landing.login")}<//>
           <${Button} variant="primary" size="sm" onClick=${() => navigate("/register")}>${t("landing.createResearch")}<//>
         </div>
-        <button onClick=${() => setMobileMenuOpen(true)} class="sk-btn sm:hidden h-9 w-9 rounded-lg text-slate-300">
+        <button onClick=${() => setMobileMenuOpen(true)} class="sk-btn sm:!hidden h-9 w-9 rounded-lg text-slate-300">
           <${Icon} name="menu" size=${19} />
         </button>
       </header>
@@ -215,12 +108,7 @@ export function Landing() {
         <p class="mt-5 text-lg text-slate-400 max-w-2xl mx-auto">${t("landing.heroSubtitle")}</p>
         <div class="mt-8 flex flex-wrap items-center justify-center gap-3">
           <${Button} size="lg" onClick=${() => navigate("/register")}><${Icon} name="plus" size=${18}/> ${t("landing.createResearch")}<//>
-          <${Button} size="lg" variant="outline" onClick=${() => document.getElementById("demo")?.scrollIntoView({ behavior: "smooth", block: "start" })}>${t("landing.ctaSecondary")}<//>
         </div>
-      </section>
-
-      <section id="demo" class="px-6 lg:px-12 max-w-3xl mx-auto py-8 scroll-mt-6">
-        <${HomepageDemo} />
       </section>
 
       <section class="px-6 lg:px-12 max-w-6xl mx-auto py-14">
