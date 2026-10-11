@@ -1,4 +1,5 @@
 import { requireSupabase } from "./supabaseClient.js";
+import { getCurrentUser } from "./auth.js";
 
 function slugify(name) {
   const base = name
@@ -9,12 +10,31 @@ function slugify(name) {
   return `${base || "org"}-${Math.random().toString(36).slice(2, 7)}`;
 }
 
-/** Orgs the current user belongs to, with their role in each. */
-export async function fetchMyOrganizations() {
+/** Orgs the current user belongs to, with their role in each.
+ *
+ * `userId` can be passed explicitly (preferred -- currentOrg.js and App.js
+ * both already have it resolved when they call this) or omitted to fall
+ * back to getCurrentUser(), same as fetchPosts()/fetchNotifications() do
+ * elsewhere in this codebase.
+ *
+ * The .eq("user_id", ...) here is load-bearing, not a micro-optimization:
+ * "members: read within own org" (0002_rls.sql) is scoped to `is_org_member
+ * (organization_id)`, i.e. ANY row for an org the caller belongs to, not
+ * just the caller's own row -- the same shape every co-member's row is
+ * readable under. Without this filter, a query for "my orgs" came back
+ * with one row per MEMBERSHIP in each of those orgs, every co-member's own
+ * role mixed in alongside the caller's -- for an org with several members,
+ * .find()-ing "the" row for that org id could just as easily land on
+ * someone else's role as the caller's own, which is exactly what surfaced
+ * as a non-owner's Profile/Settings page both reading "owner". */
+export async function fetchMyOrganizations(userId) {
   const sb = requireSupabase();
+  const resolvedUserId = userId ?? getCurrentUser()?.id;
+  if (!resolvedUserId) return [];
   const { data, error } = await sb
     .from("organization_members")
     .select("role, organization:organizations(id, name, slug, created_at)")
+    .eq("user_id", resolvedUserId)
     .order("created_at", { referencedTable: "organizations", ascending: true });
   if (error) throw error;
   return (data ?? []).map((row) => ({ ...row.organization, role: row.role }));

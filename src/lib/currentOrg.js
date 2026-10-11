@@ -12,7 +12,7 @@ async function reload(userId) {
   state = { ...state, loading: true };
   notify();
   try {
-    const orgs = await fetchMyOrganizations();
+    const orgs = await fetchMyOrganizations(userId);
     const stillValid = state.activeOrgId && orgs.some((o) => o.id === state.activeOrgId);
     state = { orgs, activeOrgId: stillValid ? state.activeOrgId : orgs[0]?.id ?? null, loading: false, loadedForUser: userId };
   } catch {

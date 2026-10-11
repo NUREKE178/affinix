@@ -2700,3 +2700,54 @@ re-verified here, for the same reason as every other realtime-adjacent
 piece this round -- no live backend in this sandbox to drive a real
 arrival end-to-end. Full regression suite re-run clean (43 scripts),
 modulo the one documented `test_loading_upgrade.mjs` flake.
+
+### A real one: every member's role display could show a co-member's role instead of their own ✅
+
+Reported with a screenshot of the Profile page reading "Nureke · owner"
+and the objection that not everyone should be able to be an owner. The
+real mechanism is worse than the literal complaint, and not cosmetic:
+`fetchMyOrganizations()` (`lib/org.js`) queried `organization_members`
+with no `user_id` filter at all. "members: read within own org"
+(0002_rls.sql) is scoped to `is_org_member(organization_id)` -- *any*
+row for an org the caller belongs to, not specifically the caller's own
+row, the same visibility every co-member's row sits under. For an org
+with more than one member, that unfiltered query came back with one row
+per *membership*, not per org -- the owner's row (created first, at
+org-creation time) sitting right alongside this viewer's own, lower
+role. `currentOrg.js`'s `.find((o) => o.id === activeOrgId)` then
+returned whichever of those rows came back first, with no guarantee
+that was the caller's own -- which is exactly how a non-owner member
+ends up reading "owner" on their own Profile page. Same root cause,
+same wrong value, on Settings' "Your role" badge too (`Settings.js:46`)
+-- a second, not-yet-reported casualty of the identical bug.
+
+Fixed at the source: `fetchMyOrganizations(userId)` now carries
+`.eq("user_id", ...)`, so it returns exactly one row per org the caller
+is *actually* a member of, with their own real role -- never a
+co-member's. `userId` is explicit at the two call sites that already
+have it resolved (`currentOrg.js`'s `reload()`, `App.js`'s
+`ProtectedApp`, both already guarded so the id is never stale/missing
+when they call this); the one remaining call site
+(`Onboarding.js`'s own-org existence check, which has no session guard
+of its own) falls back to `getCurrentUser()`, the same pattern
+`fetchPosts()`/`fetchNotifications()` already use elsewhere in this
+codebase -- unchanged behavior there, not part of what was reported.
+`fetchOrgMembers()` (the Team page's member list) was not touched --
+returning every member's role, scoped by `organization_id`, is
+correctly the whole point of that one; only the "my own orgs" query had
+the missing filter.
+
+**Verified**: new `test_org_role_scoping.mjs` reproduces the exact
+mechanism, not just the symptom -- the mock responds to the
+`organization_members` request based on whether it actually carries
+`user_id=eq.<the signed-in viewer>`, returning the real (pre-fix) RLS-
+visible shape (owner's row AND this viewer's own row together) when
+that filter is absent, and only this viewer's own row when it's
+present. Confirms the real request sent now includes that filter;
+confirms a non-owner member's Profile page reads their real role
+("researcher"), never "owner"; confirms the same for Settings' "Your
+role" badge; and -- so the fix isn't just coincidentally hiding
+"owner" for everyone -- confirms a *genuine* owner, signed in
+separately, still correctly reads "owner". Full regression suite
+re-run clean (44 scripts), modulo the one documented
+`test_loading_upgrade.mjs` flake.

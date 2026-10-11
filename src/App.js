@@ -113,7 +113,7 @@ function ProtectedApp({ path, query }) {
     if (!session) return;
     let cancelled = false;
     setOrgError(false);
-    withTimeout(fetchMyOrganizations(), 15000)
+    withTimeout(fetchMyOrganizations(session.user.id), 15000)
       .then((orgs) => { if (!cancelled) { setHasOrg(orgs.length > 0); setOrgChecked(true); } })
       .catch(() => { if (!cancelled) { setOrgError(true); setOrgChecked(true); } });
     return () => { cancelled = true; };
