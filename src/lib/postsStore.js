@@ -1,6 +1,7 @@
 import { useState, useEffect } from "./preact.js";
 import { requireSupabase } from "./supabaseClient.js";
 import { getCurrentUser } from "./auth.js";
+import { watchTables, debounce } from "./realtime.js";
 
 function mapPost(row, author, likedIds, savedIds) {
   return {
@@ -102,16 +103,42 @@ function notify() {
   for (const l of listeners) l();
 }
 
-async function load() {
-  state = { ...state, loading: true };
-  notify();
+async function load({ silent = false } = {}) {
+  if (!silent) {
+    state = { ...state, loading: true };
+    notify();
+  }
   try {
     const posts = await fetchPosts();
     state = { posts, loading: false, error: null, loaded: true };
   } catch (error) {
-    state = { posts: [], loading: false, error, loaded: true };
+    // A failed background refresh keeps the feed on screen instead of blanking it.
+    state = silent ? { ...state, loading: false } : { posts: [], loading: false, error, loaded: true };
   }
   notify();
+}
+
+// --- Live feed: new posts, likes and comments from other people show up
+// without a refresh (tables added to the realtime publication in 0018).
+// Ref-counted so the socket only exists while a feed is mounted. Every event
+// is "reload quietly": the refetch is RLS-scoped, so it is always correct
+// even for DELETE events (which carry only a primary key). ---
+let liveUsers = 0;
+let liveUnsub = null;
+const reloadQuietly = debounce(() => load({ silent: true }), 500);
+function startLive() {
+  liveUsers += 1;
+  if (liveUnsub) return;
+  liveUnsub = watchTables(
+    "feed-live",
+    [{ table: "posts" }, { table: "post_likes" }, { table: "post_comments" }],
+    reloadQuietly,
+    (status) => { if (status === "SUBSCRIBED" && state.loaded) reloadQuietly(); }
+  );
+}
+function stopLive() {
+  liveUsers = Math.max(0, liveUsers - 1);
+  if (liveUsers === 0 && liveUnsub) { liveUnsub(); liveUnsub = null; reloadQuietly.cancel(); }
 }
 
 export function invalidatePosts() {
@@ -164,7 +191,8 @@ export function usePosts() {
     listeners.add(listener);
     listener(); // re-sync in case a create/invalidate resolved just before this subscribed
     if (!state.loaded && !state.loading) load();
-    return () => listeners.delete(listener);
+    startLive();
+    return () => { listeners.delete(listener); stopLive(); };
   }, []);
 
   return { posts: state.posts, loading: state.loading, error: state.error };

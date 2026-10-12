@@ -2,6 +2,9 @@ import { useState, useEffect } from "./preact.js";
 import { requireSupabase } from "./supabaseClient.js";
 import { getCurrentUser, useSession } from "./auth.js";
 import { fetchAuthorsById } from "./postsStore.js";
+import { watchTables, debounce } from "./realtime.js";
+import { t as translate, getLocale } from "./i18n.js";
+import { toast } from "../components/ui.js";
 
 function mapFriendship(row, viewerId, profilesById) {
   const isRequester = row.requester_id === viewerId;
@@ -119,17 +122,54 @@ function notify() {
   for (const l of listeners) l();
 }
 
-async function load() {
+async function load({ silent = false } = {}) {
   const userId = getCurrentUser()?.id ?? null;
-  state = { ...state, loading: true };
-  notify();
+  if (!silent) {
+    state = { ...state, loading: true };
+    notify();
+  }
   try {
     const { friends, incoming, outgoing } = await fetchMyFriendships();
     state = { friends, incoming, outgoing, loading: false, error: null, loaded: true, loadedForUserId: userId };
   } catch (error) {
-    state = { friends: [], incoming: [], outgoing: [], loading: false, error, loaded: true, loadedForUserId: userId };
+    // A failed background refresh keeps what's on screen instead of blanking it.
+    state = silent
+      ? { ...state, loading: false }
+      : { friends: [], incoming: [], outgoing: [], loading: false, error, loaded: true, loadedForUserId: userId };
   }
   notify();
+}
+
+// --- Live updates. One channel per tab on `friendships` (migration 0018 puts
+// it in the realtime publication). RLS means INSERT/UPDATE events only ever
+// reach the two people in the row; DELETE events carry just the primary key
+// and aren't filtered, so every event is treated purely as "reload" -- the
+// reload itself is RLS-scoped and therefore always correct.
+//
+// "Your request was accepted" is detected by diffing: an id that was in
+// `outgoing` before the reload and is in `friends` after it. ---
+let liveFriendsUnsub = null;
+let liveFriendsUserId = null;
+async function refreshFromLive() {
+  const waitingOn = new Map(state.outgoing.map((f) => [f.id, f]));
+  await load({ silent: true });
+  for (const f of state.friends) {
+    if (!waitingOn.has(f.id)) continue;
+    const name = f.otherName ?? translate(getLocale(), "feed.unknownAuthor");
+    toast(translate(getLocale(), "friends.liveAccepted", { name }), "emerald");
+  }
+}
+const refreshFromLiveDebounced = debounce(refreshFromLive, 250);
+
+function subscribeToLiveFriendships(userId) {
+  if (!userId || liveFriendsUserId === userId) return;
+  if (liveFriendsUnsub) liveFriendsUnsub();
+  liveFriendsUserId = userId;
+  liveFriendsUnsub = watchTables(`friendships:${userId}`, [{ table: "friendships" }], refreshFromLiveDebounced, (status) => {
+    // After a dropped connection comes back, anything that happened in the
+    // gap is missed -- one silent reload closes it.
+    if (status === "SUBSCRIBED" && state.loaded) load({ silent: true });
+  });
 }
 
 /** Also called from notificationsStore.js when a live friend_request /
@@ -161,6 +201,10 @@ export function useFriends() {
     if (sessionLoading) return;
     if (!state.loading && state.loadedForUserId !== userId) load();
   }, [sessionLoading, userId]);
+
+  useEffect(() => {
+    if (userId) subscribeToLiveFriendships(userId);
+  }, [userId]);
 
   return { friends: state.friends, incoming: state.incoming, outgoing: state.outgoing, loading: state.loading, error: state.error };
 }

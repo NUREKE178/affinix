@@ -1,6 +1,6 @@
 import { html, useState, useMemo, useEffect } from "../lib/preact.js";
 import { useExperiments } from "../lib/experimentsStore.js";
-import { fetchSessionsForExperiment } from "../lib/participants.js";
+import { fetchSessionsForExperiment, watchExperimentLive } from "../lib/participants.js";
 import { navigate } from "../router.js";
 import { Card, SectionHeading, StatTile, Badge, Select, Button, EmptyState, LoadingState } from "../components/ui.js";
 import { Icon } from "../components/icons.js";
@@ -141,6 +141,7 @@ export function Results({ params }) {
   const [loadingParticipants, setLoadingParticipants] = useState(true);
   const [participantsError, setParticipantsError] = useState(false);
   const [retryTick, setRetryTick] = useState(0);
+  const [live, setLive] = useState(false);
 
   const experiment = useMemo(
     () => experiments.find((e) => e.id === (params?.id ?? selectedId)) ?? (!params?.id ? eligible[0] : null),
@@ -157,6 +158,24 @@ export function Results({ params }) {
       .catch(() => { if (!cancelled) { setLoadingParticipants(false); setParticipantsError(true); } });
     return () => { cancelled = true; };
   }, [experiment?.id, retryTick]);
+
+  // Live results: a participant finishing (or answering) shows up here by
+  // itself. Refetches quietly -- no spinner, and a failed background refresh
+  // keeps the numbers already on screen.
+  useEffect(() => {
+    if (!experiment?.id) { setLive(false); return undefined; }
+    let cancelled = false;
+    const unsub = watchExperimentLive(
+      experiment.id,
+      () => {
+        fetchSessionsForExperiment(experiment.id)
+          .then((sessions) => { if (!cancelled) { setParticipants(sessions); setParticipantsError(false); } })
+          .catch(() => {});
+      },
+      (isLive) => { if (!cancelled) setLive(isLive); }
+    );
+    return () => { cancelled = true; setLive(false); unsub(); };
+  }, [experiment?.id]);
 
   const completed = useMemo(() => completedParticipants(participants), [participants]);
 
@@ -191,6 +210,7 @@ export function Results({ params }) {
         <span class="font-medium text-slate-200">${experiment.name}</span>
         <${Badge} tone=${experiment.status === "published" ? "emerald" : "indigo"}>${STATUS_KEY[experiment.status] ? t(`overview.${STATUS_KEY[experiment.status]}`) : experiment.status}<//>
         <span class="text-sm text-slate-500">${researchTypeLabel(experiment.researchType, t)}</span>
+        ${live && html`<span class="sk-live-badge" title=${t("results.liveHint")}><span class="sk-live-dot"></span>${t("results.live")}</span>`}
         <button class="ml-auto text-sm text-indigo-400 hover:text-indigo-300" onClick=${() => navigate(`/app/experiments/${experiment.id}/insights`)}>${t("results.aiInsightsLink")}</button>
       </div>
 

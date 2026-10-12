@@ -89,7 +89,7 @@ export async function markAllNotificationsRead() {
  * try/catch: browsers that block audio before any user gesture, or lack
  * Web Audio entirely, should degrade to silence, never an uncaught error
  * that breaks the notification itself. */
-function playNotificationSound() {
+export function playNotificationSound() {
   try {
     const Ctx = window.AudioContext || window.webkitAudioContext;
     if (!Ctx) return;

@@ -6,12 +6,27 @@ const TICK_COLOR = "#94a3b8";
 function useChart(buildConfig, deps) {
   const canvasRef = useRef(null);
   const chartRef = useRef(null);
+  // Create once, then UPDATE in place when the data changes -- destroying and
+  // rebuilding on every live refresh would replay the intro animation and
+  // flash the chart each time a new participant answers.
   useEffect(() => {
     if (!canvasRef.current || typeof window.Chart === "undefined") return;
-    chartRef.current = new window.Chart(canvasRef.current, buildConfig());
-    return () => chartRef.current?.destroy();
+    const cfg = buildConfig();
+    const chart = chartRef.current;
+    if (chart && chart.config.type === cfg.type) {
+      chart.data.labels = cfg.data.labels;
+      cfg.data.datasets.forEach((ds, i) => {
+        if (chart.data.datasets[i]) Object.assign(chart.data.datasets[i], ds);
+        else chart.data.datasets[i] = ds;
+      });
+      chart.data.datasets.length = cfg.data.datasets.length;
+      chart.update();
+      return;
+    }
+    chartRef.current = new window.Chart(canvasRef.current, cfg);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, deps);
+  useEffect(() => () => { chartRef.current?.destroy(); chartRef.current = null; }, []);
   return canvasRef;
 }
 
