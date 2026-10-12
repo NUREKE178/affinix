@@ -1,7 +1,9 @@
 import { html, useState, useEffect } from "../lib/preact.js";
+import { navigate } from "../router.js";
 import { useSession, updatePassword, requestEmailChange, friendlyAuthError } from "../lib/auth.js";
 import { useCurrentOrg } from "../lib/currentOrg.js";
 import { useMyProfile, updateMyProfile, uploadAvatar, fetchMyProfileStats, usernameAvailableLocally } from "../lib/profile.js";
+import { useFriends } from "../lib/friendsStore.js";
 import { Card, SectionHeading, Field, TextInput, TextArea, Select, Switch, Button, Badge, Tabs, toast, LoadingState, Spinner } from "../components/ui.js";
 import { Icon } from "../components/icons.js";
 import { COUNTRIES, TIMEZONES } from "../lib/questionTypes.js";
@@ -43,6 +45,7 @@ function AvatarEditor({ profile, displayName, t }) {
 }
 
 function PersonalTab({ profile, user, org, t }) {
+  const { friends } = useFriends();
   const [form, setForm] = useState(() => ({
     full_name: profile?.full_name ?? "", username: profile?.username ?? "", role_title: profile?.role_title ?? "",
     country: profile?.country ?? "", bio: profile?.bio ?? "", research_interests: (profile?.research_interests ?? []).join(", "),
@@ -107,6 +110,9 @@ function PersonalTab({ profile, user, org, t }) {
           <div class="font-semibold text-slate-100">${form.full_name || t("profile.noName")}</div>
           <div class="text-sm text-slate-500">${org?.name ?? ""}${org?.role ? ` · ${org.role}` : ""}</div>
           ${profile?.username && html`<div class="text-xs text-slate-600 mt-0.5">${t("profile.publicProfileUrl", { username: profile.username })}</div>`}
+          <button type="button" onClick=${() => navigate("/app/friends")} class="text-xs text-indigo-300 hover:text-indigo-200 mt-1">
+            ${t("friends.countLabel", { count: friends.length })}
+          </button>
         </div>
       </div>
 

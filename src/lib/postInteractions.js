@@ -1,5 +1,6 @@
 import { requireSupabase } from "./supabaseClient.js";
 import { invalidatePosts, fetchAuthorsById } from "./postsStore.js";
+import { invalidateFavorites } from "./favoritesStore.js";
 import { createCommentNotification } from "./notificationsStore.js";
 
 /** post_likes/post_saves rows are toggled by (post_id, user_id) uniqueness
@@ -33,6 +34,9 @@ export async function toggleSave(postId, currentlySaved) {
     if (error) throw error;
   }
   invalidatePosts();
+  // A save/unsave can happen from the main feed OR the Favorites page --
+  // both stores need to reflect it regardless of which one triggered it.
+  invalidateFavorites();
 }
 
 function mapComment(row, author) {

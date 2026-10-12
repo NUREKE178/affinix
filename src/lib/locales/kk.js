@@ -34,6 +34,8 @@ export default {
     communityLabel: "Қауымдастық",
     community: {
       feed: "Таспа",
+      favorites: "Таңдаулылар",
+      friends: "Достар",
     },
     workspaceLabel: "Жұмыс кеңістігі",
     workspace: {
@@ -54,6 +56,8 @@ export default {
       title: "Хабарландырулар",
       empty: "Әзірге хабарландырулар жоқ",
       commentOn: "{name} сіздің жазбаңызға пікір қалдырды",
+      friendRequest: "{name} сізге достыққа өтінім жіберді",
+      friendAccepted: "{name} сіздің достық өтініміңізді қабылдады",
     },
     userMenu: {
       profile: "Профиль",
@@ -310,6 +314,38 @@ export default {
     commentPosted: "Пікір қосылды",
     commentPostedCensored: "Пікір қосылды. Кейбір сөздер жұлдызшамен жасырылды.",
     deleteComment: "Пікірді өшіру",
+  },
+
+  favorites: {
+    title: "Таңдаулылар",
+    subtitle: "Сіз сақтаған жазбалар.",
+    loadErrorTitle: "Таңдаулыларды жүктеу мүмкін болмады",
+    loadErrorBody: "Байланысты тексеріп, қайта көріңіз.",
+    emptyTitle: "Әзірге сақталған жазба жоқ",
+    emptyBody: "Жазбаны осында сақтау үшін оның астындағы бетбелгі белгішесін басыңыз.",
+  },
+
+  friends: {
+    title: "Достар",
+    subtitle: "Достарыңыз және достық өтінімдер.",
+    incomingTitle: "Келген өтінімдер ({count})",
+    outgoingTitle: "Жіберілген өтінімдер ({count})",
+    friendsTitle: "Достар ({count})",
+    accept: "Қабылдау",
+    decline: "Қабылдамау",
+    cancel: "Бас тарту",
+    remove: "Өшіру",
+    addFriend: "Досқа қосу",
+    requestSent: "Өтінім жіберілді",
+    acceptRequest: "Өтінімді қабылдау",
+    removeFriendConfirm: "Достан шығару керек пе?",
+    requestAccepted: "Достық өтінім қабылданды",
+    removedToast: "Достықтан өшірілді",
+    emptyTitle: "Сізде әзірге дос жоқ",
+    emptyBody: "Сіз жіберген немесе алған достық өтінімдер осында көрінеді.",
+    loadErrorTitle: "Достар тізімін жүктеу мүмкін болмады",
+    loadErrorBody: "Байланысты тексеріп, қайта көріңіз.",
+    countLabel: "{count} дос",
   },
 
   experiments: {

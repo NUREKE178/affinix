@@ -42,6 +42,12 @@ const PATHS = {
   heart: html`<path d="M12 20.3s-7.3-4.4-9.6-9C1 8.4 2.5 5 6 5c2.3 0 3.9 1.4 6 3.8C14.1 6.4 15.7 5 18 5c3.5 0 5 3.4 3.6 6.3-2.3 4.6-9.6 9-9.6 9z"/>`,
   bookmark: html`<path d="M6 3.5h12a1 1 0 0 1 1 1V21l-7-4.5L5 21V4.5a1 1 0 0 1 1-1z"/>`,
   comment: html`<path d="M4 5.5a1.5 1.5 0 0 1 1.5-1.5h13a1.5 1.5 0 0 1 1.5 1.5v9a1.5 1.5 0 0 1-1.5 1.5H9l-4 3.5v-3.5H5.5A1.5 1.5 0 0 1 4 14.5z"/>`,
+  userPlus: html`<circle cx="9" cy="8" r="3.6"/><path d="M2 20c0-3.6 3-6 7-6 1 0 2 .2 2.8.5"/><path d="M18 9v6M15 12h6"/>`,
+  userCheck: html`<circle cx="9" cy="8" r="3.6"/><path d="M2 20c0-3.6 3-6 7-6 1 0 2 .2 2.8.5"/><path d="M15 13l2.2 2.2L21.5 11"/>`,
+  // Two equal, slightly overlapping heads -- deliberately distinct from
+  // `team` (one bigger lead + one smaller, offset report) so Friends and
+  // Team don't read as the same glyph in the same sidebar.
+  friends: html`<circle cx="9" cy="8" r="3.4"/><circle cx="15" cy="8" r="3.4" opacity="0.55"/><path d="M3 19.5c0-3.4 2.7-6 6.5-6a7 7 0 0 1 3.4.9"/><path d="M12.4 14.5c1-.6 2.2-1 3.6-1 3.5 0 6.5 2.6 6.5 6"/>`,
 };
 
 /** `filled`: swaps fill to currentColor for stateful toggles (heart/bookmark

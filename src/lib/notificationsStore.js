@@ -2,12 +2,14 @@ import { useState, useEffect } from "./preact.js";
 import { requireSupabase } from "./supabaseClient.js";
 import { getCurrentUser, useSession } from "./auth.js";
 import { fetchAuthorsById } from "./postsStore.js";
+import { invalidateFriends } from "./friendsStore.js";
 import { t as translate, getLocale } from "./i18n.js";
 import { navigate } from "../router.js";
 
 function mapNotification(row, actor) {
   return {
     id: row.id,
+    type: row.type ?? "comment",
     postId: row.post_id,
     commentId: row.comment_id,
     actorId: row.actor_id,
@@ -17,6 +19,21 @@ function mapNotification(row, actor) {
     isRead: row.is_read,
     createdAt: row.created_at,
   };
+}
+
+/** One translation key per notification type -- the single source both the
+ * bell dropdown (shell.js) and the OS-level popup below read from, so the
+ * two channels can never describe the same event differently. */
+export function notificationCopyKey(type) {
+  if (type === "friend_request") return "shell.notifications.friendRequest";
+  if (type === "friend_accept") return "shell.notifications.friendAccepted";
+  return "shell.notifications.commentOn";
+}
+
+/** Where clicking a notification should take you -- comments land on the
+ * post itself (the feed), friend events land where they're actionable. */
+export function notificationTargetPath(type) {
+  return type === "friend_request" || type === "friend_accept" ? "/app/friends" : "/app/feed";
 }
 
 /** comment:post_comments(body) is a real PostgREST embed (comment_id has an
@@ -110,23 +127,24 @@ function requestNotificationPermission() {
 }
 
 /** The OS-level popup companion to the in-app bell, for a visitor who
- * isn't looking at the tab. Reuses the same resolved shell.notifications.commentOn
- * copy as the dropdown (translate() is the plain, non-hook form i18n.js
- * exports for exactly this -- code running outside component render) so
- * the two channels never say different things for the same event. */
+ * isn't looking at the tab. Reuses the same resolved copy (per type, via
+ * notificationCopyKey) as the dropdown (translate() is the plain, non-hook
+ * form i18n.js exports for exactly this -- code running outside component
+ * render) so the two channels never say different things for the same
+ * event. */
 function maybeShowBrowserNotification(n) {
   if (typeof Notification === "undefined" || Notification.permission !== "granted") return;
   try {
     const locale = getLocale();
-    const title = translate(locale, "shell.notifications.commentOn", { name: n.actorName ?? translate(locale, "feed.unknownAuthor") });
+    const title = translate(locale, notificationCopyKey(n.type), { name: n.actorName ?? translate(locale, "feed.unknownAuthor") });
     const popup = new Notification(title, {
-      body: n.commentBody ? `«${n.commentBody}»` : "",
+      body: n.type === "comment" && n.commentBody ? `«${n.commentBody}»` : "",
       icon: "/favicon.svg",
       tag: n.id,
     });
     popup.onclick = () => {
       window.focus();
-      navigate("/app/feed");
+      navigate(notificationTargetPath(n.type));
       popup.close();
     };
   } catch {
@@ -156,6 +174,11 @@ async function handleLiveNotification(payload) {
   if (!fresh) return;
   playNotificationSound();
   maybeShowBrowserNotification(fresh);
+  // A friend request arriving, or one of the viewer's own being accepted,
+  // changes what useFriends()/useFriendStatus() should show -- there's no
+  // separate realtime channel for friendships itself, so this is what
+  // keeps an open Friends page or FriendButton from going stale.
+  if (fresh.type === "friend_request" || fresh.type === "friend_accept") invalidateFriends();
   ringSeq += 1;
   notify();
 }

@@ -3004,3 +3004,180 @@ documented `test_loading_upgrade.mjs` flake (stuck loading on
 `/app/reports` and an experiment's `/results` page -- neither touched by
 this round) -- not a new regression, checked directly rather than
 assumed.
+
+## Favorites + Friends ✅
+
+Two full features: a private saved-posts list, and a complete friend
+system (request/accept/decline/cancel/remove, a dedicated page, counts,
+notifications) -- built on the existing posts/notifications architecture
+rather than alongside it.
+
+**Favorites turned out to be mostly already there.** `post_saves`
+(migration 0014) already existed -- private by default (`select` scoped
+to `user_id = auth.uid()`, unlike `post_likes`' `using (true)`), already
+prevents duplicates (`unique(post_id, user_id)`), already animated (the
+bookmark icon already pops via `.sk-icon-pop` from the animation round).
+What was actually missing was a page to *look at* what you'd saved.
+`postsStore.js` gained `fetchSavedPosts()`, reusing the same private
+`mapPost()`/`fetchAuthorsById()`/`fetchViewerPostIds()` helpers
+`fetchPosts()` itself uses (saved-post order is reapplied client-side
+after the `.in()` lookup, since Postgres doesn't preserve it); a new
+`favoritesStore.js` mirrors `postsStore.js`'s own reactive-cache shape
+exactly. `Favorites.js` reuses `PostCard` directly (now exported from
+`Feed.js`) -- same likes/comments, same author popover, same delete flow
+for a post you own. Unsaving a card is already covered for free: the
+bookmark button that saved it is the same button that un-saves it, and
+toggling it off makes the card disappear from this list the moment
+`favoritesStore` reloads. `toggleSave()` (postInteractions.js) now
+invalidates both `postsStore` and `favoritesStore` regardless of which
+page the toggle happened on; `deletePost()`'s two call sites (Feed,
+Favorites) do the same, so a post deleted from one page can't linger in
+the other's cache.
+
+**Friends is new, and needed real database design.** `friendships`
+(migration 0017) is one row per *pair* of users, not per direction:
+`user_min`/`user_max` are generated columns (`least()`/`greatest()` of
+`requester_id`/`addressee_id`), with a unique constraint on that pair --
+so there can never be two contradictory rows between the same two people
+(A→B pending *and* B→A pending at once), enforced by Postgres itself, not
+just application logic. Three operations needed more validation than a
+column-ownership RLS check can express, so -- the same split this schema
+already uses for `add_member_by_email` (0006) and the owner-lock fix
+(0016) -- they're `SECURITY DEFINER` functions instead of raw table
+access:
+- `send_friend_request` also has to notice "they already requested ME"
+  and accept instead of inserting a second row (the DB wouldn't allow a
+  second row for the pair anyway -- the unique constraint would reject
+  it -- this is what makes the correct thing happen instead of an error).
+- `accept_friend_request` is the one UPDATE this table ever needs, and
+  deliberately has **no RLS UPDATE policy backing it** -- a raw
+  `with check` can constrain the new row's shape but can't stop a caller
+  from also smuggling a different `requester_id` into the same
+  statement, the identical class of gap 0016 closed on
+  `organization_members`. The function's `WHERE` clause
+  (`id = p_friendship_id and addressee_id = me and status = 'pending'`)
+  and its hardcoded `SET` (`status = 'accepted'` only) aren't
+  caller-influenceable at all, which closes it by construction rather
+  than by a cleverer policy.
+- `friends_count` is `SECURITY DEFINER` so a count can show on *anyone's*
+  profile (PublicProfile, the author popover) without widening
+  `friendships`' own `select` policy to "anyone can read anyone's rows",
+  which would leak who has a pending request out to a third party.
+  Declining, cancelling, and removing don't need a function at all --
+  all three are the same operation underneath (delete a row you're a
+  party to), and a plain `using (requester_id = auth.uid() or
+  addressee_id = auth.uid())` delete policy is already a complete,
+  correct boundary for that.
+
+**`notifications` (0014) generalized rather than growing a second
+pipeline.** `post_id`/`comment_id` went nullable, a `type` column
+(`comment` | `friend_request` | `friend_accept`) was added, and the
+existing insert policy narrowed to `type = 'comment'` explicitly --
+friend-type rows are only ever inserted by the two functions above
+(`SECURITY DEFINER`, bypassing RLS internally but re-validating the real
+authorization themselves), never by a direct client insert, so the
+policy itself doesn't need to learn how to validate a friendship's
+shape too. Everything built for comment notifications in the earlier
+round -- realtime delivery, the sound, the OS push, the bell-ring
+animation, mark-as-read -- now carries friend events for free.
+`notificationsStore.js` gained `notificationCopyKey()`/
+`notificationTargetPath()` (one translation key and one click-destination
+per type, shared between the in-app bell and the OS popup so they can
+never disagree), and cross-invalidates `friendsStore` when a live
+friend-type notification arrives -- there's no separate realtime
+subscription on `friendships` itself; this is what keeps an already-open
+Friends page or FriendButton from going stale when something happens
+elsewhere.
+
+**FriendButton is one component with four states** (Add Friend / Request
+Sent / Accept Request / Friends), driven by `useFriendStatus()` --
+derived client-side from the same data `useFriends()` already loaded, no
+per-button fetch. Renders nothing for your own profile (`status ===
+"self"`) *and* nothing for a signed-out visitor (`status ===
+"signed_out"`, distinct from `"none"`) -- a public `/u/:username` page is
+reachable by anyone, and a button that would just fail server-side on
+click is worse than no button. The "Friends" state needs its own confirm
+step before it actually removes anyone: hover alone can't guard that on
+a touch device, so the first click/tap relabels the button to "Remove
+friend?" for a few seconds (or until the pointer leaves, on desktop); a
+second click in that window is what actually removes. Every real status
+change replays `.sk-btn-state-pop`, the same single-pop convention
+`.sk-icon-pop` already established for the like/save buttons.
+
+**`AuthorCard`**, a new shared component, is Feed.js's `viewingAuthor`
+popover extracted and given a `FriendButton` row -- the same popover Feed
+already used to show who commented or posted, now reused by Favorites.js
+(same post/comment author shape) and Friends.js (friendship rows adapted
+into the same `authorId`/`authorName`/... shape at the call site, so
+`AuthorCard` itself only ever learns one field convention). This is the
+same popover, not a new one, so "Add Friend button on user profiles"
+reaches every place a profile was already viewable -- a post's author, a
+comment's author, a friend-list row -- in one component change, plus
+`PublicProfile.js` (the external `/u/:username` page) and `Profile.js`
+(a friends-count link to `/app/friends`) directly.
+
+**Friends.js**: incoming requests (Accept / Decline) and outgoing
+requests (Cancel) only render when non-empty; the accepted-friends list
+always renders, with the exact empty state asked for
+("You don't have any friends yet..."). Each row's avatar/name opens the
+same `AuthorCard` popover. The sidebar's Friends nav item carries a
+live badge of the incoming-request count, the same red-dot/number
+convention the notification bell already uses.
+
+**A genuine staleness bug was caught and fixed before it shipped, not
+assumed away.** `useFriends()`'s first draft copied `postsStore`'s
+load-once-then-rely-on-invalidation pattern exactly -- fine for posts and
+notifications, which only ever render inside the authenticated `Shell`,
+but `FriendButton` is reachable from `/u/:username`, which an anonymous
+visitor can land on. An anonymous visitor's empty load would permanently
+stick if the SAME tab later signed in (the `!state.loaded` guard never
+fires again). Fixed by borrowing `profile.js`'s own, more robust
+pattern instead -- a `loadedForUserId` tracked against the live session,
+reloading whenever they disagree (covers anonymous→signed-in *and* a
+same-tab account switch), gated on `useSession()`'s own `loading` flag so
+it doesn't fire a premature "signed out" load during an authenticated
+page's brief hydration window.
+
+**Verified**: two new Playwright scripts, 24 checks total, all passing.
+`test_favorites_friends.mjs` (stateful mocks -- the `post_saves` and
+`friendships` mock tables actually track inserts/deletes/RPC calls across
+the flow, not static fixtures) covers: Favorites shows a saved post via
+the real `PostCard` and unsaving removes it from the list; sending a
+request from the Feed's author popover flips the button to "Request
+Sent" with the real RPC call captured and its `target_id` checked;
+cancelling flips it back to "Add Friend"; an incoming request shows on
+the Friends page with a working Accept button that calls
+`accept_friend_request` with the right id and moves the row into the
+friends list. `test_friends_edge_cases.mjs` covers self-block (opening
+your own post's author popover shows your own name but *no* friend
+button at all -- confirmed by reading the actual popover HTML, not
+guessed), zero horizontal overflow for Friends/Favorites at phone width,
+and that `prefers-reduced-motion` actually disables the state-pop
+animation (not just assumed from the stylesheet). One test bug surfaced
+and was fixed along the way, not worked around: a mid-test mock mutation
+followed by only a hash-navigation (not a real reload) doesn't reach an
+already-loaded reactive store -- correct, existing behavior, not
+something to patch around -- so the test now does a hard reload at that
+point, matching how a real revisit would actually pick up new data.
+Locale parity re-verified (722 keys × 3 locales, exact match) after
+~30 new `favorites.*`/`friends.*`/`shell.*` keys. Full regression suite
+(49 scripts, migration 0017 added) re-run: 47/49 clean on the first pass.
+The 2 failures were both triaged, not waved through: `test_loading_upgrade.mjs`
+hit the same 2 pre-existing `stillLoading=true` cases already on record from
+before this feature (an experiment's `/results` page and `/app/reports`,
+45/47 checks -- unrelated to Favorites/Friends, confirmed by reading its
+log and comparing against the known baseline); `test_nav_experiments_results_removed.mjs`
+failed on a stale hardcoded assertion ("exactly 9 nav items") written before
+this feature existed -- updated to 11 (the correct count now that Favorites
+and Friends are real nav items) and re-run clean, 14/14. Final state: 49/49
+accounted for, 2 pre-existing/unrelated, 0 caused by this change.
+
+**Not yet live**: migration 0017 is written and committed but, like
+every migration this session, hasn't been applied to the real Supabase
+project from here -- this sandbox has no `SUPABASE_ACCESS_TOKEN`/
+`SUPABASE_PROJECT_REF`. Favorites and Friends are fully built and tested
+against a faithful mock of the schema this migration creates, but
+neither will work against the live backend (`friendships` doesn't exist
+yet, `notifications` doesn't have a `type` column yet) until someone
+with Supabase credentials runs `npx supabase db push` -- flagged
+explicitly, the same as every other migration this session.

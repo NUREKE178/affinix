@@ -118,6 +118,44 @@ export function invalidatePosts() {
   load();
 }
 
+/** The viewer's saved posts, most recently saved first -- reuses the exact
+ * same mapPost()/fetchAuthorsById()/fetchViewerPostIds() helpers fetchPosts()
+ * itself uses, so a saved post renders through PostCard identically to one
+ * in the main feed (same likes/comments counts, same viewerLiked flag).
+ * post_saves is queried first (it's the private, owner-scoped list that
+ * actually decides *which* posts and in *what order*), then those ids
+ * resolve against posts -- .in() doesn't preserve order, so the save order
+ * is reapplied client-side afterward. */
+export async function fetchSavedPosts() {
+  const userId = getCurrentUser()?.id;
+  if (!userId) return [];
+  const sb = requireSupabase();
+  const { data: savedRows, error: savedError } = await sb
+    .from("post_saves")
+    .select("post_id")
+    .eq("user_id", userId)
+    .order("created_at", { ascending: false });
+  if (savedError) throw savedError;
+  const postIds = (savedRows ?? []).map((r) => r.post_id);
+  if (!postIds.length) return [];
+
+  const { data, error } = await sb
+    .from("posts")
+    .select("*, post_likes(count), post_comments(count)")
+    .in("id", postIds);
+  if (error) throw error;
+  const rows = data ?? [];
+  const saveOrder = new Map(postIds.map((id, i) => [id, i]));
+  rows.sort((a, b) => saveOrder.get(a.id) - saveOrder.get(b.id));
+
+  const [authorsById, likedIds] = await Promise.all([
+    fetchAuthorsById([...new Set(rows.map((r) => r.author_id))]),
+    fetchViewerPostIds("post_likes", rows.map((r) => r.id)),
+  ]);
+  const savedIds = new Set(postIds); // every row here is saved, by construction
+  return rows.map((row) => mapPost(row, authorsById[row.author_id], likedIds, savedIds));
+}
+
 export function usePosts() {
   const [, setTick] = useState(0);
 

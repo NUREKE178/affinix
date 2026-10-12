@@ -11,6 +11,8 @@ import { relativeDate } from "../lib/format.js";
 import { withTimeout } from "../lib/async.js";
 import { moderatePost } from "../lib/profanityFilter.js";
 import { useMountTransition, useMountedValue } from "../lib/motion.js";
+import { AuthorCard } from "../components/authorCard.js";
+import { invalidateFavorites } from "../lib/favoritesStore.js";
 
 const MAX_LEN = 2000;
 const HASHTAG_RE = /#[\p{L}\p{N}_]+/gu;
@@ -303,7 +305,7 @@ function CommentThread({ post, t, currentUserId, canModerate, onCountChange, onA
   `;
 }
 
-function PostCard({ post, index = 0, t, onHashtagClick, canDelete, canModerate, currentUserId, onDeleteClick, onAuthorClick }) {
+export function PostCard({ post, index = 0, t, onHashtagClick, canDelete, canModerate, currentUserId, onDeleteClick, onAuthorClick }) {
   const hasProfile = !!post.authorName;
   const openAuthor = () => hasProfile && onAuthorClick(post);
   const [likeBusy, setLikeBusy] = useState(false);
@@ -430,6 +432,7 @@ export function Feed() {
     try {
       await withTimeout(deletePost(confirmDelete.id), 15000);
       setConfirmDelete(null);
+      invalidateFavorites(); // a deleted post can't stay in anyone's saved list either
       toast(t("feed.postDeleted"), "emerald");
     } catch (err) {
       toast(err.message ?? String(err), "rose");
@@ -510,25 +513,7 @@ export function Feed() {
         </div>
       `}
 
-      ${authorMounted && html`
-        <div class="sk-backdrop-anim fixed inset-0 z-50 flex items-center justify-center bg-slate-950/70 p-4" data-state=${authorPhase} onClick=${(e) => e.target === e.currentTarget && setViewingAuthor(null)}>
-          <${Card} className="sk-overlay-anim sk-overlay-anim-center max-w-sm w-full p-5" data-state=${authorPhase}>
-            <div class="flex items-start gap-3">
-              <${Avatar} name=${authorPost.authorName} url=${authorPost.authorAvatarUrl} size=${48} />
-              <div class="min-w-0 flex-1 pt-0.5">
-                <div class="font-semibold text-slate-100 truncate">${authorPost.authorName}</div>
-                ${authorPost.authorRoleTitle && html`<div class="text-sm text-slate-400 truncate">${authorPost.authorRoleTitle}</div>`}
-              </div>
-              <button type="button" onClick=${() => setViewingAuthor(null)} aria-label=${t("common.close")} class="shrink-0 text-slate-500 hover:text-slate-300">
-                <${Icon} name="close" size=${16} />
-              <//>
-            </div>
-            <p class="text-sm mt-4 leading-relaxed whitespace-pre-wrap ${authorPost.authorBio ? "text-slate-300" : "text-slate-500 italic"}">
-              ${authorPost.authorBio || t("feed.noBio")}
-            </p>
-          <//>
-        </div>
-      `}
+      <${AuthorCard} author=${authorPost} mounted=${authorMounted} phase=${authorPhase} onClose=${() => setViewingAuthor(null)} t=${t} />
     </div>
   `;
 }

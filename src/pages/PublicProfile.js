@@ -3,6 +3,8 @@ import { navigate } from "../router.js";
 import { fetchPublicProfile } from "../lib/profile.js";
 import { Logo } from "../components/icons.js";
 import { Button, LoadingState } from "../components/ui.js";
+import { FriendButton } from "../components/friendButton.js";
+import { useFriendsCount } from "../lib/friendsStore.js";
 import { useT } from "../lib/i18n.js";
 import { withTimeout } from "../lib/async.js";
 
@@ -17,6 +19,7 @@ export function PublicProfile({ params }) {
   const username = params?.username;
   const [state, setState] = useState({ loading: true, profile: null, error: false });
   const [retryTick, setRetryTick] = useState(0);
+  const friendsCount = useFriendsCount(state.profile?.id ?? null);
 
   useEffect(() => {
     let cancelled = false;
@@ -63,7 +66,12 @@ export function PublicProfile({ params }) {
                 <div>
                   <h1 class="text-lg font-semibold text-slate-100">${state.profile.full_name || `@${state.profile.username}`}</h1>
                   <p class="text-sm text-slate-400">${[state.profile.role_title, state.profile.org_name].filter(Boolean).join(" · ") || " "}</p>
+                  ${friendsCount !== null && html`<p class="text-xs text-slate-500 mt-1">${t("friends.countLabel", { count: friendsCount })}</p>`}
                 </div>
+              </div>
+
+              <div class="mt-5">
+                <${FriendButton} targetUserId=${state.profile.id} />
               </div>
 
               ${state.profile.bio && html`<p class="text-sm text-slate-300 mt-5 leading-relaxed">${state.profile.bio}</p>`}

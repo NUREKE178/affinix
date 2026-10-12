@@ -34,6 +34,8 @@ export default {
     communityLabel: "Community",
     community: {
       feed: "Feed",
+      favorites: "Favorites",
+      friends: "Friends",
     },
     workspaceLabel: "Workspace",
     workspace: {
@@ -54,6 +56,8 @@ export default {
       title: "Notifications",
       empty: "No notifications yet",
       commentOn: "{name} commented on your post",
+      friendRequest: "{name} sent you a friend request",
+      friendAccepted: "{name} accepted your friend request",
     },
     userMenu: {
       profile: "Profile",
@@ -310,6 +314,38 @@ export default {
     commentPosted: "Comment posted",
     commentPostedCensored: "Comment posted. Some words were masked.",
     deleteComment: "Delete comment",
+  },
+
+  favorites: {
+    title: "Favorites",
+    subtitle: "Posts you've saved.",
+    loadErrorTitle: "Couldn't load your favorites",
+    loadErrorBody: "Check your connection and try again.",
+    emptyTitle: "You haven't saved any posts yet",
+    emptyBody: "Tap the bookmark icon under a post to save it here.",
+  },
+
+  friends: {
+    title: "Friends",
+    subtitle: "Your friends and friend requests.",
+    incomingTitle: "Friend requests ({count})",
+    outgoingTitle: "Sent requests ({count})",
+    friendsTitle: "Friends ({count})",
+    accept: "Accept",
+    decline: "Decline",
+    cancel: "Cancel",
+    remove: "Remove",
+    addFriend: "Add Friend",
+    requestSent: "Request Sent",
+    acceptRequest: "Accept Request",
+    removeFriendConfirm: "Remove friend?",
+    requestAccepted: "Friend request accepted",
+    removedToast: "Removed from friends",
+    emptyTitle: "You don't have any friends yet",
+    emptyBody: "Friend requests you send or receive will show up here.",
+    loadErrorTitle: "Couldn't load your friends",
+    loadErrorBody: "Check your connection and try again.",
+    countLabel: "{count} friends",
   },
 
   experiments: {

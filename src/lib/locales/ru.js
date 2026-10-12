@@ -34,6 +34,8 @@ export default {
     communityLabel: "Сообщество",
     community: {
       feed: "Лента",
+      favorites: "Избранное",
+      friends: "Друзья",
     },
     workspaceLabel: "Рабочее пространство",
     workspace: {
@@ -54,6 +56,8 @@ export default {
       title: "Уведомления",
       empty: "Пока нет уведомлений",
       commentOn: "{name} прокомментировал(а) ваш пост",
+      friendRequest: "{name} отправил(а) вам запрос в друзья",
+      friendAccepted: "{name} принял(а) ваш запрос в друзья",
     },
     userMenu: {
       profile: "Профиль",
@@ -310,6 +314,38 @@ export default {
     commentPosted: "Комментарий добавлен",
     commentPostedCensored: "Комментарий добавлен. Часть слов скрыта звёздочками.",
     deleteComment: "Удалить комментарий",
+  },
+
+  favorites: {
+    title: "Избранное",
+    subtitle: "Посты, которые вы сохранили.",
+    loadErrorTitle: "Не удалось загрузить избранное",
+    loadErrorBody: "Проверьте соединение и попробуйте ещё раз.",
+    emptyTitle: "Пока нет сохранённых постов",
+    emptyBody: "Нажмите на значок закладки под постом, чтобы сохранить его здесь.",
+  },
+
+  friends: {
+    title: "Друзья",
+    subtitle: "Ваши друзья и запросы в друзья.",
+    incomingTitle: "Входящие запросы ({count})",
+    outgoingTitle: "Отправленные запросы ({count})",
+    friendsTitle: "Друзья ({count})",
+    accept: "Принять",
+    decline: "Отклонить",
+    cancel: "Отменить",
+    remove: "Удалить",
+    addFriend: "Добавить в друзья",
+    requestSent: "Запрос отправлен",
+    acceptRequest: "Принять запрос",
+    removeFriendConfirm: "Удалить из друзей?",
+    requestAccepted: "Запрос в друзья принят",
+    removedToast: "Удалено из друзей",
+    emptyTitle: "У вас пока нет друзей",
+    emptyBody: "Запросы в друзья, которые вы отправите или получите, появятся здесь.",
+    loadErrorTitle: "Не удалось загрузить список друзей",
+    loadErrorBody: "Проверьте соединение и попробуйте ещё раз.",
+    countLabel: "{count} друзей",
   },
 
   experiments: {

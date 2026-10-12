@@ -79,6 +79,12 @@ body { color-scheme: dark; }
 @keyframes skIconPop { 0% { transform: scale(1); } 35% { transform: scale(1.3); } 100% { transform: scale(1); } }
 .sk-icon-pop { display: inline-flex; animation: skIconPop .32s var(--sk-ease-spring); }
 
+/* The same single-pop idea, sized for a whole button rather than a small
+   icon -- FriendButton replays this on every real status change (Add
+   Friend -> Request Sent -> Friends, etc). */
+@keyframes skBtnStatePop { 0% { transform: scale(1); } 40% { transform: scale(1.06); } 100% { transform: scale(1); } }
+.sk-btn-state-pop { animation: skBtnStatePop .28s var(--sk-ease-spring); }
+
 /* ---- Logo mark -------------------------------------------------------- */
 /* The resolved point stays quietly alive everywhere the mark appears --
    same slow breathing glow whether it's static (sidebar, headers) or
@@ -497,7 +503,7 @@ select.sk-input option:checked {
   .sk-logo-path, .sk-logo-point { animation: none !important; }
   .sk-logo-animated .sk-logo-path { stroke-dashoffset: 0 !important; }
   .sk-logo-animated .sk-logo-point { opacity: 1 !important; transform: scale(1) !important; }
-  .sk-bell-ring, .sk-icon-pop { animation: none !important; }
+  .sk-bell-ring, .sk-icon-pop, .sk-btn-state-pop { animation: none !important; }
 
   .sk-overlay-anim, .sk-backdrop-anim, .sk-toast-anim, .sk-drawer-anim, .sk-expand-anim { transition: none !important; }
   .sk-reveal { transition: none !important; opacity: 1 !important; transform: none !important; }

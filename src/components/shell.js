@@ -5,9 +5,10 @@ import { useCurrentOrg } from "../lib/currentOrg.js";
 import { useSession, signOut } from "../lib/auth.js";
 import { useMyProfile, updateMyProfile } from "../lib/profile.js";
 import { useT, useLocale, setLocale, LOCALES, useLocaleFadeClass } from "../lib/i18n.js";
-import { useNotifications, markAllNotificationsRead } from "../lib/notificationsStore.js";
+import { useNotifications, markAllNotificationsRead, notificationCopyKey, notificationTargetPath } from "../lib/notificationsStore.js";
+import { useFriends } from "../lib/friendsStore.js";
 import { relativeDate } from "../lib/format.js";
-import { toast } from "./ui.js";
+import { toast, Badge } from "./ui.js";
 import { useMountTransition } from "../lib/motion.js";
 
 // "experiments" and "results" removed from the sidebar for now (not
@@ -22,6 +23,8 @@ const NAV = [
 
 const COMMUNITY_NAV = [
   { id: "feed", key: "shell.community.feed", icon: "globe", path: "/app/feed" },
+  { id: "favorites", key: "shell.community.favorites", icon: "bookmark", path: "/app/favorites" },
+  { id: "friends", key: "shell.community.friends", icon: "friends", path: "/app/friends" },
 ];
 
 const WORKSPACE_NAV = [
@@ -120,19 +123,23 @@ function UserMenu({ onNavigate, collapsed = false }) {
   `;
 }
 
-function NavItem({ item, currentPath, onNavigate, t, collapsed }) {
+function NavItem({ item, currentPath, onNavigate, t, collapsed, badgeCount = 0 }) {
   const active = currentPath === item.path || currentPath.startsWith(item.path + "/");
   return html`
     <button
       onClick=${() => onNavigate(item.path)}
       data-active=${active}
       title=${collapsed ? t(item.key) : undefined}
-      class=${`sk-nav-item flex w-full items-center gap-3 overflow-hidden whitespace-nowrap rounded-lg py-2 text-sm font-medium ${collapsed ? "justify-center px-0" : "px-3"} ${
+      class=${`sk-nav-item relative flex w-full items-center gap-3 overflow-hidden whitespace-nowrap rounded-lg py-2 text-sm font-medium ${collapsed ? "justify-center px-0" : "px-3"} ${
         active ? "text-indigo-300" : "text-slate-400 hover:text-slate-200"
       }`}
     >
-      <${Icon} name=${item.icon} size=${17} className="shrink-0" />
-      ${!collapsed && t(item.key)}
+      <span class="relative shrink-0">
+        <${Icon} name=${item.icon} size=${17} />
+        ${collapsed && badgeCount > 0 && html`<span class="absolute -top-1 -right-1.5 h-2 w-2 rounded-full bg-rose-400 border border-slate-950"></span>`}
+      </span>
+      ${!collapsed && html`<span class="flex-1 text-left">${t(item.key)}</span>`}
+      ${!collapsed && badgeCount > 0 && html`<${Badge} tone="rose" className="shrink-0 px-1.5">${badgeCount}<//>`}
     </button>
   `;
 }
@@ -174,6 +181,8 @@ function SidebarModePicker({ mode, onChange, collapsed }) {
 function SidebarContent({ currentPath, onNavigate, collapsed = false, sidebarMode, onChangeSidebarMode }) {
   const t = useT();
   const { org } = useCurrentOrg();
+  const { incoming } = useFriends();
+  const navBadge = (id) => (id === "friends" ? incoming.length : 0);
   return html`
     <div class="flex h-full flex-col">
       <button type="button" onClick=${() => onNavigate("/app/overview")}
@@ -203,7 +212,7 @@ function SidebarContent({ currentPath, onNavigate, collapsed = false, sidebarMod
         ${collapsed
           ? html`<div class="my-2 mx-2 border-t border-black/40"></div>`
           : html`<div class="overflow-hidden whitespace-nowrap pt-4 pb-1.5 px-3 text-[11px] font-semibold uppercase tracking-wider text-slate-600">${t("shell.communityLabel")}</div>`}
-        ${COMMUNITY_NAV.map((item) => html`<${NavItem} key=${item.id} item=${item} currentPath=${currentPath} onNavigate=${onNavigate} t=${t} collapsed=${collapsed} />`)}
+        ${COMMUNITY_NAV.map((item) => html`<${NavItem} key=${item.id} item=${item} currentPath=${currentPath} onNavigate=${onNavigate} t=${t} collapsed=${collapsed} badgeCount=${navBadge(item.id)} />`)}
 
         ${collapsed
           ? html`<div class="my-2 mx-2 border-t border-black/40"></div>`
@@ -263,9 +272,9 @@ function NotificationsMenu() {
     if (opening && unreadCount > 0) markAllNotificationsRead();
   }
 
-  function onItemClick() {
+  function onItemClick(n) {
     setOpen(false);
-    navigate("/app/feed");
+    navigate(notificationTargetPath(n.type));
   }
 
   return html`
@@ -282,12 +291,12 @@ function NotificationsMenu() {
           ${!loading && notifications.length > 0 && html`
             <div class="max-h-80 overflow-y-auto py-1">
               ${notifications.map((n) => html`
-                <button key=${n.id} type="button" onClick=${onItemClick}
+                <button key=${n.id} type="button" onClick=${() => onItemClick(n)}
                   class="flex w-full items-start gap-2.5 px-4 py-2.5 text-left hover:bg-white/5 transition-colors">
                   <${Avatar} name=${n.actorName} url=${n.actorAvatarUrl} size=${28} />
                   <div class="min-w-0 flex-1">
-                    <div class="text-xs text-slate-300 leading-snug">${t("shell.notifications.commentOn", { name: n.actorName ?? t("feed.unknownAuthor") })}</div>
-                    ${n.commentBody && html`<div class="text-xs text-slate-500 truncate mt-0.5">«${n.commentBody}»</div>`}
+                    <div class="text-xs text-slate-300 leading-snug">${t(notificationCopyKey(n.type), { name: n.actorName ?? t("feed.unknownAuthor") })}</div>
+                    ${n.type === "comment" && n.commentBody && html`<div class="text-xs text-slate-500 truncate mt-0.5">«${n.commentBody}»</div>`}
                     <div class="text-[11px] text-slate-600 mt-0.5">${relativeDate(n.createdAt)}</div>
                   </div>
                   ${!n.isRead && html`<span class="mt-1.5 h-1.5 w-1.5 rounded-full bg-indigo-400 shrink-0"></span>`}
