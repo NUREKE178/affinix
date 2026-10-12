@@ -1,4 +1,4 @@
-import { useState, useEffect } from "./preact.js";
+import { useState, useEffect, useRef } from "./preact.js";
 import ru from "./locales/ru.js";
 import kk from "./locales/kk.js";
 import en from "./locales/en.js";
@@ -27,6 +27,10 @@ function detectInitialLocale() {
 }
 
 let state = { locale: detectInitialLocale() };
+// Bumped on every real locale change (both explicit and auto-adopted) so a
+// root layout can play a brief dip-and-recover transition instead of
+// letting translated text flip instantly -- see useLocaleChangeSeq().
+let localeChangeSeq = 0;
 // index.html hardcodes lang="en" (it's a static file; it can't know the
 // detected locale ahead of time) -- setLocale()/adoptProfileLocale() keep
 // documentElement.lang in sync for every LATER change, but without this,
@@ -51,6 +55,7 @@ export function getLocale() {
 export function setLocale(id) {
   if (!DICTS[id] || id === state.locale) return;
   state = { locale: id };
+  localeChangeSeq++;
   try { localStorage.setItem(STORAGE_KEY, id); } catch { /* best-effort persistence only */ }
   try { document.documentElement.lang = id; } catch { /* non-browser context */ }
   notify();
@@ -66,6 +71,7 @@ export function adoptProfileLocale(id) {
   try { if (localStorage.getItem(STORAGE_KEY)) return; } catch { /* fall through and adopt anyway */ }
   if (DICTS[id] && id !== state.locale) {
     state = { locale: id };
+    localeChangeSeq++;
     try { document.documentElement.lang = id; } catch { /* non-browser context */ }
     notify();
   }
@@ -108,4 +114,37 @@ export function useLocale() {
 export function useT() {
   const locale = useLocale();
   return (key, vars) => t(locale, key, vars);
+}
+
+/** For a root layout that wants to play a one-shot transition whenever the
+ * language actually changes (see .sk-locale-fade) -- a raw counter rather
+ * than the locale id itself, so the effect that reacts to it can tell
+ * "changed again" apart from "re-rendered for an unrelated reason". */
+export function useLocaleChangeSeq() {
+  const [, setTick] = useState(0);
+  useEffect(() => {
+    const listener = () => setTick((n) => n + 1);
+    listeners.add(listener);
+    return () => listeners.delete(listener);
+  }, []);
+  return localeChangeSeq;
+}
+
+/** The class a root layout applies to its outer element for a brief
+ * dip-and-recover whenever the language actually changes (see
+ * .sk-locale-fade) -- factored out since every top-level layout (the
+ * authenticated Shell, the public-page wrapper) needs the identical
+ * "re-trigger exactly once per change" timing. */
+export function useLocaleFadeClass() {
+  const seq = useLocaleChangeSeq();
+  const [fading, setFading] = useState(false);
+  const seen = useRef(seq);
+  useEffect(() => {
+    if (seq === seen.current) return;
+    seen.current = seq;
+    setFading(true);
+    const timer = setTimeout(() => setFading(false), 380);
+    return () => clearTimeout(timer);
+  }, [seq]);
+  return fading ? "sk-locale-fade" : "";
 }

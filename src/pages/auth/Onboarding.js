@@ -7,7 +7,7 @@ import { Field, TextInput, TextArea, Select, Switch, Button, toast } from "../..
 import { createOrganization, fetchMyOrganizations, addMemberByEmail } from "../../lib/org.js";
 import { useMyProfile, updateMyProfile, uploadAvatar, usernameAvailableLocally } from "../../lib/profile.js";
 import { COUNTRIES, TIMEZONES } from "../../lib/questionTypes.js";
-import { useT } from "../../lib/i18n.js";
+import { useT, useLocaleFadeClass } from "../../lib/i18n.js";
 import { withTimeout } from "../../lib/async.js";
 
 const TOTAL_STEPS = 10;
@@ -25,9 +25,10 @@ function initialsFor(name) {
  * top logo-button language as the rest of the auth flow. */
 function WizardShell({ step, children }) {
   const t = useT();
+  const localeFadeClass = useLocaleFadeClass();
   const pct = Math.round(((step + 1) / TOTAL_STEPS) * 100);
   return html`
-    <div class="min-h-screen bg-slate-950 text-slate-100 flex items-center justify-center px-6 py-10">
+    <div class=${`min-h-screen bg-slate-950 text-slate-100 flex items-center justify-center px-6 py-10 ${localeFadeClass}`}>
       <div class="w-full max-w-lg">
         <div class="flex items-center justify-between mb-8">
           <button onClick=${() => navigate("/")} class="flex items-center gap-2.5">
@@ -43,7 +44,12 @@ function WizardShell({ step, children }) {
           <div class="sk-display h-1.5 w-full rounded-full overflow-hidden mb-6">
             <div class="h-full rounded-full transition-all duration-300" style=${{ width: `${pct}%`, background: "linear-gradient(90deg,#818cf8,#6366f1)", boxShadow: "0 0 8px -1px rgba(99,102,241,.6)" }}></div>
           </div>
-          ${children}
+          <!-- Keyed by step so this (and only this) remounts and replays its
+               entrance per step -- the progress bar above stays mounted so
+               its own width transition keeps animating smoothly. -->
+          <div key=${step} class="slide-up">
+            ${children}
+          </div>
         </div>
       </div>
     </div>

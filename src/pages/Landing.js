@@ -3,7 +3,17 @@ import { navigate } from "../router.js";
 import { Icon, Logo } from "../components/icons.js";
 import { Button, Badge } from "../components/ui.js";
 import { LanguageSwitch } from "../components/shell.js";
-import { useT } from "../lib/i18n.js";
+import { useT, useLocaleFadeClass } from "../lib/i18n.js";
+import { useMountTransition, useReveal } from "../lib/motion.js";
+
+/** A section that reveals once it scrolls into view -- never used above the
+ * fold (it starts at opacity 0 until the observer fires, which would just
+ * read as a flash for anything visible on first paint). */
+function Reveal({ as = "div", className = "", delayMs = 0, children }) {
+  const { ref, visible } = useReveal();
+  const Tag = as;
+  return html`<${Tag} ref=${ref} class=${`sk-reveal ${className}`} data-visible=${visible} style=${`transition-delay:${delayMs}ms`}>${children}<//>`;
+}
 
 function ReportMetric({ label, value }) {
   return html`
@@ -65,7 +75,13 @@ function ExampleReport({ t }) {
 
 export function Landing() {
   const t = useT();
+  const localeFadeClass = useLocaleFadeClass();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const { mounted: menuMounted, phase: menuPhase } = useMountTransition(mobileMenuOpen);
+  const workflowHeading = useReveal();
+  const reportReveal = useReveal();
+  const disclaimerReveal = useReveal();
+  const footerReveal = useReveal();
   const WORKFLOW_ICONS = ["upload", "edit", "participants", "results", "insights"];
   const workflowSteps = ["s1", "s2", "s3", "s4", "s5"].map((key, i) => ({
     key, icon: WORKFLOW_ICONS[i],
@@ -74,7 +90,7 @@ export function Landing() {
   }));
 
   return html`
-    <div class="min-h-screen bg-slate-950 text-slate-100">
+    <div class=${`min-h-screen bg-slate-950 text-slate-100 ${localeFadeClass}`}>
       <header class="flex items-center justify-between px-6 py-5 lg:px-12 max-w-7xl mx-auto">
         <div class="flex items-center gap-2.5">
           <div class="sk-panel-flat flex h-9 w-9 items-center justify-center rounded-lg"><${Logo} size=${18} animated=${true} /></div>
@@ -90,9 +106,9 @@ export function Landing() {
         </button>
       </header>
 
-      ${mobileMenuOpen && html`
-        <div class="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/80 px-6 fade-in" onClick=${() => setMobileMenuOpen(false)}>
-          <div class="sk-panel w-full max-w-xs rounded-2xl p-6 flex flex-col items-center gap-5 text-center" onClick=${(e) => e.stopPropagation()}>
+      ${menuMounted && html`
+        <div class="sk-backdrop-anim fixed inset-0 z-50 flex items-center justify-center bg-slate-950/80 px-6" data-state=${menuPhase} onClick=${() => setMobileMenuOpen(false)}>
+          <div class="sk-overlay-anim sk-overlay-anim-center sk-panel w-full max-w-xs rounded-2xl p-6 flex flex-col items-center gap-5 text-center" data-state=${menuPhase} onClick=${(e) => e.stopPropagation()}>
             <button onClick=${() => setMobileMenuOpen(false)} class="self-end -mt-2 -mr-2 text-slate-500 hover:text-slate-300 p-1"><${Icon} name="close" size=${18} /></button>
             <${LanguageSwitch} />
             <div class="flex flex-col items-stretch gap-2.5 w-full">
@@ -103,7 +119,7 @@ export function Landing() {
         </div>
       `}
 
-      <section class="px-6 lg:px-12 max-w-4xl mx-auto text-center pt-10 pb-10">
+      <section class="px-6 lg:px-12 max-w-4xl mx-auto text-center pt-10 pb-10 slide-up">
         <h1 class="text-4xl sm:text-5xl font-bold tracking-tight leading-[1.1] text-slate-50">${t("landing.heroTitle")}</h1>
         <p class="mt-5 text-lg text-slate-400 max-w-2xl mx-auto">${t("landing.heroSubtitle")}</p>
         <div class="mt-8 flex flex-wrap items-center justify-center gap-3">
@@ -112,31 +128,33 @@ export function Landing() {
       </section>
 
       <section class="px-6 lg:px-12 max-w-6xl mx-auto py-14">
-        <div class="text-center mb-10">
+        <div ref=${workflowHeading.ref} data-visible=${workflowHeading.visible} class="sk-reveal text-center mb-10">
           <h2 class="text-2xl font-semibold text-slate-50">${t("landing.workflow.title")}</h2>
           <p class="text-sm text-slate-500 mt-2 max-w-xl mx-auto">${t("landing.workflow.subtitle")}</p>
         </div>
         <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3">
           ${workflowSteps.map(
             (s, i) => html`
-              <div key=${s.key} class="sk-panel-flat rounded-2xl p-5 relative">
+              <${Reveal} key=${s.key} delayMs=${Math.min(i, 4) * 70} className="rounded-2xl p-5 relative sk-panel-flat">
                 <div class="absolute top-4 right-4 text-xs text-slate-600 font-mono tracking-wider">${String(i + 1).padStart(2, "0")}</div>
                 <div class="sk-display flex h-10 w-10 items-center justify-center rounded-lg text-indigo-300 mb-3"><${Icon} name=${s.icon} size=${18} /></div>
                 <div class="font-semibold text-slate-100 text-sm">${s.title}</div>
                 <div class="text-xs text-slate-500 mt-1.5 leading-relaxed">${s.desc}</div>
                 ${i < workflowSteps.length - 1 && html`<div class="hidden lg:block absolute top-1/2 -right-2 text-slate-700"><${Icon} name="chevronRight" size=${14} /></div>`}
-              </div>
+              <//>
             `
           )}
         </div>
       </section>
 
       <section class="px-6 lg:px-12 max-w-3xl mx-auto py-8">
-        <${ExampleReport} t=${t} />
+        <div ref=${reportReveal.ref} data-visible=${reportReveal.visible} class="sk-reveal">
+          <${ExampleReport} t=${t} />
+        </div>
       </section>
 
       <section class="px-6 lg:px-12 max-w-4xl mx-auto py-10">
-        <div class="sk-panel-flat rounded-2xl border-amber-500/15 p-6">
+        <div ref=${disclaimerReveal.ref} data-visible=${disclaimerReveal.visible} class="sk-reveal sk-panel-flat rounded-2xl border-amber-500/15 p-6">
           <div class="flex items-start gap-3">
             <${Icon} name="shield" size=${20} className="text-amber-400 mt-0.5 shrink-0" />
             <div>
@@ -147,7 +165,7 @@ export function Landing() {
         </div>
       </section>
 
-      <footer class="px-6 lg:px-12 max-w-6xl mx-auto py-10 text-center text-xs text-slate-600">
+      <footer ref=${footerReveal.ref} data-visible=${footerReveal.visible} class="sk-reveal px-6 lg:px-12 max-w-6xl mx-auto py-10 text-center text-xs text-slate-600">
         ${t("landing.footer")}
       </footer>
     </div>

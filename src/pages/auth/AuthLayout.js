@@ -2,10 +2,12 @@ import { html } from "../../lib/preact.js";
 import { navigate } from "../../router.js";
 import { Logo } from "../../components/icons.js";
 import { LanguageSwitch } from "../../components/shell.js";
+import { useLocaleFadeClass } from "../../lib/i18n.js";
 
 export function AuthLayout({ title, subtitle, children, footer }) {
+  const localeFadeClass = useLocaleFadeClass();
   return html`
-    <div class="min-h-screen bg-slate-950 text-slate-100 flex items-center justify-center px-6 py-10">
+    <div class=${`min-h-screen bg-slate-950 text-slate-100 flex items-center justify-center px-6 py-10 ${localeFadeClass}`}>
       <div class="w-full max-w-sm">
         <div class="flex items-center justify-between mb-8">
           <button onClick=${() => navigate("/")} class="flex items-center gap-2.5">

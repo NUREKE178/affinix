@@ -28,7 +28,7 @@ export function PublicProfile({ params }) {
   }, [username, retryTick]);
 
   return html`
-    <div class="min-h-screen bg-slate-950 text-slate-100 flex flex-col">
+    <div class="min-h-screen bg-slate-950 text-slate-100 flex flex-col fade-in">
       <header class="px-6 py-4 border-b border-slate-800/80">
         <button onClick=${() => navigate("/")} class="flex items-center gap-2 text-sm font-semibold text-slate-200">
           <div class="sk-panel-flat flex h-7 w-7 items-center justify-center rounded-lg"><${Logo} size=${15} /></div>

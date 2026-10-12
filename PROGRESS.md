@@ -2832,3 +2832,175 @@ comment-author markup change (`span` → `button`, now that it's
 clickable) -- updated to match, not reverted. Full regression suite
 re-run clean (45 scripts), modulo the one documented
 `test_loading_upgrade.mjs` flake.
+
+## Site-wide motion & animation system ✅
+
+A large, explicit request: animate the whole product -- menus, language
+switching, page transitions, buttons, posts/comments, modals, loading
+states, scroll reveals, micro-interactions -- consistently, with natural
+easing, mobile-safe performance, no excessive movement, and full
+`prefers-reduced-motion` support, without touching any existing
+functionality or layout.
+
+**One motion system, not per-component ad hoc timing.** `styles.css`
+gained a `--sk-ease-*`/`--sk-dur-*` token set inside the existing
+skeuomorphic `:root` block (`--sk-ease-out`/`-in`/`-standard`/`-spring`,
+`--sk-dur-fast`/`-base`/`-slow`/`-exit`) -- every new rule and several
+existing ones (`.sk-btn`, `.sk-input`, `.sk-tab`, `.sk-switch-*`,
+`.sk-nav-item`, `.sk-slot`, `.sk-checkbox`) now read timing from these
+instead of ad hoc `ease`/bare `cubic-bezier()` literals, so the whole
+app shares one feel. New `src/lib/motion.js`: `useMountTransition(open)`
+drives a `data-state` attribute (`entering`/`entered`/`exiting`) so a
+closing overlay plays an exit transition instead of unmounting the
+instant `open` flips false (`if (!open) return null` can't do that --
+the DOM node is already gone); `useMountedValue(value)` is the same
+thing for "the modal's content IS the selected object, which goes
+`null` the moment it starts closing" (`confirmDelete`, `viewingAuthor`)
+-- it keeps rendering the last non-null value through the exit fade
+instead of crashing on `null.id` mid-transition; `useReveal()` is an
+IntersectionObserver-backed scroll reveal; `prefersReducedMotion()`
+backs both. New CSS primitives consumed by all of the above:
+`.sk-overlay-anim` (+`-down`/`-center` direction variants) for
+modals/dropdowns/popovers, `.sk-backdrop-anim` for their backdrops,
+`.sk-drawer-anim` for the mobile sidebar's edge slide, `.sk-expand-anim`
+for inline content expanding in place (a comment thread), `.sk-toast-anim`
+for a dismissing toast, `.sk-reveal` for scroll reveals, `.sk-page-enter`
+for routed-page entrances, `.sk-locale-fade` for the language-switch dip,
+`.sk-icon-pop` for a like/save icon's one-shot pop. All of it is
+opacity/transform only (compositor-only properties -- no layout or paint
+cost), which is what keeps several overlays animating at once cheap on a
+phone.
+
+**Cascading through the shared components, not page by page.** `Modal`
+(`ui.js`) and `Dropdown`/`NotificationsMenu`'s panel (`shell.js`) are
+composed by nearly every page already, so fixing those three plus the
+mobile sidebar drawer and `ToastHost` cascades the "modals/popups get
+real entrance+exit" requirement across the whole app in five edits, not
+dozens. `Feed.js`'s three hand-rolled overlays (`confirmDelete`,
+`viewingAuthor`, the image lightbox) got the same treatment directly --
+they don't use the shared `Modal` (different header-less layout), so
+reusing `Modal` would have changed their look; they get the identical
+`useMountTransition`/`sk-backdrop-anim`/`sk-overlay-anim-center` wiring
+by hand instead.
+
+**Language switching**: `i18n.js` gained a `localeChangeSeq` counter
+bumped by both `setLocale()` and `adoptProfileLocale()`, and
+`useLocaleFadeClass()` -- a hook that watches it and returns
+`"sk-locale-fade"` for ~380ms after any real change, then drops it
+(toggled, not just applied once, so the CSS animation replays every
+time, the same convention the notification bell's ring already used).
+Wired to the root element of every top-level layout a `LanguageSwitch`
+actually appears in: `Shell` (the whole authenticated app), `AuthLayout`
+(login/register/forgot/reset), `Onboarding`'s `WizardShell`, and
+`Landing`. Translated text across the whole visible layout dips and
+recovers together instead of flickering mid-swap.
+
+**Page transitions**: `Shell`'s `<main>` now wraps `children` in a
+`<div key=${currentPath} class="sk-page-enter">` -- Preact remounts that
+wrapper on every route change (new key), replaying the entrance on every
+one of the ~10 dashboard pages for free. `Onboarding`'s 10-step wizard
+had a subtler gap: its panel already had `fade-in`, but since `step`
+changing doesn't remount the panel (same component instance, just new
+children), that fade never replayed between steps -- the wizard had
+*zero* transition between steps 1 through 10. Fixed by keying only the
+inner step-content wrapper (not the whole panel) by `step`; the progress
+bar stays outside that keyed subtree so its own `width` transition keeps
+animating smoothly instead of snapping (keying its ancestor would have
+unmounted it fresh every step, breaking that animation -- caught by
+reasoning through it, not by a failing test). `Landing`, `PublicProfile`,
+and every reachable state of `ParticipantRunner`/`LocalPreviewRunner`/
+`LiveRunner` (loading, not-found, already-done, and the live task flow)
+now carry `fade-in`/`slide-up` on their own root too, so the public and
+participant-facing surfaces aren't a gap in "the entire website."
+
+**Feed**: posts get a staggered `slide-up` on mount (capped at 6×40ms of
+delay so a long feed doesn't take forever to finish animating in) --
+`.slide-up` needed `animation-fill-mode: backwards` added so a delayed
+instance renders at its *from* keyframe during the delay instead of
+flashing fully visible first, then snapping to invisible when the
+animation actually starts. A comment thread opening/closing now plays
+through `.sk-expand-anim`; the image lightbox and the two Feed-local
+modals get full enter/exit via `useMountedValue`. Liking or saving a
+post now pops the icon once (`.sk-icon-pop`, triggered only on the
+false→true edge, never on mount or on the way back out) -- a small,
+single-pop micro-interaction, not a bounce loop.
+
+**Landing**: scroll reveal on the workflow section (title + a staggered
+per-card reveal), the example report, the disclaimer, and the footer.
+`useReveal()`'s first version had a real flash bug, caught by its own
+test rather than assumed fixed: an element already on screen the instant
+it mounts (true for the workflow heading at common viewport heights --
+not actually "below the fold" the way the first draft of the test
+assumed) rendered hidden for one frame before the necessarily-async
+`IntersectionObserver` callback caught up and revealed it. Fixed with a
+second effect, `useLayoutEffect` (not `useEffect` -- it runs before the
+browser paints, not after), that checks `getBoundingClientRect()` once
+on mount and marks the element visible immediately if it's already
+on-screen, skipping the hidden-then-revealed dance entirely for that
+case. The hero itself intentionally never uses `.sk-reveal` (a one-shot
+`slide-up` instead) for the same reason -- it's always above the fold,
+so gating it on an observer at all is pure flash risk with no benefit.
+`html` also picked up `scroll-behavior: smooth` (reduced-motion-aware)
+for the "scrolling effects" ask.
+
+**Micro-interactions / consistency sweep**: `.sk-btn` gets a subtle
+`-1px` hover lift (press still overrides it, same cascade order as
+before); `ProgressBar`'s fill now transitions `width` instead of
+snapping to a new value; `.sk-checkbox`'s check mark pops in instead of
+appearing instantly; the sidebar mode picker's menu items got the
+`transition-colors` its sibling `MenuItem` already had. Tooltips were
+explicitly checked for, not assumed absent: the codebase only uses
+native `title=` attributes (browser-chrome rendered, nothing to animate)
+and Chart.js's own built-in tooltip plugin (animates itself) -- no
+custom tooltip surface exists to add motion to.
+
+**Reduced motion**: every new class above is covered in the existing
+`prefers-reduced-motion: reduce` block, extended rather than
+duplicated. Two different failure modes were deliberately avoided, not
+just "turned off everything": a mount/unmount overlay (`.sk-overlay-anim`
+etc.) just gets `transition: none` -- its visibility is driven by
+`useMountTransition`'s own JS state machine, which always completes on
+its own timer regardless of motion settings, so nothing gets stuck. A
+scroll reveal is different -- `useReveal()`'s visibility depends on an
+*external* signal (the user scrolling, or an observer callback that may
+never fire for someone who never scrolls that far), so `.sk-reveal`
+additionally forces `opacity:1; transform:none` unconditionally under
+reduced motion, rather than relying on the observer at all; content can
+never be stuck invisible waiting for a scroll that doesn't happen.
+`useMountTransition`'s exit duration itself also drops to 0 under
+reduced motion (checked live, not cached), so a reduced-motion user
+never waits through an exit-transition delay that isn't visually
+animating anyway.
+
+**Verified**: two new Playwright scripts, both passing in full.
+`test_motion_landing.mjs` (no auth) covers the public surface: a reveal
+section already on screen at mount shows visible immediately (the
+flash-fix, confirmed both by proving the bug first at 390×844 viewport
+height and then proving the fix); a footer below the fold starts hidden
+and reveals once scrolled into view (this one needed its own fix along
+the way -- `scrollIntoView` now animates over ~900ms because of the new
+`scroll-behavior: smooth`, so a test that scrolls and checks immediately
+needs to wait past that animation, not just past the reveal transition --
+confirmed by instrumenting scrollY over time rather than guessing);
+the mobile menu modal reaches `entered`, survives one tick as `exiting`
+instead of vanishing the instant it's told to close, then fully
+unmounts; and a `reducedMotion:'reduce'` context confirms reveal content
+is visible without scrolling and `.sk-btn`'s transition is actually
+disabled. `test_motion_app.mjs` (authenticated, mocked Supabase + a
+stateful `post_likes` mock so a like genuinely round-trips) covers the
+UserMenu dropdown's same entered/exiting/unmounted sequence on Escape,
+the locale-fade class appearing on `Shell`'s root on a language switch
+and clearing itself after, a route change rendering inside the keyed
+`.sk-page-enter` wrapper, the post stagger class, the comment thread and
+lightbox both reaching `entered`, and the like icon popping within its
+320ms window (an early draft checked at 400ms, after the pop had
+already finished animating out -- caught by polling aria-pressed and the
+pop class together over 800ms rather than guessing a single timeout, the
+same discipline as the scroll-timing fix). Both scripts also assert zero
+console/page errors across their full flows. Screenshotted the landing
+page before and after a scroll to confirm nothing visually broke. Full
+45-script regression suite re-run: 44 clean, the one pre-existing
+documented `test_loading_upgrade.mjs` flake (stuck loading on
+`/app/reports` and an experiment's `/results` page -- neither touched by
+this round) -- not a new regression, checked directly rather than
+assumed.

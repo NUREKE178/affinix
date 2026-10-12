@@ -1,5 +1,6 @@
 import { html, useState, useEffect, useRef } from "../lib/preact.js";
 import { Icon } from "./icons.js";
+import { useMountTransition, prefersReducedMotion } from "../lib/motion.js";
 
 export function Card({ className = "", children, ...rest }) {
   return html`<div class=${`sk-panel rounded-xl ${className}`} ...${rest}>${children}</div>`;
@@ -80,7 +81,7 @@ export function ProgressBar({ value, tone = "indigo" }) {
   const pctVal = Math.max(0, Math.min(1, value ?? 0)) * 100;
   return html`
     <div class="sk-display h-2.5 w-full rounded-full overflow-hidden">
-      <div class="h-full rounded-full" style=${{ width: `${pctVal}%`, background: colors[tone] ?? colors.indigo, boxShadow: "0 0 8px -1px rgba(99,102,241,.6), inset 0 1px 0 rgba(255,255,255,.3)" }}></div>
+      <div class="sk-progress-fill h-full rounded-full" style=${{ width: `${pctVal}%`, background: colors[tone] ?? colors.indigo, boxShadow: "0 0 8px -1px rgba(99,102,241,.6), inset 0 1px 0 rgba(255,255,255,.3)", transition: "width var(--sk-dur-slow) var(--sk-ease-out)" }}></div>
     </div>
   `;
 }
@@ -121,10 +122,18 @@ export function EmptyState({ title, body, action, icon = "sparkle" }) {
 }
 
 export function Modal({ open, onClose, title, children, footer, wide = false }) {
-  if (!open) return null;
+  const { mounted, phase } = useMountTransition(open);
+  if (!mounted) return null;
   return html`
-    <div class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm" onClick=${(e) => e.target === e.currentTarget && onClose?.()}>
-      <div class=${`sk-modal w-full ${wide ? "max-w-3xl" : "max-w-lg"} max-h-[85vh] overflow-y-auto rounded-2xl`}>
+    <div
+      class="sk-backdrop-anim fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm"
+      data-state=${phase}
+      onClick=${(e) => e.target === e.currentTarget && onClose?.()}
+    >
+      <div
+        class=${`sk-modal sk-overlay-anim sk-overlay-anim-center w-full ${wide ? "max-w-3xl" : "max-w-lg"} max-h-[85vh] overflow-y-auto rounded-2xl`}
+        data-state=${phase}
+      >
         <div class="flex items-center justify-between border-b border-black/40 px-5 py-4">
           <h3 class="font-semibold text-slate-100">${title}</h3>
           <button class="sk-btn h-7 w-7 rounded-md text-slate-400 hover:text-slate-100 text-sm" onClick=${onClose}>✕</button>
@@ -248,8 +257,13 @@ export function ToastHost() {
       setItems((list) => {
         if (list.some((t) => t.message === message && t.tone === tone)) return list;
         const id = nextId.current++;
-        setTimeout(() => setItems((cur) => cur.filter((t) => t.id !== id)), 4000);
-        return [...list, { id, message, tone }];
+        // Flip to "exiting" first so it plays its exit transition, then
+        // actually drop it from the array once that transition is done.
+        setTimeout(() => {
+          setItems((cur) => cur.map((t) => (t.id === id ? { ...t, leaving: true } : t)));
+          setTimeout(() => setItems((cur) => cur.filter((t) => t.id !== id)), prefersReducedMotion() ? 0 : 180);
+        }, 4000);
+        return [...list, { id, message, tone, leaving: false }];
       });
     });
     return () => setToastRoot(null);
@@ -260,7 +274,7 @@ export function ToastHost() {
   return html`
     <div class="fixed bottom-4 right-4 z-[100] flex flex-col gap-2 max-w-sm">
       ${items.map((t) => html`
-        <div key=${t.id} class="sk-panel rounded-lg px-4 py-2.5 text-sm shadow-lg fade-in flex items-center gap-2.5">
+        <div key=${t.id} class="sk-panel sk-toast-anim rounded-lg px-4 py-2.5 text-sm shadow-lg slide-up flex items-center gap-2.5" data-state=${t.leaving ? "exiting" : "entered"}>
           <span class=${`h-1.5 w-1.5 rounded-full shrink-0 ${TOAST_TONE_DOT[t.tone] ?? TOAST_TONE_DOT.slate}`} style="box-shadow:0 0 6px 1px currentColor"></span>
           <span class=${TOAST_TONE_TEXT[t.tone] ?? TOAST_TONE_TEXT.slate}>${t.message}</span>
         </div>

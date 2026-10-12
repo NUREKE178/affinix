@@ -8,7 +8,10 @@
 body { color-scheme: dark; }
 
 .fade-in { animation: fadeIn .25s ease-out; }
-.slide-up { animation: slideUp .3s ease-out; }
+/* backwards: so an element given an animation-delay (the feed's post
+   stagger) renders at the "from" keyframe during that delay instead of
+   flashing fully visible first -- a no-op for every delay:0 use. */
+.slide-up { animation: slideUp .3s ease-out backwards; }
 @keyframes fadeIn { from { opacity: 0 } to { opacity: 1 } }
 @keyframes slideUp { from { opacity: 0; transform: translateY(8px) } to { opacity: 1; transform: translateY(0) } }
 
@@ -69,6 +72,12 @@ body { color-scheme: dark; }
   70%, 80% { transform: rotate(0deg); }
 }
 .sk-bell-ring { transform-origin: 50% 15%; animation: skBellRing .6s ease-in-out; }
+
+/* A quick single pop, not a bounce -- for an icon flipping to its "active"
+   state (liking/saving a post). Re-added and removed by the component per
+   press, same convention as .sk-bell-ring. */
+@keyframes skIconPop { 0% { transform: scale(1); } 35% { transform: scale(1.3); } 100% { transform: scale(1); } }
+.sk-icon-pop { display: inline-flex; animation: skIconPop .32s var(--sk-ease-spring); }
 
 /* ---- Logo mark -------------------------------------------------------- */
 /* The resolved point stays quietly alive everywhere the mark appears --
@@ -140,7 +149,124 @@ body { color-scheme: dark; }
 
   --sk-accent: linear-gradient(180deg, #818cf8 0%, #6366f1 55%, #4f46e5 100%);
   --sk-accent-active: linear-gradient(180deg, #4338ca 0%, #4f46e5 100%);
+
+  /* Motion tokens -- every animation added for the site-wide motion pass
+     reads duration/easing from here, so the feel stays one system instead
+     of each component inventing its own timing. */
+  --sk-ease-out: cubic-bezier(.16, 1, .3, 1);      /* decelerate: entrances */
+  --sk-ease-in: cubic-bezier(.7, 0, .84, 0);        /* accelerate: exits */
+  --sk-ease-standard: cubic-bezier(.4, 0, .2, 1);   /* simple hover/color/transform */
+  --sk-ease-spring: cubic-bezier(.34, 1.56, .64, 1); /* a little overshoot -- sparingly */
+  --sk-dur-fast: 120ms;
+  --sk-dur-base: 200ms;
+  --sk-dur-slow: 320ms;
+  --sk-dur-exit: 150ms;
 }
+
+/* ---- Motion: shared overlay / backdrop / reveal primitives ---------------
+   Modals, dropdowns, popovers and toasts all mount/unmount through
+   useMountTransition() (src/lib/motion.js), which sets a `data-state`
+   attribute -- "entering" | "entered" | "exiting" -- on a timer so a
+   closing overlay plays an exit transition instead of vanishing the
+   instant `open` goes false. Only opacity/transform animate (both are
+   compositor-only, no layout/paint cost), which is what keeps this cheap
+   with several overlays in flight on a low-powered phone. */
+
+.sk-overlay-anim {
+  --sk-overlay-y: 4px;
+  opacity: 0;
+  transform: scale(.96) translateY(var(--sk-overlay-y));
+  transition: opacity var(--sk-dur-base) var(--sk-ease-out), transform var(--sk-dur-base) var(--sk-ease-out);
+}
+/* Anchored-menu direction: default drifts up into place (menus that open
+   upward from a trigger, e.g. bottom-full dropdowns); -down is for a
+   popover that opens below its trigger; -center drops the drift entirely
+   for a dialog with no single anchor edge to grow from. */
+.sk-overlay-anim-down { --sk-overlay-y: -4px; }
+.sk-overlay-anim-center { --sk-overlay-y: 0px; }
+.sk-overlay-anim[data-state="entered"] {
+  opacity: 1;
+  transform: scale(1) translateY(0);
+}
+.sk-overlay-anim[data-state="exiting"] {
+  transition-duration: var(--sk-dur-exit);
+  transition-timing-function: var(--sk-ease-in);
+}
+
+/* A drawer sliding in from the left edge (the mobile sidebar) rather than
+   scaling/fading in place -- same data-state contract as .sk-overlay-anim. */
+.sk-drawer-anim {
+  transform: translateX(-100%);
+  transition: transform var(--sk-dur-base) var(--sk-ease-out);
+}
+.sk-drawer-anim[data-state="entered"] { transform: translateX(0); }
+.sk-drawer-anim[data-state="exiting"] {
+  transition-duration: var(--sk-dur-exit);
+  transition-timing-function: var(--sk-ease-in);
+}
+
+/* Inline content expanding in place (a comment thread opening below its
+   post) -- fade + a small vertical settle, no scale: it's growing out of
+   the row above it, not popping up as its own floating surface. */
+.sk-expand-anim {
+  opacity: 0;
+  transform: translateY(-6px);
+  transition: opacity var(--sk-dur-base) var(--sk-ease-out), transform var(--sk-dur-base) var(--sk-ease-out);
+}
+.sk-expand-anim[data-state="entered"] { opacity: 1; transform: translateY(0); }
+.sk-expand-anim[data-state="exiting"] {
+  transition-duration: var(--sk-dur-exit);
+  transition-timing-function: var(--sk-ease-in);
+}
+
+.sk-backdrop-anim {
+  opacity: 0;
+  transition: opacity var(--sk-dur-base) var(--sk-ease-out);
+}
+.sk-backdrop-anim[data-state="entered"] { opacity: 1; }
+.sk-backdrop-anim[data-state="exiting"] {
+  transition-duration: var(--sk-dur-exit);
+  transition-timing-function: var(--sk-ease-in);
+}
+
+/* A toast fades/slides out of the stack on dismiss instead of disappearing
+   mid-frame; ToastHost gives a toast this class plus data-state="exiting"
+   for its last tick before removing it from the array. */
+.sk-toast-anim {
+  transition: opacity var(--sk-dur-base) var(--sk-ease-out), transform var(--sk-dur-base) var(--sk-ease-out);
+}
+.sk-toast-anim[data-state="exiting"] {
+  opacity: 0;
+  transform: translateX(12px) scale(.97);
+  transition-duration: var(--sk-dur-exit);
+  transition-timing-function: var(--sk-ease-in);
+}
+
+/* Scroll-reveal: useReveal() (src/lib/motion.js) toggles data-visible via
+   IntersectionObserver. Never starts hidden until the observer is known to
+   be attached, so content can't get stuck invisible. */
+.sk-reveal {
+  opacity: 0;
+  transform: translateY(20px);
+  transition: opacity var(--sk-dur-slow) var(--sk-ease-out), transform var(--sk-dur-slow) var(--sk-ease-out);
+  will-change: opacity, transform;
+}
+.sk-reveal[data-visible="true"] {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+/* Page/section swap: the router keys each routed page by its path, so
+   Preact remounts the wrapper and this plays again on every navigation. */
+@keyframes skPageIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+.sk-page-enter { animation: skPageIn var(--sk-dur-slow) var(--sk-ease-out); }
+
+/* Language switch: a quick, elegant dip-and-recover so translated text
+   changing reads as an intentional transition instead of a flicker.
+   Re-triggered by toggling the class on each locale change (CSS
+   animations don't replay on their own) -- the same pattern as the bell. */
+@keyframes skLocaleFade { 0% { opacity: 1; } 45% { opacity: .4; } 100% { opacity: 1; } }
+.sk-locale-fade { animation: skLocaleFade .36s var(--sk-ease-standard); }
 
 /* ---- Panels ------------------------------------------------------------ */
 
@@ -186,9 +312,9 @@ body { color-scheme: dark; }
   background: var(--sk-raised);
   border: 1px solid rgba(255,255,255,.06);
   box-shadow: var(--sk-shadow-raised-sm);
-  transition: transform .08s ease, box-shadow .08s ease, background .15s ease;
+  transition: transform var(--sk-dur-fast) var(--sk-ease-standard), box-shadow var(--sk-dur-fast) var(--sk-ease-standard), background var(--sk-dur-base) var(--sk-ease-standard);
 }
-.sk-btn:hover:not(:disabled) { background: var(--sk-raised-hover); }
+.sk-btn:hover:not(:disabled) { background: var(--sk-raised-hover); transform: translateY(-1px); }
 .sk-btn:active:not(:disabled),
 .sk-btn[data-pressed="true"] {
   background: var(--sk-raised-active);
@@ -237,7 +363,7 @@ body { color-scheme: dark; }
   background: var(--sk-inset);
   border: 1px solid rgba(0,0,0,.6);
   box-shadow: var(--sk-shadow-inset);
-  transition: box-shadow .12s ease, border-color .12s ease;
+  transition: box-shadow var(--sk-dur-fast) var(--sk-ease-standard), border-color var(--sk-dur-fast) var(--sk-ease-standard);
 }
 .sk-input:focus {
   outline: none;
@@ -268,7 +394,7 @@ select.sk-input option:checked {
   box-shadow: var(--sk-shadow-inset);
 }
 .sk-tab {
-  transition: transform .08s ease, box-shadow .1s ease, background .15s ease;
+  transition: transform var(--sk-dur-fast) var(--sk-ease-standard), box-shadow var(--sk-dur-fast) var(--sk-ease-standard), background var(--sk-dur-base) var(--sk-ease-standard);
 }
 .sk-tab[data-active="true"] {
   background: var(--sk-accent);
@@ -281,13 +407,13 @@ select.sk-input option:checked {
 .sk-switch-track {
   background: var(--sk-inset);
   box-shadow: var(--sk-shadow-inset);
-  transition: background .15s ease;
+  transition: background var(--sk-dur-base) var(--sk-ease-standard);
 }
 .sk-switch-track[data-on="true"] { background: var(--sk-accent); box-shadow: inset 0 1px 3px rgba(49,46,129,.6); }
 .sk-switch-knob {
   background: linear-gradient(180deg, #fff 0%, #e2e8f0 100%);
   box-shadow: 0 1px 2px rgba(0,0,0,.4), 0 0 0 1px rgba(0,0,0,.08);
-  transition: transform .15s cubic-bezier(.34,1.56,.64,1);
+  transition: transform var(--sk-dur-base) var(--sk-ease-spring);
 }
 
 /* ---- Sidebar / topbar ---------------------------------------------------- */
@@ -295,7 +421,7 @@ select.sk-input option:checked {
 .sk-sidebar { background: var(--sk-sidebar); border-right: 1px solid rgba(0,0,0,.5); box-shadow: inset -1px 0 0 rgba(255,255,255,.04); }
 .sk-topbar { background: var(--sk-topbar); border-bottom: 1px solid rgba(0,0,0,.5); box-shadow: inset 0 1px 0 var(--sk-hi), 0 4px 12px -6px rgba(0,0,0,.5); }
 
-.sk-nav-item { transition: background .12s ease, box-shadow .12s ease, color .12s ease; }
+.sk-nav-item { transition: background var(--sk-dur-fast) var(--sk-ease-standard), box-shadow var(--sk-dur-fast) var(--sk-ease-standard), color var(--sk-dur-fast) var(--sk-ease-standard); }
 .sk-nav-item[data-active="true"] {
   background: var(--sk-inset);
   box-shadow: var(--sk-shadow-inset);
@@ -322,7 +448,7 @@ select.sk-input option:checked {
   background: var(--sk-raised);
   border: 1px solid rgba(255,255,255,.06);
   box-shadow: var(--sk-shadow-raised-sm);
-  transition: transform .12s ease, box-shadow .12s ease, background .12s ease;
+  transition: transform var(--sk-dur-fast) var(--sk-ease-standard), box-shadow var(--sk-dur-fast) var(--sk-ease-standard), background var(--sk-dur-fast) var(--sk-ease-standard);
 }
 .sk-slot:hover { transform: translateY(-2px); box-shadow: var(--sk-shadow-raised); }
 .sk-slot[data-selected="true"] {
@@ -345,6 +471,7 @@ select.sk-input option:checked {
   position: relative;
   cursor: pointer;
   flex-shrink: 0;
+  transition: background var(--sk-dur-fast) var(--sk-ease-standard), box-shadow var(--sk-dur-fast) var(--sk-ease-standard);
 }
 .sk-checkbox:checked {
   background: var(--sk-accent);
@@ -358,13 +485,26 @@ select.sk-input option:checked {
   border: solid white;
   border-width: 0 2px 2px 0;
   transform: rotate(45deg);
+  animation: skCheckPop .18s var(--sk-ease-spring);
 }
+@keyframes skCheckPop { from { transform: rotate(45deg) scale(0); } to { transform: rotate(45deg) scale(1); } }
 .sk-checkbox:focus-visible { outline: 2px solid #6366f1; outline-offset: 1px; }
 
 @media (prefers-reduced-motion: reduce) {
-  .sk-btn, .sk-slot, .sk-switch-knob, .sk-tab { transition: none !important; }
+  .sk-btn, .sk-slot, .sk-switch-knob, .sk-tab, .sk-checkbox, .sk-input, .sk-switch-track, .sk-nav-item, .sk-progress-fill { transition: none !important; }
+  .sk-btn:hover:not(:disabled) { transform: none !important; }
+  .sk-checkbox:checked::after { animation: none !important; }
   .sk-logo-path, .sk-logo-point { animation: none !important; }
   .sk-logo-animated .sk-logo-path { stroke-dashoffset: 0 !important; }
   .sk-logo-animated .sk-logo-point { opacity: 1 !important; transform: scale(1) !important; }
-  .sk-bell-ring { animation: none !important; }
+  .sk-bell-ring, .sk-icon-pop { animation: none !important; }
+
+  .sk-overlay-anim, .sk-backdrop-anim, .sk-toast-anim, .sk-drawer-anim, .sk-expand-anim { transition: none !important; }
+  .sk-reveal { transition: none !important; opacity: 1 !important; transform: none !important; }
+  .sk-page-enter, .sk-locale-fade, .fade-in, .slide-up { animation: none !important; }
+}
+
+html { scroll-behavior: smooth; }
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
 }

@@ -4,10 +4,11 @@ import { Icon, Logo } from "./icons.js";
 import { useCurrentOrg } from "../lib/currentOrg.js";
 import { useSession, signOut } from "../lib/auth.js";
 import { useMyProfile, updateMyProfile } from "../lib/profile.js";
-import { useT, useLocale, setLocale, LOCALES } from "../lib/i18n.js";
+import { useT, useLocale, setLocale, LOCALES, useLocaleFadeClass } from "../lib/i18n.js";
 import { useNotifications, markAllNotificationsRead } from "../lib/notificationsStore.js";
 import { relativeDate } from "../lib/format.js";
 import { toast } from "./ui.js";
+import { useMountTransition } from "../lib/motion.js";
 
 // "experiments" and "results" removed from the sidebar for now (not
 // deleted -- routes/pages/code are untouched, just unreachable via nav)
@@ -54,6 +55,7 @@ function Avatar({ name, url, size = 32 }) {
  * room above but not below. */
 function Dropdown({ open, onClose, align = "left", children }) {
   const ref = useRef(null);
+  const { mounted, phase } = useMountTransition(open);
   useEffect(() => {
     if (!open) return;
     function onDocClick(e) { if (ref.current && !ref.current.contains(e.target)) onClose(); }
@@ -62,9 +64,14 @@ function Dropdown({ open, onClose, align = "left", children }) {
     document.addEventListener("keydown", onKey);
     return () => { document.removeEventListener("mousedown", onDocClick); document.removeEventListener("keydown", onKey); };
   }, [open]);
-  if (!open) return null;
+  if (!mounted) return null;
   return html`
-    <div ref=${ref} class=${`sk-modal absolute ${align === "right" ? "right-0" : "left-0"} bottom-full mb-2 z-40 w-56 rounded-xl py-1.5 fade-in`}>
+    <div
+      ref=${ref}
+      data-state=${phase}
+      style=${`transform-origin: bottom ${align === "right" ? "right" : "left"}`}
+      class=${`sk-modal sk-overlay-anim absolute ${align === "right" ? "right-0" : "left-0"} bottom-full mb-2 z-40 w-56 rounded-xl py-1.5`}
+    >
       ${children}
     </div>
   `;
@@ -154,8 +161,8 @@ function SidebarModePicker({ mode, onChange, collapsed }) {
         <div class="px-3.5 py-2 text-[11px] font-semibold uppercase tracking-wider text-slate-600">${t("shell.sidebar.label")}</div>
         ${SIDEBAR_MODES.map((m) => html`
           <button key=${m.id} type="button" onClick=${() => { onChange(m.id); setOpen(false); }}
-            class="flex w-full items-center gap-2.5 px-3.5 py-2 text-sm text-left text-slate-300 hover:bg-white/5">
-            <span class=${`h-1.5 w-1.5 rounded-full shrink-0 ${mode === m.id ? "bg-indigo-400" : "bg-transparent"}`}></span>
+            class="flex w-full items-center gap-2.5 px-3.5 py-2 text-sm text-left text-slate-300 hover:bg-white/5 transition-colors">
+            <span class=${`h-1.5 w-1.5 rounded-full shrink-0 transition-colors ${mode === m.id ? "bg-indigo-400" : "bg-transparent"}`}></span>
             ${t(m.key)}
           </button>
         `)}
@@ -230,6 +237,7 @@ function NotificationsMenu() {
   const ref = useRef(null);
   const { notifications, loading, unreadCount, ringSeq } = useNotifications();
   const seenRingSeq = useRef(ringSeq);
+  const { mounted: menuMounted, phase: menuPhase } = useMountTransition(open);
   useEffect(() => {
     if (!open) return;
     function onDocClick(e) { if (ref.current && !ref.current.contains(e.target)) setOpen(false); }
@@ -266,8 +274,8 @@ function NotificationsMenu() {
         <${Icon} name="bell" size=${17} className=${ringing ? "sk-bell-ring" : ""} />
         ${unreadCount > 0 && html`<span class="absolute top-1 right-1 h-2 w-2 rounded-full bg-rose-400 border border-slate-950"></span>`}
       </button>
-      ${open && html`
-        <div class="sk-modal fixed right-4 top-[69px] sm:absolute sm:right-0 sm:top-full sm:mt-2 z-40 w-72 max-w-[calc(100vw-2rem)] rounded-xl fade-in">
+      ${menuMounted && html`
+        <div data-state=${menuPhase} style="transform-origin: top right" class="sk-modal sk-overlay-anim sk-overlay-anim-down fixed right-4 top-[69px] sm:absolute sm:right-0 sm:top-full sm:mt-2 z-40 w-72 max-w-[calc(100vw-2rem)] rounded-xl">
           <div class="px-4 py-3 border-b border-black/40 text-sm font-medium text-slate-200">${t("shell.notifications.title")}</div>
           ${loading && html`<div class="px-4 py-8 text-center text-sm text-slate-500">${t("common.loading")}</div>`}
           ${!loading && notifications.length === 0 && html`<div class="px-4 py-8 text-center text-sm text-slate-500">${t("shell.notifications.empty")}</div>`}
@@ -340,6 +348,11 @@ export function Shell({ currentPath, children }) {
   // over it -- that growth is a transient visual state, never persisted.
   const [hoverPeek, setHoverPeek] = useState(false);
   const [search, setSearch] = useState("");
+  const { mounted: drawerMounted, phase: drawerPhase } = useMountTransition(mobileOpen);
+  // A brief dip-and-recover across the whole shell whenever the language
+  // actually changes, so every translated label on screen (sidebar, header,
+  // page content) reads as transitioning together instead of flickering.
+  const localeFadeClass = useLocaleFadeClass();
 
   const onNavigate = (path) => { setMobileOpen(false); navigate(path); };
 
@@ -361,7 +374,7 @@ export function Shell({ currentPath, children }) {
   const visuallyExpanded = sidebarMode === "expanded" || peeking;
 
   return html`
-    <div class="min-h-screen bg-slate-950 text-slate-100">
+    <div class=${`min-h-screen bg-slate-950 text-slate-100 ${localeFadeClass}`}>
       <!-- Desktop/tablet sidebar (md and up) -->
       <aside
         class=${`sk-sidebar hidden md:flex md:flex-col md:fixed md:inset-y-0 transition-all duration-150 ${visuallyExpanded ? "md:w-64" : "md:w-[72px]"} ${peeking ? "z-40 shadow-2xl shadow-black/60" : "z-20"}`}
@@ -371,10 +384,10 @@ export function Shell({ currentPath, children }) {
       </aside>
 
       <!-- Mobile sidebar (phone only, below md) -->
-      ${mobileOpen && html`
+      ${drawerMounted && html`
         <div class="fixed inset-0 z-40 md:hidden">
-          <div class="absolute inset-0 bg-black/70" onClick=${() => setMobileOpen(false)}></div>
-          <aside class="sk-sidebar absolute inset-y-0 left-0 w-64">
+          <div class="sk-backdrop-anim absolute inset-0 bg-black/70" data-state=${drawerPhase} onClick=${() => setMobileOpen(false)}></div>
+          <aside class="sk-sidebar sk-drawer-anim absolute inset-y-0 left-0 w-64" data-state=${drawerPhase}>
             <${SidebarContent} currentPath=${currentPath} onNavigate=${onNavigate} />
           </aside>
         </div>
@@ -399,7 +412,9 @@ export function Shell({ currentPath, children }) {
           </button>
         </header>
         <main class="px-4 py-6 md:px-8 md:py-8 max-w-[1400px] mx-auto">
-          ${children}
+          <div key=${currentPath} class="sk-page-enter">
+            ${children}
+          </div>
         </main>
       </div>
     </div>

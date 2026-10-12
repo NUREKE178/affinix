@@ -10,6 +10,7 @@ import { uploadPostImage, validateAssetFile } from "../lib/storage.js";
 import { relativeDate } from "../lib/format.js";
 import { withTimeout } from "../lib/async.js";
 import { moderatePost } from "../lib/profanityFilter.js";
+import { useMountTransition, useMountedValue } from "../lib/motion.js";
 
 const MAX_LEN = 2000;
 const HASHTAG_RE = /#[\p{L}\p{N}_]+/gu;
@@ -174,10 +175,24 @@ function ActionButton({ icon, filled = false, label, count, active = false, tone
   const toneClass = active
     ? (tone === "rose" ? "text-rose-400" : tone === "indigo" ? "text-indigo-300" : "text-slate-200")
     : "text-slate-500 hover:text-slate-300";
+  // A quick pop exactly when this flips INTO its active state (liking,
+  // saving) -- not on mount, and not on the way back out.
+  const [popping, setPopping] = useState(false);
+  const wasActive = useRef(active);
+  useEffect(() => {
+    if (active && !wasActive.current) {
+      setPopping(true);
+      const timer = setTimeout(() => setPopping(false), 320);
+      wasActive.current = active;
+      return () => clearTimeout(timer);
+    }
+    wasActive.current = active;
+    return undefined;
+  }, [active]);
   return html`
     <button type="button" onClick=${onClick} disabled=${disabled} aria-label=${label} aria-pressed=${active}
       class=${`flex items-center gap-1.5 text-xs font-medium transition-colors disabled:opacity-50 ${toneClass} ${className}`}>
-      <${Icon} name=${icon} size=${16} filled=${filled} />
+      <${Icon} name=${icon} size=${16} filled=${filled} className=${popping ? "sk-icon-pop" : ""} />
       ${count > 0 && html`<span>${count}</span>`}
     <//>
   `;
@@ -288,13 +303,15 @@ function CommentThread({ post, t, currentUserId, canModerate, onCountChange, onA
   `;
 }
 
-function PostCard({ post, t, onHashtagClick, canDelete, canModerate, currentUserId, onDeleteClick, onAuthorClick }) {
+function PostCard({ post, index = 0, t, onHashtagClick, canDelete, canModerate, currentUserId, onDeleteClick, onAuthorClick }) {
   const hasProfile = !!post.authorName;
   const openAuthor = () => hasProfile && onAuthorClick(post);
   const [likeBusy, setLikeBusy] = useState(false);
   const [saveBusy, setSaveBusy] = useState(false);
   const [commentsOpen, setCommentsOpen] = useState(false);
   const [lightboxOpen, setLightboxOpen] = useState(false);
+  const { mounted: commentsMounted, phase: commentsPhase } = useMountTransition(commentsOpen);
+  const { mounted: lightboxMounted, phase: lightboxPhase } = useMountTransition(lightboxOpen);
   // post.commentCount comes from the posts list's own fetch, which can go
   // stale the moment someone ELSE comments (no realtime on comments, only
   // on notifications) -- once the thread has actually been fetched, this
@@ -328,7 +345,7 @@ function PostCard({ post, t, onHashtagClick, canDelete, canModerate, currentUser
   }
 
   return html`
-    <div class="sk-panel-flat rounded-xl p-4">
+    <div class="sk-panel-flat rounded-xl p-4 slide-up" style=${`animation-delay:${Math.min(index, 6) * 40}ms`}>
       <div class="flex gap-3 items-start">
         <button type="button" onClick=${openAuthor} disabled=${!hasProfile}
           class=${`shrink-0 rounded-full ${hasProfile ? "cursor-pointer hover:opacity-80 transition-opacity" : "cursor-default"}`}>
@@ -365,17 +382,25 @@ function PostCard({ post, t, onHashtagClick, canDelete, canModerate, currentUser
               label=${t("feed.save")} disabled=${saveBusy} onClick=${onToggleSave} className="ml-auto" />
           </div>
 
-          ${commentsOpen && html`<${CommentThread} post=${post} t=${t} currentUserId=${currentUserId} canModerate=${canModerate} onCountChange=${setLiveCommentCount} onAuthorClick=${onAuthorClick} />`}
+          ${commentsMounted && html`
+            <div class="sk-expand-anim" data-state=${commentsPhase}>
+              <${CommentThread} post=${post} t=${t} currentUserId=${currentUserId} canModerate=${canModerate} onCountChange=${setLiveCommentCount} onAuthorClick=${onAuthorClick} />
+            </div>
+          `}
         </div>
       </div>
 
-      ${lightboxOpen && html`
-        <div class="fixed inset-0 z-50 flex items-center justify-center bg-black/90 p-4" onClick=${(e) => e.target === e.currentTarget && setLightboxOpen(false)}>
+      ${lightboxMounted && html`
+        <div
+          class="sk-backdrop-anim fixed inset-0 z-50 flex items-center justify-center bg-black/90 p-4"
+          data-state=${lightboxPhase}
+          onClick=${(e) => e.target === e.currentTarget && setLightboxOpen(false)}
+        >
           <button type="button" onClick=${() => setLightboxOpen(false)} aria-label=${t("common.close")}
-            class="absolute top-4 right-4 text-slate-300 hover:text-white">
-            <${Icon} name="close" size=${22} />
+            class="sk-btn absolute top-4 right-4 h-9 w-9 rounded-lg text-slate-300 hover:text-white">
+            <${Icon} name="close" size=${20} />
           <//>
-          <img src=${post.imageUrl} class="max-w-full max-h-full object-contain rounded-lg" />
+          <img src=${post.imageUrl} data-state=${lightboxPhase} class="sk-overlay-anim sk-overlay-anim-center max-w-full max-h-full object-contain rounded-lg" />
         </div>
       `}
     </div>
@@ -391,6 +416,8 @@ export function Feed() {
   const [confirmDelete, setConfirmDelete] = useState(null);
   const [deleting, setDeleting] = useState(false);
   const [viewingAuthor, setViewingAuthor] = useState(null);
+  const { mounted: confirmMounted, phase: confirmPhase, value: confirmPost } = useMountedValue(confirmDelete);
+  const { mounted: authorMounted, phase: authorPhase, value: authorPost } = useMountedValue(viewingAuthor);
 
   const visiblePosts = useMemo(() => {
     if (!activeHashtag) return posts;
@@ -459,8 +486,8 @@ export function Feed() {
 
       ${!error && visiblePosts.length > 0 && html`
         <div class="space-y-3">
-          ${visiblePosts.map((post) => html`
-            <${PostCard} key=${post.id} post=${post} t=${t} onHashtagClick=${setActiveHashtag}
+          ${visiblePosts.map((post, i) => html`
+            <${PostCard} key=${post.id} post=${post} index=${i} t=${t} onHashtagClick=${setActiveHashtag}
               canDelete=${post.authorId === currentUserId || !!profile?.is_admin}
               canModerate=${!!profile?.is_admin} currentUserId=${currentUserId}
               onDeleteClick=${setConfirmDelete} onAuthorClick=${setViewingAuthor} />
@@ -470,9 +497,9 @@ export function Feed() {
 
       <${Composer} t=${t} profile=${profile} />
 
-      ${confirmDelete && html`
-        <div class="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/70 p-4" onClick=${(e) => e.target === e.currentTarget && setConfirmDelete(null)}>
-          <${Card} className="max-w-sm p-5">
+      ${confirmMounted && html`
+        <div class="sk-backdrop-anim fixed inset-0 z-50 flex items-center justify-center bg-slate-950/70 p-4" data-state=${confirmPhase} onClick=${(e) => e.target === e.currentTarget && setConfirmDelete(null)}>
+          <${Card} className="sk-overlay-anim sk-overlay-anim-center max-w-sm p-5" data-state=${confirmPhase}>
             <div class="font-semibold text-slate-100">${t("feed.confirmDeleteTitle")}</div>
             <p class="text-sm text-slate-500 mt-1.5">${t("feed.confirmDeleteBody")}</p>
             <div class="flex justify-end gap-2 mt-5">
@@ -483,21 +510,21 @@ export function Feed() {
         </div>
       `}
 
-      ${viewingAuthor && html`
-        <div class="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/70 p-4" onClick=${(e) => e.target === e.currentTarget && setViewingAuthor(null)}>
-          <${Card} className="max-w-sm w-full p-5">
+      ${authorMounted && html`
+        <div class="sk-backdrop-anim fixed inset-0 z-50 flex items-center justify-center bg-slate-950/70 p-4" data-state=${authorPhase} onClick=${(e) => e.target === e.currentTarget && setViewingAuthor(null)}>
+          <${Card} className="sk-overlay-anim sk-overlay-anim-center max-w-sm w-full p-5" data-state=${authorPhase}>
             <div class="flex items-start gap-3">
-              <${Avatar} name=${viewingAuthor.authorName} url=${viewingAuthor.authorAvatarUrl} size=${48} />
+              <${Avatar} name=${authorPost.authorName} url=${authorPost.authorAvatarUrl} size=${48} />
               <div class="min-w-0 flex-1 pt-0.5">
-                <div class="font-semibold text-slate-100 truncate">${viewingAuthor.authorName}</div>
-                ${viewingAuthor.authorRoleTitle && html`<div class="text-sm text-slate-400 truncate">${viewingAuthor.authorRoleTitle}</div>`}
+                <div class="font-semibold text-slate-100 truncate">${authorPost.authorName}</div>
+                ${authorPost.authorRoleTitle && html`<div class="text-sm text-slate-400 truncate">${authorPost.authorRoleTitle}</div>`}
               </div>
               <button type="button" onClick=${() => setViewingAuthor(null)} aria-label=${t("common.close")} class="shrink-0 text-slate-500 hover:text-slate-300">
                 <${Icon} name="close" size=${16} />
               <//>
             </div>
-            <p class="text-sm mt-4 leading-relaxed whitespace-pre-wrap ${viewingAuthor.authorBio ? "text-slate-300" : "text-slate-500 italic"}">
-              ${viewingAuthor.authorBio || t("feed.noBio")}
+            <p class="text-sm mt-4 leading-relaxed whitespace-pre-wrap ${authorPost.authorBio ? "text-slate-300" : "text-slate-500 italic"}">
+              ${authorPost.authorBio || t("feed.noBio")}
             </p>
           <//>
         </div>

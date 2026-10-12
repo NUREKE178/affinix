@@ -345,7 +345,7 @@ function LocalPreviewRunner({ experiment, onExitPreview }) {
   }
 
   return html`
-    <div class="min-h-screen bg-slate-950 text-slate-100 px-6 py-10 flex flex-col">
+    <div class="min-h-screen bg-slate-950 text-slate-100 px-6 py-10 flex flex-col fade-in">
       <div class="max-w-2xl w-full mx-auto mb-6 flex items-center gap-2 rounded-lg border border-indigo-500/30 bg-indigo-500/10 px-3 py-2 text-xs text-indigo-300">
         <${Icon} name="play" size=${13} /> ${t("participantRunner.previewBanner")}
         <button class="ml-auto underline" onClick=${onExitPreview ?? (() => history.back())}>${t("participantRunner.previewExit")}</button>
@@ -452,11 +452,11 @@ function LiveRunner({ slug }) {
   }
 
   if (state.phase === "loading") {
-    return html`<div class="min-h-screen flex items-center justify-center bg-slate-950 text-slate-500 text-sm">${t("participantRunner.loading")}</div>`;
+    return html`<div class="min-h-screen flex items-center justify-center bg-slate-950 text-slate-500 text-sm fade-in">${t("participantRunner.loading")}</div>`;
   }
   if (state.phase === "notfound") {
     return html`
-      <div class="min-h-screen flex items-center justify-center bg-slate-950 text-slate-300 px-6">
+      <div class="min-h-screen flex items-center justify-center bg-slate-950 text-slate-300 px-6 fade-in">
         <div class="text-center">
           <p class="font-medium">${t("participantRunner.notFoundTitle")}</p>
           <${Button} className="mt-4" variant="secondary" onClick=${() => navigate("/")}>${t("participantRunner.backHome")}<//>
@@ -466,7 +466,7 @@ function LiveRunner({ slug }) {
   }
   if (state.phase === "alreadyDone") {
     return html`
-      <div class="min-h-screen flex items-center justify-center bg-slate-950 px-6">
+      <div class="min-h-screen flex items-center justify-center bg-slate-950 px-6 fade-in">
         <div class="max-w-sm text-center">
           <h1 class="text-xl font-semibold text-slate-50">${t("participantRunner.alreadyDoneTitle")}</h1>
           <p class="text-sm text-slate-400 mt-3">${t("participantRunner.alreadyDoneBody")}</p>
@@ -477,7 +477,7 @@ function LiveRunner({ slug }) {
   }
 
   return html`
-    <div class="min-h-screen bg-slate-950 text-slate-100 px-6 py-10 flex flex-col">
+    <div class="min-h-screen bg-slate-950 text-slate-100 px-6 py-10 flex flex-col fade-in">
       <div class="flex-1 flex items-center justify-center">
         <div class="w-full max-w-2xl">
           ${state.phase === "consent" && html`<${ConsentScreen} experiment=${session.experiment} onAgree=${() => setState({ phase: firstPostConsentPhase(session.experiment.participant_settings ?? {}) })} t=${t} />`}
