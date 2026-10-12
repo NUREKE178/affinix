@@ -3181,3 +3181,47 @@ neither will work against the live backend (`friendships` doesn't exist
 yet, `notifications` doesn't have a `type` column yet) until someone
 with Supabase credentials runs `npx supabase db push` -- flagged
 explicitly, the same as every other migration this session.
+
+## Real-time everywhere + messenger (migration 0018)
+
+**Live updates** (no refresh needed): friend request accepted/declined/removed
+(`friendsStore` -> toast "X accepted your request"), the feed (posts, likes,
+comments), the Participants/Overview session lists, and the Results page
+(sessions + responses, with a pulsing **Live** badge; charts update in place
+instead of being rebuilt). All of it rides one helper, `lib/realtime.js`
+(`watchTables` + `debounce`): every event just triggers a quiet, RLS-scoped
+refetch, so DELETE events (which carry only a primary key) are handled too.
+
+**Messenger** (`pages/Messages.js`, `lib/messagesStore.js`, route
+`/app/messages`): 1:1 chat between accepted friends -- instant delivery,
+optimistic send with retry, ✓ sent / ✓✓ read receipts, "typing…", online
+dot, unread badges (list + sidebar), sound/toast/OS notification for
+incoming messages, day separators, older-history paging, emoji picker,
+mobile list/chat layout. "Написать" button on the Friends page.
+
+Server side (`0018_realtime_and_messaging.sql`): `conversations` +
+`messages` with RLS; a conversation can only be created between accepted
+friends and messages can only be sent while still friends (history stays
+readable); `read_at` is written only by `mark_conversation_read()`; no
+UPDATE policy, so nobody can edit a message or forge a receipt. It also
+adds notifications/friendships/posts/post_likes/post_comments/
+participant_sessions/responses/conversations/messages to the
+`supabase_realtime` publication. Idempotent.
+
+**Verified**: migration run twice on a local PostgreSQL 16 against the real
+0001-0017 schema (Supabase auth/roles stubbed): friend gating, RLS
+visibility, forged sender/read_at rejected, no direct UPDATE/DELETE,
+unread counts, read marking, post-unfriend behaviour, anon blocked. UI
+smoke-tested in headless Chromium against a stubbed Supabase client (27
+checks: send/receive/retry, ticks, typing, presence, toasts, badges,
+friend-accepted toast, mobile layout) with zero JS errors.
+
+**Not yet live**: apply 0018 in the SQL Editor, then
+`notify pgrst, 'reload schema';`.
+
+**Known trade-offs**: online status uses one shared Presence channel and
+the typing signal a per-conversation Broadcast channel -- both public
+channels (no message text travels on them; text only flows through the
+RLS-protected table). Supabase "Realtime Authorization" private channels
+would harden this later. No new Tailwind utilities were used (the bundle
+is prebuilt); chat styles are plain CSS in `styles.css`.

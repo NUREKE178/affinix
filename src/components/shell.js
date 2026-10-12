@@ -7,6 +7,7 @@ import { useMyProfile, updateMyProfile } from "../lib/profile.js";
 import { useT, useLocale, setLocale, LOCALES, useLocaleFadeClass } from "../lib/i18n.js";
 import { useNotifications, markAllNotificationsRead, notificationCopyKey, notificationTargetPath } from "../lib/notificationsStore.js";
 import { useFriends } from "../lib/friendsStore.js";
+import { useMessagingBootstrap, useConversations } from "../lib/messagesStore.js";
 import { relativeDate } from "../lib/format.js";
 import { toast, Badge } from "./ui.js";
 import { useMountTransition } from "../lib/motion.js";
@@ -25,6 +26,7 @@ const COMMUNITY_NAV = [
   { id: "feed", key: "shell.community.feed", icon: "globe", path: "/app/feed" },
   { id: "favorites", key: "shell.community.favorites", icon: "bookmark", path: "/app/favorites" },
   { id: "friends", key: "shell.community.friends", icon: "friends", path: "/app/friends" },
+  { id: "messages", key: "shell.community.messages", icon: "chat", path: "/app/messages" },
 ];
 
 const WORKSPACE_NAV = [
@@ -182,7 +184,8 @@ function SidebarContent({ currentPath, onNavigate, collapsed = false, sidebarMod
   const t = useT();
   const { org } = useCurrentOrg();
   const { incoming } = useFriends();
-  const navBadge = (id) => (id === "friends" ? incoming.length : 0);
+  const { unreadTotal } = useConversations();
+  const navBadge = (id) => (id === "friends" ? incoming.length : id === "messages" ? unreadTotal : 0);
   return html`
     <div class="flex h-full flex-col">
       <button type="button" onClick=${() => onNavigate("/app/overview")}
@@ -343,6 +346,8 @@ const SIDEBAR_MODE_IDS = SIDEBAR_MODES.map((m) => m.id);
 
 export function Shell({ currentPath, children }) {
   const t = useT();
+  // Opens the live message/presence connections for the whole signed-in session.
+  useMessagingBootstrap();
   const { user } = useSession();
   const { profile } = useMyProfile();
   const displayName = profile?.full_name || user?.email || "";

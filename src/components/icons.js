@@ -47,6 +47,10 @@ const PATHS = {
   // Two equal, slightly overlapping heads -- deliberately distinct from
   // `team` (one bigger lead + one smaller, offset report) so Friends and
   // Team don't read as the same glyph in the same sidebar.
+  chat: html`<path d="M21 11.5a8.5 8.5 0 0 1-12.3 7.6L3.5 20.5l1.5-4.8A8.5 8.5 0 1 1 21 11.5z"/>`,
+  send: html`<path d="M21.5 3L10.5 14"/><path d="M21.5 3l-6.8 18-4.2-7-7-4.2z"/>`,
+  checks: html`<path d="M1.8 12.8l4.4 4.4L15 8.4"/><path d="M9.6 15.6l1.6 1.6L21.4 7"/>`,
+  smile: html`<circle cx="12" cy="12" r="8.5"/><path d="M8.5 14c.9 1.3 2 2 3.5 2s2.6-.7 3.5-2"/><path d="M9 9.8h.01M15 9.8h.01"/>`,
   friends: html`<circle cx="9" cy="8" r="3.4"/><circle cx="15" cy="8" r="3.4" opacity="0.55"/><path d="M3 19.5c0-3.4 2.7-6 6.5-6a7 7 0 0 1 3.4.9"/><path d="M12.4 14.5c1-.6 2.2-1 3.6-1 3.5 0 6.5 2.6 6.5 6"/>`,
 };
 

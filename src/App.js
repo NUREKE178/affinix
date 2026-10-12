@@ -5,6 +5,7 @@ import { Landing } from "./pages/Landing.js";
 import { Feed } from "./pages/Feed.js";
 import { Favorites } from "./pages/Favorites.js";
 import { Friends } from "./pages/Friends.js";
+import { Messages } from "./pages/Messages.js";
 import { Overview } from "./pages/Overview.js";
 import { ExperimentsList } from "./pages/ExperimentsList.js";
 import { ExperimentBuilder } from "./pages/ExperimentBuilder.js";
@@ -44,6 +45,7 @@ const DASHBOARD_ROUTES = [
   { pattern: "/app/feed", Page: Feed },
   { pattern: "/app/favorites", Page: Favorites },
   { pattern: "/app/friends", Page: Friends },
+  { pattern: "/app/messages", Page: Messages },
   { pattern: "/app/participants", Page: Participants },
   { pattern: "/app/reports", Page: Reports },
   { pattern: "/app/team", Page: Team },

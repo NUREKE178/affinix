@@ -6,6 +6,7 @@ import { Icon } from "../components/icons.js";
 import { useT } from "../lib/i18n.js";
 import { useFriends, acceptFriendRequest, removeFriendship } from "../lib/friendsStore.js";
 import { useMountedValue } from "../lib/motion.js";
+import { navigate } from "../router.js";
 
 /** AuthorCard expects the authorXxx-prefixed shape Feed.js's posts/comments
  * already use -- adapting a friendship row into that once here keeps the
@@ -138,6 +139,9 @@ export function Friends() {
             <${Card} className="divide-y divide-slate-800">
               ${friends.map((f) => html`
                 <${PersonRow} key=${f.id} f=${f} t=${t} onOpen=${openAuthor}>
+                  <${Button} size="sm" variant="secondary" onClick=${() => navigate(`/app/messages?with=${f.otherId}`)}>
+                    <${Icon} name="chat" size=${14} /> ${t("friends.message")}
+                  <//>
                   <button type="button" onClick=${() => removeRow(f, "friends.removedToast")} disabled=${busyId === f.id}
                     class="text-xs text-slate-500 hover:text-rose-400 transition-colors">${t("friends.remove")}</button>
                 <//>
