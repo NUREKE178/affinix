@@ -539,7 +539,15 @@ html { scroll-behavior: smooth; }
 
 .sk-chat {
   display: grid; grid-template-columns: 340px minmax(0, 1fr);
-  height: calc(100dvh - 11rem); min-height: 440px;
+  /* svh, not dvh: svh is pinned to the browser's smallest possible viewport
+     (chrome fully shown), so this can never end up taller than what's
+     actually visible. dvh tracks the chrome live as it hides/shows on
+     scroll -- on mobile that can leave this panel briefly sized for a
+     bigger viewport than is currently on screen, pushing the whole page
+     into an unwanted scroll that clips this panel's own header behind the
+     app's topbar (see the max-width: 767px rule below, where this matters
+     far more than here). */
+  height: calc(100svh - 11rem); min-height: 440px;
   border-radius: 14px; overflow: hidden; padding: 0;
 }
 .sk-chat-list { display: flex; flex-direction: column; min-height: 0; border-right: 1px solid rgba(0,0,0,.45); }
@@ -646,7 +654,17 @@ html { scroll-behavior: smooth; }
 .sk-emoji-panel button:hover { background: rgba(255,255,255,.08); }
 
 @media (max-width: 767px) {
-  .sk-chat { grid-template-columns: minmax(0, 1fr); height: calc(100dvh - 9.5rem); }
+  /* Measured on the real mobile Shell layout: topbar ~63px + main's own
+     top/bottom padding ~24px each = ~111px (~7rem). 7.5rem leaves a small,
+     deliberate margin rather than cutting it exactly there -- and svh (not
+     dvh) means that margin can only ever leave a little unused space at
+     the bottom, never overflow into a page-level scroll. The previous
+     9.5rem was never measured against the actual layout and, combined
+     with dvh's live resize as the phone's address bar hides/shows while
+     scrolling, could leave this panel taller than the real, current
+     viewport -- the page then had to scroll to show all of it, clipping
+     this panel's own header behind the app's topbar. */
+  .sk-chat { grid-template-columns: minmax(0, 1fr); height: calc(100svh - 7.5rem); }
   .sk-chat[data-pane="chat"] .sk-chat-list { display: none; }
   .sk-chat[data-pane="list"] .sk-chat-pane { display: none; }
   .sk-chat-list { border-right: 0; }
