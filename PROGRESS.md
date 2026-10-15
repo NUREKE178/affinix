@@ -3225,3 +3225,47 @@ channels (no message text travels on them; text only flows through the
 RLS-protected table). Supabase "Realtime Authorization" private channels
 would harden this later. No new Tailwind utilities were used (the bundle
 is prebuilt); chat styles are plain CSS in `styles.css`.
+
+## Landing page redesign (dark / glass / violet glow) + PNG logo ✅ (uncommitted)
+
+The public landing (`#/`) was rebuilt from the approved "DecisionOS Landing Page" Design artifact:
+sticky glass header with a sliding RU/KZ/EN pill, hero with a 3D-tilted dashboard preview whose variant cards are
+clickable (share chart, metrics and interpretation follow the selected variant), a 5-card bento "From stimulus to
+decision" with a hover micro-interaction per card, a "Honest by design" row (30-response guard, Wilson 95% intervals,
+predictions-not-certainty, no biometrics), a mobile showcase, final CTA and the honest "what it can / can't do"
+footer. Copy is `landing.*` in `locales/{ru,kk,en}.js` (the old `landing.report.*` / `heroTitle` keys are gone with
+the sections they fed; key sets are identical across the three files).
+
+- **No build step, so no new Tailwind utilities**: all styling is `landing.css` -- every class `lp-` prefixed and
+  scoped under `.lp-root` (it is generated from the artifact's stylesheet, see the header comment), so it cannot leak
+  into the app. Fonts: Inter is vendored (`vendor/fonts/`, woff2 subsets latin / cyrillic / cyrillic-ext, SIL OFL)
+  under the family name "Inter Landing", used only on the landing, so the rest of the app's typography is unchanged.
+- **Logo is PNG now**: `assets/logo/` (mark 1024/256, dark + light lockups, 32/192/180 icons). `index.html` uses PNG
+  favicons + apple-touch-icon; sidebar, auth pages, onboarding and the public profile use `<LogoMark/>` (icons.js).
+  The animated SVG `<Logo/>` is kept only for the boot loader (it needs vector paths for the draw-in). `favicon.svg`
+  is no longer linked (left in place).
+- **Phone mockups** are real screenshots of the app (demo data) in a device frame, one set per UI language:
+  `assets/landing/phone-{participant,builder,report,chat}.{ru,kk,en}.webp`; pack photos `pack-{a..d}.jpg`.
+- `LanguageSwitch` got a `variant="glass"` (same `choose()` logic: local immediately, profile persisted when signed in).
+- Landing header on phones: mark-only logo, the CTA shortens to "Start / Начать / Бастау" (`landing.createShort`), and
+  the "Log in" link is hidden to fit 360px -- login stays reachable from the register page and the final CTA block.
+
+**Verified** in headless Chromium against the real app (Supabase stubbed): 1440 / 1024 / 768 / 390 px in ru, kk and en --
+no horizontal overflow, no untranslated keys, no broken images, no console errors; language pill + copy switch,
+variant selection, sticky header, scroll buttons, /login and /register routing, PNG logo in the shell and auth pages
+(20 checks). First-load landing-specific weight ~270 KB (fonts 65-90 KB depending on locale, logos 90 KB, 4 pack
+photos 87 KB); phone images lazy-load (~85 KB each, 4 per locale).
+
+**Also in this working tree (not part of the landing)**
+- Org invite emails: `supabase/functions/invite-member` + `lib/org.js` fallback + Team/Onboarding toasts. When the
+  email has no account yet, the function (service role, after checking the caller is an owner/admin of the org through
+  an RLS-gated read) sends the Supabase invite and then inserts the `organization_members` row itself. An earlier
+  draft carried org + role in the invite's `user_metadata` and read it back in the `handle_new_user()` trigger -- that
+  was dropped before shipping: `user_metadata` can be set by anyone calling the public signup endpoint, so it would
+  have let a stranger seat themselves in any org whose id they knew. **Not deployed or tested against a live
+  project**: needs `supabase functions deploy invite-member` (no migration involved).
+- Objective-based question suggestions (`lib/questionSuggestions.js`, builder step 4): plain keyword matching, not
+  AI, and labelled as such. The amber ring/hint first used Tailwind utilities missing from the prebuilt CSS; now plain
+  classes in `styles.css` (`.sk-suggested`, `.sk-suggest-hint`, `.sk-suggest-badge`).
+- Messages: image attachments + reply-to (WhatsApp/Telegram-style) are planned; a draft migration exists locally and
+  is intentionally not committed until it has been run against PostgreSQL.

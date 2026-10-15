@@ -1,6 +1,6 @@
 import { html, useState, useEffect, useRef } from "../lib/preact.js";
 import { navigate } from "../router.js";
-import { Icon, Logo } from "./icons.js";
+import { Icon, LogoMark } from "./icons.js";
 import { useCurrentOrg } from "../lib/currentOrg.js";
 import { useSession, signOut } from "../lib/auth.js";
 import { useMyProfile, updateMyProfile } from "../lib/profile.js";
@@ -190,9 +190,7 @@ function SidebarContent({ currentPath, onNavigate, collapsed = false, sidebarMod
     <div class="flex h-full flex-col">
       <button type="button" onClick=${() => onNavigate("/app/overview")}
         class=${`flex items-center gap-2.5 overflow-hidden px-5 py-5 text-left hover:opacity-80 transition-opacity ${collapsed ? "justify-center px-0" : "w-full"}`}>
-        <div class="sk-panel-flat flex h-9 w-9 items-center justify-center rounded-lg shrink-0">
-          <${Logo} size=${18} />
-        </div>
+        <${LogoMark} size=${36} />
         ${!collapsed && html`
           <div class="min-w-0">
             <div class="font-semibold text-slate-50 leading-tight tracking-tight whitespace-nowrap">DecisionOS</div>
@@ -313,7 +311,8 @@ function NotificationsMenu() {
   `;
 }
 
-export function LanguageSwitch() {
+export function LanguageSwitch({ variant = "tabs" }) {
+  const t = useT();
   const locale = useLocale();
   const { profile } = useMyProfile();
   const [pending, setPending] = useState(false);
@@ -330,6 +329,19 @@ export function LanguageSwitch() {
     } finally {
       setPending(false);
     }
+  }
+  if (variant === "glass") {
+    // Landing-page look (landing.css): sliding violet pill under three 38px buttons -- same choose() logic as below.
+    const idx = Math.max(0, LOCALES.findIndex((l) => l.id === locale));
+    return html`
+      <div class="lp-lang" role="group" aria-label=${t("landing.langLabel")}>
+        <span class="lp-lang-pill" style=${`transform:translateX(${idx * 38}px)`}></span>
+        ${LOCALES.map((l) => html`
+          <button key=${l.id} type="button" disabled=${pending} aria-pressed=${locale === l.id} onClick=${() => choose(l.id)}
+            class=${`lp-lang-b ${locale === l.id ? "lp-on" : ""}`}>${l.label}</button>
+        `)}
+      </div>
+    `;
   }
   return html`
     <div class="sk-tabs flex items-center rounded-lg p-0.5 text-sm font-medium">

@@ -51,6 +51,8 @@ const PATHS = {
   send: html`<path d="M21.5 3L10.5 14"/><path d="M21.5 3l-6.8 18-4.2-7-7-4.2z"/>`,
   checks: html`<path d="M1.8 12.8l4.4 4.4L15 8.4"/><path d="M9.6 15.6l1.6 1.6L21.4 7"/>`,
   smile: html`<circle cx="12" cy="12" r="8.5"/><path d="M8.5 14c.9 1.3 2 2 3.5 2s2.6-.7 3.5-2"/><path d="M9 9.8h.01M15 9.8h.01"/>`,
+  shuffle: html`<polyline points="16 3 21 3 21 8"/><line x1="4" y1="20" x2="21" y2="3"/><polyline points="21 16 21 21 16 21"/><line x1="15" y1="15" x2="21" y2="21"/><line x1="4" y1="4" x2="9" y2="9"/>`,
+  link: html`<path d="M10 13a5 5 0 0 0 7.5.5l3-3a5 5 0 0 0-7-7l-1.7 1.7"/><path d="M14 11a5 5 0 0 0-7.5-.5l-3 3a5 5 0 0 0 7 7l1.7-1.7"/>`,
   friends: html`<circle cx="9" cy="8" r="3.4"/><circle cx="15" cy="8" r="3.4" opacity="0.55"/><path d="M3 19.5c0-3.4 2.7-6 6.5-6a7 7 0 0 1 3.4.9"/><path d="M12.4 14.5c1-.6 2.2-1 3.6-1 3.5 0 6.5 2.6 6.5 6"/>`,
 };
 
@@ -87,4 +89,11 @@ export function Logo({ size = 24, animated = false, className = "" }) {
       <circle class="sk-logo-point" cx="11.9" cy="19.3" r="2.6" fill="#818cf8" />
     </svg>
   `;
+}
+
+/** The DecisionOS mark as a PNG (tile included) for every static placement -- sidebar, auth pages, public profile,
+ * landing. The animated SVG <Logo/> above is kept only for the boot loader, where the draw-in reveal needs
+ * vector paths. `size` is the rendered edge in px; the 256px source stays sharp up to ~128px at 2x. */
+export function LogoMark({ size = 24, className = "" }) {
+  return html`<img src="./assets/logo/logo-mark-256.png" width=${size} height=${size} alt="" decoding="async" class=${`block shrink-0 ${className}`} />`;
 }

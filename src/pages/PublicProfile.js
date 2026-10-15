@@ -1,7 +1,7 @@
 import { html, useState, useEffect } from "../lib/preact.js";
 import { navigate } from "../router.js";
 import { fetchPublicProfile } from "../lib/profile.js";
-import { Logo } from "../components/icons.js";
+import { LogoMark } from "../components/icons.js";
 import { Button, LoadingState } from "../components/ui.js";
 import { FriendButton } from "../components/friendButton.js";
 import { useFriendsCount } from "../lib/friendsStore.js";
@@ -34,7 +34,7 @@ export function PublicProfile({ params }) {
     <div class="min-h-screen bg-slate-950 text-slate-100 flex flex-col fade-in">
       <header class="px-6 py-4 border-b border-slate-800/80">
         <button onClick=${() => navigate("/")} class="flex items-center gap-2 text-sm font-semibold text-slate-200">
-          <div class="sk-panel-flat flex h-7 w-7 items-center justify-center rounded-lg"><${Logo} size=${15} /></div>
+          <${LogoMark} size=${28} />
           DecisionOS
         </button>
       </header>

@@ -1,6 +1,6 @@
 import { html, useState, useEffect, useRef } from "../../lib/preact.js";
 import { navigate } from "../../router.js";
-import { Icon, Logo } from "../../components/icons.js";
+import { Icon, LogoMark } from "../../components/icons.js";
 import { LanguageSwitch } from "../../components/shell.js";
 import { AuthError } from "./AuthLayout.js";
 import { Field, TextInput, TextArea, Select, Switch, Button, toast } from "../../components/ui.js";
@@ -32,7 +32,7 @@ function WizardShell({ step, children }) {
       <div class="w-full max-w-lg">
         <div class="flex items-center justify-between mb-8">
           <button onClick=${() => navigate("/")} class="flex items-center gap-2.5">
-            <div class="sk-panel-flat flex h-9 w-9 items-center justify-center rounded-lg"><${Logo} size=${18} /></div>
+            <${LogoMark} size=${36} />
             <span class="font-semibold text-lg tracking-tight">DecisionOS</span>
           </button>
           <${LanguageSwitch} />
