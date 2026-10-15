@@ -3267,5 +3267,33 @@ photos 87 KB); phone images lazy-load (~85 KB each, 4 per locale).
 - Objective-based question suggestions (`lib/questionSuggestions.js`, builder step 4): plain keyword matching, not
   AI, and labelled as such. The amber ring/hint first used Tailwind utilities missing from the prebuilt CSS; now plain
   classes in `styles.css` (`.sk-suggested`, `.sk-suggest-hint`, `.sk-suggest-badge`).
-- Messages: image attachments + reply-to (WhatsApp/Telegram-style) are planned; a draft migration exists locally and
-  is intentionally not committed until it has been run against PostgreSQL.
+- Messages: see the `0020` section at the end of this file (image attachments + reply-to, database side only so far).
+
+## Messages, step 1: image attachments + reply-to (database side) ✅ (migration 0020, not applied to a live project yet)
+
+`supabase/migrations/0020_message_attachments.sql` extends `messages`: `attachment_path`, `reply_to_id` (the quoted
+message; nulled, not cascaded, if the original is deleted), a check that a message has text or an image (never
+neither) and keeps the 4000-char cap, `conversations.last_message_has_attachment` so the chat list can say "Photo"
+for an image-only message, and a private `message-images` storage bucket.
+
+- Storage path: `<conversation_id>/<uploader_id>/<random>.<ext>`. Read: either participant. Upload and delete: only
+  into/from your own folder of a conversation you are in -- so nobody can add to, or remove, the other person's files.
+  The folder is compared as text, never cast to uuid (a cast on an arbitrary path segment can throw before the other
+  conditions say "no").
+- A trigger rejects an `attachment_path` that is not `<this conversation>/<this sender>/<one file>`, so a message can't
+  point at another conversation's image or an arbitrary storage key; a reply must quote a message of the same
+  conversation. That check is a `SECURITY DEFINER` helper (`message_in_conversation`, executable by `authenticated`
+  only): written as a subquery on `messages` inside the policy on `messages` it fails with "infinite recursion
+  detected in policy".
+- Still no UPDATE or DELETE path for clients on `messages`; read receipts and realtime are untouched.
+
+**Verified** on a local PostgreSQL 16 against the real 0001-0018 schema (Supabase `auth`/roles/storage stubbed): the
+migration applies cleanly and a second time (idempotent); 47 checks -- text, image-only, empty/whitespace/oversized
+rejected, attachment paths from another conversation / another user / nested / arbitrary / over-long rejected,
+same-conversation, cross-conversation and non-existent replies, forged sender, stranger, no edit or delete,
+`anon` cannot call the helper, deleting a quoted message keeps the reply, deleting a conversation cascades, the
+preview flag on and off, and the storage matrix (member / other member / stranger / other conversation, upload,
+read, delete, flat and non-uuid paths refused). Only the database side exists: **the client (upload, signed URLs,
+reply UI) is not written yet**, so nothing in the app uses these columns.
+
+**To go live**: apply `0020` (SQL editor or `supabase db push`), then `notify pgrst, 'reload schema';`.
