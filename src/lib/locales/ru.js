@@ -526,6 +526,8 @@ export default {
   participants: {
     title: "Участники",
     subtitle: "Все, кто принял участие в ваших экспериментах.",
+      suggestedIntro: "По ключевым словам из вашего исследовательского вопроса это может быть релевантно (простое совпадение слов, не ИИ — всегда проверяйте сами):",
+      suggestedBadge: "Предложено",
     statTotal: "Всего участников",
     statCompleted: "Завершили",
     statInProgress: "В процессе",
@@ -659,7 +661,7 @@ export default {
     subtitle: "Кто имеет доступ к этому рабочему пространству.",
     addMember: "Добавить участника",
     modalTitle: "Добавить участника команды",
-    inviteHint: "Можно добавить только человека, у которого уже есть аккаунт DecisionOS. Приглашение по email для новых пользователей появится позже.",
+    inviteHint: "Если у человека уже есть аккаунт DecisionOS, он добавляется сразу. Если нет — мы отправим ему приглашение по email.",
     emailLabel: "Email",
     roleLabel: "Роль",
     memberAdded: "Участник добавлен",
@@ -763,6 +765,7 @@ export default {
     errorTitle: "Не удалось загрузить профиль",
     errorBody: "Проверьте соединение и попробуйте снова.",
     footerNote: "Исследователь на платформе DecisionOS — Consumer Decision Intelligence.",
+    inviteSent: "Приглашение отправлено на {email}",
   },
 
   billing: {

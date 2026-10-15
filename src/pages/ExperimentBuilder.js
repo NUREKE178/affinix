@@ -10,8 +10,9 @@ import {
 } from "../components/ui.js";
 import { Icon } from "../components/icons.js";
 import { researchTypes, questionTypes, typeSupportsVariants, measurementDimensions, questionFromDimension, AGE_RANGES, COUNTRIES, LANGUAGES, INFLUENCE_FACTORS } from "../lib/questionTypes.js";
+import { suggestDimensions } from "../lib/questionSuggestions.js";
 import { ParticipantRunner } from "./ParticipantRunner.js";
-import { useT } from "../lib/i18n.js";
+import { useT, useLocale } from "../lib/i18n.js";
 
 const uid = () => crypto.randomUUID();
 
@@ -372,6 +373,7 @@ function StepStimuli({ draft, patch, orgId, t }) {
 
 // ---- Step 4: Questions ------------------------------------------------------
 function StepQuestions({ draft, patch, t }) {
+  const locale = useLocale();
   function update(id, fields) {
     patch({ questions: draft.questions.map((q) => (q.id === id ? { ...q, ...fields } : q)) });
   }
@@ -394,6 +396,16 @@ function StepQuestions({ draft, patch, t }) {
     if (q) patch({ questions: [...draft.questions, q] });
   }
   const presentRoles = new Set(draft.questions.map((q) => q.role).filter(Boolean));
+  // Rule-based only: a fixed keyword list per dimension (lib/questionSuggestions.js),
+  // substring-matched against what the researcher already typed in step 1.
+  // No model call -- the matched keyword is kept so the tooltip can show
+  // exactly why a chip is highlighted, instead of asking for trust in a
+  // black box.
+  const suggestions = useMemo(
+    () => suggestDimensions(`${draft.objective} ${draft.category}`, locale),
+    [draft.objective, draft.category, locale]
+  );
+  const suggestionByDimension = new Map(suggestions.map((s) => [s.dimensionId, s.matchedKeyword]));
   const ROLE_OPTIONS = [
     { value: "", label: t("builder.step4.roleNone") },
     { value: "selection", label: t("builder.step4.roleSelection") },
@@ -413,15 +425,25 @@ function StepQuestions({ draft, patch, t }) {
 
       <div class="sk-panel-flat rounded-xl p-4 mb-5">
         <p class="text-xs text-slate-500 mb-3">${t("builder.dimensions.intro")}</p>
+        ${suggestionByDimension.size > 0 && html`
+          <p class="text-xs sk-suggest-hint mb-3">${t("builder.dimensions.suggestedIntro")}</p>
+        `}
         <div class="flex flex-wrap gap-2">
-          ${measurementDimensions(t).map((d) => html`
-            <button key=${d.id} type="button" onClick=${() => addDimension(d.id)} title=${d.blurb}
-              class="sk-slot flex items-center gap-1.5 rounded-lg pl-2.5 pr-3 py-2 text-xs font-medium text-slate-200">
-              <${Icon} name=${d.icon} size=${14} className=${presentRoles.has(d.role) ? "text-emerald-400" : "text-indigo-300"} />
-              ${d.label}
-              ${presentRoles.has(d.role) && html`<${Icon} name="check" size=${11} className="text-emerald-400" />`}
-            </button>
-          `)}
+          ${measurementDimensions(t).map((d) => {
+            const already = presentRoles.has(d.role);
+            const matchedKeyword = suggestionByDimension.get(d.id);
+            const suggested = !already && !!matchedKeyword;
+            const title = suggested ? `${d.blurb} — ${t("builder.dimensions.suggestedBadge")}: "${matchedKeyword}"` : d.blurb;
+            return html`
+              <button key=${d.id} type="button" onClick=${() => addDimension(d.id)} title=${title}
+                class=${`sk-slot flex items-center gap-1.5 rounded-lg pl-2.5 pr-3 py-2 text-xs font-medium text-slate-200 ${suggested ? "sk-suggested" : ""}`}>
+                <${Icon} name=${d.icon} size=${14} className=${already ? "text-emerald-400" : suggested ? "text-amber-400" : "text-indigo-300"} />
+                ${d.label}
+                ${already && html`<${Icon} name="check" size=${11} className="text-emerald-400" />`}
+                ${suggested && html`<span class="sk-suggest-badge">${t("builder.dimensions.suggestedBadge")}</span>`}
+              </button>
+            `;
+          })}
         </div>
       </div>
 

@@ -526,6 +526,8 @@ export default {
   participants: {
     title: "Қатысушылар",
     subtitle: "Эксперименттеріңізге қатысқандардың барлығы.",
+      suggestedIntro: "Зерттеу сұрағыңыздағы кілт сөздер бойынша бұлар сәйкес келуі мүмкін (жай сөз сәйкестігі, ЖИ емес — өзіңіз тексеріңіз):",
+      suggestedBadge: "Ұсынылды",
     statTotal: "Барлық қатысушылар",
     statCompleted: "Аяқтады",
     statInProgress: "Орындалуда",
@@ -659,7 +661,7 @@ export default {
     subtitle: "Бұл жұмыс кеңістігіне кімдердің қолжетімділігі бар.",
     addMember: "Мүше қосу",
     modalTitle: "Топ мүшесін қосу",
-    inviteHint: "Тек DecisionOS аккаунты бар адамды ғана қосуға болады. Жаңа пайдаланушыларды email арқылы шақыру кейінірек қосылады.",
+    inviteHint: "Егер онда DecisionOS есептік жазбасы бар болса, ол бірден қосылады. Болмаса, оған email арқылы шақыру жібереміз.",
     emailLabel: "Email",
     roleLabel: "Рөл",
     memberAdded: "Мүше қосылды",
@@ -763,6 +765,7 @@ export default {
     errorTitle: "Профильді жүктеу мүмкін болмады",
     errorBody: "Байланысты тексеріп, қайта көріңіз.",
     footerNote: "DecisionOS платформасындағы зерттеуші — Consumer Decision Intelligence.",
+    inviteSent: "{email} мекенжайына шақыру жіберілді",
   },
 
   billing: {

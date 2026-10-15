@@ -461,6 +461,13 @@ select.sk-input option:checked {
   border-color: #6366f1;
   box-shadow: var(--sk-shadow-raised), 0 0 0 2px rgba(99,102,241,.4), 0 0 20px -4px rgba(99,102,241,.5);
 }
+/* Suggested measurement chips (builder step 4). Plain classes on purpose: the Tailwind utilities first used here
+   (ring-amber-400/60, text-amber-400/90, text-[10px]) are not in the prebuilt vendor/tailwind.css, and .sk-slot's own
+   box-shadow would override a ring anyway. */
+.sk-slot.sk-suggested { border-color: rgba(251,191,36,.55); box-shadow: var(--sk-shadow-raised-sm), 0 0 0 1px rgba(251,191,36,.35); }
+.sk-slot.sk-suggested:hover { box-shadow: var(--sk-shadow-raised), 0 0 0 1px rgba(251,191,36,.55); }
+.sk-suggest-hint { color: rgba(251,191,36,.9); }
+.sk-suggest-badge { font-size: 10px; line-height: 1; color: #fbbf24; }
 .sk-slot-label {
   background: var(--sk-accent);
   box-shadow: inset 0 1px 0 rgba(255,255,255,.3), 0 2px 6px -2px rgba(0,0,0,.5);

@@ -45,6 +45,7 @@ by phase.
    npx supabase functions deploy submit-response
    npx supabase functions deploy complete-session
    npx supabase functions deploy generate-insights
+   npx supabase functions deploy invite-member
    ```
 5. Put `SUPABASE_URL` / `SUPABASE_ANON_KEY` into `src/lib/env.js` (the anon
    key is meant to be public -- Supabase's security model is anon key + RLS,

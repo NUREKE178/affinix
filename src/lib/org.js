@@ -95,18 +95,44 @@ export async function removeMember(memberId) {
   if (error) throw error;
 }
 
-/** Adds an EXISTING registered user as a member by email, via the
- * add_member_by_email() SECURITY DEFINER function (0006_team.sql), which
- * enforces owner/admin-only server-side. Inviting someone with no account
- * yet needs an email-sending Edge Function (Admin inviteUserByEmail) -- not
- * implemented; this only covers people who already have a DecisionOS account. */
+async function readJsonSafely(response) {
+  try {
+    return await response.json();
+  } catch {
+    return null;
+  }
+}
+
+/** Adds a member by email. An EXISTING DecisionOS user is added directly via
+ * add_member_by_email() (0016_single_owner_per_org.sql, SECURITY DEFINER,
+ * enforces owner/admin-only server-side). When that RPC reports no account
+ * exists yet, falls back to the invite-member Edge Function, which sends a
+ * real invite email through the Supabase Admin API and seats the new account
+ * at the given role itself, server-side, as soon as it exists (see the
+ * function's header for why that is not done through user_metadata) -- no
+ * separate acceptance step on this app's side. Returns { status: "added", member } or
+ * { status: "invited", email } so callers can tell the two outcomes apart
+ * instead of just "it didn't throw". */
 export async function addMemberByEmail(organizationId, email, role) {
   const sb = requireSupabase();
-  const { data, error } = await sb.rpc("add_member_by_email", {
-    org_id: organizationId,
-    member_email: email,
-    member_role: role,
-  });
-  if (error) throw error;
-  return data;
+  try {
+    const { data, error } = await sb.rpc("add_member_by_email", {
+      org_id: organizationId,
+      member_email: email,
+      member_role: role,
+    });
+    if (error) throw error;
+    return { status: "added", member: data };
+  } catch (err) {
+    if (!/no account found/i.test(err.message ?? "")) throw err;
+    const { data, error: fnError } = await sb.functions.invoke("invite-member", {
+      body: { org_id: organizationId, email, role },
+    });
+    if (fnError) {
+      const detail = fnError.context?.body ? await readJsonSafely(fnError.context) : null;
+      throw new Error(detail?.message || detail?.error || fnError.message || "Network error");
+    }
+    if (data?.error) throw new Error(data.message || data.error);
+    return { status: "invited", email: data.email };
+  }
 }

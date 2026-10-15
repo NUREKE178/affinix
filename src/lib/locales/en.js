@@ -526,6 +526,8 @@ export default {
   participants: {
     title: "Participants",
     subtitle: "Everyone who has taken part in your experiments.",
+      suggestedIntro: "Based on keywords in your research question, these may be relevant (simple keyword match, not AI — always double-check):",
+      suggestedBadge: "Suggested",
     statTotal: "Total participants",
     statCompleted: "Completed",
     statInProgress: "In progress",
@@ -659,7 +661,7 @@ export default {
     subtitle: "Who has access to this workspace.",
     addMember: "Add member",
     modalTitle: "Add a team member",
-    inviteHint: "You can only add someone who already has a DecisionOS account. Email invites for new users are coming later.",
+    inviteHint: "If they already have a DecisionOS account, they're added immediately. Otherwise, we'll email them an invite.",
     emailLabel: "Email",
     roleLabel: "Role",
     memberAdded: "Member added",
@@ -763,6 +765,7 @@ export default {
     errorTitle: "Couldn't load this profile",
     errorBody: "Check your connection and try again.",
     footerNote: "A researcher on DecisionOS — Consumer Decision Intelligence.",
+    inviteSent: "Invite sent to {email}",
   },
 
   billing: {

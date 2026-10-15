@@ -200,9 +200,10 @@ export function Onboarding() {
       const validInvites = form.invites.filter((inv) => inv.email.trim());
       for (const inv of validInvites) {
         try {
-          await addMemberByEmail(org.id, inv.email.trim(), inv.role);
+          const result = await addMemberByEmail(org.id, inv.email.trim(), inv.role);
+          if (result.status === "invited") toast(t("team.inviteSent", { email: result.email }));
         } catch (err) {
-          // One bad invite (typo, no account yet) shouldn't block finishing
+          // A bad invite (typo, already a member) shouldn't block finishing
           // onboarding -- the org/profile are already real and saved by
           // this point. Surface it as a toast, not a blocking form error.
           toast(`${inv.email}: ${err.message ?? String(err)}`, "rose");

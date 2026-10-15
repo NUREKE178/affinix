@@ -46,9 +46,9 @@ export function Team() {
     setError(null);
     setBusy(true);
     try {
-      await addMemberByEmail(org.id, email.trim(), role);
+      const result = await addMemberByEmail(org.id, email.trim(), role);
       setEmail(""); setRole("researcher"); setOpen(false);
-      toast(t("team.memberAdded"));
+      toast(result.status === "invited" ? t("team.inviteSent", { email: result.email }) : t("team.memberAdded"));
       await load();
     } catch (err) {
       setError(err.message ?? String(err));
