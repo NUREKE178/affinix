@@ -28,8 +28,7 @@ import { useSession } from "./lib/auth.js";
 import { fetchMyOrganizations } from "./lib/org.js";
 import { IS_CONFIGURED } from "./lib/env.js";
 import { useT } from "./lib/i18n.js";
-import { Button, Spinner } from "./components/ui.js";
-import { Logo } from "./components/icons.js";
+import { Button, BootScreen } from "./components/ui.js";
 import { withTimeout } from "./lib/async.js";
 import { useAutoUpdate } from "./lib/useAutoUpdate.js";
 
@@ -90,18 +89,13 @@ function detectAuthCallback() {
   return { leadingPath: hasHashTokens && hash.startsWith("/") ? hash.split("&")[0] : null, done: false };
 }
 
-function FullScreenLoading() {
+/** The boot screen, labelled with what the app is actually waiting for:
+ * "session" while the sign-in is being checked (also the email-link
+ * callback), "workspace" once that is known and the organisation is loading.
+ * index.html shows the same screen, in plain HTML, until this takes over. */
+function FullScreenLoading({ phase = "session" }) {
   const t = useT();
-  return html`
-    <div class="flex min-h-screen flex-col items-center justify-center gap-5 bg-slate-950">
-      <div class="sk-panel-flat sk-pulse-indigo flex h-14 w-14 items-center justify-center rounded-2xl">
-        <${Logo} size=${28} animated=${true} />
-      </div>
-      <div class="flex items-center gap-2.5 text-sm text-slate-500">
-        <${Spinner} size=${15} /> ${t("common.loading")}
-      </div>
-    </div>
-  `;
+  return html`<${BootScreen} label=${t(phase === "workspace" ? "common.bootWorkspace" : "common.bootSession")} />`;
 }
 
 /** Gatekeeper for everything under /app: requires a signed-in session, then
@@ -136,9 +130,9 @@ function ProtectedApp({ path, query }) {
     `;
   }
 
-  if (sessionLoading) return html`<${FullScreenLoading} />`;
+  if (sessionLoading) return html`<${FullScreenLoading} phase="session" />`;
   if (!session) { navigate("/login"); return null; }
-  if (!orgChecked) return html`<${FullScreenLoading} />`;
+  if (!orgChecked) return html`<${FullScreenLoading} phase="workspace" />`;
   if (orgError) {
     return html`
       <div class="min-h-screen flex flex-col items-center justify-center gap-4 bg-slate-950 px-6 text-center">
@@ -200,7 +194,7 @@ export function App() {
     if (location.search) history.replaceState(null, "", location.pathname + location.hash);
     navigate(authCallback.leadingPath === "/reset-password" ? "/reset-password" : (session ? "/app/overview" : "/login"));
   }, [authCallback, sessionLoading, session]);
-  if (authCallback && path === originalPathRef.current) return html`<${FullScreenLoading} />`;
+  if (authCallback && path === originalPathRef.current) return html`<${FullScreenLoading} phase="session" />`;
 
   if (path === "/" || path === "") return html`<${Landing} />`;
 

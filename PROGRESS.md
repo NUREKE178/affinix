@@ -3226,7 +3226,7 @@ RLS-protected table). Supabase "Realtime Authorization" private channels
 would harden this later. No new Tailwind utilities were used (the bundle
 is prebuilt); chat styles are plain CSS in `styles.css`.
 
-## Landing page redesign (dark / glass / violet glow) + PNG logo ✅ (uncommitted)
+## Landing page redesign (dark / glass / violet glow) + PNG logo ✅
 
 The public landing (`#/`) was rebuilt from the approved "DecisionOS Landing Page" Design artifact:
 sticky glass header with a sliding RU/KZ/EN pill, hero with a 3D-tilted dashboard preview whose variant cards are
@@ -3242,8 +3242,8 @@ the sections they fed; key sets are identical across the three files).
   under the family name "Inter Landing", used only on the landing, so the rest of the app's typography is unchanged.
 - **Logo is PNG now**: `assets/logo/` (mark 1024/256, dark + light lockups, 32/192/180 icons). `index.html` uses PNG
   favicons + apple-touch-icon; sidebar, auth pages, onboarding and the public profile use `<LogoMark/>` (icons.js).
-  The animated SVG `<Logo/>` is kept only for the boot loader (it needs vector paths for the draw-in). `favicon.svg`
-  is no longer linked (left in place).
+  The old animated SVG `<Logo/>` was removed with the loading-screen redesign below. `favicon.svg` is no longer
+  linked (left in place).
 - **Phone mockups** are real screenshots of the app (demo data) in a device frame, one set per UI language:
   `assets/landing/phone-{participant,builder,report,chat}.{ru,kk,en}.webp`; pack photos `pack-{a..d}.jpg`.
 - `LanguageSwitch` got a `variant="glass"` (same `choose()` logic: local immediately, profile persisted when signed in).
@@ -3256,7 +3256,7 @@ variant selection, sticky header, scroll buttons, /login and /register routing, 
 (20 checks). First-load landing-specific weight ~270 KB (fonts 65-90 KB depending on locale, logos 90 KB, 4 pack
 photos 87 KB); phone images lazy-load (~85 KB each, 4 per locale).
 
-**Also in this working tree (not part of the landing)**
+**Shipped in the same push (not part of the landing)**
 - Org invite emails: `supabase/functions/invite-member` + `lib/org.js` fallback + Team/Onboarding toasts. When the
   email has no account yet, the function (service role, after checking the caller is an owner/admin of the org through
   an RLS-gated read) sends the Supabase invite and then inserts the `organization_members` row itself. An earlier
@@ -3268,6 +3268,54 @@ photos 87 KB); phone images lazy-load (~85 KB each, 4 per locale).
   AI, and labelled as such. The amber ring/hint first used Tailwind utilities missing from the prebuilt CSS; now plain
   classes in `styles.css` (`.sk-suggested`, `.sk-suggest-hint`, `.sk-suggest-badge`).
 - Messages: see the `0020` section at the end of this file (image attachments + reply-to, database side only so far).
+
+## Loading screen redesign + loading animations everywhere ✅
+
+Designed first in the "DecisionOS Loading States" Design artifact (boot screen on desktop and phone, a kit of every
+loading state, and a dashboard that goes from loading to loaded), then ported. One visual language for every
+"something is loading" moment: violet/indigo light on the app's dark slate, the PNG logo tile, and compositor-only
+animation (transform/opacity) wherever possible.
+
+- **Boot screen** -- `index.html`'s static pre-boot placeholder and `<BootScreen/>` (`components/ui.js`, used by
+  `<FullScreenLoading/>` in `App.js`): space-blue ground with a faint grid, a breathing violet aura, the logo tile
+  floating inside a comet ring (dashed outer ring with two orbiting points), the wordmark, an indeterminate hairline
+  track and an animated-dots label. The label follows the real boot phase: pre-boot "Загрузка" in the visitor's own
+  language (a tiny inline script mirrors `lib/i18n.js`: saved choice, then browser language, then ru), then
+  "Проверяем вход…" while the session is checked, then "Открываем рабочее пространство…" while the organisation
+  loads (`common.bootSession` / `common.bootWorkspace`, ru/kk/en).
+  - The pre-boot markup and the Preact component are the same DOM and Preact adopts the nodes already on screen, so
+    the animation carries on through the mount with no visible swap. That only holds if there are **no whitespace or
+    comment nodes between the tags inside `#app` in `index.html`**: Preact re-inserts an adopted node that is not the
+    first child of its parent, and a re-inserted element restarts its CSS animations. The markup there is written
+    with each `>` glued onto the next line for exactly that reason -- keep it that way.
+- **`Spinner`**: a comet-tail arc (conic gradient cut into a ring with a mask; thickness 2 / 2.5 / 3 px by size)
+  instead of two quarter borders. **`Skeleton`**: a violet sweep, a slight breathing pulse, and sibling blocks start in
+  a staggered wave (`:nth-child` delays, no per-call-site work). **`LoadingState`**: the logo in a turning ring plus a
+  label (`compact`: spinner beside the label; `mark={false}`: a plain glowing core, used by the public participant
+  loader). New: `LoadingLabel`/`Dots` (a trailing "…" in any loading label is drawn as three rising dots) and
+  `GeneratingState` (AI summary: pulsing spark, a label with a light sweep, ghost lines of the paragraph to come).
+- **`Button loading`**: spinner before the label and a sheen over the face, `aria-busy`, no clicks -- and it does not
+  look disabled. Wired into the buttons that used to only swap their label: login, register, forgot/reset password,
+  onboarding, profile (4), organisation settings, team invite, builder (continue / save and exit / publish), feed
+  composer and comments, the participant retry button.
+- **Top loading bar**: `<LoadingBar/>` in the shell lights a thin violet bar along the top edge while any `Skeleton`,
+  `Spinner` or `LoadingState` is mounted (a tiny ref-count in `lib/loadingBar.js`, so no per-fetch bookkeeping).
+  Debounced both ways: a load that settles in a blink never flashes it, and it fades out afterwards.
+- Plain "…" placeholders became animated: the Feed comment loader, Messages' "older messages" and "opening chat",
+  the Profile counters, the sidebar name/organisation lines.
+- **`prefers-reduced-motion`**: nothing slides, floats or sweeps; spinners keep turning, slowly (3 s a turn), and the
+  indeterminate bars become a gentle pulse.
+- The old animated SVG `<Logo/>` and its `.sk-logo*` CSS are gone (the PNG mark is used everywhere). Loading CSS lives
+  in one block of `styles.css` ("Loading system"); no new Tailwind utilities were needed.
+
+**Verified** in headless Chromium: the pre-boot at 1440x900 and 390x844; the hand-off to the app in ru, kk and en
+(adopted root and logo nodes, the arc's animation clock keeps counting through the mount, label switches to the
+workspace phase); a component gallery in isolation (spinner sizes, busy-vs-disabled buttons, orbit/compact/AI states,
+skeleton wave, bar on and off, reduced-motion computed styles -- 23 checks); real-app flows (the login button while a
+slow request is in flight and after it fails, skeletons plus the bar on the overview page at desktop and phone width,
+clean settle, no overflow, no console errors -- 11 checks); the landing still mounts over the new pre-boot with no
+leftovers; and the older loading regression script (45/47 -- the same two results/reports cases already failed in its
+log from before this change; they come from that script's mock data, not from the loaders).
 
 ## Messages, step 1: image attachments + reply-to (database side) ✅ (migration 0020, not applied to a live project yet)
 

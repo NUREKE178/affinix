@@ -2,6 +2,8 @@ export default {
   common: {
     loading: "Loading…",
     loadingAnswers: "Loading responses…",
+    bootSession: "Checking sign-in…",
+    bootWorkspace: "Opening your workspace…",
     save: "Save",
     saving: "Saving…",
     cancel: "Cancel",

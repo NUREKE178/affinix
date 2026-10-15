@@ -68,32 +68,10 @@ export function Icon({ name, size = 18, className = "", strokeWidth = 1.8, fille
   `;
 }
 
-/** The DecisionOS mark -- three paths of different weight and reach
- * (what you're comparing) converging on one point (the decision),
- * rather than a generic isometric-cube "tech logo." A dedicated
- * component, not a PATHS entry: unlike every other icon it needs more
- * than one color at once (two muted paths + one resolved in the accent
- * indigo), so it can't share Icon's single currentColor stroke.
- * `animated`: the one-time draw-in-and-resolve reveal, for a first-load
- * moment (the full-screen loader). Every other placement (sidebar,
- * headers) renders fully drawn and static except for the same slow
- * breathing glow on the resolved point both modes settle into -- so the
- * mark stays quietly alive in persistent chrome without being loud. */
-export function Logo({ size = 24, animated = false, className = "" }) {
-  return html`
-    <svg xmlns="http://www.w3.org/2000/svg" width=${size} height=${size} viewBox="0 0 24 24" fill="none"
-      class=${`sk-logo ${animated ? "sk-logo-animated" : ""} ${className}`}>
-      <line class="sk-logo-path sk-logo-path-1" x1="3.5" y1="12" x2="11.5" y2="19" stroke="#475569" stroke-width="2.1" stroke-linecap="round" />
-      <line class="sk-logo-path sk-logo-path-2" x1="9" y1="2.5" x2="11.5" y2="19" stroke="#64748b" stroke-width="2.1" stroke-linecap="round" />
-      <line class="sk-logo-path sk-logo-path-3" x1="20.5" y1="9.5" x2="12.3" y2="19" stroke="#818cf8" stroke-width="2.6" stroke-linecap="round" />
-      <circle class="sk-logo-point" cx="11.9" cy="19.3" r="2.6" fill="#818cf8" />
-    </svg>
-  `;
-}
-
-/** The DecisionOS mark as a PNG (tile included) for every static placement -- sidebar, auth pages, public profile,
- * landing. The animated SVG <Logo/> above is kept only for the boot loader, where the draw-in reveal needs
- * vector paths. `size` is the rendered edge in px; the 256px source stays sharp up to ~128px at 2x. */
+/** The DecisionOS mark -- three paths of different weight and reach (what you're comparing) converging on one point
+ * (the decision) -- as a PNG with its tile included, for every placement: sidebar, auth pages, public profile,
+ * landing. (The boot screen and page loaders use the same file, see components/ui.js.) `size` is the rendered edge in
+ * px; the 256px source stays sharp up to ~128px at 2x. */
 export function LogoMark({ size = 24, className = "" }) {
   return html`<img src="./assets/logo/logo-mark-256.png" width=${size} height=${size} alt="" decoding="async" class=${`block shrink-0 ${className}`} />`;
 }

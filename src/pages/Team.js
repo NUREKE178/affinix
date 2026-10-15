@@ -133,7 +133,7 @@ export function Team() {
       <//>
 
       <${Modal} open=${open} onClose=${() => setOpen(false)} title=${t("team.modalTitle")}
-        footer=${html`<${Button} variant="secondary" size="sm" onClick=${() => setOpen(false)}>${t("common.cancel")}<//><${Button} size="sm" disabled=${busy || !email.trim()} onClick=${invite}>${busy ? t("team.adding") : t("team.addMember")}<//>`}>
+        footer=${html`<${Button} variant="secondary" size="sm" onClick=${() => setOpen(false)}>${t("common.cancel")}<//><${Button} size="sm" loading=${busy} disabled=${!email.trim()} onClick=${invite}>${busy ? t("team.adding") : t("team.addMember")}<//>`}>
         ${error && html`<div class="mb-4 rounded-lg border border-rose-500/30 bg-rose-500/10 px-3 py-2 text-sm text-rose-300">${error}</div>`}
         <p class="text-xs text-slate-500 mb-4">${t("team.inviteHint")}</p>
         <${Field} label=${t("team.emailLabel")}><${TextInput} type="email" value=${email} onInput=${(e) => setEmail(e.target.value)} placeholder="jane@company.com" /><//>

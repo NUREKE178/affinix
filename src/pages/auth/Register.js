@@ -61,7 +61,7 @@ export function Register() {
         <${Field} label=${t("auth.fields.password")} required hint=${t("auth.fields.passwordHint")}>
           <${TextInput} type="password" required minlength="6" autocomplete="new-password" value=${password} onInput=${(e) => setPassword(e.target.value)} />
         <//>
-        <${Button} type="submit" className="w-full" disabled=${loading || !IS_CONFIGURED}>${loading ? t("auth.register.submitting") : t("auth.register.submit")}<//>
+        <${Button} type="submit" className="w-full" loading=${loading} disabled=${!IS_CONFIGURED}>${loading ? t("auth.register.submitting") : t("auth.register.submit")}<//>
       </form>
     <//>
   `;

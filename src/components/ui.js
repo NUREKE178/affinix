@@ -1,6 +1,7 @@
 import { html, useState, useEffect, useRef } from "../lib/preact.js";
 import { Icon } from "./icons.js";
 import { useMountTransition, prefersReducedMotion } from "../lib/motion.js";
+import { useLoadingHold, useIsLoading } from "../lib/loadingBar.js";
 
 export function Card({ className = "", children, ...rest }) {
   return html`<div class=${`sk-panel rounded-xl ${className}`} ...${rest}>${children}</div>`;
@@ -28,16 +29,21 @@ const BUTTON_VARIANTS = {
 
 const DANGER_STYLE = "background:linear-gradient(180deg,#fb7185 0%,#f43f5e 55%,#e11d48 100%);border:1px solid rgba(255,255,255,.15);box-shadow:inset 0 1px 0 rgba(255,255,255,.3),inset 0 -1px 0 rgba(136,19,55,.5),0 4px 14px -4px rgba(225,29,72,.5)";
 
-export function Button({ variant = "primary", size = "md", className = "", children, disabled, style, ...rest }) {
+/** `loading` = the action is in flight: the button turns busy (spinner in front
+ * of its label, a sheen passing over its face) and stops taking clicks, without
+ * looking disabled. Keep swapping the label text ("Saving…") as before. */
+export function Button({ variant = "primary", size = "md", className = "", children, disabled, loading = false, style, ...rest }) {
   const sizes = { sm: "px-3 py-1.5 text-sm", md: "px-4 py-2 text-sm", lg: "px-5 py-2.5 text-base" };
   const extraStyle = variant === "danger" ? `${DANGER_STYLE};${style ?? ""}` : style;
   return html`
     <button
       class=${`inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-lg font-medium disabled:opacity-40 disabled:cursor-not-allowed ${BUTTON_VARIANTS[variant]} ${sizes[size]} ${className}`}
       style=${extraStyle}
-      disabled=${disabled}
+      disabled=${disabled || loading}
+      aria-busy=${loading ? "true" : undefined}
+      data-loading=${loading ? "true" : undefined}
       ...${rest}
-    >${children}</button>
+    >${loading && html`<${Spinner} size=${size === "lg" ? 18 : 15} />`}${children}</button>
   `;
 }
 
@@ -86,28 +92,119 @@ export function ProgressBar({ value, tone = "indigo" }) {
   `;
 }
 
+/** A comet-arc ring. Like every loading placeholder below it also holds the
+ * thin top bar (see lib/loadingBar.js) for as long as it stays mounted. */
 export function Spinner({ size = 18, className = "" }) {
-  return html`<span class=${`sk-spinner shrink-0 ${className}`} style=${{ width: `${size}px`, height: `${size}px` }}></span>`;
+  useLoadingHold();
+  const thickness = size <= 16 ? 2 : size >= 36 ? 3 : 2.5;
+  return html`<span class=${`sk-spinner shrink-0 ${className}`} style=${{ width: `${size}px`, height: `${size}px`, "--t": `${thickness}px` }}></span>`;
 }
 
 /** A single content-shaped placeholder block -- size/shape via className
  * (e.g. "h-4 w-32", "h-9 w-9 rounded-full"). Compose a few of these into
  * the real layout's shape for a loading list/table/card, instead of a
- * generic spinner, wherever that shape is worth mimicking. */
+ * generic spinner, wherever that shape is worth mimicking. Siblings sweep
+ * in a staggered wave (styles.css). */
 export function Skeleton({ className = "" }) {
+  useLoadingHold();
   return html`<div class=${`sk-skeleton ${className}`}></div>`;
 }
 
-/** Drop-in replacement for a bare "Loading…" line -- a small centered
- * spinner with an optional label, for a page/section gate too short-lived
- * or too irregularly shaped to be worth a bespoke skeleton. */
-export function LoadingState({ label, className = "" }) {
+/** Three dots rising in turn -- the animated "…" of a loading label. */
+export function Dots() {
+  return html`<span class="sk-dots" aria-hidden="true"><i></i><i></i><i></i></span>`;
+}
+
+/** A loading label ends in "…" / "..." in every locale; the text is split
+ * from it so the ellipsis can be drawn as <Dots/> instead. */
+function splitEllipsis(label) {
+  if (typeof label !== "string") return { text: label, dots: false };
+  const text = label.replace(/\s*(?:…|\.{3})\s*$/, "");
+  return { text, dots: text !== label };
+}
+
+/** A loading label with its trailing "…" drawn as animated <Dots/>. */
+export function LoadingLabel({ label }) {
+  const { text, dots } = splitEllipsis(label);
+  return html`<span>${text}${dots && html`<${Dots} />`}</span>`;
+}
+
+/** Drop-in replacement for a bare "Loading…" line, for a page/section gate
+ * too short-lived or too irregularly shaped to be worth a bespoke skeleton.
+ * Default: the logo mark inside a turning ring, label underneath. `compact`:
+ * just a small spinner beside the label, for a thin strip inside a card (its
+ * `className` replaces the default py-6 padding). `mark={false}`: a plain
+ * glowing core instead of the logo (public pages that are not DecisionOS's
+ * own UI). */
+export function LoadingState({ label, className = "", compact = false, mark = true }) {
+  useLoadingHold();
+  if (compact) {
+    return html`
+      <div class=${`flex items-center justify-center gap-2.5 text-sm text-slate-500 ${className || "py-6"}`} role="status" aria-live="polite">
+        <${Spinner} size=${16} /><${LoadingLabel} label=${label} />
+      </div>
+    `;
+  }
   return html`
-    <div class=${`flex items-center justify-center gap-2.5 py-10 text-sm text-slate-500 ${className}`}>
-      <${Spinner} size=${16} />
-      ${label}
+    <div class=${`flex flex-col items-center justify-center gap-4 py-14 text-sm text-slate-400 ${className}`} role="status" aria-live="polite">
+      <span class="sk-orbit" aria-hidden="true">
+        <span class="sk-spinner sk-orbit-ring"></span>
+        ${mark ? html`<img src="./assets/logo/logo-mark-256.png" width="24" height="24" alt="" decoding="async" />` : html`<span class="sk-orbit-core"></span>`}
+      </span>
+      <${LoadingLabel} label=${label} />
     </div>
   `;
+}
+
+/** The "AI is writing" state: a pulsing spark, a label with a light sweep
+ * through it and a ghost of the paragraph-to-be underneath. */
+export function GeneratingState({ label }) {
+  useLoadingHold();
+  const { text, dots } = splitEllipsis(label);
+  return html`
+    <div role="status" aria-live="polite">
+      <div class="flex items-center gap-3 text-sm font-medium">
+        <span class="sk-ai-orb"><${Icon} name="sparkle" size=${14} /></span>
+        <span><span class="sk-shimmer-text">${text}</span>${dots && html`<span class="sk-dots text-slate-400"><i></i><i></i><i></i></span>`}</span>
+      </div>
+      <div class="mt-4 space-y-2.5" aria-hidden="true">
+        <${Skeleton} className="h-3 w-full" /><${Skeleton} className="h-3 w-2/3" /><${Skeleton} className="h-3 w-48 max-w-full" />
+      </div>
+    </div>
+  `;
+}
+
+/** The full-screen loader. index.html carries the same markup as static HTML
+ * (the pre-boot placeholder), so Preact adopts it on mount and nothing
+ * visibly swaps -- change one, change the other. */
+export function BootScreen({ label }) {
+  const { text, dots } = splitEllipsis(label);
+  return html`
+    <div class="sk-boot" role="status" aria-live="polite">
+      <div class="sk-boot-stage" aria-hidden="true">
+        <span class="sk-boot-ring-dash"></span>
+        <span class="sk-boot-orbit"><i></i><i></i></span>
+        <span class="sk-boot-spin"><span class="sk-boot-arc"></span><i class="sk-boot-head"></i></span>
+        <span class="sk-boot-tile"><img src="./assets/logo/logo-mark-256.png" width="76" height="76" alt="" /></span>
+      </div>
+      <div class="sk-boot-word">Decision<b>OS</b></div>
+      <div class="sk-boot-track" aria-hidden="true"><span></span></div>
+      <div class="sk-boot-label"><span key=${text} class="sk-boot-phase">${text}</span>${dots && html`<${Dots} />`}</div>
+    </div>
+  `;
+}
+
+/** The thin violet bar along the top edge of the app, on while any placeholder
+ * is on screen. Debounced both ways: a fetch that settles in a blink never
+ * flashes it, and it fades out instead of cutting off. */
+export function LoadingBar() {
+  const loading = useIsLoading();
+  const [shown, setShown] = useState(false);
+  useEffect(() => {
+    const timer = setTimeout(() => setShown(loading), loading ? 140 : 220);
+    return () => clearTimeout(timer);
+  }, [loading]);
+  return html`<div class="sk-loadbar" data-active=${shown ? "true" : "false"} aria-hidden="true"></div>`;
 }
 
 export function EmptyState({ title, body, action, icon = "sparkle" }) {

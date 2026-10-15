@@ -4,7 +4,7 @@ import { useSession, updatePassword, requestEmailChange, friendlyAuthError } fro
 import { useCurrentOrg } from "../lib/currentOrg.js";
 import { useMyProfile, updateMyProfile, uploadAvatar, fetchMyProfileStats, usernameAvailableLocally } from "../lib/profile.js";
 import { useFriends } from "../lib/friendsStore.js";
-import { Card, SectionHeading, Field, TextInput, TextArea, Select, Switch, Button, Badge, Tabs, toast, LoadingState, Spinner } from "../components/ui.js";
+import { Card, SectionHeading, Field, TextInput, TextArea, Select, Switch, Button, Badge, Tabs, toast, LoadingState, Spinner, Skeleton } from "../components/ui.js";
 import { Icon } from "../components/icons.js";
 import { COUNTRIES, TIMEZONES } from "../lib/questionTypes.js";
 import { shortDate } from "../lib/format.js";
@@ -145,7 +145,7 @@ function PersonalTab({ profile, user, org, t }) {
       </div>
 
       <div class="flex justify-end">
-        <${Button} onClick=${save} disabled=${saving}>${saving ? t("common.saving") : t("profile.personal.saveButton")}<//>
+        <${Button} onClick=${save} loading=${saving}>${saving ? t("common.saving") : t("profile.personal.saveButton")}<//>
       </div>
 
       <div class="pt-5 border-t border-slate-800">
@@ -153,7 +153,7 @@ function PersonalTab({ profile, user, org, t }) {
         <p class="text-sm text-slate-400 mb-3">${t("profile.personal.emailCurrent", { email: user?.email })}</p>
         <div class="flex gap-2 max-w-md">
           <${TextInput} type="email" placeholder=${t("profile.personal.emailPlaceholder")} value=${emailDraft} onInput=${(e) => setEmailDraft(e.target.value)} />
-          <${Button} variant="secondary" size="sm" disabled=${changingEmail || !emailDraft.trim()} onClick=${changeEmail}>${changingEmail ? "…" : t("profile.personal.emailChange")}<//>
+          <${Button} variant="secondary" size="sm" loading=${changingEmail} disabled=${!emailDraft.trim()} onClick=${changeEmail}>${t("profile.personal.emailChange")}<//>
         </div>
         <p class="text-xs text-slate-500 mt-1.5">${t("profile.personal.emailHint")}</p>
       </div>
@@ -190,7 +190,7 @@ function SecurityTab({ t }) {
       <${Field} label=${t("profile.security.repeatLabel")}>
         <${TextInput} type="password" autocomplete="new-password" value=${confirm} onInput=${(e) => setConfirm(e.target.value)} />
       <//>
-      <${Button} onClick=${save} disabled=${saving || !password}>${saving ? t("common.saving") : t("profile.security.updateButton")}<//>
+      <${Button} onClick=${save} loading=${saving} disabled=${!password}>${saving ? t("common.saving") : t("profile.security.updateButton")}<//>
     </div>
   `;
 }
@@ -247,7 +247,7 @@ function PreferencesTab({ profile, t }) {
       <${Field} label=${t("profile.preferences.timezoneLabel")}>
         <${Select} options=${TIMEZONES.map((tz) => ({ value: tz, label: tz }))} value=${timezone} onChange=${(e) => setTimezone(e.target.value)} />
       <//>
-      <${Button} onClick=${save} disabled=${saving}>${saving ? t("common.saving") : t("common.save")}<//>
+      <${Button} onClick=${save} loading=${saving}>${saving ? t("common.saving") : t("common.save")}<//>
     </div>
   `;
 }
@@ -277,8 +277,8 @@ function SessionsTab({ user, t }) {
       </div>
       <dl class="space-y-2.5 text-sm">
         <div class="flex justify-between"><dt class="text-slate-500">${t("profile.sessions.accountCreated")}</dt><dd class="text-slate-200">${shortDate(user?.created_at)}</dd></div>
-        <div class="flex justify-between"><dt class="text-slate-500">${t("profile.sessions.experimentsCreated")}</dt><dd class="text-slate-200">${stats ? stats.experimentCount : statsError ? "—" : "…"}</dd></div>
-        <div class="flex justify-between"><dt class="text-slate-500">${t("profile.sessions.completedParticipants")}</dt><dd class="text-slate-200">${stats ? stats.completedParticipants : statsError ? "—" : "…"}</dd></div>
+        <div class="flex justify-between"><dt class="text-slate-500">${t("profile.sessions.experimentsCreated")}</dt><dd class="text-slate-200">${stats ? stats.experimentCount : statsError ? "—" : html`<${Skeleton} className="h-4 w-8" />`}</dd></div>
+        <div class="flex justify-between"><dt class="text-slate-500">${t("profile.sessions.completedParticipants")}</dt><dd class="text-slate-200">${stats ? stats.completedParticipants : statsError ? "—" : html`<${Skeleton} className="h-4 w-8" />`}</dd></div>
       </dl>
       ${statsError && html`
         <div class="flex items-center justify-between gap-3 rounded-lg border border-rose-500/30 bg-rose-500/10 px-3 py-2 text-xs text-rose-300">

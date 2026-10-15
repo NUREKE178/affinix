@@ -39,7 +39,7 @@ export function Settings() {
         <${Field} label=${t("settings.orgNameLabel")}>
           <div class="flex gap-2">
             <${TextInput} value=${name} onInput=${(e) => setName(e.target.value)} />
-            <${Button} size="sm" disabled=${saving || !name.trim() || name === org.name} onClick=${saveName}>${saving ? "…" : t("common.save")}<//>
+            <${Button} size="sm" loading=${saving} disabled=${!name.trim() || name === org.name} onClick=${saveName}>${saving ? t("common.saving") : t("common.save")}<//>
           </div>
         <//>
         <${Field} label=${t("settings.yourRole")}>

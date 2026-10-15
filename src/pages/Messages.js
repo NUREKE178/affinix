@@ -1,7 +1,7 @@
 import { html, useState, useEffect, useRef, useMemo } from "../lib/preact.js";
 import { Icon } from "../components/icons.js";
 import { Avatar } from "../components/avatar.js";
-import { Skeleton, EmptyState, Button, toast } from "../components/ui.js";
+import { Skeleton, EmptyState, Button, toast, Spinner, LoadingLabel } from "../components/ui.js";
 import { useT, useLocale } from "../lib/i18n.js";
 import { useSession } from "../lib/auth.js";
 import { useFriends } from "../lib/friendsStore.js";
@@ -214,7 +214,7 @@ function ChatPane({ conv, online, canSend, myId, onBack, t, locale }) {
       </header>
 
       <div class="sk-chat-scroll" ref=${listRef} onScroll=${onScroll}>
-        ${thread.loadingOlder && html`<div class="sk-chat-older">${t("common.loading")}</div>`}
+        ${thread.loadingOlder && html`<div class="sk-chat-older"><${Spinner} size=${12} /><${LoadingLabel} label=${t("common.loading")} /></div>`}
         ${!thread.loaded && thread.loading && html`
           <div class="sk-chat-skeleton">
             <${Skeleton} className="h-9 w-48 rounded-2xl" /><${Skeleton} className="h-9 w-64 rounded-2xl self-end" /><${Skeleton} className="h-9 w-40 rounded-2xl" />
@@ -370,7 +370,7 @@ export function Messages({ query }) {
         : html`
           <section class="sk-chat-pane sk-chat-empty">
             <div class="sk-display mb-4 flex h-16 w-16 items-center justify-center rounded-full text-slate-600"><${Icon} name="chat" size=${26} strokeWidth=${1.4} /></div>
-            <h3 class="text-base font-semibold text-slate-200">${opening ? t("common.loading") : t("messages.selectTitle")}</h3>
+            <h3 class="text-base font-semibold text-slate-200">${opening ? html`<${LoadingLabel} label=${t("common.loading")} />` : t("messages.selectTitle")}</h3>
             <p class="text-sm text-slate-500 mt-1.5 max-w-xs">${t("messages.selectBody")}</p>
           </section>
         `}

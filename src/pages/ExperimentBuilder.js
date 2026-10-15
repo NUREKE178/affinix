@@ -199,7 +199,7 @@ export function ExperimentBuilder({ params }) {
         action=${html`
           <div class="flex items-center gap-2">
             ${saved && html`<${Badge} tone="emerald">${t("builder.savedDraft")}<//>`}
-            <${Button} variant="secondary" size="sm" disabled=${saving} onClick=${async () => { await persist(); navigate("/app/experiments"); }}>${t("builder.saveAndExit")}<//>
+            <${Button} variant="secondary" size="sm" loading=${saving} onClick=${async () => { await persist(); navigate("/app/experiments"); }}>${t("builder.saveAndExit")}<//>
           </div>
         `}
       />
@@ -238,8 +238,8 @@ export function ExperimentBuilder({ params }) {
         <div class="flex items-center justify-between mt-8 pt-5 border-t border-black/40">
           <${Button} variant="ghost" onClick=${back} disabled=${step === 1 || saving}><${Icon} name="chevronLeft" size=${16}/> ${t("common.back")}<//>
           ${step < 7
-            ? html`<${Button} onClick=${next} disabled=${!canAdvance || saving}>${saving ? t("common.saving") : t("common.continue")} <${Icon} name="chevronRight" size=${16}/><//>`
-            : html`<${Button} variant="primary" onClick=${publish} disabled=${saving}><${Icon} name="play" size=${16}/> ${saving ? t("builder.publishing") : t("builder.publishButton")}<//>`}
+            ? html`<${Button} onClick=${next} loading=${saving} disabled=${!canAdvance}>${saving ? t("common.saving") : t("common.continue")} ${!saving && html`<${Icon} name="chevronRight" size=${16}/>`}<//>`
+            : html`<${Button} variant="primary" onClick=${publish} loading=${saving}>${!saving && html`<${Icon} name="play" size=${16}/>`} ${saving ? t("builder.publishing") : t("builder.publishButton")}<//>`}
         </div>
       <//>
     </div>

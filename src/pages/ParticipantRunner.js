@@ -4,7 +4,7 @@ import { assignRandomization } from "../lib/randomization.js";
 import { fetchExperiment } from "../lib/experiments.js";
 import { startSession, submitResponse, completeSession } from "../lib/participantApi.js";
 import { Icon } from "../components/icons.js";
-import { Button, Select, Checkbox, TextArea, TextInput } from "../components/ui.js";
+import { Button, Select, Checkbox, TextArea, TextInput, LoadingState } from "../components/ui.js";
 import { AGE_RANGES, COUNTRIES, LANGUAGES } from "../lib/questionTypes.js";
 import { t as translate } from "../lib/i18n.js";
 import { withTimeout, TimeoutError } from "../lib/async.js";
@@ -142,7 +142,7 @@ function QuestionTask({ question, variants, onAnswer, timeLimitSeconds, submitti
         <${Icon} name="shield" size=${28} className="text-amber-400 mx-auto mb-3" />
         <p class="text-sm text-slate-300 mb-1">${t("participantRunner.submitFailed")}</p>
         <p class="text-xs text-slate-500 mb-5">${submitError}</p>
-        <${Button} onClick=${retry} disabled=${submitting}>${submitting ? t("participantRunner.retrying") : t("participantRunner.retryButton")}<//>
+        <${Button} onClick=${retry} loading=${submitting}>${submitting ? t("participantRunner.retrying") : t("participantRunner.retryButton")}<//>
       </div>
     `;
   }
@@ -452,7 +452,7 @@ function LiveRunner({ slug }) {
   }
 
   if (state.phase === "loading") {
-    return html`<div class="min-h-screen flex items-center justify-center bg-slate-950 text-slate-500 text-sm fade-in">${t("participantRunner.loading")}</div>`;
+    return html`<div class="min-h-screen flex items-center justify-center bg-slate-950 fade-in"><${LoadingState} mark=${false} label=${t("participantRunner.loading")} /></div>`;
   }
   if (state.phase === "notfound") {
     return html`
@@ -548,7 +548,7 @@ export function ParticipantRunner({ slug, experimentId, preview = false, preview
   }
 
   if (loading || !fetchedExperiment) {
-    return html`<div class="min-h-screen flex items-center justify-center bg-slate-950 text-slate-500 text-sm">${translate("ru", "participantRunner.loading")}</div>`;
+    return html`<div class="min-h-screen flex items-center justify-center bg-slate-950"><${LoadingState} mark=${false} label=${translate("ru", "participantRunner.loading")} /></div>`;
   }
   return html`<${LocalPreviewRunner} experiment=${fetchedExperiment} onExitPreview=${onExitPreview} />`;
 }

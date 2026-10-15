@@ -1,5 +1,5 @@
 import { html, useState, useRef, useMemo, useEffect } from "../lib/preact.js";
-import { Card, SectionHeading, Button, Badge, EmptyState, toast, Skeleton } from "../components/ui.js";
+import { Card, SectionHeading, Button, Badge, EmptyState, toast, Skeleton, LoadingState } from "../components/ui.js";
 import { Icon } from "../components/icons.js";
 import { useT } from "../lib/i18n.js";
 import { useMyProfile } from "../lib/profile.js";
@@ -162,8 +162,8 @@ function Composer({ t, profile }) {
                 <//>
                 <input ref=${fileRef} type="file" accept="image/jpeg,image/png,image/webp,image/gif" class="hidden" onChange=${onPickImage} />
               </div>
-              <${Button} type="submit" disabled=${!draft.trim() || posting}>
-                <${Icon} name="plus" size=${16} /> ${posting ? t("feed.posting") : t("feed.publish")}
+              <${Button} type="submit" loading=${posting} disabled=${!draft.trim()}>
+                ${!posting && html`<${Icon} name="plus" size=${16} />`} ${posting ? t("feed.posting") : t("feed.publish")}
               <//>
             </div>
           </div>
@@ -262,7 +262,7 @@ function CommentThread({ post, t, currentUserId, canModerate, onCountChange, onA
 
   return html`
     <div class="mt-3 pt-3 border-t border-black/30 space-y-3">
-      ${loading && html`<div class="text-xs text-slate-500">${t("common.loading")}</div>`}
+      ${loading && html`<${LoadingState} compact className="py-1" label=${t("common.loading")} />`}
       ${!loading && comments.length === 0 && html`<div class="text-xs text-slate-500">${t("feed.noComments")}</div>`}
       ${!loading && comments.map((c) => {
         const hasProfile = !!c.authorName;
@@ -299,7 +299,7 @@ function CommentThread({ post, t, currentUserId, canModerate, onCountChange, onA
         <input value=${draft} onInput=${(e) => setDraft(e.target.value.slice(0, 1000))}
           placeholder=${t("feed.commentPlaceholder")}
           class="sk-input flex-1 min-w-0 rounded-lg px-3 py-2 text-sm text-slate-100 placeholder:text-slate-500" />
-        <${Button} type="submit" size="sm" className="shrink-0" disabled=${!draft.trim() || posting}>${t("feed.commentSubmit")}<//>
+        <${Button} type="submit" size="sm" className="shrink-0" loading=${posting} disabled=${!draft.trim()}>${t("feed.commentSubmit")}<//>
       </form>
     </div>
   `;

@@ -9,7 +9,7 @@ import { useNotifications, markAllNotificationsRead, notificationCopyKey, notifi
 import { useFriends } from "../lib/friendsStore.js";
 import { useMessagingBootstrap, useConversations } from "../lib/messagesStore.js";
 import { relativeDate } from "../lib/format.js";
-import { toast, Badge } from "./ui.js";
+import { toast, Badge, LoadingBar, Skeleton } from "./ui.js";
 import { useMountTransition } from "../lib/motion.js";
 
 // "experiments" and "results" removed from the sidebar for now (not
@@ -109,7 +109,7 @@ function UserMenu({ onNavigate, collapsed = false }) {
         </div>
         ${!collapsed && html`
           <div class="min-w-0 flex-1 text-left">
-            <div class="text-sm font-medium text-slate-100 truncate">${displayName || "…"}</div>
+            <div class="text-sm font-medium text-slate-100 truncate">${displayName || html`<${Skeleton} className="h-4 w-24" />`}</div>
             <div class="text-[11px] text-slate-500 truncate">${org?.name ?? ""}</div>
           </div>
           <${Icon} name="chevronDown" size=${14} className="text-slate-500 shrink-0" />
@@ -194,7 +194,7 @@ function SidebarContent({ currentPath, onNavigate, collapsed = false, sidebarMod
         ${!collapsed && html`
           <div class="min-w-0">
             <div class="font-semibold text-slate-50 leading-tight tracking-tight whitespace-nowrap">DecisionOS</div>
-            <div class="text-[11px] text-slate-500 leading-tight truncate max-w-[9rem]">${org?.name ?? "…"}</div>
+            <div class="text-[11px] text-slate-500 leading-tight truncate max-w-[9rem]">${org?.name ?? html`<${Skeleton} className="mt-1 h-3 w-20" />`}</div>
           </div>
         `}
       </button>
@@ -401,6 +401,8 @@ export function Shell({ currentPath, children }) {
 
   return html`
     <div class=${`min-h-screen bg-slate-950 text-slate-100 ${localeFadeClass}`}>
+      <!-- On while any skeleton/spinner/page gate below is on screen -->
+      <${LoadingBar} />
       <!-- Desktop/tablet sidebar (md and up) -->
       <aside
         class=${`sk-sidebar hidden md:flex md:flex-col md:fixed md:inset-y-0 transition-all duration-150 ${visuallyExpanded ? "md:w-64" : "md:w-[72px]"} ${peeking ? "z-40 shadow-2xl shadow-black/60" : "z-20"}`}

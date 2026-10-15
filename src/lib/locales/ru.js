@@ -2,6 +2,8 @@ export default {
   common: {
     loading: "Загрузка…",
     loadingAnswers: "Загрузка ответов…",
+    bootSession: "Проверяем вход…",
+    bootWorkspace: "Открываем рабочее пространство…",
     save: "Сохранить",
     saving: "Сохраняем…",
     cancel: "Отмена",

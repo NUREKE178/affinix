@@ -42,7 +42,7 @@ export function ForgotPassword() {
             <${Field} label=${t("auth.fields.email")} required>
               <${TextInput} type="email" required autocomplete="email" value=${email} onInput=${(e) => setEmail(e.target.value)} />
             <//>
-            <${Button} type="submit" className="w-full" disabled=${loading || !IS_CONFIGURED}>${loading ? t("auth.forgot.submitting") : t("auth.forgot.submit")}<//>
+            <${Button} type="submit" className="w-full" loading=${loading} disabled=${!IS_CONFIGURED}>${loading ? t("auth.forgot.submitting") : t("auth.forgot.submit")}<//>
           </form>
         `}
     <//>

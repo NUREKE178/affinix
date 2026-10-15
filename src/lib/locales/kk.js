@@ -2,6 +2,8 @@ export default {
   common: {
     loading: "Жүктелуде…",
     loadingAnswers: "Жауаптар жүктелуде…",
+    bootSession: "Кіруді тексеріп жатырмыз…",
+    bootWorkspace: "Жұмыс кеңістігін ашып жатырмыз…",
     save: "Сақтау",
     saving: "Сақтап жатырмыз…",
     cancel: "Бас тарту",

@@ -51,7 +51,7 @@ export function Login() {
         <div class="flex justify-end mb-4 -mt-2">
           <button type="button" class="text-xs text-slate-500 hover:text-slate-300" onClick=${() => navigate("/forgot-password")}>${t("auth.login.forgotPassword")}</button>
         </div>
-        <${Button} type="submit" className="w-full" disabled=${loading || !IS_CONFIGURED}>${loading ? t("auth.login.submitting") : t("auth.login.submit")}<//>
+        <${Button} type="submit" className="w-full" loading=${loading} disabled=${!IS_CONFIGURED}>${loading ? t("auth.login.submitting") : t("auth.login.submit")}<//>
       </form>
     <//>
   `;

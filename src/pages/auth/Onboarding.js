@@ -74,7 +74,7 @@ function StepNav({ onBack, onNext, onSkip, nextLabel, nextDisabled, busy, showBa
       </div>
       <div class="flex items-center gap-2">
         ${onSkip && html`<${Button} type="button" variant="ghost" onClick=${onSkip} disabled=${busy}>${t("auth.onboarding.skip")}<//>`}
-        <${Button} type="submit" disabled=${nextDisabled || busy}>${busy ? t("auth.onboarding.saving") : nextLabel}<//>
+        <${Button} type="submit" loading=${busy} disabled=${nextDisabled}>${busy ? t("auth.onboarding.saving") : nextLabel}<//>
       </div>
     </div>
   `;

@@ -15,48 +15,352 @@ body { color-scheme: dark; }
 @keyframes fadeIn { from { opacity: 0 } to { opacity: 1 } }
 @keyframes slideUp { from { opacity: 0; transform: translateY(8px) } to { opacity: 1; transform: translateY(0) } }
 
-/* ---- Loading: spinner, skeleton shimmer ----------------------------------- */
+/* ---- Loading system -------------------------------------------------------
+   One look for every "something is loading" moment: the boot screen, page
+   gates, skeleton placeholders, spinners, busy buttons, the thin top bar and
+   the AI "generating" shimmer -- violet/indigo light on the app's dark slate
+   (the accent of the logo tile). Loops animate transform/opacity wherever
+   possible (compositor-only, cheap on a phone); every loop is tamed in the
+   prefers-reduced-motion block that closes this section. */
 
+/* A ring with a comet-tail arc. Size comes from width/height (<Spinner> sets
+   both, plus --t for the ring thickness); track and arc are one
+   conic-gradient, cut into a ring by the mask. */
 .sk-spinner {
+  --t: 2.5px;
   display: inline-block;
   border-radius: 9999px;
-  border: 2.5px solid rgba(255,255,255,.1);
-  border-top-color: #818cf8;
-  border-right-color: #818cf8;
-  animation: skSpin .65s linear infinite;
+  background:
+    conic-gradient(from 0deg, rgba(167,139,250,0) 0deg, rgba(129,140,248,.45) 150deg, #a78bfa 320deg, #f5f3ff 360deg),
+    rgba(255,255,255,.09);
+  -webkit-mask: radial-gradient(farthest-side, transparent calc(100% - var(--t) - .6px), #000 calc(100% - var(--t)));
+  mask: radial-gradient(farthest-side, transparent calc(100% - var(--t) - .6px), #000 calc(100% - var(--t)));
+  animation: skSpin .8s linear infinite;
 }
 @keyframes skSpin { to { transform: rotate(360deg); } }
 
-/* A content-shaped placeholder block with a light sweep moving across it --
-   stands in for text/images while real data loads, in the exact size and
-   position the real content will occupy (prevents layout shift). */
+/* Animated ellipsis for a "Loading…" label: three dots that rise in turn.
+   Sized in em so it follows the label's font size. */
+.sk-dots { display: inline-flex; gap: .22em; margin-left: .26em; }
+.sk-dots i { width: .3em; height: .3em; border-radius: 9999px; background: currentColor; opacity: .3; animation: skDot 1.2s ease-in-out infinite; }
+.sk-dots i:nth-child(2) { animation-delay: .16s; }
+.sk-dots i:nth-child(3) { animation-delay: .32s; }
+@keyframes skDot { 0%, 70%, 100% { opacity: .3; transform: translateY(0); } 35% { opacity: 1; transform: translateY(-.16em); } }
+
+/* A content-shaped placeholder block with a violet light sweep moving across
+   it -- stands in for text/images while real data loads, in the exact size and
+   position the real content will occupy (prevents layout shift). Sibling
+   blocks start a beat after the one before (a waterfall, not every block
+   sweeping in lockstep) and the block itself breathes very slightly. */
 .sk-skeleton {
   position: relative;
   overflow: hidden;
   background: var(--sk-inset, #13151c);
   border-radius: 6px;
+  animation: skSkeletonPulse 2.2s ease-in-out infinite;
+  animation-delay: var(--sk-d, 0s);
 }
 .sk-skeleton::after {
   content: "";
   position: absolute;
   inset: 0;
   transform: translateX(-100%);
-  background: linear-gradient(90deg, transparent, rgba(255,255,255,.06), transparent);
-  animation: skShimmer 1.8s ease-in-out infinite;
+  background: linear-gradient(100deg, transparent 0%, rgba(129,140,248,.05) 30%, rgba(167,139,250,.17) 50%, rgba(129,140,248,.05) 70%, transparent 100%);
+  animation: skShimmer 1.7s cubic-bezier(.4, 0, .2, 1) infinite;
+  animation-delay: var(--sk-d, 0s);
 }
-@keyframes skShimmer {
-  100% { transform: translateX(100%); }
+.sk-skeleton:nth-child(2) { --sk-d: .12s; }
+.sk-skeleton:nth-child(3) { --sk-d: .24s; }
+.sk-skeleton:nth-child(4) { --sk-d: .36s; }
+.sk-skeleton:nth-child(5) { --sk-d: .48s; }
+.sk-skeleton:nth-child(n+6) { --sk-d: .6s; }
+@keyframes skShimmer { 100% { transform: translateX(100%); } }
+@keyframes skSkeletonPulse { 0%, 100% { opacity: 1; } 50% { opacity: .72; } }
+
+/* ---- Boot screen -----------------------------------------------------------
+   index.html's static pre-boot placeholder and <BootScreen/> (the app's
+   full-screen loader) render the SAME markup against these rules, so Preact
+   adopts the DOM that is already on screen and the animation just carries on
+   -- no visible swap once the app mounts. */
+.sk-boot {
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 100vh;
+  min-height: 100dvh;
+  padding: 24px;
+  background: #050816;
+  color: #eef0ff;
+  text-align: center;
+}
+/* A faint grid that fades out from the centre. */
+.sk-boot::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -2;
+  background-image:
+    linear-gradient(rgba(139,125,255,.06) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(139,125,255,.06) 1px, transparent 1px);
+  background-size: 56px 56px;
+  background-position: center;
+  -webkit-mask-image: radial-gradient(ellipse 62% 56% at 50% 44%, #000 0%, transparent 78%);
+  mask-image: radial-gradient(ellipse 62% 56% at 50% 44%, #000 0%, transparent 78%);
+}
+.sk-boot-stage {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: 148px;
+  height: 148px;
+}
+/* The violet aura breathing behind the mark. */
+.sk-boot-stage::before {
+  content: "";
+  position: absolute;
+  z-index: -1;
+  left: 50%;
+  top: 50%;
+  width: min(140vw, 880px);
+  height: min(140vw, 880px);
+  transform: translate(-50%, -50%);
+  /* many stops, easing out to 0: a straight two-stop fade ends in a visible ring */
+  background: radial-gradient(closest-side, rgba(124,92,255,.36) 0%, rgba(116,96,252,.24) 18%, rgba(104,100,246,.13) 38%, rgba(99,102,241,.06) 58%, rgba(99,102,241,.02) 76%, rgba(99,102,241,0) 100%);
+  will-change: transform, opacity;
+  animation: skBootAura 4s ease-in-out infinite;
+}
+@keyframes skBootAura {
+  0%, 100% { opacity: .55; transform: translate(-50%, -50%) scale(.9); }
+  50% { opacity: 1; transform: translate(-50%, -50%) scale(1.05); }
+}
+/* Outer dashed ring turning slowly the other way, with two "data points"
+   orbiting on it... */
+.sk-boot-ring-dash {
+  position: absolute;
+  inset: 0;
+  border-radius: 9999px;
+  border: 1px dashed rgba(167,139,250,.3);
+  animation: skBootSpinRev 24s linear infinite;
+}
+@keyframes skBootSpinRev { to { transform: rotate(-360deg); } }
+.sk-boot-orbit { position: absolute; inset: 0; animation: skSpin 9s linear infinite; }
+.sk-boot-orbit i {
+  position: absolute;
+  left: 50%;
+  top: 0;
+  width: 6px;
+  height: 6px;
+  margin: -3px 0 0 -3px;
+  border-radius: 9999px;
+  background: #c4b5fd;
+  box-shadow: 0 0 10px rgba(167,139,250,.9);
+}
+.sk-boot-orbit i:nth-child(2) {
+  top: auto;
+  bottom: 0;
+  width: 4px;
+  height: 4px;
+  margin: 0 0 -2px -2px;
+  background: #818cf8;
+  box-shadow: 0 0 8px rgba(129,140,248,.8);
+}
+/* ...and the comet arc -- the actual "working" signal -- with its bright
+   head riding the same rotation (a sibling of the masked arc, because the
+   mask would clip the head's glow). */
+.sk-boot-spin { position: absolute; inset: 12px; animation: skSpin 1.25s linear infinite; }
+.sk-boot-arc {
+  position: absolute;
+  inset: 0;
+  border-radius: 9999px;
+  background: conic-gradient(from 0deg, rgba(139,92,246,0) 0deg, rgba(139,92,246,0) 110deg, rgba(139,92,246,.75) 300deg, #ddd6fe 360deg);
+  -webkit-mask: radial-gradient(farthest-side, transparent calc(100% - 3px), #000 calc(100% - 2.2px));
+  mask: radial-gradient(farthest-side, transparent calc(100% - 3px), #000 calc(100% - 2.2px));
+}
+.sk-boot-head {
+  position: absolute;
+  top: -2px;
+  left: 50%;
+  width: 7px;
+  height: 7px;
+  margin-left: -3.5px;
+  border-radius: 9999px;
+  background: #fff;
+  box-shadow: 0 0 10px 2px rgba(196,181,253,.9);
+}
+/* The logo tile: floats a few px, with a light glint sliding across it. */
+.sk-boot-tile {
+  position: relative;
+  display: block;
+  width: 76px;
+  height: 76px;
+  border-radius: 22%;
+  overflow: hidden;
+  box-shadow: 0 0 0 1px rgba(255,255,255,.1), 0 16px 44px -10px rgba(99,102,241,.8), 0 0 34px -2px rgba(124,92,255,.5);
+  animation: skBootFloat 3.4s ease-in-out infinite;
+}
+.sk-boot-tile img { display: block; width: 100%; height: 100%; }
+.sk-boot-tile::after {
+  content: "";
+  position: absolute;
+  inset: -40%;
+  background: linear-gradient(105deg, transparent 38%, rgba(255,255,255,.5) 50%, transparent 62%);
+  transform: translateX(-70%);
+  animation: skBootShine 3s ease-in-out infinite;
+}
+@keyframes skBootFloat { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-5px); } }
+@keyframes skBootShine { 0%, 40% { transform: translateX(-70%); } 75%, 100% { transform: translateX(70%); } }
+.sk-boot-word {
+  margin-top: 30px;
+  font-size: 24px;
+  font-weight: 700;
+  line-height: 1;
+  letter-spacing: -.02em;
+  color: #f1f1ff;
+}
+.sk-boot-word b { font-weight: 700; color: #b49cff; }
+/* Indeterminate track: a comet of light sliding along a hairline. */
+.sk-boot-track {
+  position: relative;
+  width: 152px;
+  height: 3px;
+  margin-top: 22px;
+  overflow: hidden;
+  border-radius: 9999px;
+  background: rgba(255,255,255,.08);
+}
+.sk-boot-track > span {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  width: 42%;
+  border-radius: inherit;
+  background: linear-gradient(90deg, rgba(139,92,246,0), #8b5cf6 35%, #c4b5fd 85%, #fff);
+  transform: translateX(-100%);
+  animation: skBootBar 1.5s cubic-bezier(.65, 0, .35, 1) infinite;
+}
+@keyframes skBootBar { 100% { transform: translateX(240%); } }
+.sk-boot-label {
+  display: inline-flex;
+  align-items: baseline;
+  margin-top: 14px;
+  font-size: 13px;
+  line-height: 20px;
+  letter-spacing: .01em;
+  color: #a6abcb;
+}
+/* The label changes with the real boot phase (sign-in check -> workspace);
+   a keyed remount replays this so each new phase settles in. */
+.sk-boot-phase { animation: skBootPhase .4s var(--sk-ease-out) both; }
+@keyframes skBootPhase { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: none; } }
+@media (max-width: 480px) {
+  .sk-boot-stage { width: 128px; height: 128px; }
+  .sk-boot-tile { width: 66px; height: 66px; }
+  .sk-boot-word { margin-top: 26px; font-size: 22px; }
 }
 
-/* The app's own "booting up" glow for the full-screen loader -- distinct
-   from .sk-breathe's amber call-to-action tone (that one marks a single
-   focal "press to start" control; this one marks the system working, in
-   the app's own indigo accent). */
-@keyframes skPulseIndigo {
-  0%, 100% { box-shadow: var(--sk-shadow-raised-sm), 0 0 16px 0px rgba(99,102,241,.25); }
-  50% { box-shadow: var(--sk-shadow-raised-sm), 0 0 30px 6px rgba(99,102,241,.45); }
+/* ---- Page gate (<LoadingState/>): a compact echo of the boot mark -------- */
+.sk-orbit { position: relative; display: inline-grid; place-items: center; width: 52px; height: 52px; }
+.sk-orbit-ring { --t: 3px; position: absolute; inset: 0; }
+.sk-orbit > img, .sk-orbit-core { width: 24px; height: 24px; animation: skOrbitBreathe 2.2s ease-in-out infinite; }
+.sk-orbit > img { border-radius: 22%; box-shadow: 0 0 16px -2px rgba(124,92,255,.65); }
+.sk-orbit-core { border-radius: 9999px; background: radial-gradient(circle, #c4b5fd 0 28%, rgba(167,139,250,0) 70%); }
+@keyframes skOrbitBreathe { 0%, 100% { transform: scale(.92); opacity: .8; } 50% { transform: scale(1.04); opacity: 1; } }
+
+/* ---- Top loading bar -----------------------------------------------------
+   <LoadingBar/> (mounted once in the app shell) shows this while any
+   placeholder -- skeleton, spinner, page gate -- is on screen. */
+.sk-loadbar {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 90;
+  height: 2px;
+  overflow: hidden;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity .25s var(--sk-ease-standard);
 }
-.sk-pulse-indigo { animation: skPulseIndigo 1.8s ease-in-out infinite; }
+.sk-loadbar[data-active="true"] { opacity: 1; }
+.sk-loadbar::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  width: 38%;
+  background: linear-gradient(90deg, rgba(139,92,246,0), #8b5cf6 40%, #c4b5fd 85%, #fff);
+  box-shadow: 0 0 10px rgba(167,139,250,.9);
+  transform: translateX(-100%);
+  animation: skLoadbar 1.25s cubic-bezier(.65, 0, .35, 1) infinite;
+}
+.sk-loadbar[data-active="false"]::before { animation-play-state: paused; }
+@keyframes skLoadbar { 100% { transform: translateX(290%); } }
+
+/* ---- Busy button: spinner + a soft sheen passing over the face ----------- */
+button[data-loading="true"] { position: relative; overflow: hidden; cursor: progress; }
+button[data-loading="true"]:disabled { opacity: .88; }
+button[data-loading="true"]::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  pointer-events: none;
+  background: linear-gradient(100deg, transparent 25%, rgba(255,255,255,.16) 50%, transparent 75%);
+  transform: translateX(-100%);
+  animation: skShimmer 1.5s cubic-bezier(.4, 0, .2, 1) infinite;
+}
+.sk-btn-primary .sk-spinner,
+.sk-btn.text-white .sk-spinner {
+  background: conic-gradient(from 0deg, rgba(255,255,255,0) 0deg, rgba(255,255,255,.55) 200deg, #fff 360deg), rgba(255,255,255,.18);
+}
+
+/* ---- "Generating" state for AI output ------------------------------------ */
+.sk-ai-orb {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 9999px;
+  color: #5eead4;
+  background: rgba(45,212,191,.12);
+  animation: skAiPing 1.7s ease-out infinite;
+}
+.sk-ai-orb svg { animation: skAiTwinkle 1.7s ease-in-out infinite; }
+@keyframes skAiPing { 0% { box-shadow: 0 0 0 0 rgba(45,212,191,.4); } 100% { box-shadow: 0 0 0 12px rgba(45,212,191,0); } }
+@keyframes skAiTwinkle { 0%, 100% { transform: scale(.88) rotate(0deg); } 50% { transform: scale(1.1) rotate(14deg); } }
+/* Text with a light sweep running through it -- "still working on it". */
+.sk-shimmer-text {
+  color: #94a3b8;
+  background: linear-gradient(100deg, #94a3b8 35%, #f5f3ff 50%, #94a3b8 65%) 150% 0 / 250% 100% no-repeat;
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  animation: skTextSweep 2.1s linear infinite;
+}
+@keyframes skTextSweep { to { background-position: -50% 0; } }
+
+/* Reduced motion: nothing slides, floats, spins fast or sweeps. Spinners keep
+   turning, slowly -- an indicator that stops reads as a frozen page -- and
+   the indeterminate bars become a gentle pulse. */
+@media (prefers-reduced-motion: reduce) {
+  .sk-spinner, .sk-boot-spin { animation-duration: 3s !important; }
+  .sk-boot-stage::before, .sk-boot-ring-dash, .sk-boot-orbit, .sk-boot-tile, .sk-boot-tile::after,
+  .sk-orbit > img, .sk-orbit-core, .sk-ai-orb, .sk-ai-orb svg, .sk-boot-phase { animation: none !important; }
+  .sk-boot-tile::after { display: none; }
+  .sk-boot-track > span, .sk-loadbar::before { width: 100%; transform: none !important; animation: skReducedPulse 1.8s ease-in-out infinite !important; }
+  .sk-skeleton, .sk-skeleton::after, button[data-loading="true"]::after { animation: none !important; }
+  .sk-skeleton::after, button[data-loading="true"]::after { display: none; }
+  .sk-dots i { animation: none !important; opacity: .6; }
+  .sk-shimmer-text { animation: none !important; background: none; -webkit-text-fill-color: currentColor; }
+}
+@keyframes skReducedPulse { 0%, 100% { opacity: .35; } 50% { opacity: 1; } }
 
 /* A one-time ring, triggered when a notification arrives live (realtime
    INSERT, not just on open) -- pivoted near the top like a real bell's
@@ -84,33 +388,6 @@ body { color-scheme: dark; }
    Friend -> Request Sent -> Friends, etc). */
 @keyframes skBtnStatePop { 0% { transform: scale(1); } 40% { transform: scale(1.06); } 100% { transform: scale(1); } }
 .sk-btn-state-pop { animation: skBtnStatePop .28s var(--sk-ease-spring); }
-
-/* ---- Logo mark -------------------------------------------------------- */
-/* The resolved point stays quietly alive everywhere the mark appears --
-   same slow breathing glow whether it's static (sidebar, headers) or
-   just finished its one-time reveal (the full-screen loader). */
-.sk-logo-point { animation: skLogoGlow 2.6s ease-in-out infinite; }
-
-/* .sk-logo-animated only: the three paths draw themselves in (shortest,
-   most-converged path last and fastest -- the decision arriving), then
-   the point pops in and settles into the same glow every other instance
-   already has. Path lengths are hand-measured for each line's own
-   geometry so the draw-in has no visible gap or overshoot at its end. */
-.sk-logo-animated .sk-logo-path-1 { stroke-dasharray: 11; stroke-dashoffset: 11; animation: skLogoDraw .5s cubic-bezier(.25,.75,.35,1) .05s forwards; }
-.sk-logo-animated .sk-logo-path-2 { stroke-dasharray: 17; stroke-dashoffset: 17; animation: skLogoDraw .55s cubic-bezier(.25,.75,.35,1) .2s forwards; }
-.sk-logo-animated .sk-logo-path-3 { stroke-dasharray: 13; stroke-dashoffset: 13; animation: skLogoDraw .45s cubic-bezier(.2,.8,.3,1) .38s forwards; }
-.sk-logo-animated .sk-logo-point {
-  opacity: 0;
-  transform: scale(.3);
-  transform-origin: 12px 19px;
-  animation: skLogoPop .5s cubic-bezier(.2,1.8,.3,1) .7s forwards, skLogoGlow 2.6s ease-in-out 1.2s infinite;
-}
-@keyframes skLogoDraw { to { stroke-dashoffset: 0; } }
-@keyframes skLogoPop { to { opacity: 1; transform: scale(1); } }
-@keyframes skLogoGlow {
-  0%, 100% { filter: drop-shadow(0 0 2px rgba(129,140,248,.5)); }
-  50% { filter: drop-shadow(0 0 6px rgba(129,140,248,.9)); }
-}
 
 .stimulus-card { transition: transform .15s ease, box-shadow .15s ease; }
 .stimulus-card:hover { transform: translateY(-2px); }
@@ -507,9 +784,6 @@ select.sk-input option:checked {
   .sk-btn, .sk-slot, .sk-switch-knob, .sk-tab, .sk-checkbox, .sk-input, .sk-switch-track, .sk-nav-item, .sk-progress-fill { transition: none !important; }
   .sk-btn:hover:not(:disabled) { transform: none !important; }
   .sk-checkbox:checked::after { animation: none !important; }
-  .sk-logo-path, .sk-logo-point { animation: none !important; }
-  .sk-logo-animated .sk-logo-path { stroke-dashoffset: 0 !important; }
-  .sk-logo-animated .sk-logo-point { opacity: 1 !important; transform: scale(1) !important; }
   .sk-bell-ring, .sk-icon-pop, .sk-btn-state-pop { animation: none !important; }
 
   .sk-overlay-anim, .sk-backdrop-anim, .sk-toast-anim, .sk-drawer-anim, .sk-expand-anim { transition: none !important; }
@@ -609,7 +883,7 @@ html { scroll-behavior: smooth; }
 
 .sk-chat-scroll { flex: 1; min-height: 0; overflow-y: auto; padding: 14px 16px; display: flex; flex-direction: column; gap: 3px; overscroll-behavior: contain; }
 .sk-chat-skeleton { display: flex; flex-direction: column; gap: 10px; }
-.sk-chat-older { text-align: center; font-size: 12px; color: #64748b; padding: 4px 0 8px; }
+.sk-chat-older { display: flex; align-items: center; justify-content: center; gap: 8px; font-size: 12px; color: #64748b; padding: 4px 0 8px; }
 .sk-chat-day { display: flex; justify-content: center; margin: 12px 0 6px; }
 .sk-chat-day span { font-size: 11px; color: #94a3b8; background: rgba(255,255,255,.06); padding: 3px 12px; border-radius: 999px; }
 

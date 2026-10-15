@@ -3,7 +3,7 @@ import { useExperiments } from "../lib/experimentsStore.js";
 import { fetchSessionsForExperiment } from "../lib/participants.js";
 import { fetchLatestAiInsight, generateAiInsight } from "../lib/experiments.js";
 import { navigate } from "../router.js";
-import { Card, SectionHeading, Badge, Select, Button, EmptyState, ConfidenceBadge, LoadingState, Spinner } from "../components/ui.js";
+import { Card, SectionHeading, Badge, Select, Button, EmptyState, ConfidenceBadge, LoadingState, LoadingLabel, GeneratingState, Spinner } from "../components/ui.js";
 import { Icon } from "../components/icons.js";
 import { generateInsights } from "../lib/insights.js";
 import { researchTypeLabel } from "../lib/questionTypes.js";
@@ -51,12 +51,10 @@ function AiSummaryCard({ experimentId, t }) {
       <p class="text-xs text-slate-500 mb-4">${t("insights.aiSummary.subtitle")}</p>
 
       ${row === undefined && html`
-        <div class="flex items-center gap-2 text-sm text-slate-500"><${Spinner} size=${14} /> ${t("common.loading")}</div>
+        <div class="flex items-center gap-2 text-sm text-slate-500"><${Spinner} size=${14} /><${LoadingLabel} label=${t("common.loading")} /></div>
       `}
 
-      ${row !== undefined && generating && html`
-        <div class="flex items-center gap-2 text-sm text-slate-400"><${Spinner} size=${14} /> ${t("insights.aiSummary.generating")}</div>
-      `}
+      ${row !== undefined && generating && html`<${GeneratingState} label=${t("insights.aiSummary.generating")} />`}
 
       ${row !== undefined && !generating && error && html`
         <div class="rounded-lg border border-rose-500/25 bg-rose-500/[0.06] px-3.5 py-3 text-sm text-rose-300 mb-3">${t("insights.aiSummary.failedTitle")}: ${error}</div>

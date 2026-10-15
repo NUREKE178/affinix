@@ -58,7 +58,7 @@ export function ResetPassword() {
         <${Field} label=${t("auth.fields.repeatPassword")} required>
           <${TextInput} type="password" required autocomplete="new-password" value=${confirm} onInput=${(e) => setConfirm(e.target.value)} />
         <//>
-        <${Button} type="submit" className="w-full" disabled=${loading}>${loading ? t("auth.reset.submitting") : t("auth.reset.submit")}<//>
+        <${Button} type="submit" className="w-full" loading=${loading}>${loading ? t("auth.reset.submitting") : t("auth.reset.submit")}<//>
       </form>
     <//>
   `;
