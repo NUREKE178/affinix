@@ -11,6 +11,30 @@ import { DonutChart, LineChart, SERIES_COLORS } from "../components/charts.js";
 import { experimentSummary, completedParticipants, averageCompletionTimeMs } from "../lib/stats.js";
 import { pct, durationFromMs, relativeDate } from "../lib/format.js";
 import { researchTypeLabel } from "../lib/questionTypes.js";
+import { useArenaLocal } from "../lib/arenaStore.js";
+
+/** A doorway to the Arena: today's daily challenge, the streak, one key. Reads local progress only (no network). */
+function ArenaCard({ t }) {
+  const { view } = useArenaLocal();
+  const done = view?.daily.votes ?? 0;
+  const size = view?.daily.size ?? 10;
+  return html`
+    <${Card} className="p-5" data-testid="overview-arena">
+      <div class="flex items-center gap-2.5">
+        <span class="sk-tile"><${Icon} name="arena" size=${15} /></span>
+        <span class="sk-caption">${t("arena.title")}</span>
+        ${view && view.streak > 0 && html`<span class="ml-auto inline-flex items-center gap-1.5 text-sm text-graphite-200 sk-num"><${Icon} name="flame" size=${14} className="text-signal-400" />${view.streak}</span>`}
+      </div>
+      <p class="mt-3 text-sm leading-relaxed text-graphite-300">${t("arena.promo")}</p>
+      ${view && html`
+        <div class="mt-4 flex items-center gap-3">
+          <div class="sk-display h-2 flex-1 overflow-hidden rounded-full"><div class="h-full rounded-full" style=${{ width: `${(Math.min(done, size) / size) * 100}%`, background: "linear-gradient(180deg,#ff8f55,#ff6a1f)" }}></div></div>
+          <span class="sk-num text-xs text-graphite-300">${Math.min(done, size)}<span class="sk-unit">/ ${size}</span></span>
+        </div>`}
+      <div class="mt-4"><${Button} variant="secondary" onClick=${() => navigate("/app/arena")} data-testid="overview-arena-open">${t("arena.promoCta")}<//></div>
+    <//>
+  `;
+}
 
 function firstName(profile, user) {
   const full = profile?.full_name;
@@ -156,6 +180,7 @@ export function Overview() {
         </div>
 
         <div class="space-y-5">
+          <${ArenaCard} t=${t} />
           <${Card} className="p-5">
             <${SectionHeading} title=${t("overview.statusTitle")} />
             <${DonutChart}

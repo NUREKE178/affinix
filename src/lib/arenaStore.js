@@ -12,15 +12,18 @@ import { supabase } from "./supabaseClient.js";
 import { useSession } from "./auth.js";
 import { mulberry32, hashStringToSeed } from "./prng.js";
 import { t as translate, getLocale } from "./i18n.js";
-import { FAMILY_IDS, DIMENSION_IDS } from "./arena/stimuli.js";
+import { FAMILY_IDS, DIMENSION_IDS } from "./arena/catalog.js";
 import { duelCode, encodeEntry, entryFromRow } from "./arena/ledger.js";
-import { planRound, planDaily } from "./arena/sampler.js";
-import { dnaFromLedger } from "./arena/dna.js";
 import {
   ROUND_SIZE, CROWD_MIN_VOTES, IDLE_CUTOFF_S, localDay, seasonOf, addDays, flowBonus, isFlowMs, voteXp, pickSlate,
   DAILY_SET_SIZE, QUEST_BY_ID,
 } from "./arena/rules.js";
 import { emptyBase, emptyProfile, emptyDay, fold, deriveView, claimReward } from "./arena/progress.js";
+
+// The specimen generators and the round planner are the heavy part of the Arena. The app shell only needs to
+// know progress and whether there is something to collect, so these load the first time a round starts.
+let samplerMod = null;
+const loadSampler = async () => (samplerMod ??= await import("./arena/sampler.js"));
 
 const STORAGE_PREFIX = "decisionos_arena_v1:";
 const MAX_PENDING_VOTES = 3000;
@@ -143,7 +146,7 @@ function seenFor(season) {
 }
 
 const dailyCodeCache = new Map();
-function dailyCodes(day, season) {
+function dailyCodes(day, season, planDaily) {
   const key = `${day}/${season}`;
   let set = dailyCodeCache.get(key);
   if (!set) {
@@ -411,7 +414,9 @@ function checkMilestones(before, after) {
 // rounds
 // ---------------------------------------------------------------------------
 
-export function startRound(mode = "free") {
+export async function startRound(mode = "free") {
+  if (!S) return;
+  const { planRound, planDaily } = await loadSampler();
   if (!S) return;
   const day = localDay();
   const season = seasonOf();
@@ -424,7 +429,7 @@ export function startRound(mode = "free") {
     if (!duels.length) { S.round = null; notify(); return; }
   } else {
     const rand = mulberry32(hashStringToSeed(`${S.userId}/${day}/${Date.now()}/${Math.random()}`));
-    const taken = new Set([...seen, ...dailyCodes(day, season)]);
+    const taken = new Set([...seen, ...dailyCodes(day, season, planDaily)]);
     duels = planRound({ season, rand, size: ROUND_SIZE, seen: taken, recent: S.recent, focus: focusFromView(getView()) });
   }
   const now = Date.now();
@@ -648,12 +653,15 @@ export async function fetchAdminStats(days = 14) {
 
 /** Taste DNA from the player's ledger (heavy the first time: it builds the specimens it refers to). */
 let dnaMemo = null;
-export function computeDna() {
+export async function computeDna() {
   if (!S) return null;
   const n = Object.values(S.ledger).reduce((s, a) => s + a.length, 0);
   if (dnaMemo && dnaMemo.userId === S.userId && dnaMemo.n === n) return dnaMemo.dna;
+  const userId = S.userId;
+  const { dnaFromLedger } = await import("./arena/dna.js");
+  if (!S || S.userId !== userId) return null;
   const dna = dnaFromLedger(S.ledger);
-  dnaMemo = { userId: S.userId, n, dna };
+  dnaMemo = { userId, n, dna };
   return dna;
 }
 
@@ -696,6 +704,14 @@ function ensureLoaded(userId) {
     window.addEventListener("online", () => { if (S && S.remote === "offline") { failures = 0; flush(); } });
   }
   notify();
+  // anything a previous visit left unsent goes out even if the player never opens the Arena this time
+  if (hasPending()) scheduleFlush(2500);
+}
+
+/** The first Arena visit of a page load asks the server for the authoritative numbers. */
+function ensureSynced() {
+  if (!S || S._synced) return;
+  S._synced = true;
   syncNow();
   // a round left open from an earlier visit: re-fetch its community numbers
   if (S.round && S.round.phase !== "summary") prefetchTallies(S.round);
@@ -716,7 +732,7 @@ export function useArena() {
   }, []);
 
   useEffect(() => {
-    if (userId) ensureLoaded(userId);
+    if (userId) { ensureLoaded(userId); ensureSynced(); }
   }, [userId]);
 
   const ready = !!S && S.userId === userId;
@@ -730,6 +746,31 @@ export function useArena() {
     notices,
     actions,
   };
+}
+
+/** Progress without any network: for the app shell and the dashboard card, where the Arena is only a doorway. */
+export function useArenaLocal() {
+  const [, setTick] = useState(0);
+  const { user } = useSession();
+  const userId = user?.id ?? null;
+  useEffect(() => {
+    const l = () => setTick((n) => n + 1);
+    listeners.add(l);
+    l();
+    return () => listeners.delete(l);
+  }, []);
+  useEffect(() => {
+    if (userId) ensureLoaded(userId);
+  }, [userId]);
+  const ready = !!S && S.userId === userId;
+  return { ready, view: ready ? getView() : null };
+}
+
+/** How many things are waiting for a player who has already played: today's daily challenge and rewards to collect. */
+export function arenaAttention(view) {
+  if (!view || view.votes === 0) return 0;
+  const claimable = view.quests.filter((q) => q.done && !q.claimed).length + (view.daily.done && !view.daily.claimed ? 1 : 0) + (view.clear.ready ? 1 : 0);
+  return (view.daily.done ? 0 : 1) + claimable;
 }
 
 /** Re-renders every second: for the live "time today" readout only. */

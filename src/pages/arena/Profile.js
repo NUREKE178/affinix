@@ -127,8 +127,9 @@ export function ProfileTab({ arena }) {
   // building the specimens behind a long history takes a moment: let the tab paint first
   useEffect(() => {
     if (!ready) return undefined;
-    const id = setTimeout(() => setDna(computeDna()), 40);
-    return () => clearTimeout(id);
+    let off = false;
+    const id = setTimeout(() => { computeDna().then((d) => { if (!off) setDna(d); }); }, 40);
+    return () => { off = true; clearTimeout(id); };
   }, [ready, view?.votes]);
 
   if (!ready || !view) return html`<div class="ar-profile"></div>`;

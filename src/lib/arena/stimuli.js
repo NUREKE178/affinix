@@ -15,24 +15,10 @@ import * as pack from "./families/pack.js";
 import * as poster from "./families/poster.js";
 import * as appicon from "./families/appicon.js";
 
-export const POOL_SIZE = 32;
-export const FAMILY_IDS = ["mark", "palette", "button", "card", "pack", "poster", "appicon"];
-const MODS = { mark, palette, button, card, pack, poster, appicon };
+import { POOL_SIZE, FAMILY_IDS, DIMENSIONS, DIMENSION_IDS, isObjective } from "./catalog.js";
 
-/** The measurement dimensions of the Arena. Ids match the builder's own
- * (builder.dimensions.*), so researchers and players use one vocabulary.
- * `objective` ones have a right answer that the specimens themselves decide. */
-export const DIMENSIONS = [
-  { id: "preference", objective: false },
-  { id: "attention", objective: false },
-  { id: "trust", objective: false },
-  { id: "quality", objective: false },
-  { id: "premium", objective: false },
-  { id: "clarity", objective: true },
-  { id: "purchaseIntent", objective: false },
-];
-export const DIMENSION_IDS = DIMENSIONS.map((d) => d.id);
-export const isObjective = (dimId) => DIMENSIONS.find((d) => d.id === dimId)?.objective === true;
+export { POOL_SIZE, FAMILY_IDS, DIMENSIONS, DIMENSION_IDS, isObjective };
+const MODS = { mark, palette, button, card, pack, poster, appicon };
 
 export function familyDims(famId) {
   return MODS[famId].DIMS;

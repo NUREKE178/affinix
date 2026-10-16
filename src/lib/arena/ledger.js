@@ -2,7 +2,7 @@
 // each so a season of play (tens of thousands of answers) still fits comfortably in
 // localStorage. It answers two questions: "have I seen this duel?" (to deal fresh
 // ones) and "what do my picks say about my taste?" (the Taste DNA).
-import { FAMILY_IDS, DIMENSION_IDS, POOL_SIZE } from "./stimuli.js";
+import { FAMILY_IDS, DIMENSION_IDS, POOL_SIZE } from "./catalog.js";
 
 /** Duel identity without the answer: (family, lower index, higher index, question). */
 export function duelCode(family, a, b, dim) {

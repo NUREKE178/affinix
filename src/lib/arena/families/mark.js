@@ -14,7 +14,7 @@
 //   dark  = darkOf(ground)
 //   bold  = 2 * (0.58*markHeft + 0.27*wordHeft + 0.15*sizeShare) - 1   (stroke thickness / fill share, wordmark weight, mark size)
 //   round = 0.82 * markRoundness + 0.18 * wordmarkRoundness            (circles / round caps +1 ... mitred polygons -1)
-//   airy  = clamp((emptyShare - 0.5) * 2.8)           emptyShare = 1 - inked bounding area / canvas (dense marks count 50..100%)
+//   airy  = clamp((0.54 - u) * 3.6)    u = sqrt(inked area) / 240: mark box (weighted 55..100% by heft) + wordmark box, as a linear share of the canvas
 //   rich  = richOf(shapes drawn + wordmark + extras, 2, 15)
 import { svgRoot, rect, el, esc } from "../svgutil.js";
 import { PALETTES, BRAND_NAMES } from "../palettes.js";
@@ -415,7 +415,7 @@ function burst(k) {
 
 const ARCH = [ringdot, bars, quarters, diamond, rosette, monogram, orbit, chevrons, hexagon, waves, halftone, arch, leaves, burst];
 const ARCH_NAMES = ["Ring + dot", "Bar stack", "Quarter circles", "Split diamond", "Rosette", "Monogram badge", "Orbit", "Chevrons", "Hexagon", "Waves", "Halftone", "Arch + sun", "Twin leaves", "Starburst"];
-const CROPPY = new Set([0, 1, 2, 4, 6, 7, 8, 9, 10, 13]); // archetypes that look good as a cropped giant mark
+const CROPPY = new Set([0, 2, 4, 6, 7, 8, 9, 10, 13]); // archetypes that look good as a cropped giant mark
 
 /* ------------------------------------------------------------------ wordmark treatments */
 // [weight, tracking (em), case (0 lower, 1 UPPER, 2 Title), base size, roundness, full stop]
@@ -440,7 +440,7 @@ function entry(season, i) {
   const names = shuffle(r, BRAND_NAMES.map((_, j) => j));
   const strat = () => shuffle(r, Array.from({ length: 32 }, (_, j) => (j + 0.15 + 0.7 * r()) / 32));
   const hefts = strat(), scales = strat();
-  const tones = shuffle(r, [...Array(5).fill(1), ...Array(3).fill(2), ...Array(24).fill(0)]);
+  const tones = shuffle(r, [...Array(6).fill(1), ...Array(3).fill(2), ...Array(23).fill(0)]);
   const sOff = Math.floor(r() * 3), lOff = Math.floor(r() * 5), cOff = Math.floor(r() * 4);
   const k = Math.floor(i / N_ARCH), arch = archOrder[i % N_ARCH];
   return { arch, v: (vOff[arch] + k) % 4, pal: order[i], name: names[i], heft: hefts[i], scale: scales[i], tone: tones[i], scheme: (i + 2 * k + sOff) % 3, layout: (i + 3 * k + lOff) % 5, cap: (i + k + cOff) % 3 };
@@ -448,8 +448,8 @@ function entry(season, i) {
 
 /* ------------------------------------------------------------------ colour logic */
 function grounds(p, scheme, tn) {
-  const a0 = tn === 1 ? tone(p.a, 0.45) : tn === 2 ? tone(p.a, -0.5) : p.a;
-  const b0 = tn === 1 ? tone(p.b, 0.45) : tn === 2 ? tone(p.b, -0.5) : p.b;
+  const a0 = tn === 1 ? tone(p.a, 0.86) : tn === 2 ? tone(p.a, -0.5) : p.a;
+  const b0 = tn === 1 ? tone(p.b, 0.86) : tn === 2 ? tone(p.b, -0.5) : p.b;
   if (scheme === 0) { // the palette's own ground
     const bg = p.bg, wm = away(p.ink, bg, 5);
     return { bg, a: away(a0, bg, 2.2), b: away(b0, bg, 1.5), c: wm, wm };
@@ -486,11 +486,13 @@ export function build(rand, ctx) {
   const strW = (fs) => tw(str + (ws[5] ? "." : ""), fs, ws[0], ws[1]);
   const cy0 = ws[2] === 1 ? 0.3635 : 0.33; // vertical centre of the wordmark above its baseline, in em
   const descr = t2 < 0.3 && (layout === 0 || layout === 3) ? DESCR[Math.floor(t1 * DESCR.length)] : null;
-  let out = "", cover = 0, extra = 0, mk, markH;
+  let out = "", inkA = 0, extra = 0, mk, markH;
 
   if (layout === 3) { // ------------- badge: the mark in a brand container
-    const C = lerp(96, 138, sc), shape = Math.floor(t6 * 3);
-    const F = E.scheme === 1 ? col.a : col.a; // container fill: the brand colour (light neutral on a brand ground)
+    const C = lerp(104, 140, sc), shape = Math.floor(t6 * 3);
+    // container fill: the first clean, clearly visible colour of the mark (a light neutral on a brand ground), else ink / paper
+    const clean = (c) => contrast(c, col.bg) >= 1.7 && (hexToHsl(c)[1] >= 0.28 || lightness(c) < 22 || lightness(c) > 86);
+    const F = [col.a, col.b, col.c].find(clean) ?? bestOn(col.bg, [INK, PAPER]);
     const cands = [col.bg, PAPER, INK];
     const main = bestOn(F, cands);
     const acc = contrast(col.b, F) >= 1.8 ? col.b : mix(main, F, 0.38);
@@ -504,33 +506,33 @@ export function build(rand, ctx) {
     const wy = top + C + gap + capH;
     out += T(120, wy, str, fs, ws[0], ws[1], wmCol, "middle", tail);
     if (descr) out += T(120, wy + 13, descr, 6, 500, 0.4, mix(wmCol, col.bg, 0.5));
-    cover = (C * C * 0.82 + strW(fs) * capH) / (W * H);
+    inkA = C * C * 0.85 + strW(fs) * capH;
     markH = C; extra = 1 + (descr ? 1 : 0); mk.n += 1;
   } else {
     mk = ARCH[E.arch](k);
     if (layout === 0) { // ------------- stack
-      const M = lerp(76, 128, sc), scl = M / Math.max(mk.w, mk.h), mw = mk.w * scl, mh = mk.h * scl;
+      const M = lerp(84, 130, sc), scl = M / Math.max(mk.w, mk.h), mw = mk.w * scl, mh = mk.h * scl;
       const fs = Math.min(ws[3] * lerp(0.85, 1.2, t2) * lerp(0.85, 1.25, sc), 196 / strW(1));
-      const capH = 0.73 * fs, gap = clamp(M * 0.2, 12, 26), tot = mh + gap + capH + (descr ? 15 : 0), top = 118 - tot / 2;
+      const capH = 0.73 * fs, gap = clamp(M * 0.23, 15, 30), tot = mh + gap + capH + (descr ? 15 : 0), top = 118 - tot / 2;
       out += grp(`translate(120 ${f(top + mh / 2)}) scale(${f(scl)})`, mk.s);
       const wy = top + mh + gap + capH;
       out += T(120, wy, str, fs, ws[0], ws[1], wmCol, "middle", tail);
       if (descr) out += T(120, wy + 13, descr, 6, 500, 0.4, mix(wmCol, col.bg, 0.5));
-      cover = (mw * mh * (0.5 + 0.5 * mk.hv) + strW(fs) * capH) / (W * H);
+      inkA = mw * mh * (0.55 + 0.45 * mk.hv) + strW(fs) * capH;
       markH = mh; extra = 1 + (descr ? 1 : 0);
     } else if (layout === 1) { // ------------- side by side
-      const M = lerp(54, 86, sc), scl = M / Math.max(mk.w, mk.h), mw = mk.w * scl, mh = mk.h * scl;
+      const M = lerp(60, 90, sc), scl = M / Math.max(mk.w, mk.h), mw = mk.w * scl, mh = mk.h * scl;
       const gap = M * 0.3, fsMax = (208 - mw - gap) / strW(1);
       const fs = Math.min(ws[3] * lerp(0.9, 1.25, t2) * lerp(0.9, 1.15, sc) * 1.05, fsMax);
       const tW = strW(fs), tot = mw + gap + tW, x0 = 120 - tot / 2;
       out += grp(`translate(${f(x0 + mw / 2)} 119) scale(${f(scl)})`, mk.s);
       out += T(x0 + mw + gap, 119 + cy0 * fs, str, fs, ws[0], ws[1], wmCol, "start", tail);
-      cover = (mw * mh * (0.5 + 0.5 * mk.hv) + tW * 0.73 * fs) / (W * H);
+      inkA = mw * mh * (0.55 + 0.45 * mk.hv) + tW * 0.73 * fs;
       markH = mh; extra = 1;
     } else if (layout === 2) { // ------------- hero: giant mark, micro wordmark
-      const crop = CROPPY.has(E.arch) && t6 < 0.62;
+      const crop = CROPPY.has(E.arch) && !(E.arch === 0 && E.v === 1) && t6 < 0.62;
       if (crop) { // a cropped giant mark in one corner, the wordmark in the opposite one
-        const M = lerp(250, 330, sc), scl = M / Math.max(mk.w, mk.h), corner = Math.floor(t1 * 4);
+        const M = lerp(215, 266, sc), scl = M / Math.max(mk.w, mk.h), corner = Math.floor(t1 * 4);
         const cx = corner % 2 === 0 ? W - M * 0.2 : M * 0.2, cyy = corner < 2 ? M * 0.2 : H - M * 0.2;
         const left = corner % 2 === 0, top = corner < 2;
         const cid = `${ctx.id}-c`, fs = ws[3] * lerp(1.0, 1.35, t2);
@@ -539,25 +541,25 @@ export function build(rand, ctx) {
         const fs2 = Math.min(fs, 150 / strW(1));
         const ink = bestOn(col.bg, [col.wm, PAPER, INK]);
         out += T(wx, wy, str, fs2, ws[0], ws[1], ink, left ? "start" : "end", tail);
-        cover = 0.72; markH = 150; extra = 1;
+        inkA = 0.62 * W * H; markH = 150; extra = 1;
       } else {
         const M = lerp(124, 172, sc), scl = M / Math.max(mk.w, mk.h), mw = mk.w * scl, mh = mk.h * scl;
         const fs = 8.5 + (1 - sc) * 1.5, st = wsi === 1 || wsi === 2 || wsi === 5 ? ws : WM[2], s2 = wmText(name, st[2]);
         const my = 106 - Math.max(0, mh - 130) * 0.15;
         out += grp(`translate(120 ${f(my)}) scale(${f(scl)})`, mk.s);
         out += T(120, 210, s2, fs, 600, 0.38, wmCol);
-        cover = (mw * mh * (0.55 + 0.45 * mk.hv) + tw(s2, fs, 600, 0.38) * 6) / (W * H);
+        inkA = mw * mh * (0.55 + 0.45 * mk.hv) + tw(s2, fs, 600, 0.38) * 6;
         markH = mh; extra = 1;
       }
     } else { // ------------- left-aligned sheet: mark top-left, wordmark bottom-left, descriptor bottom-right
-      const M = lerp(82, 118, sc), scl = M / Math.max(mk.w, mk.h), mw = mk.w * scl, mh = mk.h * scl;
-      const fs = Math.min(ws[3] * lerp(0.95, 1.3, t2), 176 / strW(1));
+      const M = lerp(92, 128, sc), scl = M / Math.max(mk.w, mk.h), mw = mk.w * scl, mh = mk.h * scl;
+      const fs = Math.min(Math.max(ws[3] * lerp(1.0, 1.35, t2), 16), 176 / strW(1));
       const lx = 26;
       out += grp(`translate(${f(lx + mw / 2)} ${f(26 + mh / 2)}) scale(${f(scl)})`, mk.s);
       out += T(lx - 1, 204, str, fs, ws[0], ws[1], wmCol, "start", tail);
       const d2 = DESCR[Math.floor(t1 * DESCR.length)];
       out += T(W - 26, 204, d2, 6, 500, 0.4, mix(wmCol, col.bg, 0.45), "end");
-      cover = (mw * mh * (0.5 + 0.5 * mk.hv) + strW(fs) * 0.73 * fs) / (W * H) * 1.2;
+      inkA = mw * mh * (0.55 + 0.45 * mk.hv) + strW(fs) * 0.73 * fs;
       markH = mh; extra = 2;
     }
   }
@@ -571,9 +573,9 @@ export function build(rand, ctx) {
   const warm = warmOf([...hues, col.bg]);
   const vivid = vividOf(hues);
   const dark = darkOf(col.bg);
-  const bold = clamp(2 * (0.58 * mk.hv + 0.27 * wordHeft + 0.15 * sizeShare) - 1.02);
+  const bold = clamp(2.5 * (0.58 * mk.hv + 0.27 * wordHeft + 0.15 * sizeShare) - 1.3);
   const round = clamp(0.82 * mk.rd + 0.18 * ws[4]);
-  const airy = clamp((1 - clamp(cover, 0, 1) - 0.5) * 2.8);
+  const airy = clamp((0.54 - Math.sqrt(inkA) / W) * 3.6);
   const rich = richOf(mk.n + 1 + extra, 2, 15);
   return {
     name: `${ARCH_NAMES[E.arch]} / ${["palette", "brand", "dark"][E.scheme]} / ${["stack", "side", "hero", "badge", "sheet"][layout]}`,

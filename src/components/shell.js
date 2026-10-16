@@ -8,6 +8,7 @@ import { useT, useLocale, setLocale, LOCALES, useLocaleFadeClass } from "../lib/
 import { useNotifications, markAllNotificationsRead, notificationCopyKey, notificationTargetPath } from "../lib/notificationsStore.js";
 import { useFriends } from "../lib/friendsStore.js";
 import { useMessagingBootstrap, useConversations } from "../lib/messagesStore.js";
+import { useArenaLocal, arenaAttention } from "../lib/arenaStore.js";
 import { relativeDate } from "../lib/format.js";
 import { toast, Badge, LoadingBar, Skeleton } from "./ui.js";
 import { useMountTransition } from "../lib/motion.js";
@@ -184,7 +185,8 @@ function SidebarContent({ currentPath, onNavigate, collapsed = false, sidebarMod
   const { org } = useCurrentOrg();
   const { incoming } = useFriends();
   const { unreadTotal } = useConversations();
-  const navBadge = (id) => (id === "friends" ? incoming.length : id === "messages" ? unreadTotal : 0);
+  const arena = useArenaLocal();
+  const navBadge = (id) => (id === "friends" ? incoming.length : id === "messages" ? unreadTotal : id === "arena" ? arenaAttention(arena.view) : 0);
   return html`
     <div class="flex h-full flex-col">
       <button type="button" onClick=${() => onNavigate("/app/overview")}

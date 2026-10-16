@@ -3,7 +3,6 @@ import { useRoute, matchRoute, navigate } from "./router.js";
 import { Shell } from "./components/shell.js";
 import { Landing } from "./pages/Landing.js";
 import { Feed } from "./pages/Feed.js";
-import { Arena } from "./pages/Arena.js";
 import { Favorites } from "./pages/Favorites.js";
 import { Friends } from "./pages/Friends.js";
 import { Messages } from "./pages/Messages.js";
@@ -32,6 +31,10 @@ import { useT } from "./lib/i18n.js";
 import { Button, BootScreen } from "./components/ui.js";
 import { withTimeout } from "./lib/async.js";
 import { useAutoUpdate } from "./lib/useAutoUpdate.js";
+import { lazyPage } from "./lib/lazyPage.js";
+
+// The Arena (and the specimen generators behind it) loads the first time it is opened.
+const Arena = lazyPage(() => import("./pages/Arena.js"), "Arena");
 
 const DASHBOARD_ROUTES = [
   { pattern: "/app/overview", Page: Overview },

@@ -400,6 +400,8 @@ export default {
   arena: {
     title: "Arena",
     subtitle: "Pick the better design, train your eye and build your Taste DNA.",
+    promo: "Train your eye in 10-second duels. Level up, keep your streak and find your Taste DNA.",
+    promoCta: "Open the Arena",
     back: "Back",
     level: "LVL",
     unitHour: "h",

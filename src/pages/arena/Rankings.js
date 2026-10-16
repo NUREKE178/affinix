@@ -102,7 +102,7 @@ export function RankingsTab({ arena }) {
         ${state.loading
           ? [0, 1, 2, 3].map((i) => html`<div class="ar-row" key=${i}><${Skeleton} className="h-4 w-full" /></div>`)
           : unavailable
-            ? html`<div class="ar-rank-empty"><${EmptyState} icon="trophy" title=${t("arena.rankings.offlineTitle")} body=${t("arena.rankings.offlineBody")} action=${html`<${Button} variant="secondary" size="sm" onClick=${() => setTick((n) => n + 1)}>${t("arena.rankings.retry")}<//>`} /></div>`
+            ? html`<div class="ar-rank-empty"><${EmptyState} icon="trophy" title=${t("arena.rankings.offlineTitle")} body=${t("arena.rankings.offlineBody")} action=${html`<${Button} variant="secondary" size="sm" onClick=${() => { arena.actions.syncNow().finally(() => setTick((n) => n + 1)); }}>${t("arena.rankings.retry")}<//>`} /></div>`
             : rows.length === 0
               ? html`<div class="ar-rank-empty"><${EmptyState} icon="trophy" title=${t(friends ? "arena.rankings.emptyFriendsTitle" : "arena.rankings.emptyTitle")} body=${t(friends ? "arena.rankings.emptyFriendsBody" : "arena.rankings.emptyBody")} /></div>`
               : html`
