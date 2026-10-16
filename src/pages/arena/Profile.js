@@ -1,6 +1,7 @@
 // Profile tab: Taste DNA, archetype, stats, activity, badges.
 import { html, useState, useEffect, useMemo } from "../../lib/preact.js";
-import { StatTile, Skeleton, Badge, ProgressBar } from "../../components/ui.js";
+import { StatTile, Skeleton, Badge, ProgressBar, Button, toast } from "../../components/ui.js";
+import { createPost } from "../../lib/postsStore.js";
 import { Icon } from "../../components/icons.js";
 import { useT, getLocale } from "../../lib/i18n.js";
 import { TRAIT_IDS } from "../../lib/arena/traits.js";
@@ -34,7 +35,8 @@ function Fader({ trait, lean, t }) {
   `;
 }
 
-function ArchetypeCard({ dna, lean, t }) {
+function ArchetypeCard({ dna, lean, t, view }) {
+  const [sharing, setSharing] = useState(false);
   const calibrated = dna.n >= MIN_VOTES_FOR_TYPE;
   const conf = confidenceOf(dna);
   if (!calibrated) {
@@ -50,6 +52,18 @@ function ArchetypeCard({ dna, lean, t }) {
   }
   const a = archetypeOf(lean);
   const tops = topTraits(lean, 3).filter((x) => leanStrength(x.lean) !== "none");
+  async function share() {
+    setSharing(true);
+    try {
+      const traits = tops.map((x) => t(`arena.traits.${x.trait}.${x.lean >= 0 ? "hi" : "lo"}`).toLowerCase()).join(", ");
+      await createPost(t("arena.share.text", { type: t(`arena.archetype.${a.id}.name`), traits, level: view.level, streak: view.streak }));
+      toast(t("arena.share.done"), "emerald");
+    } catch (err) {
+      toast(err.message ?? String(err), "rose");
+    } finally {
+      setSharing(false);
+    }
+  }
   return html`
     <article class="ar-type sk-panel" data-testid="arena-archetype" data-ready="true" data-type=${a.id}>
       <span class="sk-caption">${t("arena.dna.typeTitle")}</span>
@@ -59,6 +73,7 @@ function ArchetypeCard({ dna, lean, t }) {
         ${tops.map((x) => html`<${Badge} key=${x.trait} tone="neutral">${t(`arena.traits.${x.trait}.${x.lean >= 0 ? "hi" : "lo"}`)}<//>`)}
       </div>
       <div class="ar-type-foot sk-caption">${t("arena.dna.basedOn", { n: dna.n })} · ${confidenceLabel(conf, t)}</div>
+      <div><${Button} variant="secondary" size="sm" loading=${sharing} onClick=${share} data-testid="arena-share"><${Icon} name="send" size=${14} />${t("arena.share.cta")}<//></div>
     </article>
   `;
 }
@@ -173,7 +188,7 @@ export function ProfileTab({ arena }) {
               ${t("arena.dna.standout", { dim: t(`builder.dimensions.${standout.dim}.label`), pole: t(`arena.traits.${standout.trait}.${standout.delta >= 0 ? "hi" : "lo"}`).toLowerCase() })}
             </p>`}
         </section>
-        <${ArchetypeCard} dna=${dna ? dna.all : emptyDna()} lean=${leanOf(dna ? dna.all : emptyDna())} t=${t} />
+        <${ArchetypeCard} dna=${dna ? dna.all : emptyDna()} lean=${leanOf(dna ? dna.all : emptyDna())} t=${t} view=${view} />
       </div>
 
       <section class="ar-activity sk-panel" data-testid="arena-activity">

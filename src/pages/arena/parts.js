@@ -67,7 +67,7 @@ export function Specimen({ stim, svg, side, state, kbd, onPick, name, children }
       aria-label=${name}
       onClick=${() => state === "idle" && onPick(side)}
     >
-      <span class="ar-spec-art" role="img" aria-label=${stim.name} dangerouslySetInnerHTML=${{ __html: svg }}></span>
+      <span class="ar-spec-art" aria-hidden="true" dangerouslySetInnerHTML=${{ __html: svg }}></span>
       <span class="ar-spec-key sk-kbd" aria-hidden="true">${kbd}</span>
       <span class="ar-spec-slot">
         ${state === "idle"

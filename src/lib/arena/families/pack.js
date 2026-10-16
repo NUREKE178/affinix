@@ -7,16 +7,17 @@
 // supplies every per-specimen parameter (proportions, variant, type voice, backdrop).
 //
 // Traits are measured, not random:
-//   warm / vivid : warmOf / vividOf over the colours actually painted (backdrop + print, weighted by area)
+//   warm / vivid : warmOf over the colours actually painted (backdrop + print, weighted by area); vivid = mean HSL chroma
+//                  (s x (1 - |2l-1|), so pale tints and near-blacks read as muted) of the same colours
 //   dark         : 1 - L*/50 of the area-weighted lightness of backdrop (55 %) and print (45 %)
-//   round        : 0.5 x the form's silhouette roundness + 0.5 x the print's motif roundness (+ a spot circle)
+//   round        : 0.6 x the form's silhouette roundness + 0.4 x the print's motif roundness (+ a spot disc / glow)
 //   bold         : print weight (blocks / heavy type high, hairlines low) + a little of the print's saturation
 //   airy         : share of the label left plain (60 %), mixed with how small the pack sits in the frame (40 %)
 //   rich         : element count of the artwork + the form's details
 import { svgRoot, esc, range, chance } from "../svgutil.js";
 import { PALETTES, BRAND_NAMES } from "../palettes.js";
 import { mix, lighten, darken, hexToHsl, hsl, lightness, contrast } from "../color.js";
-import { clamp, warmOf, vividOf, richOf } from "../traits.js";
+import { clamp, warmOf, richOf } from "../traits.js";
 import { mulberry32, hashStringToSeed, shuffle, pick } from "../../prng.js";
 
 export const DIMS = ["preference", "attention", "trust", "quality", "premium", "purchaseIntent"];
@@ -130,15 +131,29 @@ const VOL = {
 };
 const CASES = { premium: ["U"], kraft: ["U"], word: ["U", "L"], minimal: ["T", "L"], playful: ["T", "L"], blocks: ["T", "U"], stripes: ["U", "T"], sun: ["U", "T"], waves: ["T", "U"], botanic: ["T", "U"] };
 
-/** The season's pool plan: 32 slots {form, design, pal, cat, brand}. */
+/** The season's pool plan: 32 slots {form, design, pal, cat, brand}. Four blocks of ten forms x ten designs: every form and
+ * every design appears once per block, no (form, design) pair repeats, and the two rectilinear forms (box, brick) are always
+ * given angular prints so each pool spans the whole round <-> sharp range. */
 function planPack(season) {
   const r = mulberry32(hashStringToSeed(`${season}/pack/plan`));
-  const forms = shuffle(r, FORM_IDS), designs = shuffle(r, DESIGN_IDS);
-  const shifts = shuffle(r, [1, 2, 3, 4, 5, 6, 7, 8, 9]);
+  const others = shuffle(r, FORM_IDS.filter((f) => f !== "box" && f !== "brick"));
+  const sharp = shuffle(r, ["stripes", "word", "premium"]);
+  const usedBy = {};
+  const mark = (form, design) => (usedBy[form] ??= new Set()).add(design);
   const slots = [];
   for (let b = 0; b < 4; b++) {
-    const sh = b === 0 ? 0 : shifts[b - 1];
-    slots.push(...shuffle(r, forms.map((form, j) => ({ form, design: designs[(j + sh) % 10] }))));
+    let dBox, dBrick;
+    if (b < 3) { dBox = sharp[b]; dBrick = sharp[(b + 1) % 3]; }
+    else {
+      dBox = pick(r, DESIGN_IDS.filter((d) => !usedBy.box.has(d)));
+      dBrick = pick(r, DESIGN_IDS.filter((d) => !usedBy.brick.has(d) && d !== dBox));
+    }
+    const rest = DESIGN_IDS.filter((d) => d !== dBox && d !== dBrick);
+    let perm = shuffle(r, rest);
+    for (let t = 0; t < 400 && others.some((f, j) => usedBy[f]?.has(perm[j])); t++) perm = shuffle(r, rest);
+    const block = [{ form: "box", design: dBox }, { form: "brick", design: dBrick }, ...others.map((form, j) => ({ form, design: perm[j] }))];
+    block.forEach((x) => mark(x.form, x.design));
+    slots.push(...shuffle(r, block));
   }
   slots.length = 32;
   const cats = [];
@@ -156,7 +171,10 @@ function planPack(season) {
   return slots;
 }
 
-const area = (x, y, w, h, t = 0, b = 0, l = 0, r = 0) => ({ x, y, w, h, cx: x + w / 2, sx: x + l, sy: y + t, sw: w - l - r, sh: h - t - b });
+const area = (x, y, w, h, t = 0, b = 0, l = 0, r = 0) => {
+  const sw = w - l - r, sh = h - t - b;
+  return { x, y, w, h, cx: x + w / 2, sx: x + l, sy: y + t, sw, sh, small: sh < 74, land: sw / sh > 1.25 };
+};
 
 // =====================================================================================================
 // PRINT DESIGNS: each paints a full-bleed background over the area, then its artwork, then the type.
@@ -165,19 +183,19 @@ const area = (x, y, w, h, t = 0, b = 0, l = 0, r = 0) => ({ x, y, w, h, cx: x + 
 const DESIGNS = {
   // bold colour blocking: three horizontal blocks, a vertical split with a rotated name, or a monogram disc
   blocks(g, A) {
-    const { pal, r, v, dk, lt } = g;
+    const { pal, r, dk, lt } = g, cx = A.cx, v = A.land && g.v === 1 ? 0 : g.v;
     const [k1, k2, k3] = g.dark ? [pal.bg, pal.a, pal.b] : [pal.a, pal.surface, pal.b];
-    const nm = cased(g.brand, g.cs), wt = pick(r, [800, 900]), d = g.desc.toUpperCase(), cx = A.cx;
+    const nm = cased(g.brand, g.cs), wt = pick(r, [800, 900]), d = g.desc.toUpperCase();
     let s = "";
     if (v === 0) {
-      const y1 = A.y + A.h * range(r, 0.48, 0.56), y2 = y1 + A.h * range(r, 0.2, 0.25), y3 = A.y + A.h;
+      const y1 = A.y + A.h * range(r, 0.46, 0.54), y2 = y1 + A.h * (A.small ? range(r, 0.27, 0.32) : range(r, 0.2, 0.25)), y3 = A.y + A.h;
       s += R(A.x, A.y, A.w, y1 - A.y, k1) + R(A.x, y1, A.w, y2 - y1, k2) + R(A.x, y2, A.w, y3 - y2, k3);
       const mh = y2 - y1, fs = Math.min(fit(nm, wt, -0.02, A.sw * 0.92, 40), mh * 0.56);
       s += T(cx, y1 + mh / 2 + fs * 0.36, nm, fs, inkOn(k2, dk, lt), { w: wt, ls: -0.02 });
       s += tag(cx, y2 + (y3 - y2) * 0.5 + 2, d, inkOn(k3, dk, lt), A.sw, 5.6, { ls: 0.14 });
       s += T(A.sx + 2, A.sy + 6, g.vol, 5, inkOn(k1, dk, lt), { w: 600, a: "start", op: 0.75 });
       s += C(A.sx + A.sw - 5, A.sy + 4, 3.2, k3);
-      return { svg: s, base: k1, acc: k3, cols: [[k1, 5], [k2, 2.4], [k3, 2.4]], n: 6, plain: 0.55, bold: 0.85, round: -0.3 };
+      return { svg: s, base: k1, acc: k3, cols: [[k1, 5], [k2, 2.4], [k3, 2.4]], n: 6, plain: 0.55, bold: 0.85, round: -0.5 };
     }
     if (v === 1) {
       const sw = A.w * 0.38, rx = A.x + sw + (A.w - sw) / 2;
@@ -187,7 +205,7 @@ const DESIGNS = {
       s += tag(rx, A.y + A.h * 0.2, d, inkOn(k2, dk, lt), (A.w - sw) * 0.86, 5.4, { ls: 0.1 });
       s += T(rx, A.y + A.h * 0.85 + 2, g.vol, 6, inkOn(k3, dk, lt), { w: 700, ls: 0.06 });
       s += C(rx, A.y + A.h * 0.42, (A.w - sw) * 0.2, k1);
-      return { svg: s, base: k1, acc: k3, cols: [[k1, 4], [k2, 4], [k3, 1.4]], n: 7, plain: 0.6, bold: 0.8, round: -0.15 };
+      return { svg: s, base: k1, acc: k3, cols: [[k1, 4], [k2, 4], [k3, 1.4]], n: 7, plain: 0.6, bold: 0.8, round: -0.45 };
     }
     const yj = A.y + A.h * range(r, 0.5, 0.58), rr = Math.min(A.sw * 0.3, A.sh * 0.22);
     s += R(A.x, A.y, A.w, yj - A.y, k1) + R(A.x, yj, A.w, A.y + A.h - yj, k3) + C(cx, yj, rr, k2);
@@ -195,13 +213,13 @@ const DESIGNS = {
     const un = g.brand.toUpperCase(), fs2 = fit(un, 700, 0.2, A.sw * 0.92, 11);
     s += T(cx, yj + rr + (A.y + A.h - yj - rr) * 0.5 + fs2 * 0.2, un, fs2, inkOn(k3, dk, lt), { w: 700, ls: 0.2 });
     s += tag(cx, A.sy + 6, d, inkOn(k1, dk, lt), A.sw, 5.4, { op: 0.85 });
-    return { svg: s, base: k1, acc: k3, cols: [[k1, 4], [k2, 1.5], [k3, 3.5]], n: 6, plain: 0.55, bold: 0.8, round: 0.2 };
+    return { svg: s, base: k1, acc: k3, cols: [[k1, 4], [k2, 1.5], [k3, 3.5]], n: 6, plain: 0.55, bold: 0.8, round: 0.3 };
   },
 
   // stripes: awning bands + a central panel, a three-stripe racing band, or candy vertical stripes + a pill
   stripes(g, A) {
-    const { pal, r, v, dk, lt } = g;
-    const base = g.dark ? pal.bg : pal.surface, c1 = pal.a, c2 = pal.b, c3 = pal.ink, cx = A.cx;
+    const { pal, r, dk, lt } = g, v = g.v, cx = A.cx;
+    const base = g.dark ? pal.bg : pal.surface, c1 = pal.a, c2 = pal.b, c3 = g.ink;
     const nm = cased(g.brand, g.cs), d = g.desc.toUpperCase();
     let s = R(A.x, A.y, A.w, A.h, base);
     if (v === 0) {
@@ -209,10 +227,10 @@ const DESIGNS = {
       for (let i = 0; i < N; i += 2) s += R(A.x, A.y + i * bh, A.w, bh + 0.4, c1);
       const ph = A.sh * 0.34, py = A.sy + A.sh * 0.5 - ph / 2;
       s += R(A.x, py, A.w, ph, base) + R(A.x, py, A.w, 1.2, c3) + R(A.x, py + ph - 1.2, A.w, 1.2, c3);
-      const fs = Math.min(fit(nm, 800, -0.01, A.sw * 0.92, 30), ph * 0.42);
-      s += T(cx, py + ph * 0.5 + fs * 0.1, nm, fs, c3, { w: 800, ls: -0.01 });
-      s += tag(cx, py + ph - 4.6, d, c3, A.sw, 4.6, { ls: 0.16 });
-      return { svg: s, base: c1, acc: c2, cols: [[c1, 4], [base, 4], [c3, 0.6]], n: 4 + N / 2, plain: 0.4, bold: 0.45, round: -0.7 };
+      const big = ph >= 24, fs = Math.min(fit(nm, 800, -0.01, A.sw * 0.92, 30), ph * (big ? 0.42 : 0.5));
+      s += T(cx, py + ph * 0.5 + fs * (big ? 0.1 : 0.36), nm, fs, c3, { w: 800, ls: -0.01 });
+      if (big) s += tag(cx, py + ph - 4.6, d, c3, A.sw, 4.6, { ls: 0.16 });
+      return { svg: s, base: c1, acc: c2, cols: [[c1, 4], [base, 4], [c3, 0.6]], n: 4 + N / 2, plain: 0.4, bold: 0.45, round: -0.8 };
     }
     if (v === 1) {
       const fs = Math.min(fit(nm, 700, 0.04, A.sw * 0.9, 22), A.sh * 0.17);
@@ -221,23 +239,23 @@ const DESIGNS = {
       [c1, c2, c3].forEach((c, i) => { s += R(A.x, y0 + i * t * 1.7, A.w, t, c); });
       s += tag(cx, y0 + t * 5.4 + 8, d, inkOn(base, dk, lt), A.sw, 5.6, { ls: 0.16 });
       s += T(cx, A.sy + A.sh - 2, g.vol, 5, inkOn(base, dk, lt), { w: 600, op: 0.7 });
-      return { svg: s, base, acc: c1, cols: [[base, 5], [c1, 1.2], [c2, 1.2], [c3, 1.2]], n: 8, plain: 0.55, bold: 0.35, round: -0.6 };
+      return { svg: s, base, acc: c1, cols: [[base, 5], [c1, 1.2], [c2, 1.2], [c3, 1.2]], n: 8, plain: 0.55, bold: 0.35, round: -0.8 };
     }
     const N = pick(r, [7, 9]), bw = A.w / N;
     for (let i = 0; i < N; i += 2) s += R(A.x + i * bw, A.y, bw + 0.4, A.h, c1);
-    const ph = Math.min(A.sh * 0.3, 40), py = A.sy + A.sh * 0.5 - ph / 2, pw = A.sw * 1.0;
+    const ph = clamp(A.sh * 0.3, 18, 40), py = A.sy + A.sh * 0.5 - ph / 2, pw = A.sw * 0.94, big = ph >= 25;
     s += R(cx - pw / 2, py, pw, ph, base, { rx: ph / 2 });
-    const fs = Math.min(fit(nm, 800, 0, pw * 0.74, 28), ph * 0.42);
-    s += T(cx, py + ph * 0.5 + fs * 0.1, nm, fs, c3, { w: 800 });
-    s += tag(cx, py + ph - 5.4, d, c3, pw * 0.7, 4.4, { ls: 0.14 });
-    return { svg: s, base: c1, acc: c2, cols: [[c1, 3], [base, 3]], n: 6 + N / 2, plain: 0.35, bold: 0.5, round: -0.1 };
+    const fs = Math.min(fit(nm, 800, 0, pw * 0.76, 28), ph * (big ? 0.42 : 0.5));
+    s += T(cx, py + ph * 0.5 + fs * (big ? 0.1 : 0.36), nm, fs, c3, { w: 800 });
+    if (big) s += tag(cx, py + ph - 5.4, d, c3, pw * 0.7, 4.4, { ls: 0.14 });
+    return { svg: s, base: c1, acc: c2, cols: [[c1, 3], [base, 3]], n: 6 + N / 2, plain: 0.35, bold: 0.5, round: -0.4 };
   },
 
   // sun: a retro slatted sun over a horizon band, a landscape with hills, or concentric rainbow arcs
   sun(g, A) {
-    const { pal, r, v, dk, lt } = g, cx = A.cx;
+    const { pal, r, dk, lt } = g, v = g.v, cx = A.cx;
     const nm = cased(g.brand, g.cs), d = g.desc.toUpperCase();
-    const base = g.dark ? pal.bg : pal.surface, c1 = pal.a, c2 = g.dark ? pal.b : pal.ink;
+    const base = g.dark ? pal.bg : pal.surface, c1 = pal.a, c2 = g.dark ? pal.b : g.ink;
     let s = "";
     if (v === 0) {
       s += R(A.x, A.y, A.w, A.h, base);
@@ -248,10 +266,10 @@ const DESIGNS = {
       const fs = Math.min(fit(nm, 800, 0.02, A.sw * 0.9, 24), (A.y + A.h - hy) * 0.34);
       s += T(cx, hy + (A.y + A.h - hy) * 0.36 + fs * 0.3, nm, fs, inkOn(c2, dk, lt), { w: 800, ls: 0.02 });
       s += tag(cx, A.sy + 5, d, inkOn(base, dk, lt), A.sw, 5, { ls: 0.16, op: 0.8 });
-      return { svg: s, base, acc: c1, cols: [[base, 4], [c1, 1.6], [c2, 2.2]], n: 10, plain: 0.5, bold: 0.5, round: 0.65 };
+      return { svg: s, base, acc: c1, cols: [[base, 4], [c1, 1.6], [c2, 2.2]], n: 10, plain: 0.5, bold: 0.5, round: 0.8 };
     }
     if (v === 1) {
-      const sky = mix(pal.b, g.dark ? pal.bg : "#ffffff", g.dark ? 0.55 : 0.6), h1 = mix(c1, "#000", 0.28), h2 = g.dark ? pal.surface : mix(pal.ink, c1, 0.2);
+      const sky = mix(pal.b, g.dark ? pal.bg : "#ffffff", g.dark ? 0.55 : 0.6), h1 = mix(c1, "#000", 0.28), h2 = g.dark ? pal.surface : mix(g.ink, c1, 0.2);
       s += R(A.x, A.y, A.w, A.h, sky);
       const rs = A.sw * 0.2, cy = A.sy + A.sh * 0.34;
       s += C(cx + A.sw * 0.16, cy, rs, c1);
@@ -270,29 +288,29 @@ const DESIGNS = {
     const fs = fit(nm, 800, 0.02, A.sw * 0.92, 24);
     s += T(cx, by + (A.y + A.h - by) * 0.45 + fs * 0.3, nm, fs, inkOn(bg, dk, lt), { w: 800, ls: 0.02 });
     s += tag(cx, A.sy + 5, d, inkOn(bg, dk, lt), A.sw, 5, { ls: 0.16, op: 0.8 });
-    return { svg: s, base: bg, acc: c1, cols: [[bg, 4], [c1, 2], [pal.b, 1.4], [cols[2], 1]], n: 7, plain: 0.5, bold: 0.45, round: 0.8 };
+    return { svg: s, base: bg, acc: c1, cols: [[bg, 4], [c1, 2], [pal.b, 1.4], [cols[2], 1]], n: 7, plain: 0.5, bold: 0.45, round: 0.85 };
   },
 
   // waves: light wave lines on colour, or layered wave bands
   waves(g, A) {
-    const { pal, r, v, dk, lt } = g, cx = A.cx;
+    const { pal, r, dk, lt } = g, cx = A.cx;
     const nm = cased(g.brand, g.cs), d = g.desc.toUpperCase();
     const wave = (x0, x1, y, amp, lam, sw, col, op) => {
       let dd = pth`M${x0} ${y}Q${x0 + lam / 4} ${y - amp * 2} ${x0 + lam / 2} ${y}`;
       for (let x = x0 + lam; x < x1 + lam / 2; x += lam / 2) dd += pth`T${x} ${y}`;
       return P(dd, "none", { stroke: col, "stroke-width": sw, "stroke-linecap": "round", opacity: op });
     };
-    if (v % 2 === 0) {
+    if (g.v % 2 === 0) {
       const base = g.dark ? pal.bg : pal.a, line = g.dark ? pal.a : inkOn(base, dk, lt), l2 = pal.b;
       let s = R(A.x, A.y, A.w, A.h, base);
-      const nL = 6, y0 = A.sy + A.sh * 0.5, gap = A.sh * 0.085, lam = A.w / pick(r, [3, 4]) ;
+      const nL = A.small ? 4 : 6, y0 = A.sy + A.sh * (A.small ? 0.52 : 0.55), gap = A.sh * (A.small ? 0.1 : 0.072), lam = A.w / pick(r, [3, 4]);
       for (let i = 0; i < nL; i++) s += wave(A.x - lam / 2, A.x + A.w + lam, y0 + i * gap, 3 + i * 0.25, lam, 1.7, i % 2 ? l2 : line, 1 - i * 0.08);
-      const fs = fit(nm, 800, 0.0, A.sw * 0.9, 24);
-      s += T(cx, A.sy + A.sh * 0.26 + fs * 0.3, nm, fs, inkOn(base, dk, lt), { w: 800 });
-      s += tag(cx, A.sy + A.sh * 0.26 + fs * 0.3 + 9, d, inkOn(base, dk, lt), A.sw, 5, { ls: 0.16, op: 0.85 });
+      const fs = fit(nm, 800, 0.0, A.sw * 0.9, 24), ty = A.sy + A.sh * 0.22 + fs * 0.3;
+      s += T(cx, ty, nm, fs, inkOn(base, dk, lt), { w: 800 });
+      if (!A.small) s += tag(cx, ty + 9, d, inkOn(base, dk, lt), A.sw, 5, { ls: 0.16, op: 0.85 });
       return { svg: s, base, acc: l2, cols: [[base, 5], [line, 1.2], [l2, 1]], n: 10, plain: 0.35, bold: 0.1, round: 0.85 };
     }
-    const base = g.dark ? pal.bg : pal.surface, w1 = pal.a, w2 = pal.b, w3 = g.dark ? pal.surface : pal.ink;
+    const base = g.dark ? pal.bg : pal.surface, w1 = pal.a, w2 = pal.b, w3 = g.dark ? pal.surface : g.ink;
     let s = R(A.x, A.y, A.w, A.h, base);
     const by = A.y + A.h, lam = A.w / pick(r, [2, 3]);
     [[0.58, w2, 5], [0.68, w1, 4.5], [0.8, w3, 3.5]].forEach(([yy, c, amp]) => {
@@ -301,110 +319,118 @@ const DESIGNS = {
       for (let x = A.x; x < A.x + A.w + lam; x += lam / 2) dd += pth`T${x} ${y}`;
       s += P(dd + pth`V${by}H${A.x - lam}Z`, c);
     });
-    const fs = fit(nm, 800, 0.0, A.sw * 0.9, 24);
-    s += T(cx, A.sy + A.sh * 0.2 + fs * 0.3, nm, fs, inkOn(base, dk, lt), { w: 800 });
-    s += tag(cx, A.sy + A.sh * 0.2 + fs * 0.3 + 9, d, inkOn(base, dk, lt), A.sw, 5, { ls: 0.16, op: 0.8 });
+    const fs = fit(nm, 800, 0.0, A.sw * 0.9, 24), ty = A.sy + A.sh * 0.2 + fs * 0.3;
+    s += T(cx, ty, nm, fs, inkOn(base, dk, lt), { w: 800 });
+    if (!A.small) s += tag(cx, ty + 9, d, inkOn(base, dk, lt), A.sw, 5, { ls: 0.16, op: 0.8 });
     s += tag(cx, A.sy + A.sh * 0.93, g.vol, inkOn(w3, dk, lt), A.sw, 5, { ls: 0.08 });
     return { svg: s, base, acc: w1, cols: [[base, 3], [w2, 1.6], [w1, 1.6], [w3, 1.6]], n: 8, plain: 0.45, bold: 0.1, round: 0.9 };
   },
 
   // botanic: a leaf sprig, a staggered leaf pattern with a name pill, or a fan of big leaves
   botanic(g, A) {
-    const { pal, r, v, dk, lt, id } = g, cx = A.cx;
+    const { pal, r, dk, lt, id } = g, cx = A.cx, v = g.v;
     const nm = cased(g.brand, g.cs), d = g.desc.toUpperCase(), lf = `${id}-lf`;
     const defs = `<path id="${lf}" d="M0 0C5-6 9-17 0-30C-9-17-5-6 0 0Z"/>`;
     const use = (x, y, rot, sc, fill, op) => el("use", { href: `#${lf}`, transform: `translate(${f(x)} ${f(y)}) rotate(${f(rot)}) scale(${f(sc)})`, fill, opacity: op });
     if (v === 0) {
       const base = g.dark ? pal.bg : pal.surface, lc = pal.a, st = g.dark ? mix(pal.a, pal.bg, 0.45) : mix(pal.a, "#000", 0.35);
       let s = R(A.x, A.y, A.w, A.h, base);
-      const yb = A.sy + A.sh * 0.68, yt = A.sy + A.sh * 0.07, N = 5, k = A.sw / 62;
+      const yb = A.sy + A.sh * 0.68, yt = A.sy + A.sh * 0.07, N = 5, k = Math.min(A.sw / 62, (yb - yt) / 46);
       s += P(pth`M${cx} ${yb}Q${cx + 5} ${(yb + yt) / 2} ${cx - 1} ${yt + 8}`, "none", { stroke: st, "stroke-width": 1.1, "stroke-linecap": "round" });
       for (let i = 0; i < N; i++) {
         const t = i / (N - 1), y = yb - (yb - yt - 12) * (0.04 + 0.92 * t), sc = k * (1.05 - t * 0.5), ang = 58 - t * 24;
         s += use(cx + 0.5 * t, y, -ang, sc, lc) + use(cx + 0.5 * t, y, ang, sc, mix(lc, base, 0.28));
       }
       s += use(cx - 1, yt + 10, 0, k * 0.55, lc);
-      const fs = fit(nm, 700, 0.02, A.sw * 0.9, 20);
-      s += T(cx, A.sy + A.sh * 0.84 + fs * 0.2, nm, fs, inkOn(base, dk, lt), { w: 700, ls: 0.02 });
-      s += tag(cx, A.sy + A.sh * 0.84 + fs * 0.2 + 7.5, d, inkOn(base, dk, lt), A.sw, 4.8, { ls: 0.16, op: 0.8 });
+      const fs = fit(nm, 700, 0.02, A.sw * 0.9, 20), ty = A.sy + A.sh * 0.84 + fs * 0.2;
+      s += T(cx, ty, nm, fs, inkOn(base, dk, lt), { w: 700, ls: 0.02 });
+      if (!A.small) s += tag(cx, ty + 7.5, d, inkOn(base, dk, lt), A.sw, 4.8, { ls: 0.16, op: 0.8 });
       return { svg: s, defs, base, acc: lc, cols: [[base, 5], [lc, 2]], n: 14, plain: 0.5, bold: -0.1, round: 0.5 };
     }
     if (v === 1) {
       const base = g.dark ? pal.bg : pal.a, lcs = g.dark ? [pal.a, mix(pal.a, pal.bg, 0.5), pal.b] : [pal.surface, pal.b, mix(pal.a, "#000", 0.3)];
       let s = R(A.x, A.y, A.w, A.h, base);
-      const cols = 3, cs = A.w / cols, rows = Math.ceil(A.h / (cs * 0.8)) + 1;
+      const cols = A.w < 70 ? 2 : 3, cs = A.w / cols, rows = Math.min(7, Math.ceil(A.h / (cs * 0.85)) + 1), groups = ["", "", ""];
       for (let j = 0; j < rows; j++)
         for (let i = 0; i < cols + 1; i++) {
-          const x = A.x + (i - (j % 2 ? 0.0 : 0.5)) * cs + cs * 0.25, y = A.y + j * cs * 0.8 + 12;
-          s += use(x, y, (j + i) % 2 ? 28 : -28 + (j % 3) * 10, cs / 36, lcs[(i + j * 2) % 3]);
+          const x = A.x + (i - (j % 2 ? 0.0 : 0.5)) * cs + cs * 0.25, y = A.y + j * cs * 0.85 + 10, q = (i + j * 2) % 3;
+          groups[q] += el("use", { href: `#${lf}`, transform: `translate(${f(x)} ${f(y)}) rotate(${(j + i) % 2 ? 28 : -28 + (j % 3) * 10}) scale(${f(cs / 36)})` });
         }
-      const ph = Math.min(A.sh * 0.3, 36), py = A.sy + A.sh * 0.5 - ph / 2, pw = A.sw * 0.98, pc = g.dark ? pal.surface : pal.surface;
+      groups.forEach((gr, q) => { s += `<g fill="${lcs[q]}">${gr}</g>`; });
+      const ph = clamp(A.sh * 0.3, 18, 36), py = A.sy + A.sh * 0.5 - ph / 2, pw = A.sw * 0.92, pc = pal.surface, big = ph >= 25;
       s += R(cx - pw / 2, py, pw, ph, pc, { rx: ph / 2 });
-      const fs = Math.min(fit(nm, 800, 0.0, pw * 0.74, 22), ph * 0.42);
-      s += T(cx, py + ph * 0.5 + fs * 0.12, nm, fs, inkOn(pc, dk, lt), { w: 800 });
-      s += tag(cx, py + ph - 5.2, d, inkOn(pc, dk, lt), pw * 0.7, 4.2, { ls: 0.14, op: 0.8 });
+      const fs = Math.min(fit(nm, 800, 0.0, pw * 0.76, 22), ph * (big ? 0.42 : 0.5));
+      s += T(cx, py + ph * 0.5 + fs * (big ? 0.12 : 0.36), nm, fs, inkOn(pc, dk, lt), { w: 800 });
+      if (big) s += tag(cx, py + ph - 5.2, d, inkOn(pc, dk, lt), pw * 0.7, 4.2, { ls: 0.14, op: 0.8 });
       return { svg: s, defs, base, acc: lcs[1], cols: [[base, 4], [lcs[0], 1.5], [lcs[1], 1.2], [lcs[2], 1.2]], n: 7 + rows * (cols + 1), plain: 0.1, bold: 0.2, round: 0.45 };
     }
-    const base = g.dark ? pal.bg : pal.bg, c1 = pal.a, c2 = mix(pal.a, pal.b, 0.5), c3 = pal.b;
+    const base = pal.bg, c1 = pal.a, c2 = mix(pal.a, pal.b, 0.5), c3 = pal.b;
     let s = R(A.x, A.y, A.w, A.h, base);
-    const k = A.sh / 44, bx = A.sx + A.sw * 0.38, by = A.sy + A.sh * 0.93;
+    const k = Math.min(A.sh / 74, A.sw / 40), bx = A.sx + A.sw * 0.4, by = A.sy + A.sh * 0.95;
     s += use(bx, by, -42, k, c3, 0.9) + use(bx, by, 36, k * 0.92, c2, 0.95) + use(bx, by, -6, k * 1.04, c1) + use(bx, by, 62, k * 0.7, c1, 0.7);
-    const fs = fit(nm, 800, 0.0, A.sw * 0.9, 22);
-    s += T(cx, A.sy + A.sh * 0.1 + fs * 0.7, nm, fs, inkOn(base, dk, lt), { w: 800 });
-    s += tag(cx, A.sy + A.sh * 0.1 + fs * 0.7 + 8, d, inkOn(base, dk, lt), A.sw, 4.8, { ls: 0.16, op: 0.8 });
+    const fs = fit(nm, 800, 0.0, A.sw * 0.9, 22), ty = A.sy + A.sh * 0.1 + fs * 0.7;
+    s += T(cx, ty, nm, fs, inkOn(base, dk, lt), { w: 800 });
+    if (!A.small) s += tag(cx, ty + 8, d, inkOn(base, dk, lt), A.sw, 4.8, { ls: 0.16, op: 0.8 });
     return { svg: s, defs, base, acc: c1, cols: [[base, 4], [c1, 1.6], [c2, 1.2], [c3, 1.2]], n: 8, plain: 0.45, bold: 0.15, round: 0.6 };
   },
 
   // word: pure typography: a rotated wordmark, stacked letters, or one giant line between hairlines
   word(g, A) {
-    const { pal, r, v, dk, lt } = g, cx = A.cx;
-    const base = pick(r, g.dark ? [pal.bg, pal.a] : [pal.a, pal.ink, pal.a]), fg = inkOn(base, dk, lt);
-    const acc0 = base === pal.a ? pal.b : pal.a, acc = contrast(acc0, base) > 1.5 ? acc0 : fg;
+    const { pal, r, dk, lt } = g, cx = A.cx;
+    let base = pick(r, g.dark ? [pal.bg, pal.a] : [pal.a, g.ink, pal.a]);
+    if (Math.max(contrast(base, dk), contrast(base, lt)) < 4.5) base = g.dark ? pal.bg : g.ink;
+    const fg = inkOn(base, dk, lt), acc0 = base === pal.a ? pal.b : pal.a, acc = contrast(acc0, base) > 1.5 ? acc0 : fg;
     const wt = pick(r, [900, 800, 300]), nm = chance(r, 0.55) ? g.brand.toUpperCase() : g.brand.toLowerCase(), d = g.desc.toUpperCase();
     let s = R(A.x, A.y, A.w, A.h, base);
-    const L = [...nm], vv = v === 1 && L.length > 6 ? 2 : v, boldv = (wt - 550) / 450;
+    const L = [...nm], boldv = (wt - 550) / 450;
+    let vv = g.v;
+    if (A.land) vv = 2;
+    else if (vv === 1 && (L.length > 6 || A.sh < 90)) vv = 0;
     if (vv === 0) {
       const fs = Math.min(fit(nm, wt, -0.02, A.sh * 0.88, 70), A.sw * 0.58);
       s += T(A.sx + fs * 0.84, A.sy + A.sh * 0.5, nm, fs, fg, { w: wt, ls: -0.02, rot: -90 });
       s += tag(A.sx + A.sw, A.sy + A.sh - 2, d, fg, A.sw * 0.42, 4.6, { a: "end", ls: 0.1, op: 0.85 });
       s += C(A.sx + A.sw - 4, A.sy + 5, 2.8, acc);
-      return { svg: s, base, acc, cols: [[base, 6], [acc, 0.4]], n: 4, plain: 0.45, bold: boldv, round: -0.1 };
+      return { svg: s, base, acc, cols: [[base, 6], [acc, 0.4]], n: 4, plain: 0.45, bold: boldv, round: -0.3 };
     }
     if (vv === 1) {
       const fs = Math.min((A.sh * 0.8) / (L.length * 0.82), A.sw * 0.8), lp = fs * 0.82;
       L.forEach((c, i) => { s += T(A.sx, A.sy + fs * 0.76 + i * lp, c, fs, i === L.length - 1 ? acc : fg, { w: wt, a: "start", ls: -0.02 }); });
       s += tag(A.sx, A.sy + A.sh - 2, d, fg, A.sw, 4.8, { a: "start", ls: 0.12, op: 0.85 });
-      return { svg: s, base, acc, cols: [[base, 6], [fg, 1], [acc, 0.4]], n: 3 + L.length, plain: 0.4, bold: boldv, round: -0.1 };
+      return { svg: s, base, acc, cols: [[base, 6], [fg, 1], [acc, 0.4]], n: 3 + L.length, plain: 0.4, bold: boldv, round: -0.3 };
     }
-    const fs = fit(nm, wt, -0.04, A.sw * 0.98, 44), yc = A.sy + A.sh * 0.46, cap = fs * 0.73;
+    const fs = fit(nm, wt, -0.04, A.sw * 0.98, A.small ? 24 : 44), yc = A.sy + A.sh * 0.46, cap = fs * 0.73;
     s += R(A.sx, yc - cap / 2 - 6, A.sw, 0.9, fg, { opacity: 0.7 }) + R(A.sx, yc + cap / 2 + 6, A.sw, 0.9, fg, { opacity: 0.7 });
     s += T(cx, yc + cap / 2, nm, fs, fg, { w: wt, ls: -0.04 });
     s += tag(cx, yc + cap / 2 + 15, d, fg, A.sw, 5, { ls: 0.18, op: 0.85 });
-    s += T(cx, A.sy + A.sh - 2, g.vol, 4.8, fg, { w: 600, op: 0.65 });
-    return { svg: s, base, acc, cols: [[base, 6], [fg, 0.6]], n: 6, plain: 0.55, bold: boldv, round: -0.2 };
+    if (!A.small) s += T(cx, A.sy + A.sh - 2, g.vol, 4.8, fg, { w: 600, op: 0.65 });
+    return { svg: s, base, acc, cols: [[base, 6], [fg, 0.6]], n: 6, plain: 0.55, bold: boldv, round: -0.4 };
   },
 
   // kraft: kraft paper, ink rules, a rotated rubber stamp
   kraft(g, A) {
-    const { r } = g, cx = A.cx;
+    const { r } = g, cx = A.cx, sm = A.small || A.sw < 66;
     const kr = pick(r, ["#c8a679", "#cdb08a", "#bf9d70", "#d3b78f"]), ink = "#2a2118", st = pick(r, ["#a23b25", "#2f4f6a", "#2a2118", "#3f5a3a"]);
     const nm = g.brand.toUpperCase(), d = g.desc.toUpperCase();
     let s = R(A.x, A.y, A.w, A.h, kr);
-    s += R(A.sx, A.sy, A.sw, A.sh, "none", { stroke: ink, "stroke-width": 0.9 }) + R(A.sx + 2.6, A.sy + 2.6, A.sw - 5.2, A.sh - 5.2, "none", { stroke: ink, "stroke-width": 0.4 });
-    const fs = Math.min(fit(nm, 800, 0.14, A.sw * 0.74, 15), A.sh * 0.14), y1 = A.sy + A.sh * 0.32, ry = y1 + 8;
+    s += R(A.sx, A.sy, A.sw, A.sh, "none", { stroke: ink, "stroke-width": 0.9 });
+    if (!sm) s += R(A.sx + 2.6, A.sy + 2.6, A.sw - 5.2, A.sh - 5.2, "none", { stroke: ink, "stroke-width": 0.4 });
+    const fs = Math.min(fit(nm, 800, 0.14, A.sw * 0.74, 15), A.sh * (sm ? 0.2 : 0.14)), y1 = A.sy + A.sh * (sm ? 0.4 : 0.32), ry = y1 + 8;
     s += T(cx, y1, nm, fs, ink, { w: 800, ls: 0.14 });
     s += Ln(cx - A.sw * 0.3, ry, cx - 4, ry, ink, 0.6) + Ln(cx + 4, ry, cx + A.sw * 0.3, ry, ink, 0.6) + P(pth`M${cx} ${ry - 2.2}L${cx + 2.2} ${ry}L${cx} ${ry + 2.2}L${cx - 2.2} ${ry}Z`, ink);
     s += tag(cx, ry + 10, d, ink, A.sw * 0.8, 5.2, { ls: 0.2 });
-    const sr = clamp(A.sw * 0.2, 9, 16), sx = A.sx + A.sw * 0.68, sy = A.sy + A.sh * 0.8;
-    s += `<g transform="rotate(-12 ${f(sx)} ${f(sy)})" opacity=".92">` + C(sx, sy, sr, "none", { stroke: st, "stroke-width": 1.1 }) + C(sx, sy, sr - 2.2, "none", { stroke: st, "stroke-width": 0.5 }) +
-      T(sx, sy - sr * 0.34, "SMALL", sr * 0.26, st, { w: 700, ls: 0.1 }) + T(sx, sy + sr * 0.22, "N° 07", sr * 0.6, st, { w: 800 }) + T(sx, sy + sr * 0.62, "BATCH", sr * 0.26, st, { w: 700, ls: 0.1 }) + "</g>";
-    s += T(A.sx + 5, A.sy + A.sh - 6, "NET " + g.vol, 4.2, ink, { w: 600, a: "start", op: 0.8 });
-    return { svg: s, base: kr, acc: st, cols: [[kr, 7], [st, 0.5], [ink, 0.8]], n: 13, plain: 0.55, bold: 0.15, round: 0.1 };
+    if (!sm) {
+      const sr = clamp(A.sw * 0.2, 9, 16), sx = A.sx + A.sw * 0.68, sy = A.sy + A.sh * 0.8;
+      s += `<g transform="rotate(-12 ${f(sx)} ${f(sy)})" opacity=".92">` + C(sx, sy, sr, "none", { stroke: st, "stroke-width": 1.1 }) + C(sx, sy, sr - 2.2, "none", { stroke: st, "stroke-width": 0.5 }) +
+        T(sx, sy - sr * 0.34, "SMALL", sr * 0.26, st, { w: 700, ls: 0.1 }) + T(sx, sy + sr * 0.22, "N° 07", sr * 0.6, st, { w: 800 }) + T(sx, sy + sr * 0.62, "BATCH", sr * 0.26, st, { w: 700, ls: 0.1 }) + "</g>";
+      s += T(A.sx + 5, A.sy + A.sh - 6, "NET " + g.vol, 4.2, ink, { w: 600, a: "start", op: 0.8 });
+    }
+    return { svg: s, base: kr, acc: st, cols: [[kr, 7], [st, 0.5], [ink, 0.8]], n: sm ? 7 : 13, plain: 0.55, bold: 0.15, round: -0.1 };
   },
 
   // premium: near-black with a foil (gold / silver / rose) frame, crest and letter-spaced name
   premium(g, A) {
-    const { pal, r, id } = g, cx = A.cx;
+    const { pal, r, id } = g, cx = A.cx, sm = A.sh < 84;
     const base = g.dark ? pal.bg : lightness(pal.ink) < 28 ? pal.ink : darken(pal.a, 0.78);
     const FO = pick(r, [["#8a6a2b", "#f6e1a0", "#b98e3e", "#6f5220"], ["#868d96", "#f4f6f8", "#aeb5bd", "#656c75"], ["#9a5b46", "#f3c6ae", "#c98a6c", "#7d4634"]]);
     const fid = `${id}-f`, fu = url(fid), wt = pick(r, [300, 400, 500]);
@@ -412,15 +438,17 @@ const DESIGNS = {
     const nm = g.brand.toUpperCase(), d = g.desc.toUpperCase();
     let s = R(A.x, A.y, A.w, A.h, base);
     s += R(A.sx, A.sy, A.sw, A.sh, "none", { stroke: fu, "stroke-width": 0.8 }) + R(A.sx + 3, A.sy + 3, A.sw - 6, A.sh - 6, "none", { stroke: fu, "stroke-width": 0.4, opacity: 0.7 });
-    const ey = A.sy + A.sh * 0.25;
-    s += C(cx, ey, 6, "none", { stroke: fu, "stroke-width": 0.8 }) + P(pth`M${cx} ${ey - 3.2}L${cx + 3.2} ${ey}L${cx} ${ey + 3.2}L${cx - 3.2} ${ey}Z`, fu);
-    s += Ln(cx - A.sw * 0.34, ey, cx - 9, ey, fu, 0.5) + Ln(cx + 9, ey, cx + A.sw * 0.34, ey, fu, 0.5);
-    const fs = fit(nm, wt, 0.24, A.sw * 0.8, 13), ny = A.sy + A.sh * 0.52;
+    const fs = fit(nm, wt, 0.24, A.sw * 0.8, 13), ny = A.sy + A.sh * (sm ? 0.46 : 0.52);
+    if (!sm) {
+      const ey = A.sy + A.sh * 0.25;
+      s += C(cx, ey, 6, "none", { stroke: fu, "stroke-width": 0.8 }) + P(pth`M${cx} ${ey - 3.2}L${cx + 3.2} ${ey}L${cx} ${ey + 3.2}L${cx - 3.2} ${ey}Z`, fu);
+      s += Ln(cx - A.sw * 0.34, ey, cx - 9, ey, fu, 0.5) + Ln(cx + 9, ey, cx + A.sw * 0.34, ey, fu, 0.5);
+      s += T(cx, A.sy + A.sh - 8, "EST. 2024", 4, fu, { w: 500, ls: 0.3, op: 0.8 });
+    }
     s += T(cx, ny, nm, fs, fu, { w: wt, ls: 0.24 });
     s += Ln(cx - 8, ny + 7, cx + 8, ny + 7, fu, 0.5);
     s += tag(cx, ny + 15, d, fu, A.sw * 0.84, 4.8, { w: 500, ls: 0.28 });
-    s += T(cx, A.sy + A.sh - 8, "EST. 2024", 4, fu, { w: 500, ls: 0.3, op: 0.8 });
-    return { svg: s, defs, base, acc: FO[2], cols: [[base, 8], [FO[2], 0.7]], n: 13, plain: 0.72, bold: -0.45, round: -0.1 };
+    return { svg: s, defs, base, acc: FO[2], cols: [[base, 8], [FO[2], 0.7]], n: sm ? 8 : 13, plain: 0.72, bold: -0.45, round: -0.4 };
   },
 
   // playful: a Memphis-style grid of simple shapes under a name pill
@@ -431,10 +459,10 @@ const DESIGNS = {
     const base = pick(r, g.dark ? [pal.bg, pal.surface] : [pal.surface, mix(pal.b, "#fff", 0.55), pal.bg]);
     const nm = cased(g.brand, g.cs), d = g.desc.toUpperCase();
     let s = R(A.x, A.y, A.w, A.h, base), n = 4;
-    const cols = Math.max(3, Math.round(A.sw / 20)), cs = A.w / cols, rows = Math.ceil(A.h / cs);
+    const cols = Math.max(3, Math.round(A.sw / 20)), cs = A.w / cols, rows = Math.max(2, Math.floor(A.h / cs)), y0 = A.y + (A.h - rows * cs) / 2;
     for (let j = 0; j < rows; j++)
       for (let i = 0; i < cols; i++) {
-        const x = A.x + (i + 0.5) * cs, y = A.y + (j + 0.5) * cs, k = Math.floor(r() * 8), col = pop[Math.floor(r() * 4)], rot = 90 * Math.floor(r() * 4);
+        const x = A.x + (i + 0.5) * cs, y = y0 + (j + 0.5) * cs, k = Math.floor(r() * 8), col = pop[Math.floor(r() * 4)], rot = 90 * Math.floor(r() * 4);
         const tr = rot ? { transform: `rotate(${rot} ${f(x)} ${f(y)})` } : {};
         n++;
         if (k === 0) s += C(x, y, cs * 0.34, col);
@@ -446,18 +474,19 @@ const DESIGNS = {
         else if (k === 6) s += P(pth`M${x - cs * 0.36} ${y}Q${x - cs * 0.18} ${y - cs * 0.34} ${x} ${y}T${x + cs * 0.36} ${y}`, "none", { stroke: col, "stroke-width": cs * 0.13, "stroke-linecap": "round" });
         else s += P(pth`M${x} ${y - cs * 0.3}L${x + cs * 0.3} ${y}L${x} ${y + cs * 0.3}L${x - cs * 0.3} ${y}Z`, col);
       }
-    const ph = Math.min(A.sh * 0.3, 38), py = A.sy + A.sh * 0.5 - ph / 2, pw = A.sw * 0.98, pc = g.dark ? pal.ink : "#fffdf7";
+    const ph = clamp(A.sh * 0.3, 18, 38), py = A.sy + A.sh * 0.5 - ph / 2, pw = A.sw * 0.9, big = ph >= 25;
+    const pc = contrast(pal.a, base) >= 2.6 ? pal.a : g.ink, pt = inkOn(pc, dk, lt);
     s += R(cx - pw / 2, py, pw, ph, pc, { rx: ph / 2 });
-    const fs = Math.min(fit(nm, 800, -0.01, pw * 0.74, 24), ph * 0.44);
-    s += T(cx, py + ph * 0.5 + fs * 0.1, nm, fs, g.dark ? pal.bg : pal.ink, { w: 800, ls: -0.01 });
-    s += tag(cx, py + ph - 5.2, d, g.dark ? pal.bg : pal.ink, pw * 0.7, 4.2, { ls: 0.14, op: 0.8 });
-    return { svg: s, base, acc: pal.a, cols: [[base, 3], [pop[0], 1.1], [pop[1], 1.1], [pop[2], 1.1], [pop[3], 1.1], [pc, 1]], n, plain: 0.08, bold: 0.7, round: 0.1 };
+    const fs = Math.min(fit(nm, 800, -0.01, pw * 0.76, 24), ph * (big ? 0.42 : 0.5));
+    s += T(cx, py + ph * 0.5 + fs * (big ? 0.1 : 0.36), nm, fs, pt, { w: 800, ls: -0.01 });
+    if (big) s += tag(cx, py + ph - 5.2, d, pt, pw * 0.7, 4.2, { ls: 0.14, op: 0.85 });
+    return { svg: s, base, acc: pal.a, cols: [[base, 3], [pop[0], 1.1], [pop[1], 1.1], [pop[2], 1.1], [pop[3], 1.1], [pc, 1]], n, plain: 0.08, bold: 0.7, round: 0.2 };
   },
 
   // minimal: off-white, one accent, quiet type
   minimal(g, A) {
-    const { pal, r, v } = g, cx = A.cx;
-    const base = g.dark ? pal.bg : mix("#fbfaf6", pal.bg, 0.3), ink = pal.ink, acc = pal.a, mute = mix(ink, base, 0.5);
+    const { pal } = g, cx = A.cx, v = g.v;
+    const base = g.dark ? pal.bg : mix("#fbfaf6", pal.bg, 0.3), ink = g.ink, acc = pal.a, mute = mix(ink, base, 0.5);
     const nm = cased(g.brand, g.cs), d = g.desc;
     let s = R(A.x, A.y, A.w, A.h, base);
     if (v !== 1) {
@@ -474,7 +503,7 @@ const DESIGNS = {
       s += tag(cx, ny + 17, d, mute, A.sw * 0.9, 5.6, { w: 500, ls: 0.06 });
       s += T(cx, A.sy + A.sh - 3, g.vol, 4.6, mute, { w: 500 });
     }
-    return { svg: s, base, acc, cols: [[base, 8], [acc, 0.7], [ink, 0.5]], n: 5, plain: 0.82, bold: -0.7, round: 0.15 };
+    return { svg: s, base, acc, cols: [[base, 8], [acc, 0.7], [ink, 0.5]], n: 5, plain: 0.82, bold: -0.7, round: -0.2 };
   },
 };
 
@@ -507,14 +536,14 @@ const FORMS = {
     let s = `<g clip-path="url(#${id}-c)">${R(x0, yt, w, h, d.base)}${d.svg}${R(x0, yt, w, h, url(`${id}-s`))}</g>`;
     s += R(x0 + 6, gy - 6, w - 12, 6, url(`${id}-m`), { rx: 2.5 });
     s += E(CX, yt + 5, (w - 14) / 2, 4.6, url(`${id}-m`)) + E(CX, yt + 5.4, (w - 22) / 2, 2.5, "#000", { "fill-opacity": 0.12 }) + R(CX - 5, yt + 3.6, 10, 3, "#e9ecef", { rx: 1.5 });
-    return { svg: s, defs, d, cx: CX, gy, w, h, round: 0.65, detail: 6 };
+    return { svg: s, defs, d, cx: CX, gy, w, h, round: 0.6, detail: 6 };
   },
 
   bottle(g) {
     const { r, id, pal } = g;
     const w = Math.round(range(r, 58, 68)), h = Math.round(range(r, 172, 186)), nw = 17, x0 = CX - w / 2, xr = x0 + w, gy = 226, yt = gy - h;
     const sil = pth`M${CX - nw / 2} ${yt + 13}H${CX + nw / 2}V${yt + 54}C${CX + nw / 2} ${yt + 76} ${xr} ${yt + 70} ${xr} ${yt + 104}V${gy - 9}Q${xr} ${gy} ${xr - 9} ${gy}H${x0 + 9}Q${x0} ${gy} ${x0} ${gy - 9}V${yt + 104}C${x0} ${yt + 70} ${CX - nw / 2} ${yt + 76} ${CX - nw / 2} ${yt + 54}Z`;
-    const ly = yt + 110, lh = h - 110 - 26, d = g.art(area(x0, ly, w, lh, 5, 5, 6, 6));
+    const ly = yt + 106, lh = h - 106 - 16, d = g.art(area(x0, ly, w, lh, 6, 6, 6, 6));
     const clear = chance(r, 0.4), glass = pick(r, ["#7a4a1f", "#35603f", "#2f5f86", "#1b1c21"]), liquid = mix(pal.a, "#ffffff", 0.12);
     const cap = capCol(g, d, [d.acc, "#d8dce1", "#1c1c20"]);
     const defs = `<clipPath id="${id}-c">${P(sil)}</clipPath><clipPath id="${id}-l">${R(x0, ly, w, lh)}</clipPath>` + SHADE.cyl(id) + RIDGE(id, 14);
@@ -522,14 +551,14 @@ const FORMS = {
     s += clear ? P(sil, "#fff", { opacity: 0.3 }) + R(x0, yt + 60, w, h - 60, liquid) + R(x0, yt + 60, w, 1.2, "#fff", { opacity: 0.4 }) : P(sil, glass);
     s += `<g clip-path="url(#${id}-l)">${d.svg}</g>` + R(x0, yt, w, h, url(`${id}-s`)) + "</g>";
     if (clear) s += P(sil, "none", { stroke: "#000", "stroke-opacity": 0.16, "stroke-width": 0.8 });
-    s += R(x0 + 6, yt + 112, 5, h - 112 - 30, "#fff", { rx: 2.5, opacity: 0.26 }) + R(xr - 8.5, yt + 114, 2, h - 118 - 30, "#fff", { rx: 1, opacity: 0.14 }) + R(CX - nw / 2 + 3, yt + 18, 2.4, 32, "#fff", { rx: 1.2, opacity: 0.3 });
+    s += R(x0 + 6, yt + 110, 5, h - 110 - 24, "#fff", { rx: 2.5, opacity: 0.26 }) + R(xr - 8.5, yt + 112, 2, h - 116 - 24, "#fff", { rx: 1, opacity: 0.14 }) + R(CX - nw / 2 + 3, yt + 18, 2.4, 32, "#fff", { rx: 1.2, opacity: 0.3 });
     s += R(CX - nw / 2 - 2, yt, nw + 4, 14, cap, { rx: 2.5 }) + R(CX - nw / 2 - 2, yt, nw + 4, 14, url(`${id}-rg`), { rx: 2.5 }) + R(CX - nw / 2, yt + 1.5, 2.6, 11, "#fff", { rx: 1.3, opacity: 0.3 });
     return { svg: s, defs, d, cx: CX, gy, w, h, round: 0.75, detail: 8 };
   },
 
   box(g) {
     const { r, id } = g;
-    const w = Math.round(range(r, 94, 110)), h = Math.round(range(r, 136, 154)), dx = Math.round(range(r, 18, 26)), dy = Math.round(dx * 0.6);
+    const w = Math.round(range(r, 98, 112)), h = Math.round(range(r, 140, 156)), dx = Math.round(range(r, 18, 26)), dy = Math.round(dx * 0.6);
     const gy = 226, yt = gy - h, x0 = CX - (w + dx) / 2, xr = x0 + w;
     const d = g.art(area(x0, yt, w, h, 16, 14, 9, 9));
     const defs = `<clipPath id="${id}-c">${R(x0, yt, w, h)}</clipPath>` + SHADE.flat(id);
@@ -538,7 +567,7 @@ const FORMS = {
     s += P(pth`M${x0} ${yt}L${x0 + dx} ${yt - dy}H${xr + dx}L${xr} ${yt}Z`, lighten(d.base, 0.3));
     s += R(x0, yt, 1.2, h, "#fff", { opacity: 0.35 }) + R(x0, yt, w, 1.2, "#fff", { opacity: 0.5 }) + Ln(xr, yt, xr, gy, "#000", 0.8, { opacity: 0.14 });
     s += Ln(x0, yt + 11, xr, yt + 11, "#000", 0.7, { opacity: 0.12 }) + Ln(x0, yt + 12, xr, yt + 12, "#fff", 0.7, { opacity: 0.25 });
-    return { svg: s, defs, d, cx: CX, gy, w: w + dx, h: h + dy, round: -0.8, detail: 7 };
+    return { svg: s, defs, d, cx: CX, gy, w: w + dx, h: h + dy, round: -0.9, detail: 7 };
   },
 
   pouch(g) {
@@ -552,12 +581,12 @@ const FORMS = {
     s += Ln(x0, yt + 22, xr, yt + 22, "#fff", 1.3, { opacity: 0.35 }) + Ln(x0, yt + 23.4, xr, yt + 23.4, "#000", 1, { opacity: 0.12 });
     s += P(pth`M${x0 - 2} ${gy - 26}Q${CX} ${gy - 4} ${xr + 2} ${gy - 26}V${gy + 3}H${x0 - 2}Z`, "#000", { opacity: 0.07 }) + P(pth`M${x0 - 2} ${gy - 26}Q${CX} ${gy - 4} ${xr + 2} ${gy - 26}`, "none", { stroke: "#000", "stroke-width": 1, opacity: 0.14 });
     s += R(x0 + 9, yt + 28, 8, h - 62, "#fff", { rx: 4, opacity: 0.12 }) + "</g>";
-    return { svg: s, defs, d, cx: CX, gy, w, h, round: 0.2, detail: 8 };
+    return { svg: s, defs, d, cx: CX, gy, w, h, round: 0.25, detail: 8 };
   },
 
   jar(g) {
     const { r, id, pal } = g;
-    const w = Math.round(range(r, 84, 98)), bh = Math.round(range(r, 100, 116)), lidH = 22, gy = gyFor(bh + lidH), yl = gy - bh, x0 = CX - w / 2, xr = x0 + w;
+    const w = Math.round(range(r, 88, 102)), bh = Math.round(range(r, 104, 120)), lidH = 22, gy = gyFor(bh + lidH), yl = gy - bh, x0 = CX - w / 2, xr = x0 + w;
     const sil = pth`M${x0 + 9} ${yl}H${xr - 9}C${xr - 4} ${yl + 1} ${xr} ${yl + 8} ${xr} ${yl + 16}V${gy - 12}Q${xr} ${gy} ${xr - 12} ${gy}H${x0 + 12}Q${x0} ${gy} ${x0} ${gy - 12}V${yl + 16}C${x0} ${yl + 8} ${x0 + 4} ${yl + 1} ${x0 + 9} ${yl}Z`;
     const ly = yl + 28, lh = bh - 28 - 14, d = g.art(area(x0, ly, w, lh, 6, 6, 8, 8));
     const content = pick(r, ["#d99a2b", "#8c1d3a", "#7b7a2e", "#b98650", "#6a1b3d", "#3f2a6b"]), lid = capCol(g, d, [d.acc, "#d8dce1", "#1c1c20", pal.a]);
@@ -591,7 +620,7 @@ const FORMS = {
     let s = `<g clip-path="url(#${id}-c)">${d.svg}${R(x0, yt, 7, h, "#fff", { opacity: 0.16 })}${R(xr - 9, yt, 9, h, "#000", { opacity: 0.12 })}${R(x0 + 6.4, yt, 0.9, h, "#fff", { opacity: 0.22 })}${R(xr - 9.4, yt, 0.9, h, "#000", { opacity: 0.1 })}</g>`;
     s += R(x0 + 1, yt, w - 2, 10, mix(d.base, "#ffffff", 0.18), { rx: 1 }) + R(x0 + 2, yt + 1.2, w - 4, 7.6, url(`${id}-cr`)) + R(x0 + 1, yt + 9, w - 2, 1.2, "#000", { opacity: 0.18 });
     s += R(xr - 25, yt + 13, 15, 7.5, cap, { rx: 3 }) + R(xr - 25, yt + 13, 15, 2.6, "#fff", { rx: 1.3, opacity: 0.35 });
-    return { svg: s, defs, d, cx: CX, gy, w, h, round: -0.55, detail: 8 };
+    return { svg: s, defs, d, cx: CX, gy, w, h, round: -0.7, detail: 8 };
   },
 
   bag(g) {
@@ -612,7 +641,7 @@ const FORMS = {
 
   tin(g) {
     const { r, id } = g;
-    const w = Math.round(range(r, 112, 134)), h = Math.round(range(r, 84, 106)), gy = gyFor(h + 6), yt = gy - h, x0 = CX - w / 2, xr = x0 + w;
+    const w = Math.round(range(r, 120, 146)), h = Math.round(range(r, 88, 110)), gy = gyFor(h + 6), yt = gy - h, x0 = CX - w / 2, xr = x0 + w;
     const sil = pth`M${x0} ${yt}H${xr}V${gy - 4}Q${xr} ${gy} ${xr - 4} ${gy}H${x0 + 4}Q${x0} ${gy} ${x0} ${gy - 4}Z`;
     const d = g.art(area(x0, yt, w, h, 26, 10, 10, 10));
     const defs = `<clipPath id="${id}-c">${P(sil)}</clipPath>` + SHADE.cyl(id);
@@ -640,21 +669,30 @@ const FORMS = {
 function stage(g, res) {
   const { r, pal, id } = g, d = res.d, gy = res.gy;
   const L = lightness(d.base), [ha, sa] = hexToHsl(pal.a);
-  const gray = ha > 200 && ha < 330 ? "#e8ebee" : "#eeebe5", tintA = mix(pal.a, "#ffffff", 0.84), tintB = mix(pal.b, "#ffffff", 0.82), deep = hsl(ha, Math.min(0.3, sa), 0.15);
-  const opts = L < 40 ? [tintA, gray, tintB, mix(pal.b, "#fff", 0.68)] : L > 80 ? [mix(pal.a, "#fff", 0.5), deep, mix(pal.b, "#fff", 0.45), "#d9dde2"] : [tintA, gray, tintB, deep];
-  let wall = pick(r, opts);
-  if (Math.abs(lightness(wall) - L) < 16) wall = L < 50 ? tintA : deep;
-  const lw = lightness(wall), light = lw > 50, hy = gy - 28;
-  const spot = chance(r, 0.5), spotC = light ? mix(wall, pal.a, 0.12) : lighten(wall, 0.1);
-  const table = mix(wall, "#000000", light ? 0.07 : 0.25);
-  const defs = lin(`${id}-w`, [[0, lighten(wall, light ? 0.05 : 0.08)], [1, wall]], 0, 1);
+  const gray = ha > 200 && ha < 330 ? "#e8ebee" : "#eeebe5", tintA = mix(pal.a, "#ffffff", 0.84), tintB = mix(pal.b, "#ffffff", 0.82);
+  const moody = chance(r, L < 34 ? 0.8 : L > 80 ? 0.1 : 0.18);
+  let wall, spot = false;
+  if (moody) wall = hsl(ha, Math.min(0.3, sa * 0.5), range(r, 0.09, 0.15));
+  else {
+    const opts = L < 40 ? [tintA, gray, tintB, mix(pal.b, "#fff", 0.66), mix(pal.a, "#fff", 0.7)] : L > 80 ? [mix(pal.a, "#fff", 0.52), mix(pal.b, "#fff", 0.5), "#d9dde2", mix(pal.a, "#fff", 0.66)] : [tintA, gray, tintB, mix(pal.b, "#fff", 0.6)];
+    wall = pick(r, opts);
+    if (Math.abs(lightness(wall) - L) < 16) wall = L < 50 ? tintA : mix(pal.a, "#fff", 0.52);
+    spot = chance(r, 0.5);
+  }
+  const light = lightness(wall) > 50, hy = gy - 28;
+  const table = mix(wall, "#000000", light ? 0.07 : 0.3);
+  let defs = lin(`${id}-w`, [[0, lighten(wall, light ? 0.05 : 0.07)], [1, wall]], 0, 1);
   let back = R(0, 0, W, H, url(`${id}-w`), { rx: 12 });
-  if (spot) back += C(res.cx, gy - res.h * 0.5, clamp(Math.max(res.w * 0.8, res.h * 0.48), 54, 98), spotC);
+  if (moody) {
+    const gc = lighten(wall, 0.27);
+    defs += `<radialGradient id="${id}-g"><stop offset="0" stop-color="${gc}"/><stop offset="1" stop-color="${gc}" stop-opacity="0"/></radialGradient>`;
+    back += C(res.cx, gy - res.h * 0.55, 120, url(`${id}-g`));
+  } else if (spot) back += C(res.cx, gy - res.h * 0.5, clamp(Math.max(res.w * 0.8, res.h * 0.48), 54, 98), light ? mix(wall, pal.a, 0.12) : lighten(wall, 0.1));
   back += P(pth`M0 ${hy}H${W}V${H - 12}Q${W} ${H} ${W - 12} ${H}H12Q0 ${H} 0 ${H - 12}Z`, table);
-  back += R(0, hy, W, 1, light ? "#fff" : "#000", { opacity: light ? 0.5 : 0.25 });
-  const sh = res.w, k = light ? 1 : 0.7;
+  back += R(0, hy, W, 1, light ? "#fff" : "#fff", { opacity: light ? 0.5 : 0.07 });
+  const sh = res.w, k = light ? 1 : 0.8;
   const shadow = E(res.cx + sh * 0.12, gy + 3, sh * 0.62, 7, "#000", { "fill-opacity": 0.07 * k }) + E(res.cx + sh * 0.07, gy + 2, sh * 0.54, 4.5, "#000", { "fill-opacity": 0.1 * k }) + E(res.cx + 1, gy + 0.8, sh * 0.47, 2.2, "#000", { "fill-opacity": 0.3 * k });
-  return { wall, light, spot, defs, back: back + shadow };
+  return { wall, light, disc: spot, spot: spot || moody, defs, back: back + shadow };
 }
 
 export function build(rand, ctx) {
@@ -663,6 +701,7 @@ export function build(rand, ctx) {
   const g = {
     id: ctx.id, r: rand, pal, form: slot.form, design: slot.design, brand: slot.brand,
     dark: lightness(pal.bg) < 40,
+    ink: contrast(pal.ink, lightness(pal.bg) < 40 ? pal.bg : pal.surface) >= 4.5 ? pal.ink : lightness(pal.bg) < 40 ? LT : DK,
     dk: lightness(pal.ink) < 30 ? pal.ink : DK,
     lt: lightness(pal.ink) > 85 ? pal.ink : lightness(pal.surface) > 90 ? pal.surface : LT,
   };
@@ -676,21 +715,23 @@ export function build(rand, ctx) {
   const svg = svgRoot(W, H, `<defs>${st.defs}${res.defs}${d.defs ?? ""}</defs>${st.back}${res.svg}`, { "font-family": "Inter, system-ui, sans-serif" });
 
   // ---- traits (see the header for the formulas)
-  const expand = (cols, scale) => cols.flatMap(([h, n]) => Array(Math.max(1, Math.round(n * scale))).fill(h));
-  const tot = d.cols.reduce((s, c) => s + c[1], 0);
-  const hexes = [...expand(d.cols, 8 / tot), ...Array(4).fill(st.wall)];
-  const lPack = d.cols.reduce((s, [h, n]) => s + lightness(h) * n, 0) / tot;
+  const expand = (cols, scale) => cols.flatMap(([h, n]) => Array(Math.max(1, Math.round(n ** 0.6 * scale))).fill(h));
+  const chroma = (h) => { const [, sat, l] = hexToHsl(h); return sat * (1 - Math.abs(2 * l - 1)); };
+  const vividC = (hs) => clamp((hs.reduce((a, h) => a + chroma(h), 0) / hs.length - 0.26) / 0.3);
+  const tot = d.cols.reduce((a, c) => a + c[1], 0), tot6 = d.cols.reduce((a, c) => a + c[1] ** 0.6, 0);
+  const hexes = [...expand(d.cols, 8 / tot6), ...Array(4).fill(st.wall)];
+  const lPack = d.cols.reduce((a, [h, n]) => a + lightness(h) * n, 0) / tot;
   const lAll = 0.55 * lightness(st.wall) + 0.45 * lPack;
   const cover = (res.w * res.h) / (W * H);
   const plainShare = 0.6 * d.plain + 0.4 * (1 - clamp(cover * 3.2, 0, 1));
   const traits = {
     warm: warmOf(hexes),
-    vivid: vividOf(hexes),
+    vivid: vividC(hexes),
     dark: clamp(1 - lAll / 50),
-    round: clamp(0.5 * res.round + 0.5 * d.round + (st.spot ? 0.12 : 0)),
-    bold: clamp(d.bold + 0.25 * vividOf(d.cols.map((c) => c[0]))),
-    airy: clamp((plainShare - 0.36) * 2.8),
-    rich: richOf(d.n + res.detail + (st.spot ? 1 : 0), 6, 28),
+    round: clamp(0.6 * res.round + 0.4 * d.round + (st.disc ? 0.1 : 0)),
+    bold: clamp(d.bold + 0.25 * vividC(d.cols.map((c) => c[0]))),
+    airy: clamp((plainShare - 0.4) * 3.2),
+    rich: richOf(d.n + res.detail + (st.spot ? 1 : 0), 9, 30),
   };
   return { name: `${g.form} / ${g.design}`, svg, traits };
 }

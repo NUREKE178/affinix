@@ -214,6 +214,7 @@ function adopt(profile, days) {
 }
 
 let flushing = false;
+let flushPromise = null;
 let dirtyAgain = false;
 let flushTimer = null;
 let failures = 0;
@@ -233,12 +234,20 @@ function wireVote(v) {
   return { id: v.id, pair: v.pair, dim: v.dim, pick: v.pick, ms: v.ms, bonus: v.bonus, day: v.day, daily: v.daily, eye: v.eye, combo: v.combo };
 }
 
-/** Sends everything pending, in order: votes + time + the day's quests, then claims. */
-export async function flush({ force = false } = {}) {
+/** Sends everything pending, in order: votes + time + the day's quests, then claims.
+ * Never overlaps itself or a state refresh: two requests in flight at once could come back in either order,
+ * and the older answer would then overwrite the newer one. */
+export async function flush({ force = false, fromSync = false } = {}) {
+  if (!fromSync && hydrating) await hydrating.catch(() => {});
   if (!S || (!force && S.remote === "unavailable")) return;
-  if (flushing) { dirtyAgain = true; return; }
+  if (flushing) { dirtyAgain = true; return flushPromise; }
   if (!hasPending()) return;
   flushing = true;
+  flushPromise = runFlush();
+  return flushPromise;
+}
+
+async function runFlush() {
   const userId = S.userId;
   try {
     ensureSlate(localDay());
@@ -275,6 +284,7 @@ export async function flush({ force = false } = {}) {
     }
   } finally {
     flushing = false;
+    flushPromise = null;
     if (S) { persist(); notify(); }
     if (dirtyAgain) { dirtyAgain = false; scheduleFlush(800); }
   }
@@ -294,8 +304,9 @@ export function syncNow() {
   const userId = S.userId;
   hydrating = (async () => {
     try {
-      // anything still waiting goes first, so the server's numbers include it
-      if (hasPending() && S.remote !== "unavailable") await flush({ force: true });
+      // anything still waiting goes first (and an upload already under way finishes first), so the server's numbers include it
+      if (flushPromise) await flushPromise.catch(() => {});
+      if (hasPending() && S.remote !== "unavailable") await flush({ force: true, fromSync: true });
       const data = await rpc("arena_state", { p_day: localDay(), p_history: 84 });
       if (!S || S.userId !== userId) return;
       const base = emptyBase();

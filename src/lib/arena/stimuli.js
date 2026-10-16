@@ -40,6 +40,16 @@ export function parseStimulusKey(key) {
 }
 
 const cache = new Map();
+const warned = new Set();
+
+/** A plain, honest stand-in when a builder throws: a tile with the family's initial, neutral traits. */
+function fallback(famId, index, mod) {
+  const [w, h] = mod.VIEWBOX;
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${w} ${h}" width="100%" height="100%" preserveAspectRatio="xMidYMid meet"><rect width="${w}" height="${h}" rx="${Math.round(w * 0.05)}" fill="#2a2c31"/><text x="${w / 2}" y="${h / 2}" text-anchor="middle" dominant-baseline="central" font-family="Inter, system-ui, sans-serif" font-size="${Math.round(h * 0.28)}" font-weight="700" fill="#868993">${famId[0].toUpperCase()}</text></svg>`;
+  const out = { name: `${famId} ${index + 1}`, svg, traits: {} };
+  if (mod.TEXT) out.legibility = { score: 0.3, contrast: 3, size: 0.4 };
+  return out;
+}
 
 /** The specimen `famId:index` of a season: { key, family, index, season, name, svg (template), traits, legibility? }. */
 export function getStimulus(season, famId, index) {
@@ -48,7 +58,14 @@ export function getStimulus(season, famId, index) {
   if (s) return s;
   const mod = MODS[famId];
   const rand = mulberry32(hashStringToSeed(ck));
-  const built = mod.build(rand, { id: "__ID__", season, index });
+  let built;
+  try {
+    built = mod.build(rand, { id: "__ID__", season, index });
+  } catch (err) {
+    // A generator bug must never take the game down: show a neutral placeholder (and say so once in the console).
+    if (!warned.has(famId)) { warned.add(famId); console.error(`Arena: ${famId} specimen ${index} failed to build`, err); }
+    built = fallback(famId, index, mod);
+  }
   s = {
     key: stimulusKey(famId, index),
     family: famId,

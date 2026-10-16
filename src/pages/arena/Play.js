@@ -2,9 +2,10 @@
 import { html, useState, useEffect, useMemo, useRef } from "../../lib/preact.js";
 import { Button, Badge, StatTile, ProgressBar, Switch, Skeleton } from "../../components/ui.js";
 import { Icon } from "../../components/icons.js";
-import { useT } from "../../lib/i18n.js";
+import { useT, getLocale } from "../../lib/i18n.js";
 import { getStimulus, renderSvg } from "../../lib/arena/stimuli.js";
-import { flowBonus, DAILY_SET_BONUS, DAILY_SET_SIZE, MAX_FLOW_BONUS, XP_BASE, PIONEER_BONUS } from "../../lib/arena/rules.js";
+import { TRAIT_IDS } from "../../lib/arena/traits.js";
+import { flowBonus, DAILY_SET_BONUS, DAILY_SET_SIZE, MAX_FLOW_BONUS, XP_BASE, PIONEER_BONUS, seasonOf } from "../../lib/arena/rules.js";
 import { summarize, useArenaClock, roundPhase } from "../../lib/arenaStore.js";
 import { navigate } from "../../router.js";
 import { Specimen, Ladder, nf, clock } from "./parts.js";
@@ -55,6 +56,14 @@ function untilMidnight() {
   const end = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1);
   const m = Math.max(1, Math.round((end - now) / 60000));
   return `${Math.floor(m / 60)}:${String(m % 60).padStart(2, "0")}`;
+}
+
+/** "October 2026": the month whose designs are on the table (every season re-draws all specimens). */
+function seasonName() {
+  const id = seasonOf();
+  const d = new Date(Number(id.slice(0, 4)), Number(id.slice(4)) - 1, 1);
+  const name = d.toLocaleDateString(getLocale(), { month: "long", year: "numeric" });
+  return name.charAt(0).toUpperCase() + name.slice(1);
 }
 
 function SyncBadge({ remote, pending }) {
@@ -143,6 +152,7 @@ function Lobby({ arena, onStart }) {
             <span class="sk-caption">${t("arena.lobby.freeTitle")}</span>
           </div>
           <p class="ar-card-body">${t("arena.lobby.freeBody")}</p>
+          <p class="ar-card-season" data-testid="arena-season">${t("arena.lobby.season", { name: seasonName() })}</p>
           <div class="ar-card-goal">
             <div class="ar-card-goal-row"><span class="sk-caption">${t("arena.lobby.goal")}</span><span class="sk-num">${view.goal.done}<span class="sk-unit">/ ${view.goal.target}</span></span></div>
             <${ProgressBar} value=${view.goal.done / view.goal.target} />
@@ -220,7 +230,18 @@ function FlowMeter({ combo }) {
   `;
 }
 
-function ResultStrip({ last, duel, info, remote, t }) {
+/** What the pick says about the player: the trait on which the chosen specimen differs most from the other one. */
+function pickInsight(stims, pick) {
+  const [chosen, other] = pick === 0 ? [stims[0], stims[1]] : [stims[1], stims[0]];
+  let best = null;
+  for (const tr of TRAIT_IDS) {
+    const d = chosen.traits[tr] - other.traits[tr];
+    if (!best || Math.abs(d) > Math.abs(best.d)) best = { trait: tr, d };
+  }
+  return best && Math.abs(best.d) >= 0.6 ? best : null;
+}
+
+function ResultStrip({ last, duel, info, remote, t, insight }) {
   const parts = [];
   parts.push(html`<span class="ar-res ar-res-xp sk-num" key="xp" data-testid="arena-xp">${last.repeat ? "+0" : `+${last.xp}`}<span class="sk-unit">XP</span></span>`);
   if (last.repeat) parts.push(html`<${Badge} key="rep" tone="steel">${t("arena.console.repeat")}<//>`);
@@ -228,9 +249,10 @@ function ResultStrip({ last, duel, info, remote, t }) {
   if (!last.repeat && last.pioneer) parts.push(html`<span class="ar-res-note" key="pi">${t("arena.console.pioneer", { xp: PIONEER_BONUS })}</span>`);
   if (duel.objective) parts.push(html`<${Badge} key="eye" tone=${last.eye ? "emerald" : "rose"}>${last.eye ? t("arena.console.eyeRight") : t("arena.console.eyeWrong")}<//>`);
   if (last.crowd !== null && last.crowd !== undefined) parts.push(html`<${Badge} key="cr" tone=${last.crowd ? "emerald" : "steel"}>${last.crowd ? t("arena.console.withCrowd") : t("arena.console.againstCrowd")}<//>`);
+  if (insight && !duel.objective && !last.repeat) parts.push(html`<span class="ar-res-note ar-res-insight" key="in" data-testid="arena-insight-pick">${t("arena.console.insight", { pole: t(`arena.traits.${insight.trait}.${insight.d >= 0 ? "hi" : "lo"}`).toLowerCase() })}</span>`);
   if (!info.hasTally) parts.push(html`<span class="ar-res-note ar-res-muted" key="cm">${remote === "unavailable" ? t("arena.console.communityOff") : ""}</span>`);
   else if (info.first) parts.push(html`<span class="ar-res-note ar-res-muted" key="cf">${t("arena.console.communityEmpty")}</span>`);
-  return html`<div class="ar-result" data-testid="arena-result">${parts}</div>`;
+  return html`<div class="ar-result" role="status" data-testid="arena-result">${parts}</div>`;
 }
 
 function Console({ arena }) {
@@ -243,6 +265,7 @@ function Console({ arena }) {
   const svgs = useMemo(() => order.map((c) => renderSvg(stims[c])), [duel.id, duel.season]);
   const last = revealing ? round.last : null;
   const info = last ? revealInfo(duel, last, stims) : null;
+  const insight = last && !last.skipped ? pickInsight(stims, last.pick) : null;
 
   // auto-advance after the reveal
   useEffect(() => {
@@ -294,7 +317,7 @@ function Console({ arena }) {
 
       <footer class="ar-console-foot">
         ${revealing
-          ? html`<${ResultStrip} last=${last} duel=${duel} info=${info} remote=${remote} t=${t} />`
+          ? html`<${ResultStrip} last=${last} duel=${duel} info=${info} remote=${remote} t=${t} insight=${insight} />`
           : html`<${FlowMeter} combo=${round.combo} />`}
         <div class="ar-foot-actions">
           <label class="ar-auto" title=${t("arena.console.autoHint")}>
