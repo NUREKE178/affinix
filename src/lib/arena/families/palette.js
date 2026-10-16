@@ -17,7 +17,7 @@
 //           impact = saturated / dark share of the colours, thick = thickness of the swatch shapes, coverage = inked share of the canvas
 //   round = 0.75 * layoutRoundness + 0.25 * buttonRoundness   (circles, pills, arcs +  ...  flat bands, slices -)
 //   airy  = clamp((emptyShare - 0.45) * 3.4)         emptyShare = canvas not covered by swatches, type or buttons
-//   rich  = richOf(swatches + captions + type runs + chips, 7, 17)
+//   rich  = richOf(swatches + captions + type runs + chips, 8.5, 16.5)
 import { svgRoot, rect, el, esc } from "../svgutil.js";
 import { PALETTES, HEADLINES, CTA_LABELS } from "../palettes.js";
 import { mix, contrast, hexToHsl, hsl, lightness } from "../color.js";
@@ -205,7 +205,7 @@ export function build(rand, ctx) {
   const bold = clamp(4.2 * (0.34 * rz.impact + 0.22 * rz.thick + 0.22 * typeHeft + 0.22 * coverage) - 2.4);
   const round = clamp(0.75 * rz.rd + 0.25 * bt.rd);
   const airy = clamp(((1 - coverage) - 0.45) * 3.4);
-  const rich = richOf(rz.n + rz.caps + bt.n, 7, 17);
+  const rich = richOf(rz.n + rz.caps + bt.n, 8.5, 16.5);
   return {
     name: `${LAYOUT_NAMES[E.layout]}${E.n} / ${hs ? hs.id : base.id} / ${["bg", "surface", "dark"][gnd]} / ${["aa-left", "head-top", "slab", "inline"][E.bottom]} / ${["poor", "mid", "excellent"][E.cat]}`,
     svg,
@@ -244,7 +244,7 @@ function bands(R, S, o) {
   cols.forEach((c, i) => {
     const l = ws[i] * len;
     s += vertical ? rect(x0 + pos, y0, l + 0.6, h, c) : rect(x0, y0 + pos, w, l + 0.6, c);
-    if (o.t3 < 0.6 && l > (vertical ? 30 : 16)) { s += vertical ? cap(c, x0 + pos + 6, y0 + h - 8) : cap(c, x0 + 10, y0 + pos + l / 2 + 1.8); caps++; }
+    if (o.t3 < 0.6 && l > (vertical ? 37 : 16)) { s += vertical ? cap(c, x0 + pos + 6, y0 + h - 8) : cap(c, x0 + 10, y0 + pos + l / 2 + 1.8); caps++; }
     pos += l;
   });
   return { svg: s, n, caps, rd: -0.9, cover: 1, thick: clamp(1.15 - n * 0.09), ...stats(cols.map((c, i) => [c, ws[i]])) };
@@ -326,7 +326,7 @@ function strips(R, S, o) {
     const c = cols[i], hh = fr[i] * h, x = x0 + i * (sw + g), y = y0 + h - hh;
     if (o.soft) s += pth(`M${P(x, y0 + h)}V${P(y + sw / 2)}A${P(sw / 2, sw / 2)} 0 0 1 ${P(x + sw, y + sw / 2)}V${P(y0 + h)}Z`, c, outline(c, o.G));
     else s += rect(x, y, sw, hh + 0.5, c, outline(c, o.G));
-    if (o.t3 < 0.55 && hh > 40 && sw > 29) { s += cap(c, x + sw / 2, y0 + h - 7, "middle"); caps++; }
+    if (o.t3 < 0.55 && hh > 40 && sw > 34) { s += cap(c, x + sw / 2, y0 + h - 7, "middle"); caps++; }
     list.push([c, (sw * hh) / (w * h)]); sum += fr[i];
   }
   return { svg: plate(o, R) + s, n, caps, rd: o.soft ? 0.55 : -0.8, cover: (sum / n) * 0.92, thick: clamp(sw / 38), ...stats(list) };

@@ -12,7 +12,7 @@
 // Traits (all in [-1, 1], computed from what is drawn):
 //   warm  = warmOf(ground + mark colours)           vivid = vividOf(mark colours that carry hue)
 //   dark  = darkOf(ground)
-//   bold  = 2 * (0.58*markHeft + 0.27*wordHeft + 0.15*sizeShare) - 1   (stroke thickness / fill share, wordmark weight, mark size)
+//   bold  = 3.0 * (0.58*markHeft + 0.27*wordHeft + 0.15*sizeShare) - 1.65   (stroke thickness / fill share, wordmark weight, mark size)
 //   round = 0.82 * markRoundness + 0.18 * wordmarkRoundness            (circles / round caps +1 ... mitred polygons -1)
 //   airy  = clamp((0.54 - u) * 3.6)    u = sqrt(inked area) / 240: mark box (weighted 55..100% by heft) + wordmark box, as a linear share of the canvas
 //   rich  = richOf(shapes drawn + wordmark + extras, 2, 15)
@@ -573,7 +573,7 @@ export function build(rand, ctx) {
   const warm = warmOf([...hues, col.bg]);
   const vivid = vividOf(hues);
   const dark = darkOf(col.bg);
-  const bold = clamp(2.5 * (0.58 * mk.hv + 0.27 * wordHeft + 0.15 * sizeShare) - 1.3);
+  const bold = clamp(3.0 * (0.58 * mk.hv + 0.27 * wordHeft + 0.15 * sizeShare) - 1.65);
   const round = clamp(0.82 * mk.rd + 0.18 * ws[4]);
   const airy = clamp((0.54 - Math.sqrt(inkA) / W) * 3.6);
   const rich = richOf(mk.n + 1 + extra, 2, 15);

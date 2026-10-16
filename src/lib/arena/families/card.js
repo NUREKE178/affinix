@@ -15,7 +15,7 @@
 //   dark  = 1 - meanLightness / 50   (page, card surface and art, area weighted)
 //   bold  = 4.2 * (0.28 * titleHeft + 0.24 * imageImpact + 0.18 * ctaHeft + 0.16 * edge + 0.14 * tightness) - 2.1
 //           titleHeft: weight and size of the title, imageImpact: saturated / dark share of the card, tightness: 1 - spacing scale
-//   round = 0.55 * cornerRadius + 0.25 * artRoundness + 0.2 * buttonRoundness       (radius 0 -> -1 ... 22 -> +1)
+//   round = 0.6 * cornerRadius + 0.22 * artRoundness + 0.18 * buttonRoundness       (radius 0 -> -1 ... 22 -> +1)
 //   airy  = clamp((emptyShare - 0.5) * 3.4)       emptyShare = canvas not covered by text, art, buttons and chips (page margin counts)
 //   rich  = richOf(text runs + chips + dots + art shapes + buttons, 9, 24)
 import { svgRoot, rect, el, esc } from "../svgutil.js";
@@ -300,8 +300,8 @@ function L1(c) { // full-bleed art with a floating info panel
   const h = clamp(c.chT, ph + 96, 236), rp = Math.max(4, c.r - pm + 2);
   let s = "", n = 0;
   const cid = `${id}-i`;
-  const A = art(c.artKind, 0, 0, cw, h - 24, K, c.t1, c.v);
-  s += `<defs>${clipPathRound(cid, 0, 0, cw, h, c.r, true, true)}</defs><g clip-path="url(#${cid})">${A.s}${rect(0, h - 26, cw, 26, plate.art)}</g>`;
+  const A = art(c.artKind, 0, 0, cw, h, K, c.t1, c.v);
+  s += `<defs>${clipPathRound(cid, 0, 0, cw, h, c.r, true, true)}</defs><g clip-path="url(#${cid})">${A.s}</g>`;
   const py = h - pm - ph;
   s += rr(pm, py, pw, ph, rp, plate.fill);
   let y = py + pad;
@@ -598,18 +598,16 @@ export function build(rand, ctx) {
   const K = { a, b, deep, tint, light, dark: D1 };
 
   // ---- plates / blocks for layouts that put the title on art
-  const plateCands = [S, sDark ? mix(S, "#ffffff", 0.06) : "#ffffff"];
   const plateFill = S;
   const pInk = bestOn(plateFill, [L1c, D1, "#ffffff", "#111114"]);
-  const plate = { fill: plateFill, art: mix(plateFill, a, 0.08), tCol: inkAt(plateFill, pInk, target), mCol: mut(plateFill, pInk), hair: mix(plateFill, pInk, 0.2), pCol: away(contrast(a, plateFill) >= 3 ? a : pInk, plateFill, 3.2), btnFill: contrast(a, plateFill) >= 1.8 ? a : bestOn(plateFill, [L1c, D1]), btnInk: bestOn(contrast(a, plateFill) >= 1.8 ? a : bestOn(plateFill, [L1c, D1]), ["#ffffff", "#111114"]) };
-  void plateCands;
+  const plate = { fill: plateFill, tCol: inkAt(plateFill, pInk, target), mCol: mut(plateFill, pInk), hair: mix(plateFill, pInk, 0.2), pCol: away(contrast(a, plateFill) >= 3 ? a : pInk, plateFill, 3.2), btnFill: contrast(a, plateFill) >= 1.8 ? a : bestOn(plateFill, [L1c, D1]), btnInk: bestOn(contrast(a, plateFill) >= 1.8 ? a : bestOn(plateFill, [L1c, D1]), ["#ffffff", "#111114"]) };
   const blkCands = [a, D1, b, deep];
   const blkFill = blkCands.find((c0) => contrast(c0, S) > 1.15 && lightness(c0) < 65 && feasible(c0)) ?? D1;
   const bkInk = bestOn(blkFill, [L1c, D1, "#ffffff", "#111114"]);
   const block = { fill: blkFill, tCol: inkAt(blkFill, bkInk, target), mCol: inkAt(blkFill, bkInk, E.cat === 0 ? clamp(target * 1.2, 3, 4.5) : 6), deco: mix(blkFill, lightness(blkFill) < 50 ? "#ffffff" : "#000000", 0.12), deco2: mix(blkFill, lightness(blkFill) < 50 ? "#ffffff" : "#000000", 0.22), chip: bestOn(blkFill, [L1c, D1]), chipInk: blkFill };
 
   // ---- geometry knobs
-  const sp = lerp(9, 24, E.sp), r = lerp(0, 22, E.rad);
+  const sp = lerp(9, 24, E.sp), r = E.rad < 0.2 ? 0 : lerp(2, 22, (E.rad - 0.2) / 0.8);
   const hier = E.hier, tFs = lerp(13.6, 23, hier), tW = hier > 0.55 ? 800 : hier > 0.25 ? 700 : 600, tls = hier > 0.55 ? -0.022 : hier > 0.25 ? -0.01 : 0;
   const subFs = lerp(10.4, 8.8, hier);
   const mv = lerp(13, 24, E.m), cwr = CW[E.layout], cw = clamp(240 - 2 * mv, cwr[0], cwr[1]);
@@ -617,7 +615,7 @@ export function build(rand, ctx) {
   const sel = (o = 0) => (E.pick + o * 5 + E.layout) % 32;
   const c = {
     id, cw, sp, r, K, S, page, text, hier, tFs, tW, tls, subFs, tCol, mCol, hair, priceCol, accentInk, tint2, tintInk, tint3, tint3Ink, aInk, bInk, ink, plate, block,
-    btnFill, btnInk, btnStyle: Math.floor(t5 * 5), v: E.v, artKind: E.art, chT, t1, t2, t3, t4, cta: text.cta[E.layout % 3 === 0 ? 0 : E.layout % 3 === 1 ? 1 : 2], sel: (o = 0) => sel(o),
+    btnFill, btnInk, btnStyle: r < 3 ? [2, 3, 4][Math.floor(t5 * 3)] : r < 11 ? [0, 3, 4, 0][Math.floor(t5 * 4)] : [1, 0, 1, 4][Math.floor(t5 * 4)], v: E.v, artKind: E.art, chT, t1, t2, t3, t4, cta: text.cta[E.layout % 3 === 0 ? 0 : E.layout % 3 === 1 ? 1 : 2], sel: (o = 0) => sel(o),
   };
   let res;
   for (let q = 0; q < 7; q++) { c.sp = sp * (1 - 0.12 * q); res = LAYOUTS[E.layout](c); if (res.h <= H - 14) break; }
@@ -642,7 +640,6 @@ export function build(rand, ctx) {
   const score = 0.7 * Math.min(1, Math.log(cr) / Math.log(12)) + 0.3 * size;
 
   // ---- traits
-  const hues = [a, b, deep];
   const warm = warmOf([page, S, a, b, ...(res.art ? [deep] : [])]);
   const vivid = vividOf([a, b, deep]);
   const cardShare = (cw * ch) / (W * H);
@@ -653,11 +650,10 @@ export function build(rand, ctx) {
   const edgeW = E.edge === 0 ? 1 : E.edge === 1 ? 0.4 : 0.1;
   const rawBold = 0.28 * titleHeft + 0.24 * (res.imp * clamp(res.cover * 1.6, 0.3, 1)) + 0.18 * res.ctaHeft + 0.16 * edgeW + 0.14 * tight;
   const bold = clamp(4.2 * rawBold - 2.1);
-  const round = clamp(0.55 * (r / 11 - 1) + 0.25 * res.rdArt + 0.2 * (res.btnRd ?? 0));
+  const round = clamp(0.6 * (r / 11 - 1) + 0.22 * res.rdArt + 0.18 * (res.btnRd ?? 0));
   const empty = 1 - clamp(cardShare * res.cover * 1.1, 0, 1);
   const airy = clamp((empty - 0.5) * 3.4);
   const rich = richOf(res.n + res.art, 9, 24);
-  void hues;
   return {
     name: `${LAYOUT_NAMES[E.layout]} / ${p.id} / ${["light", "tint", "dark", "brand", "accent"][E.scheme]} / ${["shadow", "hairline", "flat"][E.edge]} / ${["poor", "mid", "excellent"][E.cat]} / ${["en", "ru", "kk"][E.lang]}`,
     svg,
