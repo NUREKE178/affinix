@@ -3475,7 +3475,7 @@ minutes, players over 1 h and over 3 h) from `arena_admin_stats()`.
 **Verified.** PostgreSQL 16 (local harness): 104 SQL assertions (idempotent retries, duplicate duels, XP rules, validation,
 crowd match, streak gaps / back-dating / clamping, time slices, quest slate + claims, badges, tallies, paging, rankings,
 friends filter, privacy, daily report, admin gate, closed tables, daily cap); JS rules vs SQL functions 1 598 comparisons,
-0 mismatches. Headless Chromium with the arena RPCs wired to the real database: 78 checks (full round by keyboard, Esc to
+0 mismatches. Headless Chromium with the arena RPCs wired to the real database: 80 checks (full round by keyboard, Esc to
 leave, reload persistence, DB mirror, daily challenge + claim + report + twins, quests, offline and "migration not applied"
 recovery, profile / DNA / badges / share, rankings and privacy, lobby board, phone layout, ru / kk / en, time tracking,
 reduced motion, dashboard card, lazy loading), 0 failures. Specimens: all 7 families x 32 x 12 seasons built without
