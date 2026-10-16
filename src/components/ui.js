@@ -204,7 +204,7 @@ export function LoadingBar() {
 export function EmptyState({ title, body, action, icon = "sparkle" }) {
   return html`
     <div class="sk-panel flex flex-col items-center justify-center text-center py-14 px-6 rounded-xl">
-      <div class="sk-display mb-4 flex h-16 w-16 items-center justify-center rounded-full text-graphite-500"><${Icon} name=${icon} size=${26} strokeWidth=${1.4} /></div>
+      <div class="sk-display mb-4 flex h-16 w-16 items-center justify-center rounded-full text-graphite-500"><${Icon} name=${icon} size=${26} strokeWidth=${1.9} /></div>
       <h3 class="text-base font-semibold text-graphite-200">${title}</h3>
       ${body && html`<p class="text-sm text-graphite-500 mt-1.5 max-w-sm">${body}</p>`}
       ${action && html`<div class="mt-5">${action}</div>`}

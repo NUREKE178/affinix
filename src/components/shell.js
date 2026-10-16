@@ -150,7 +150,7 @@ function NavItem({ item, currentPath, onNavigate, t, collapsed, badgeCount = 0 }
       class=${`sk-nav-item relative flex w-full items-center gap-3 overflow-hidden whitespace-nowrap rounded-lg py-2 text-sm font-medium ${collapsed ? "justify-center px-0" : "px-3"}`}
     >
       <span class=${`relative shrink-0 ${active ? "text-signal-400" : ""}`}>
-        <${Icon} name=${item.icon} size=${17} />
+        <${Icon} name=${item.icon} size=${19} />
         ${collapsed && badgeCount > 0 && html`<span class="sk-led absolute -top-1 -right-1.5 h-2 w-2" style="--led:#ff6a1f;--led-glow:rgba(255,106,31,.7)"></span>`}
       </span>
       ${!collapsed && html`<span class="flex-1 text-left">${t(item.key)}</span>`}

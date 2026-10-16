@@ -757,6 +757,16 @@ select.sk-input option:checked {
   color: #fff;
 }
 
+/* ---- Icons: heavy strokes with a tinted body ("duotone"), see components/icons.js ------------------- */
+.ic { flex: none; }
+.ic .b, .ic .t { fill: currentColor; fill-opacity: .2; }
+.ic .t { stroke: none; }
+.ic .f { fill: currentColor; stroke: none; }
+.ic[data-filled="true"] .b, .ic[data-filled="true"] .t { fill-opacity: 1; }
+/* the page you are on: the glyph lights up like the LED next to it */
+.sk-nav-item[data-active="true"] .ic { filter: drop-shadow(0 0 5px rgba(255,106,31,.55)); }
+.sk-nav-item[data-active="true"] .ic .b, .sk-nav-item[data-active="true"] .ic .t { fill-opacity: .3; }
+
 /* ---- Segmented control ------------------------------------------------------------------ */
 /* A well holding flat labels; the active one is a raised key with its LED lit. */
 

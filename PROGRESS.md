@@ -3505,3 +3505,12 @@ challenges, a hall of fame per season.
   it together with each product change (section edit + a dated line in its changelog).
 - Regression tests adjusted to the new home / nav order / label (sidebar hover, collapse and mode tests, dashboard polish,
   logo + login redirect, auth callback, onboarding wizard + skip, nav-removed test).
+
+## Icons: heavy, duotone, "powerful" (`components/icons.js`, `styles.css`)
+
+- All 57 icons were redrawn on the same 24px grid: 2px strokes (2.25px up to 20px, so they stay strong in the sidebar and in
+  buttons), round caps and joins, and a tinted body (`currentColor` at 20 %) inside every closed shape, so a glyph reads as a
+  solid object instead of a wireframe. Three classes in `styles.css`: `.b` outline + tint, `.t` tint only, `.f` solid detail.
+  `filled` still sets the svg's `fill="currentColor"` and also makes the tint solid (heart / bookmark toggles).
+- Sidebar glyphs are 19px (were 17); the active page's glyph gets a soft signal-orange glow and a stronger tint. Empty-state
+  icons went from 1.4 to 1.9 stroke. The `Icon` API is unchanged.

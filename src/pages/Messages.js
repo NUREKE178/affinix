@@ -369,7 +369,7 @@ export function Messages({ query }) {
         ? html`<${ChatPane} key=${selected.id} conv=${selected} online=${online.has(selected.otherId)} canSend=${canSend} myId=${myId} onBack=${() => setSelectedId(null)} t=${t} locale=${locale} />`
         : html`
           <section class="sk-chat-pane sk-chat-empty">
-            <div class="sk-display mb-4 flex h-16 w-16 items-center justify-center rounded-full text-graphite-600"><${Icon} name="chat" size=${26} strokeWidth=${1.4} /></div>
+            <div class="sk-display mb-4 flex h-16 w-16 items-center justify-center rounded-full text-graphite-600"><${Icon} name="chat" size=${26} strokeWidth=${1.9} /></div>
             <h3 class="text-base font-semibold text-graphite-200">${opening ? html`<${LoadingLabel} label=${t("common.loading")} />` : t("messages.selectTitle")}</h3>
             <p class="text-sm text-graphite-500 mt-1.5 max-w-xs">${t("messages.selectBody")}</p>
           </section>
