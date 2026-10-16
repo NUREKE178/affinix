@@ -369,7 +369,6 @@ export function build(rand, ctx) {
     name: `${STYLE_NAMES[st]} / ${["bg", "surface", "dark", "brand"][scheme]} / ${["poor", "mid", "excellent"][cat]} / ${["en", "ru", "kk"][lang]}${mixed ? "+" : ""} / ${center ? "centre" : "left"}`,
     svg,
     traits: { warm: warmOf([B, ...hues]), bold, round, airy, vivid: vividOf(hues), rich, dark: darkOf(B) },
-    dbg: { rawBold },
     legibility: { score: Math.round(score * 100) / 100, contrast: cr, size: Math.round(size * 100) / 100 },
   };
 }
