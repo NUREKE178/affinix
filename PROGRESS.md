@@ -3475,11 +3475,16 @@ minutes, players over 1 h and over 3 h) from `arena_admin_stats()`.
 **Verified.** PostgreSQL 16 (local harness): 104 SQL assertions (idempotent retries, duplicate duels, XP rules, validation,
 crowd match, streak gaps / back-dating / clamping, time slices, quest slate + claims, badges, tallies, paging, rankings,
 friends filter, privacy, daily report, admin gate, closed tables, daily cap); JS rules vs SQL functions 1 598 comparisons,
-0 mismatches. Headless Chromium with the arena RPCs wired to the real database: 76 checks (full round by keyboard, reload
-persistence, DB mirror, daily challenge + claim + report + twins, quests, offline and "migration not applied" recovery,
-profile / DNA / badges, rankings and privacy, phone layout, ru / kk / en, time tracking, reduced motion, dashboard card,
-lazy loading). Specimens: all 7 families x 32 x 12 seasons built without NaN / forbidden elements / unprefixed ids,
-deterministic, ~0.2-0.5 ms each, trait spread checked per family.
+0 mismatches. Headless Chromium with the arena RPCs wired to the real database: 78 checks (full round by keyboard, Esc to
+leave, reload persistence, DB mirror, daily challenge + claim + report + twins, quests, offline and "migration not applied"
+recovery, profile / DNA / badges / share, rankings and privacy, lobby board, phone layout, ru / kk / en, time tracking,
+reduced motion, dashboard card, lazy loading), 0 failures. Specimens: all 7 families x 32 x 12 seasons built without
+NaN / forbidden elements / unprefixed ids, deterministic, ~0.15-0.45 ms and 2.7-8.5 KB each; every pool of 48 consecutive
+seasons spreads the seven traits (min <= -0.5, max >= +0.5, sd >= 0.3, a handful of near misses on `bold`); the four text
+families (palette, button, card, poster) deal exactly 25 % poor (< 3.2:1) / 50 % middling / 25 % excellent (> 9:1) contrast,
+which gives 255-337 eye-test pairs per pool, and all text of a banner follows the label's class so "which text is easier to
+read" has one answer whichever line a player looks at. The nav-count regression test now expects 13 items (the Arena is one);
+the rest of the regression suite passes, `test_loading_upgrade.mjs` keeps its two pre-existing failures.
 
 **Not done / next.** Researchers opting real experiments into the Arena (a community-votes card in Results), sound, friend
 challenges, a hall of fame per season.

@@ -344,6 +344,10 @@
   .ar-notice { max-width: none; }
   .ar-page { gap: 16px; }
   .ar-head-side { width: 100%; }
+  .ar-tabs-row .sk-tabs { width: 100%; justify-content: space-between; gap: 2px; overflow: visible; }
+  .ar-tabs-row .sk-tab { flex: 1 1 auto; padding-left: 6px; padding-right: 6px; font-size: 13px; text-align: center; }
+  .ar-tabs-row .sk-tab[data-active="true"]::before { display: none; }
+  .ar-tabs-row .sk-count { margin-left: 5px; }
   .ar-level { flex: 1; min-width: 0; }
   .ar-streak-chip { height: 56px; }
   .ar-lobby-grid { grid-template-columns: minmax(0, 1fr); }
