@@ -8,7 +8,7 @@ import { mulberry32, hashStringToSeed, shuffle } from "../prng.js";
 import { FAMILY_IDS, POOL_SIZE, DIMENSIONS, familyDims, getStimulus, isObjective, legibilityWinner } from "./stimuli.js";
 import { duelCode, pairKey } from "./ledger.js";
 import { traitDistance } from "./traits.js";
-import { ROUND_SIZE, DAILY_SET_SIZE } from "./rules.js";
+import { ROUND_SIZE, DAILY_SET_SIZE, SET_SIZE, themeIndex } from "./rules.js";
 
 const pickWeighted = (rand, items, weight) => {
   let total = 0;
@@ -85,7 +85,7 @@ function pickPair(rand, { season, family, dim, seen, avoid }) {
   return { a: best[0], b: best[1], repeat: relaxed };
 }
 
-function buildDuel(rand, { season, family, dim, a, b, repeat = false, daily = false }) {
+function buildDuel(rand, { season, family, dim, a, b, repeat = false, daily = false, set = 0 }) {
   const duel = {
     id: `${family}-${a}-${b}-${dim}`,
     season,
@@ -98,6 +98,7 @@ function buildDuel(rand, { season, family, dim, a, b, repeat = false, daily = fa
     objective: isObjective(dim),
     repeat,
     daily,
+    set,
   };
   if (duel.objective) duel.truth = truthMatrix(season, family).get(a * POOL_SIZE + b);
   return duel;
@@ -160,6 +161,39 @@ export function planDaily(day, season, size = DAILY_SET_SIZE) {
     const dim = pool[Math.floor(rand() * pool.length)] ?? dims[0];
     const pair = pickPair(rand, { season, family, dim, seen: null, avoid: null });
     duels.push(buildDuel(rand, { season, family, dim, a: pair.a, b: pair.b, daily: true }));
+  }
+  return duels;
+}
+
+/** The design family that is the theme of the week `day` falls in. */
+export function themeFamilyFor(day) {
+  return FAMILY_IDS[themeIndex(day, FAMILY_IDS.length)];
+}
+
+/** How many candidates an extra set is dealt: a few more than it needs, so a player who has already met one of its
+ * duels (in an earlier season-day) still gets a full set of ten, and almost everyone sees the same ten. */
+export const SET_CANDIDATES = SET_SIZE + 4;
+
+/** Extra set `n` (2..6) of a day: the same duels for every player, mostly of the theme family of the week.
+ * Slots 2, 5 and 8 are other families, slot 6 is an eye test when the family offers one. */
+export function planSet(day, season, n, size = SET_CANDIDATES) {
+  const rand = mulberry32(hashStringToSeed(`set/${day}/${season}/${n}`));
+  const theme = themeFamilyFor(day);
+  const others = shuffle(rand, FAMILY_IDS.filter((f) => f !== theme && dimsFor(season, f).length > 0));
+  const taken = new Set();
+  const duels = [];
+  let cursor = 0;
+  for (let k = 0; k < size; k++) {
+    const guest = k % 3 === 2;
+    const family = guest ? others[cursor++ % others.length] : theme;
+    const dims = dimsFor(season, family);
+    const wantEye = k === 5 && dims.some(isObjective);
+    const pool = wantEye ? dims.filter(isObjective) : dims.filter((d) => !isObjective(d));
+    const dim = pool[Math.floor(rand() * pool.length)] ?? dims[0];
+    const avoid = new Set(duels.slice(-6).flatMap((d) => [`${d.family}:${d.a}`, `${d.family}:${d.b}`]));
+    const pair = pickPair(rand, { season, family, dim, seen: taken, avoid });
+    taken.add(duelCode(family, pair.a, pair.b, dim));
+    duels.push(buildDuel(rand, { season, family, dim, a: pair.a, b: pair.b, set: n }));
   }
   return duels;
 }

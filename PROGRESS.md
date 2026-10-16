@@ -3643,3 +3643,35 @@ number; make it the place people want to stay in for hours".
   providers switched on in the Supabase dashboard (README, "Sign in with Google and with a phone number"); nothing in the database changes.
 - i18n: 1,254 keys per language (+23 auth, +7 chooser, -`insights.*` page keys, +2 subnav). Tests: `test_auth_social.mjs` (37 checks),
   `test_nav_tabs.mjs` (31), `test_nav_experiments_results_removed.mjs` and `test_sidebar_collapse.mjs` updated, `test_ai_insights.mjs` removed.
+
+## Daily Challenge, Stage 3: the marathon (sets, theme of the week, friends race)
+
+Requested: "make your proposal, but don't touch the clock". The Daily Challenge was ten duels; once they were done there was little
+reason to continue. Stage 3 opens after the ten duels and gives three things to do. **The clock rule did not change**: `TIMED_MODES`,
+`clockRunning()` and the server's time rules are byte-identical (the test reads the source to prove it); the extra sets are Daily
+Challenge rounds (`mode: "daily"`, `set: n`), so the existing code counts their time.
+
+- **Five extra sets** (2-6): ten duels each, planned by `planSet(day, season, n)` (pure, seeded `set/${day}/${season}/${n}`, 14
+  candidates, mostly the theme family of the week; slots 2/5/8 are other families, slot 6 an eye test when the family has one).
+  Duels the player has already seen are skipped, so a set can shrink for a heavy player. Sets open in order; a set left half-way
+  continues with the duels it still lacks (`startSet(n)`). Finishing a set claims `set_N` (+40 XP, once).
+- **Theme of the week**: one design family per ISO week (`floor(mondayDayNumber / 7) % 7` over the seven families, same formula in JS
+  `themeIndex()` and SQL `arena_theme_family()`; compared over 900 days). 60 theme duels Monday-Sunday (counted from
+  `arena_daily.family_votes`, summed over the week's days) unlock claim `week_theme` (+150 XP, once per week).
+- **Friends race**: `FriendsRace` in the lobby block, built from `fetchLeaderboard("week", true)`: you + friends by weekly XP, the gap to
+  the leader in words, names open profiles; with no friends it points to the Friends page.
+- **Server** (`0023_arena_marathon.sql`): columns `set_votes int[]`, `family_votes jsonb`; `arena_week_start`, `arena_theme_family`;
+  `arena_day_json`, `arena_submit` (votes carry `set`; a set number never counts as a first-set vote; unknown numbers are ordinary
+  votes), `arena_claim` (`set_2..set_6`, `week_theme`) replaced. XP and claims are recomputed on the server.
+- **Client**: rules/progress/sampler extended (`view.sets`, `view.theme`), `arenaStore` (`startSet`, `roundSet`, `set` on wire votes,
+  `dailyCodes` includes set duels so free play never repeats them, a refused claim becomes a "warn" notice), UI in
+  `pages/arena/Marathon.js` (+ set tag / set-aware summary in `Play.js`), CSS in `arena.css`, `arena.marathon.*` in all locales
+  (1,283 keys per language, +29).
+- **Older database**: when a server answer carries day rows without `setVotes` (0023 not applied) the store sets `setsApi = "old"` and the
+  block says the marathon switches on soon instead of offering sets it could not keep; the Daily Challenge itself is untouched.
+- Tests: SQL `test0023.sql` (37 checks; the 104 older ones still pass on 0023), JS/SQL parity for the theme over 900 days,
+  `test_marathon.mjs` (53 browser checks against the real database: clock source unchanged, locked -> open, theme equals the DB, set 2
+  played with clock chip lit and DB `set_votes`, half-way leave/continue, claim from the lobby, free play never deals set duels, theme
+  claim +150, friends race with/without friends, phone width, kk/en, an older database). Arena suite (109) still passes; `test_marathon`
+  is in the regression list.
+- **To apply on the live project**: `supabase db push` (0023; 0020-0022 too if not yet), then `notify pgrst, 'reload schema';`.

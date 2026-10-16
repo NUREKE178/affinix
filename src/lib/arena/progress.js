@@ -6,8 +6,10 @@
 // fold(base, pending). When the server confirms a batch, `base` is replaced by
 // its numbers and those events leave the list, so nothing is counted twice and
 // nothing flickers. The shapes match what supabase/migrations/0021_arena.sql returns.
+import { FAMILY_IDS } from "./catalog.js";
 import {
   XP_BASE, DAILY_SET_SIZE, DAILY_SET_BONUS, DAILY_CLEAR_BONUS, DAILY_GOAL, QUEST_BY_ID,
+  EXTRA_SETS, SET_SIZE, SET_BONUS, THEME_GOAL, THEME_BONUS, THEME_QUEST, setQuestId, weekStart, themeIndex,
   nextStreak, dayDiff, addDays, levelProgress, rankForLevel, evalBadges, BADGE_DEFS, badgeProgress, questMetric, questDone,
 } from "./rules.js";
 
@@ -23,6 +25,7 @@ export function emptyDay(day) {
   return {
     day, votes: 0, xp: 0, sec: 0, maxCombo: 0, eyeCorrect: 0, eyeTotal: 0, crowdHits: 0, crowdTotal: 0,
     dailyVotes: 0, families: [], dims: [], slate: [], claimed: [],
+    setVotes: EXTRA_SETS.map(() => 0), familyVotes: {},
   };
 }
 
@@ -34,7 +37,7 @@ const addTo = (arr, x) => (arr.includes(x) ? arr : [...arr, x]);
 
 function cloneBase(base) {
   const days = {};
-  for (const [k, d] of Object.entries(base.days)) days[k] = { ...d, families: [...d.families], dims: [...d.dims], slate: [...d.slate], claimed: [...d.claimed] };
+  for (const [k, d] of Object.entries(base.days)) days[k] = { ...d, families: [...d.families], dims: [...d.dims], slate: [...d.slate], claimed: [...d.claimed], setVotes: [...(d.setVotes ?? EXTRA_SETS.map(() => 0))], familyVotes: { ...(d.familyVotes ?? {}) } };
   return { profile: { ...base.profile, families: [...base.profile.families], badges: [...base.profile.badges] }, days };
 }
 
@@ -58,6 +61,8 @@ function applyVote(st, v) {
   d.xp += v.xp;
   d.maxCombo = Math.max(d.maxCombo, Math.min(v.combo ?? 0, d.votes));
   if (v.daily) d.dailyVotes += 1;
+  else if (v.set >= 2 && v.set < 2 + EXTRA_SETS.length) d.setVotes[v.set - 2] += 1;
+  d.familyVotes[v.family] = (d.familyVotes[v.family] ?? 0) + 1;
   d.families = addTo(d.families, v.family);
   d.dims = addTo(d.dims, v.dim);
 }
@@ -72,6 +77,8 @@ function applySlice(st, s) {
 export function claimReward(questId) {
   if (questId === "daily_set") return DAILY_SET_BONUS;
   if (questId === "daily_clear") return DAILY_CLEAR_BONUS;
+  if (questId === THEME_QUEST) return THEME_BONUS;
+  if (/^set_[2-6]$/.test(questId)) return SET_BONUS;
   return QUEST_BY_ID[questId]?.xp ?? 0;
 }
 
@@ -133,6 +140,23 @@ export function deriveView(st, today) {
     heat.push({ day: k, votes: d?.votes ?? 0, sec: d?.sec ?? 0 });
   }
 
+  // Stage 3: the five extra sets of today, and the theme of this week
+  const sets = EXTRA_SETS.map((n) => {
+    const votes = Math.min(day.setVotes?.[n - 2] ?? 0, SET_SIZE);
+    return { n, votes, size: SET_SIZE, done: votes >= SET_SIZE, claimed: day.claimed.includes(setQuestId(n)), bonus: SET_BONUS };
+  });
+  const monday = weekStart(today);
+  const themeFamily = FAMILY_IDS[themeIndex(today, FAMILY_IDS.length)];
+  let themeVotes = 0;
+  let themeClaimed = false;
+  for (let i = 0; i < 7; i++) {
+    const d = st.days[addDays(monday, i)];
+    if (!d) continue;
+    themeVotes += d.familyVotes?.[themeFamily] ?? 0;
+    if (d.claimed.includes(THEME_QUEST)) themeClaimed = true;
+  }
+  const theme = { family: themeFamily, votes: Math.min(themeVotes, THEME_GOAL), goal: THEME_GOAL, done: themeVotes >= THEME_GOAL, claimed: themeClaimed, bonus: THEME_BONUS, weekStart: monday };
+
   return {
     xp: p.xp,
     level: lp.level,
@@ -162,6 +186,8 @@ export function deriveView(st, today) {
       bonus: DAILY_SET_BONUS,
     },
     quests,
+    sets,
+    theme,
     clear: { ready: allClaimed && !day.claimed.includes("daily_clear"), claimed: day.claimed.includes("daily_clear"), bonus: DAILY_CLEAR_BONUS },
     badges: BADGE_DEFS.map((b) => ({ id: b.id, group: b.group, unlocked: p.badges.includes(b.id), progress: p.badges.includes(b.id) ? 1 : badgeProgress(b.id, bi) })),
     badgeCount: p.badges.length,

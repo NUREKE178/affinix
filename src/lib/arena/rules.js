@@ -22,6 +22,16 @@ export const CROWD_MIN_VOTES = 5;     // a duel needs this many earlier votes be
 export const IDLE_CUTOFF_S = 20;      // no input for this long = not playing; the clock stops
 export const MAX_VOTES_PER_SUBMIT = 100;
 
+// Stage 3 of the Daily Challenge (migration 0023): after the day's ten duels there are five more shared sets of ten
+// (set 2 .. 6, each claimable once), and one design family is the theme of the week.
+export const EXTRA_SETS = [2, 3, 4, 5, 6];
+export const SET_SIZE = DAILY_SET_SIZE;
+export const SET_BONUS = 40;
+export const THEME_GOAL = 60;         // duels of the theme family between Monday and Sunday
+export const THEME_BONUS = 150;
+export const THEME_QUEST = "week_theme";
+export const setQuestId = (n) => `set_${n}`;
+
 const clamp = (n, lo, hi) => Math.min(hi, Math.max(lo, n));
 
 /** Combo bonus: +1 XP per consecutive quick vote beyond the second, up to +10. */
@@ -105,6 +115,17 @@ export function localDay(date = new Date()) {
 /** The season (a UTC month) a date falls in: "202610". */
 export function seasonOf(date = new Date()) {
   return `${date.getUTCFullYear()}${String(date.getUTCMonth() + 1).padStart(2, "0")}`;
+}
+
+/** The Monday of the week `day` belongs to. */
+export function weekStart(day) {
+  const isoDow = ((dayNumber(day) + 3) % 7) + 1; // 1 = Monday .. 7 = Sunday (1970-01-01 was a Thursday)
+  return addDays(day, -(isoDow - 1));
+}
+
+/** Which of the `count` design families is the theme of the week `day` falls in (same arithmetic as arena_theme_family). */
+export function themeIndex(day, count) {
+  return Math.floor(dayNumber(weekStart(day)) / 7) % count;
 }
 
 /** Streak length after activity on `day`, given the streak so far and the last active day. */

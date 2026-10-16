@@ -6,7 +6,7 @@ import { useT, getLocale } from "../../lib/i18n.js";
 import { getStimulus, renderSvg } from "../../lib/arena/stimuli.js";
 import { TRAIT_IDS } from "../../lib/arena/traits.js";
 import { flowBonus, DAILY_SET_BONUS, DAILY_SET_SIZE, MAX_FLOW_BONUS, XP_BASE, PIONEER_BONUS, seasonOf } from "../../lib/arena/rules.js";
-import { summarize, useArenaClock, roundPhase, roundMode, fetchLeaderboard } from "../../lib/arenaStore.js";
+import { summarize, useArenaClock, roundPhase, roundMode, roundSet, getView, fetchLeaderboard } from "../../lib/arenaStore.js";
 import { Avatar } from "../../components/avatar.js";
 import { PersonLink } from "../../components/profileViewer.js";
 import { isProfileOpen } from "../../lib/profileViewer.js";
@@ -14,6 +14,7 @@ import { navigate } from "../../router.js";
 import { Specimen, Ladder, nf, clock } from "./parts.js";
 import { DailyReport } from "./DailyReport.js";
 import { MissionBlock, MissionConsole, MissionSummary } from "./Mission.js";
+import { MarathonBlock } from "./Marathon.js";
 
 const AUTO_MS = 2600;
 
@@ -44,7 +45,16 @@ function useArenaKeys(arena, onStart) {
         if (k === " " || k === "Enter" || k === "ArrowRight") { e.preventDefault(); actions.next(); }
       } else if (phase === "summary") {
         // a mission summary has no "play again": Enter goes back to the lobby
-        if (k === "Enter") { e.preventDefault(); if (roundMode() === "mission") actions.endRound(); else startRef.current("free"); }
+        if (k === "Enter") {
+          e.preventDefault();
+          const set = roundSet();
+          if (roundMode() === "mission") actions.endRound();
+          else if (set) { // the marathon: Enter plays the next set when it is open, otherwise back to the lobby
+            const v = getView();
+            const next = v?.sets.find((x) => x.n === set + 1);
+            if (next && !next.done && v.sets.find((x) => x.n === set)?.done) actions.startSet(set + 1); else actions.endRound();
+          } else startRef.current("free");
+        }
       } else if (phase === "lobby") {
         if (k === "Enter") { e.preventDefault(); startRef.current(); }
       }
@@ -206,6 +216,7 @@ function Lobby({ arena, onStart }) {
       </div>
 
       <${MissionBlock} arena=${arena} unlocked=${daily.done} />
+      <${MarathonBlock} arena=${arena} unlocked=${daily.done} />
 
       <div class="sk-stat-strip" style="--cols:4">
         <${StatTile} label=${t("arena.lobby.statDuels")} value=${`${view.today.votes}`} hint=${t("arena.lobby.statDuelsHint", { n: view.votes })} />
@@ -339,7 +350,7 @@ function Console({ arena }) {
           <span class="ar-q-meta">
             <i class="sk-led" aria-hidden="true"></i>${t(`arena.family.${duel.family}`)} · ${t(`builder.dimensions.${duel.dim}.label`)}
             ${duel.objective && html`<span class="ar-q-tag" data-tag="eye">${t("arena.console.eyeTag")}</span>`}
-            ${round.mode === "daily" && html`<span class="ar-q-tag">${t("arena.console.dailyTag")}</span>`}
+            ${round.mode === "daily" && html`<span class="ar-q-tag" data-testid="arena-set-tag">${round.set ? t("arena.marathon.setTag", { n: round.set }) : t("arena.console.dailyTag")}</span>`}
           </span>
           <h3 class="ar-q-text" data-testid="arena-question">${t(`arena.q.${duel.dim}`)}</h3>
         </div>
@@ -408,13 +419,17 @@ function Summary({ arena, onStart }) {
   const t = useT();
   const { round, view, actions } = arena;
   const s = useMemo(() => summarize(round), [round.id]);
-  const daily = round.mode === "daily";
+  const set = round.set || 0;
+  const daily = round.mode === "daily" && !set;
   const [showReport, setShowReport] = useState(daily);
+  const entry = set ? view.sets.find((x) => x.n === set) : null;
+  const nextEntry = set ? view.sets.find((x) => x.n === set + 1) : null;
+  const nextOpen = !!entry?.done && !!nextEntry && !nextEntry.done;
   return html`
     <div class="ar-summary-wrap">
       <section class="ar-summary sk-panel" data-testid="arena-summary">
         <div class="ar-summary-top">
-          <span class="sk-caption">${daily ? t("arena.summary.dailyTitle") : t("arena.summary.title")}</span>
+          <span class="sk-caption" data-testid="arena-summary-title">${set ? t(entry?.done ? "arena.marathon.setDoneTitle" : "arena.marathon.setPartTitle", { n: set }) : daily ? t("arena.summary.dailyTitle") : t("arena.summary.title")}</span>
           <div class="ar-summary-xp sk-num" data-testid="arena-summary-xp">+${nf(s.xp)}<span class="sk-unit">XP</span></div>
           <div class="ar-summary-level">
             <span class="sk-caption">${t("arena.level")} ${view.level} · ${t(`arena.rank.${view.rank}`)}</span>
@@ -428,8 +443,19 @@ function Summary({ arena, onStart }) {
           <${StatTile} label=${t("arena.summary.eye")} value=${s.eye.total ? `${s.eye.correct}/${s.eye.total}` : "—"} hint=${t("arena.summary.eyeHint")} />
           <${StatTile} label=${t("arena.summary.speed")} value=${s.avgMs ? `${(s.avgMs / 1000).toFixed(1)} ${t("common.unitSec")}` : "—"} hint=${t("arena.summary.speedHint")} />
         </div>
+        ${set && html`
+          <p class="ar-mi-note ar-summary-note" data-testid="arena-set-note">
+            ${entry?.done ? t("arena.marathon.setNoteDone") : t("arena.marathon.setNoteLeft", { n: entry ? entry.size - entry.votes : 0 })}
+            ${" "}${t("arena.marathon.themeLine", { family: t(`arena.family.${view.theme.family}`), votes: view.theme.votes, goal: view.theme.goal })}
+          </p>`}
         <div class="ar-summary-actions">
-          ${daily
+          ${set
+            ? html`
+              ${entry?.done && !entry.claimed && html`<${Button} data-ar-native=${true} onClick=${() => actions.claim(`set_${set}`)} data-testid="arena-claim-set"><${Icon} name="bolt" size=${14} />${t("arena.marathon.claim", { xp: entry.bonus })}<//>`}
+              ${view.theme.done && !view.theme.claimed && html`<${Button} data-ar-native=${true} onClick=${() => actions.claim("week_theme")} data-testid="arena-claim-theme"><${Icon} name="trophy" size=${14} />${t("arena.marathon.claimTheme", { xp: view.theme.bonus })}<//>`}
+              ${nextOpen && html`<${Button} data-ar-native=${true} variant=${entry.claimed ? "primary" : "secondary"} onClick=${() => actions.startSet(set + 1)} data-testid="arena-next-set"><${Icon} name="play" size=${14} />${t("arena.marathon.nextSet", { n: set + 1 })}<span class="sk-kbd">Enter</span><//>`}
+              ${!entry?.done && html`<${Button} data-ar-native=${true} onClick=${() => actions.startSet(set)} data-testid="arena-finish-set"><${Icon} name="play" size=${14} />${t("arena.marathon.setContinue")}<//>`}`
+            : daily
             ? html`
               ${view.daily.done && !view.daily.claimed && html`<${Button} data-ar-native=${true} onClick=${() => actions.claim("daily_set")} data-testid="arena-claim-daily"><${Icon} name="bolt" size=${14} />${t("arena.lobby.dailyClaim", { xp: DAILY_SET_BONUS })}<//>`}
               <${Button} data-ar-native=${true} variant=${view.daily.done && !view.daily.claimed ? "secondary" : "primary"} onClick=${() => onStart("free")} data-testid="arena-again"><${Icon} name="play" size=${14} />${t("arena.summary.again")}<//>`

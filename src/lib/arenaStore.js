@@ -17,7 +17,7 @@ import { FAMILY_IDS, DIMENSION_IDS } from "./arena/catalog.js";
 import { duelCode, encodeEntry, entryFromRow } from "./arena/ledger.js";
 import {
   ROUND_SIZE, CROWD_MIN_VOTES, IDLE_CUTOFF_S, localDay, seasonOf, addDays, flowBonus, isFlowMs, voteXp, pickSlate,
-  DAILY_SET_SIZE, QUEST_BY_ID,
+  DAILY_SET_SIZE, QUEST_BY_ID, EXTRA_SETS, SET_SIZE, THEME_QUEST,
 } from "./arena/rules.js";
 import { emptyBase, emptyProfile, emptyDay, fold, deriveView, claimReward } from "./arena/progress.js";
 
@@ -66,6 +66,7 @@ function defaults(userId) {
     prefs: { auto: true, sound: false },
     announced: null,            // { badges: [], level } -- what the player has already been told about
     remote: "unknown",          // unknown | ready | unavailable | offline
+    setsApi: "unknown",         // unknown | ok | old: whether the server counts the marathon's extra sets (migration 0023)
   };
 }
 
@@ -97,6 +98,7 @@ function hydrateLocal(userId) {
     prefs: { ...d.prefs, ...(j.prefs ?? {}) },
     announced: j.announced ?? null,
     remote: "unknown",
+    setsApi: "unknown",
   };
 }
 
@@ -107,7 +109,7 @@ function persist(now = false) {
   const write = () => {
     persistTimer = null;
     try {
-      const { remote, ...rest } = S;
+      const { remote, setsApi, ...rest } = S;
       localStorage.setItem(STORAGE_PREFIX + S.userId, JSON.stringify(rest));
     } catch { /* storage full or blocked: the session still works, it just won't survive a reload */ }
   };
@@ -115,7 +117,8 @@ function persist(now = false) {
 }
 
 function normalizeDay(d) {
-  return { ...emptyDay(d.day), ...d, families: d.families ?? [], dims: d.dims ?? [], slate: d.slate ?? [], claimed: d.claimed ?? [] };
+  const blank = emptyDay(d.day);
+  return { ...blank, ...d, families: d.families ?? [], dims: d.dims ?? [], slate: d.slate ?? [], claimed: d.claimed ?? [], setVotes: d.setVotes ?? blank.setVotes, familyVotes: d.familyVotes ?? {} };
 }
 
 // ---------------------------------------------------------------------------
@@ -151,7 +154,8 @@ function dailyCodes(day, season, planDaily) {
   const key = `${day}/${season}`;
   let set = dailyCodeCache.get(key);
   if (!set) {
-    set = new Set(planDaily(day, season).map((d) => duelCode(d.family, d.a, d.b, d.dim)));
+    const sets = EXTRA_SETS.flatMap((n) => samplerMod.planSet(day, season, n));
+    set = new Set([...planDaily(day, season), ...sets].map((d) => duelCode(d.family, d.a, d.b, d.dim)));
     dailyCodeCache.set(key, set);
   }
   return set;
@@ -209,6 +213,9 @@ function noteFailure(err) {
 function adopt(profile, days) {
   if (profile) S.base.profile = { ...emptyProfile(), ...profile, families: profile.families ?? [], badges: profile.badges ?? [] };
   for (const d of days ?? []) if (d?.day) S.base.days[d.day] = normalizeDay(d);
+  // a server that has not got migration 0023 returns day rows without the sets: do not offer what it cannot keep
+  const rows = (days ?? []).filter((d) => d?.day);
+  if (rows.length) S.setsApi = rows.every((d) => Array.isArray(d.setVotes)) ? "ok" : "old";
 }
 
 let flushing = false;
@@ -229,7 +236,7 @@ export function scheduleFlush(ms = 3500) {
 }
 
 function wireVote(v) {
-  return { id: v.id, pair: v.pair, dim: v.dim, pick: v.pick, ms: v.ms, bonus: v.bonus, day: v.day, daily: v.daily, eye: v.eye, combo: v.combo };
+  return { id: v.id, pair: v.pair, dim: v.dim, pick: v.pick, ms: v.ms, bonus: v.bonus, day: v.day, daily: v.daily, set: v.set || undefined, eye: v.eye, combo: v.combo };
 }
 
 /** Sends everything pending, in order: votes + time + the day's quests, then claims.
@@ -273,6 +280,8 @@ async function runFlush() {
       S.pending.claims = S.pending.claims.filter((x) => !(x.day === c.day && x.quest === c.quest));
       if (res?.state) adopt(res.state.profile, [res.state.today].filter(Boolean));
       if (res?.ok) announceServerBadges(res.newBadges);
+      // the server did not take it (an older database, a condition not met there): say so instead of leaving a phantom reward
+      else if (res && res.reason !== "claimed") pushNotice("warn", tt("arena.toast.claimRefused"));
     }
   } catch (err) {
     if (S && S.userId === userId) {
@@ -448,6 +457,31 @@ export async function startRound(mode = "free") {
   prefetchTallies(S.round);
 }
 
+/** Stage 3 of the Daily Challenge: extra shared set `n` (2..6). It is a Daily Challenge round (mode "daily"), so the
+ * Arena clock treats it exactly like the first set: nothing about time changes. Sets open one after another, and a
+ * set left half-way continues with the duels it still lacks. */
+export async function startSet(n) {
+  if (!S || !EXTRA_SETS.includes(n)) return false;
+  const { planSet } = await loadSampler();
+  if (!S) return false;
+  const day = localDay();
+  const season = seasonOf();
+  ensureSlate(day);
+  const v = getView();
+  const open = v.daily.done && (n === 2 || v.sets[n - 3].done);
+  const entry = v.sets[n - 2];
+  if (!open || entry.done) return false;
+  const seen = seenFor(season);
+  const duels = planSet(day, season, n).filter((d) => !seen.has(duelCode(d.family, d.a, d.b, d.dim))).slice(0, SET_SIZE - entry.votes);
+  if (!duels.length) return false;
+  const now = Date.now();
+  S.round = { id: uuid(), mode: "daily", set: n, day, season, duels, idx: 0, phase: "choose", results: [], combo: 0, startedAt: now, shownAt: now, tallies: {}, last: null };
+  persist();
+  notify();
+  prefetchTallies(S.round);
+  return true;
+}
+
 /** Display side (0 = left, 1 = right) -> the canonical side the server stores. */
 const canonicalSide = (duel, side) => (duel.swap ? 1 - side : side);
 
@@ -471,7 +505,7 @@ export function vote(side) {
 
   if (!duel.repeat) {
     const day = localDay();
-    S.pending.votes.push({ id: uuid(), pair: duel.pair, dim: duel.dim, pick, ms, bonus, day, daily: duel.daily, eye, combo, family: duel.family, xp, crowd });
+    S.pending.votes.push({ id: uuid(), pair: duel.pair, dim: duel.dim, pick, ms, bonus, day, daily: duel.daily, set: duel.set ?? 0, eye, combo, family: duel.family, xp, crowd });
     addToLedger(duel.season, encodeEntry(duel.family, duel.a, duel.b, duel.dim, pick));
     compactPending();
     scheduleFlush();
@@ -534,6 +568,11 @@ export function endRound() {
 /** The current screen of the Play tab, read straight from the store so a key handler is never a render behind. */
 export function roundPhase() {
   return S?.round?.phase ?? "lobby";
+}
+
+/** The number (2..6) of the extra set on screen, 0 for any other round. */
+export function roundSet() {
+  return S?.round?.set ?? 0;
 }
 
 /** "daily" | "free" | "mission" | null (no round on screen). */
@@ -662,6 +701,8 @@ export function claim(questId) {
   let ok = false;
   if (questId === "daily_set") ok = v.daily.done && !v.daily.claimed;
   else if (questId === "daily_clear") ok = v.clear.ready;
+  else if (questId === THEME_QUEST) ok = v.theme.done && !v.theme.claimed;
+  else if (/^set_[2-6]$/.test(questId)) { const e = v.sets.find((x) => `set_${x.n}` === questId); ok = !!e && e.done && !e.claimed; }
   else {
     const q = v.quests.find((x) => x.id === questId);
     ok = !!q && q.done && !q.claimed && !!QUEST_BY_ID[questId];
@@ -851,7 +892,7 @@ export function arenaRemote() {
   return S?.remote ?? "unknown";
 }
 
-export const actions = { startRound, startMission, retryMissionVote, vote, skip, next, endRound, claim, setPref, syncNow, flush };
+export const actions = { startRound, startSet, startMission, retryMissionVote, vote, skip, next, endRound, claim, setPref, syncNow, flush };
 
 export function useArena() {
   const [, setTick] = useState(0);
@@ -876,6 +917,7 @@ export function useArena() {
     round: ready ? S.round : null,
     prefs: ready ? S.prefs : { auto: true, sound: false },
     remote: ready ? S.remote : "unknown",
+    setsApi: ready ? S.setsApi : "unknown",
     pendingCount: ready ? S.pending.votes.length : 0,
     notices,
     actions,

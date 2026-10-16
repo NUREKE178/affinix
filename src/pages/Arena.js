@@ -13,7 +13,7 @@ import { RankingsTab } from "./arena/Rankings.js";
 import { ProfileTab } from "./arena/Profile.js";
 
 const TAB_IDS = ["play", "quests", "rankings", "profile"];
-const NOTICE_ICON = { level: "medal", badge: "medal", xp: "bolt" };
+const NOTICE_ICON = { level: "medal", badge: "medal", xp: "bolt", warn: "shield" };
 
 function Notices({ items }) {
   if (!items.length) return null;
