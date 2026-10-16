@@ -23,6 +23,7 @@ const NAV = [
 ];
 
 const COMMUNITY_NAV = [
+  { id: "arena", key: "shell.community.arena", icon: "arena", path: "/app/arena" },
   { id: "feed", key: "shell.community.feed", icon: "globe", path: "/app/feed" },
   { id: "favorites", key: "shell.community.favorites", icon: "bookmark", path: "/app/favorites" },
   { id: "friends", key: "shell.community.friends", icon: "friends", path: "/app/friends" },

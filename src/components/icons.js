@@ -55,6 +55,14 @@ const PATHS = {
   smile: html`<circle cx="12" cy="12" r="8.5"/><path d="M8.5 14c.9 1.3 2 2 3.5 2s2.6-.7 3.5-2"/><path d="M9 9.8h.01M15 9.8h.01"/>`,
   shuffle: html`<polyline points="16 3 21 3 21 8"/><line x1="4" y1="20" x2="21" y2="3"/><polyline points="21 16 21 21 16 21"/><line x1="15" y1="15" x2="21" y2="21"/><line x1="4" y1="4" x2="9" y2="9"/>`,
   link: html`<path d="M10 13a5 5 0 0 0 7.5.5l3-3a5 5 0 0 0-7-7l-1.7 1.7"/><path d="M14 11a5 5 0 0 0-7.5-.5l-3 3a5 5 0 0 0 7 7l1.7-1.7"/>`,
+  arena: html`<rect x="3" y="4.5" width="18" height="15" rx="2.5"/><path d="M12 4.5v15"/><circle cx="7.5" cy="12" r="1.9"/><rect x="14.6" y="10.1" width="3.8" height="3.8" rx=".7"/>`,
+  flame: html`<path d="M12 3.2c.5 2.9 4.2 4.6 4.2 8.8a4.2 4.2 0 0 1-8.4 0c0-1.8.8-2.9 1.7-3.8.2 1.2.8 1.8 1.5 2.1.1-2.2.3-4.4 1-7.1z"/>`,
+  trophy: html`<path d="M8 4.5h8v5a4 4 0 0 1-8 0z"/><path d="M8 6.5H5v1.5a3 3 0 0 0 3 3M16 6.5h3v1.5a3 3 0 0 1-3 3"/><path d="M12 13.5V17M9.5 20h5M10 17h4"/>`,
+  sliders: html`<path d="M4.5 8h15M4.5 16h15"/><circle cx="9" cy="8" r="2.3"/><circle cx="15" cy="16" r="2.3"/>`,
+  bolt: html`<path d="M13 3L5.5 13.5H11L10 21l7.5-10.5H12z"/>`,
+  lock: html`<rect x="5" y="10.5" width="14" height="9.5" rx="2"/><path d="M8 10.5V8a4 4 0 0 1 8 0v2.5"/>`,
+  medal: html`<circle cx="12" cy="14.5" r="5"/><path d="M8.6 3.5L12 9l3.4-5.5"/>`,
+  target: html`<circle cx="12" cy="12" r="8.5"/><circle cx="12" cy="12" r="4.5"/><circle cx="12" cy="12" r=".8"/>`,
   friends: html`<circle cx="9" cy="8" r="3.4"/><circle cx="15" cy="8" r="3.4" opacity="0.55"/><path d="M3 19.5c0-3.4 2.7-6 6.5-6a7 7 0 0 1 3.4.9"/><path d="M12.4 14.5c1-.6 2.2-1 3.6-1 3.5 0 6.5 2.6 6.5 6"/>`,
 };
 

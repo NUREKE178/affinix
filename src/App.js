@@ -3,6 +3,7 @@ import { useRoute, matchRoute, navigate } from "./router.js";
 import { Shell } from "./components/shell.js";
 import { Landing } from "./pages/Landing.js";
 import { Feed } from "./pages/Feed.js";
+import { Arena } from "./pages/Arena.js";
 import { Favorites } from "./pages/Favorites.js";
 import { Friends } from "./pages/Friends.js";
 import { Messages } from "./pages/Messages.js";
@@ -41,6 +42,7 @@ const DASHBOARD_ROUTES = [
   { pattern: "/app/experiments/:id/insights", Page: Insights },
   { pattern: "/app/results", Page: Results },
   { pattern: "/app/insights", Page: Insights },
+  { pattern: "/app/arena", Page: Arena },
   { pattern: "/app/feed", Page: Feed },
   { pattern: "/app/favorites", Page: Favorites },
   { pattern: "/app/friends", Page: Friends },

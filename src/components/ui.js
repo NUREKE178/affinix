@@ -325,12 +325,14 @@ const TOAST_TONE_TEXT = {
   emerald: "text-emerald-300",
   rose: "text-rose-300",
   amber: "text-amber-300",
+  signal: "text-graphite-50",
 };
 const TOAST_TONE_DOT = {
   neutral: "bg-graphite-400",
   emerald: "bg-emerald-400",
   rose: "bg-rose-400",
   amber: "bg-amber-400",
+  signal: "bg-signal-500",
 };
 
 /** Mounted once, at the app root -- toast() is a no-op until this is on
