@@ -7,6 +7,7 @@ import { Icon } from "../components/icons.js";
 import { Avatar } from "../components/avatar.js";
 import { PersonLink } from "../components/profileViewer.js";
 import { useT } from "../lib/i18n.js";
+import { SettingsTabs } from "../components/subNav.js";
 
 const ROLE_TONE = { owner: "signal", admin: "steel", researcher: "neutral", viewer: "neutral" };
 
@@ -80,6 +81,7 @@ export function Team() {
   if (orgLoading || loading) {
     return html`
       <div class="fade-in max-w-3xl">
+        <${SettingsTabs} current="team" />
         <div class="flex items-start justify-between gap-3 mb-5">
           <div>
             <${Skeleton} className="h-6 w-32" />
@@ -107,6 +109,7 @@ export function Team() {
 
   return html`
     <div class="fade-in max-w-3xl">
+      <${SettingsTabs} current="team" />
       <${SectionHeading} title=${t("team.title")} subtitle=${t("team.subtitle")}
         action=${canManage && html`<${Button} onClick=${() => setOpen(true)}><${Icon} name="plus" size=${16}/> ${t("team.addMember")}<//>`} />
 

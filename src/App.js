@@ -10,7 +10,6 @@ import { Overview } from "./pages/Overview.js";
 import { ExperimentsList } from "./pages/ExperimentsList.js";
 import { ExperimentBuilder } from "./pages/ExperimentBuilder.js";
 import { Results } from "./pages/Results.js";
-import { Insights } from "./pages/Insights.js";
 import { Participants } from "./pages/Participants.js";
 import { Reports } from "./pages/Reports.js";
 import { Team } from "./pages/Team.js";
@@ -48,9 +47,7 @@ const DASHBOARD_ROUTES = [
   { pattern: "/app/experiments/new", Page: ExperimentBuilder },
   { pattern: "/app/experiments/:id/edit", Page: ExperimentBuilder },
   { pattern: "/app/experiments/:id/results", Page: Results },
-  { pattern: "/app/experiments/:id/insights", Page: Insights },
   { pattern: "/app/results", Page: Results },
-  { pattern: "/app/insights", Page: Insights },
   { pattern: "/app/arena", Page: Arena },
   { pattern: "/app/feed", Page: Feed },
   { pattern: "/app/favorites", Page: Favorites },

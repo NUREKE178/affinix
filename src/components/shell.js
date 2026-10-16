@@ -15,16 +15,13 @@ import { useMountTransition } from "../lib/motion.js";
 import { ProfileViewerHost } from "./profileViewer.js";
 import { openProfile } from "../lib/profileViewer.js";
 
-// "experiments" and "results" removed from the sidebar for now (not
-// deleted -- routes/pages/code are untouched, just unreachable via nav)
-// while the product direction is reconsidered.
-// The Arena is the home of the app (first item; see HOME_PATH); the old "Overview" is the research dashboard.
+// Two work areas. The Arena is the home of the app (first item; see HOME_PATH). "Research" holds everything about
+// experiments and crowd tests: its overview, participants and reports are tabs of that one area (`also` keeps the
+// sidebar item lit on them). Insights were removed; the rule-based interpretation lives inside the report.
 const NAV = [
   { id: "arena", key: "shell.community.arena", icon: "arena", path: "/app/arena" },
-  { id: "overview", key: "shell.nav.overview", icon: "overview", path: "/app/overview" },
-  { id: "participants", key: "shell.nav.participants", icon: "participants", path: "/app/participants" },
-  { id: "insights", key: "shell.nav.insights", icon: "insights", path: "/app/insights" },
-  { id: "reports", key: "shell.nav.reports", icon: "reports", path: "/app/reports" },
+  { id: "overview", key: "shell.nav.overview", icon: "overview", path: "/app/overview",
+    also: ["/app/experiments", "/app/results", "/app/participants", "/app/reports"] },
 ];
 
 const COMMUNITY_NAV = [
@@ -34,11 +31,10 @@ const COMMUNITY_NAV = [
   { id: "messages", key: "shell.community.messages", icon: "chat", path: "/app/messages" },
 ];
 
+// Team and billing are tabs of Settings (the organisation's own page), not sidebar items.
 const WORKSPACE_NAV = [
-  { id: "team", key: "shell.workspace.team", icon: "team", path: "/app/team" },
-  { id: "billing", key: "shell.workspace.billing", icon: "card", path: "/app/billing" },
   { id: "profile", key: "shell.workspace.profile", icon: "user", path: "/profile" },
-  { id: "settings", key: "shell.workspace.settings", icon: "settings", path: "/app/settings" },
+  { id: "settings", key: "shell.workspace.settings", icon: "settings", path: "/app/settings", also: ["/app/team", "/app/billing"] },
 ];
 
 function initialsFor(nameOrEmail) {
@@ -142,7 +138,7 @@ function UserMenu({ onNavigate, collapsed = false, sidebarMode, onChangeSidebarM
 }
 
 function NavItem({ item, currentPath, onNavigate, t, collapsed, badgeCount = 0 }) {
-  const active = currentPath === item.path || currentPath.startsWith(item.path + "/");
+  const active = [item.path, ...(item.also ?? [])].some((p) => currentPath === p || currentPath.startsWith(p + "/"));
   return html`
     <button
       onClick=${() => onNavigate(item.path)}

@@ -10,6 +10,7 @@ import { pct, durationFromMs, shortDate } from "../lib/format.js";
 import { researchTypeLabel } from "../lib/questionTypes.js";
 import { useT, useLocale } from "../lib/i18n.js";
 import { withTimeout } from "../lib/async.js";
+import { ResearchTabs } from "../components/subNav.js";
 
 const DATE_LOCALE = { ru: "ru-RU", kk: "kk-KZ", en: "en-US" };
 
@@ -111,12 +112,16 @@ export function Reports() {
 
   if (experimentsLoading) return html`<${LoadingState} label=${t("common.loading")} />`;
   if (eligible.length === 0) {
-    return html`<${EmptyState} title=${t("reports.emptyTitle")} body=${t("reports.emptyBody")} icon="reports"
-      action=${html`<${Button} onClick=${() => navigate("/app/experiments/new")}>${t("reports.emptyCta")}<//>`} />`;
+    return html`<div class="fade-in max-w-3xl">
+      <${ResearchTabs} current="reports" />
+      <${EmptyState} title=${t("reports.emptyTitle")} body=${t("reports.emptyBody")} icon="reports"
+        action=${html`<${Button} onClick=${() => navigate("/app/experiments/new")}>${t("reports.emptyCta")}<//>`} />
+    </div>`;
   }
 
   return html`
     <div class="fade-in max-w-3xl">
+      <${ResearchTabs} current="reports" />
       <${SectionHeading}
         title=${t("reports.title")}
         subtitle=${t("reports.subtitle")}

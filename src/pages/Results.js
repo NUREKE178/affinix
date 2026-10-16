@@ -211,7 +211,6 @@ export function Results({ params }) {
         <${Badge} tone=${experiment.status === "published" ? "emerald" : "steel"}>${STATUS_KEY[experiment.status] ? t(`overview.${STATUS_KEY[experiment.status]}`) : experiment.status}<//>
         <span class="text-sm text-graphite-500">${researchTypeLabel(experiment.researchType, t)}</span>
         ${live && html`<span class="sk-live-badge" title=${t("results.liveHint")}><span class="sk-live-dot"></span>${t("results.live")}</span>`}
-        <button class="ml-auto text-sm text-signal-400 hover:text-signal-300" onClick=${() => navigate(`/app/experiments/${experiment.id}/insights`)}>${t("results.aiInsightsLink")}</button>
       </div>
 
       ${participantsError

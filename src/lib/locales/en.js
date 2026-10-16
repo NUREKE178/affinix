@@ -38,8 +38,11 @@ export default {
       experiments: "Experiments",
       participants: "Participants",
       results: "Results",
-      insights: "Insights",
       reports: "Reports",
+    },
+    subnav: {
+      overview: "Overview",
+      organization: "Organization",
     },
     communityLabel: "Community",
     community: {
@@ -49,7 +52,7 @@ export default {
       friends: "Friends",
       messages: "Messages",
     },
-    workspaceLabel: "Workspace",
+    workspaceLabel: "Account",
     workspace: {
       team: "Team",
       billing: "Billing",
@@ -364,7 +367,7 @@ export default {
     welcome: "Welcome{name}",
     subtitle: "Find out what people really think before you decide.",
     classicTitle: "Research with your own audience",
-    classicSubtitle: "Full experiments: your participants, questions, statistics and AI insights.",
+    classicSubtitle: "Full experiments: your participants, questions and statistics.",
     openLatestResults: "Open latest results",
     newResearch: "New research",
     stat: {
@@ -1094,7 +1097,6 @@ export default {
     liveHint: "Results update in real time",
     title: "Results",
     subtitle: "Statistical analysis of the collected responses.",
-    aiInsightsLink: "AI insights →",
     insufficientSample: "Not enough data for a reliable conclusion (n={n}, recommended minimum {threshold}).",
     statCompleted: "Completed participants",
     statCompletedHint: "of {target} target",
@@ -1122,35 +1124,12 @@ export default {
   },
 
   insights: {
-    title: "Insights",
-    subtitle: "AI-generated research interpretation — predictions and estimates, not established facts.",
-    allResults: "All results →",
-    whatHappened: "What happened",
-    whyItMightHaveHappened: "Why this might have happened",
-    causalDisclaimer: "The relationships above describe associations observed in this sample. They do not prove that one factor caused another.",
-    recommendationTitle: "Decision recommendation",
-    emptyTitle: "No insights yet",
-    emptyBody: "Publish an experiment and collect responses to generate insights.",
-    emptyCta: "Create an experiment",
-    notFoundTitle: "Experiment not found",
-    participantsError: "Couldn't load participant responses.",
     confidence: { high: "High confidence", moderate: "Moderate confidence", "low-moderate": "Low-to-moderate confidence", low: "Low confidence", none: "No data yet" },
-    aiSummary: {
-      title: "AI summary for marketers",
-      subtitle: "A short summary from Claude you can share with your team right away, plus a theme breakdown of open-text responses if there are any.",
-      generateCta: "Generate AI summary",
-      regenerateCta: "Regenerate summary",
-      generating: "Generating summary…",
-      notConfiguredTitle: "AI summary isn't turned on yet",
-      notConfiguredBody: "No AI provider key is configured for this workspace. An admin can turn this on in the Supabase project settings.",
-      failedTitle: "Couldn't generate a summary",
-      generatedAt: "Generated {date} · {model}",
-    },
   },
 
   reports: {
     title: "Reports",
-    subtitle: "A downloadable summary of results and AI insights for one experiment.",
+    subtitle: "A downloadable summary of results and conclusions for one experiment.",
     download: "Download .md",
     emptyTitle: "No reports yet",
     emptyBody: "Publish an experiment to generate a downloadable report.",
@@ -1197,7 +1176,7 @@ export default {
 
   team: {
     title: "Team",
-    subtitle: "Who has access to this workspace.",
+    subtitle: "Invite colleagues to run research together. A role decides who can change experiments and who only views results.",
     addMember: "Add member",
     modalTitle: "Add a team member",
     inviteHint: "If they already have a DecisionOS account, they're added immediately. Otherwise, we'll email them an invite.",

@@ -5,6 +5,7 @@ import { invalidateOrgs } from "../lib/currentOrg.js";
 import { Card, SectionHeading, Field, TextInput, Button, Badge, toast, LoadingState } from "../components/ui.js";
 import { Icon } from "../components/icons.js";
 import { useT } from "../lib/i18n.js";
+import { SettingsTabs } from "../components/subNav.js";
 
 export function Settings() {
   const t = useT();
@@ -31,7 +32,8 @@ export function Settings() {
   if (loading || !org) return html`<${LoadingState} label=${t("common.loading")} />`;
 
   return html`
-    <div class="fade-in max-w-2xl space-y-6">
+    <div class="fade-in max-w-3xl space-y-6">
+      <${SettingsTabs} current="settings" />
       <${SectionHeading} title=${t("settings.title")} subtitle=${t("settings.subtitle")} />
 
       <${Card} className="p-5">

@@ -73,7 +73,7 @@ function DashboardMock({ t }) {
     { label: t("landing.mock.premium"), value: `${v.m[2]}%`, w: v.m[2] },
     { label: t("landing.mock.intent"), value: `${v.m[3].toFixed(1)}/7`, w: Math.round((v.m[3] / 7) * 100) },
   ];
-  const sideIcons = ["overview", "experiments", "participants", "results", "insights"];
+  const sideIcons = ["overview", "experiments", "participants", "results", "reports"];
 
   return html`
     <div class="lp-stage" id="lp-sample">

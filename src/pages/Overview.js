@@ -13,6 +13,7 @@ import { pct, durationFromMs, relativeDate } from "../lib/format.js";
 import { researchTypeLabel } from "../lib/questionTypes.js";
 import { useArenaLocal } from "../lib/arenaStore.js";
 import { CrowdSection } from "./crowd/Section.js";
+import { ResearchTabs } from "../components/subNav.js";
 
 /** A doorway to the Arena: today's daily challenge, the streak, one key. Reads local progress only (no network). */
 function ArenaCard({ t }) {
@@ -104,6 +105,7 @@ export function Overview() {
 
   return html`
     <div class="fade-in">
+      <${ResearchTabs} current="overview" />
       <${SectionHeading}
         title=${t("overview.welcome", { name: firstName(profile, user) ? `, ${firstName(profile, user)}` : "" })}
         subtitle=${t("overview.subtitle")}

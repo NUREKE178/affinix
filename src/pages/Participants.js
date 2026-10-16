@@ -4,6 +4,7 @@ import { useOrgSessions } from "../lib/participants.js";
 import { Card, SectionHeading, StatTile, Badge, Select, Button, Skeleton } from "../components/ui.js";
 import { durationFromMs, shortDate } from "../lib/format.js";
 import { useT } from "../lib/i18n.js";
+import { ResearchTabs } from "../components/subNav.js";
 
 const STATUS_TONE = { completed: "emerald", in_progress: "amber", abandoned: "rose" };
 const PAGE_SIZE = 20;
@@ -38,6 +39,7 @@ export function Participants() {
 
   return html`
     <div class="fade-in">
+      <${ResearchTabs} current="participants" />
       <${SectionHeading} title=${t("participants.title")} subtitle=${t("participants.subtitle")} />
 
       ${loading

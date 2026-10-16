@@ -2,6 +2,7 @@ import { html } from "../lib/preact.js";
 import { useCurrentOrg } from "../lib/currentOrg.js";
 import { Card, SectionHeading, EmptyState, Badge, LoadingState } from "../components/ui.js";
 import { useT } from "../lib/i18n.js";
+import { SettingsTabs } from "../components/subNav.js";
 
 export function Billing() {
   const t = useT();
@@ -9,7 +10,8 @@ export function Billing() {
   if (loading || !org) return html`<${LoadingState} label=${t("common.loading")} />`;
 
   return html`
-    <div class="fade-in max-w-2xl space-y-5">
+    <div class="fade-in max-w-3xl space-y-5">
+      <${SettingsTabs} current="billing" />
       <${SectionHeading} title=${t("billing.title")} subtitle=${t("billing.subtitle", { org: org.name })} />
 
       <${Card} className="p-5">
