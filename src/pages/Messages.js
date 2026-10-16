@@ -1,273 +1,17 @@
-import { html, useState, useEffect, useRef, useMemo } from "../lib/preact.js";
+// Messages: your friends on the left (pinned first, drafts and pictures in the previews, message search), the open
+// conversation on the right. The pieces live in pages/messages/; data and realtime in lib/messagesStore.js.
+import { html, useState, useEffect, useMemo } from "../lib/preact.js";
 import { Icon } from "../components/icons.js";
-import { Avatar } from "../components/avatar.js";
-import { Skeleton, EmptyState, Button, toast, Spinner, LoadingLabel } from "../components/ui.js";
+import { Skeleton, EmptyState, Button, toast, LoadingLabel } from "../components/ui.js";
 import { useT, useLocale } from "../lib/i18n.js";
 import { useSession } from "../lib/auth.js";
 import { useFriends } from "../lib/friendsStore.js";
 import {
-  useConversations, useThread, setActiveConversation, sendMessage, retryMessage,
-  loadOlderMessages, openConversationWith, signalTyping,
+  useConversations, useMessagingCaps, setActiveConversation, openConversationWith, searchMessages, getDraft,
 } from "../lib/messagesStore.js";
 import { navigate } from "../router.js";
-import { PersonLink } from "../components/profileViewer.js";
-import { openProfile } from "../lib/profileViewer.js";
-
-const EMOJI = ["😀", "😂", "😍", "🥰", "😎", "🤔", "😢", "😡", "👍", "👎", "🙏", "👏", "🔥", "🎉", "❤️", "💯", "✅", "👀", "🤝", "💪", "🚀", "☕", "😴", "🙌"];
-const DATE_LOCALES = { ru: "ru-RU", kk: "kk-KZ", en: "en-US" };
-
-function timeOf(iso, locale) {
-  return new Date(iso).toLocaleTimeString(DATE_LOCALES[locale] ?? "en-US", { hour: "2-digit", minute: "2-digit" });
-}
-
-function dayKey(iso) {
-  const d = new Date(iso);
-  return `${d.getFullYear()}-${d.getMonth()}-${d.getDate()}`;
-}
-
-function dayLabel(iso, locale, t) {
-  const d = new Date(iso);
-  const today = new Date();
-  const yesterday = new Date();
-  yesterday.setDate(today.getDate() - 1);
-  if (dayKey(iso) === dayKey(today.toISOString())) return t("messages.today");
-  if (dayKey(iso) === dayKey(yesterday.toISOString())) return t("messages.yesterday");
-  return d.toLocaleDateString(DATE_LOCALES[locale] ?? "en-US", { day: "numeric", month: "long", year: d.getFullYear() === today.getFullYear() ? undefined : "numeric" });
-}
-
-/** Chat-list timestamp: a clock time today, otherwise a short date. */
-function listTime(iso, locale, t) {
-  if (!iso) return "";
-  if (dayKey(iso) === dayKey(new Date().toISOString())) return timeOf(iso, locale);
-  return dayLabel(iso, locale, t);
-}
-
-function PersonAvatar({ name, url, size, online }) {
-  return html`
-    <span class="sk-avatar-wrap">
-      <${Avatar} name=${name} url=${url} size=${size} />
-      ${online && html`<span class="sk-online-dot"></span>`}
-    </span>
-  `;
-}
-
-/** ✓ sent, ✓✓ read, clock while sending. */
-function Ticks({ message }) {
-  if (message.status === "sending") return html`<span class="sk-tick"><${Icon} name="clock" size=${13} /></span>`;
-  if (message.readAt) return html`<span class="sk-tick sk-tick-read"><${Icon} name="checks" size=${15} /></span>`;
-  return html`<span class="sk-tick"><${Icon} name="check" size=${14} /></span>`;
-}
-
-function TypingDots() {
-  return html`<span class="sk-typing-dots" aria-hidden="true"><i></i><i></i><i></i></span>`;
-}
-
-function ChatListItem({ item, active, online, typing, myId, onOpen, t, locale }) {
-  const preview = typing
-    ? html`<span class="sk-chat-typing-text">${t("messages.typing")}</span>`
-    : item.lastBody
-    ? `${item.lastSenderId === myId ? `${t("messages.you")}: ` : ""}${item.lastBody}`
-    : t("messages.startChat");
-  // The row opens the chat; the avatar on top of it opens the person's profile (two sibling buttons, like the
-  // messengers do it: nothing interactive inside another interactive element).
-  return html`
-    <div class="sk-chat-row">
-      <button type="button" class=${`sk-chat-item ${active ? "active" : ""}`} onClick=${onOpen}>
-        <span class="sk-chat-item-slot" aria-hidden="true"></span>
-        <span class="sk-chat-item-main">
-          <span class="sk-chat-item-top">
-            <span class=${`sk-chat-name ${item.unread > 0 ? "unread" : ""}`}>${item.otherName ?? t("feed.unknownAuthor")}</span>
-            <span class="sk-chat-time">${listTime(item.lastAt, locale, t)}</span>
-          </span>
-          <span class="sk-chat-item-bottom">
-            <span class=${`sk-chat-preview ${item.unread > 0 ? "unread" : ""}`}>${preview}</span>
-            ${item.unread > 0 && html`<span class="sk-chat-unread">${item.unread > 99 ? "99+" : item.unread}</span>`}
-          </span>
-        </span>
-      </button>
-      <button type="button" class="sk-chat-avatar-hit" data-testid="chat-list-avatar"
-        title=${t("people.openProfile", { name: item.otherName ?? t("feed.unknownAuthor") })}
-        onClick=${() => openProfile(item)}>
-        <${PersonAvatar} name=${item.otherName} url=${item.otherAvatarUrl} size=${44} online=${online} />
-      </button>
-    </div>
-  `;
-}
-
-function Bubble({ message, mine, convId, locale, t }) {
-  const failed = message.status === "failed";
-  return html`
-    <div class=${`sk-msg-row ${mine ? "mine" : ""}`}>
-      <div class=${`sk-bubble ${mine ? "mine" : ""} ${failed ? "failed" : ""}`}>
-        <span class="sk-bubble-text">${message.body}</span>
-        <span class="sk-bubble-meta">
-          ${timeOf(message.createdAt, locale)}
-          ${mine && !failed && html`<${Ticks} message=${message} />`}
-        </span>
-      </div>
-      ${failed && html`
-        <button type="button" class="sk-msg-retry" onClick=${() => retryMessage(convId, message.id)}>
-          <${Icon} name="shield" size=${13} /> ${t("messages.failedRetry")}
-        </button>
-      `}
-    </div>
-  `;
-}
-
-function ChatPane({ conv, online, canSend, myId, onBack, t, locale }) {
-  const thread = useThread(conv.id);
-  const [draft, setDraft] = useState("");
-  const [emojiOpen, setEmojiOpen] = useState(false);
-  const listRef = useRef(null);
-  const inputRef = useRef(null);
-  const stickToBottom = useRef(true);
-  const prevHeight = useRef(null);
-  const lastCount = useRef(0);
-
-  // New conversation => start at the newest message and forget the old draft.
-  useEffect(() => {
-    stickToBottom.current = true;
-    lastCount.current = 0;
-    prevHeight.current = null;
-    setDraft("");
-    setEmojiOpen(false);
-    inputRef.current?.focus();
-  }, [conv.id]);
-
-  const messages = thread.messages;
-  const last = messages[messages.length - 1];
-
-  useEffect(() => {
-    const el = listRef.current;
-    if (!el) return;
-    if (prevHeight.current != null) {
-      // Older page was prepended: keep the reader where they were.
-      el.scrollTop += el.scrollHeight - prevHeight.current;
-      prevHeight.current = null;
-    } else if (stickToBottom.current || (last && last.senderId === myId && messages.length > lastCount.current)) {
-      el.scrollTop = el.scrollHeight;
-    }
-    lastCount.current = messages.length;
-  }, [messages.length, last?.id, thread.typing, thread.loaded]);
-
-  function onScroll(e) {
-    const el = e.currentTarget;
-    stickToBottom.current = el.scrollHeight - el.scrollTop - el.clientHeight < 90;
-    if (el.scrollTop < 80 && thread.hasMore && !thread.loadingOlder) {
-      prevHeight.current = el.scrollHeight;
-      loadOlderMessages(conv.id);
-    }
-  }
-
-  function autosize() {
-    const el = inputRef.current;
-    if (!el) return;
-    el.style.height = "auto";
-    el.style.height = `${Math.min(el.scrollHeight, 140)}px`;
-  }
-
-  function submit() {
-    const body = draft.trim();
-    if (!body || !canSend) return;
-    sendMessage(conv.id, body);
-    setDraft("");
-    setEmojiOpen(false);
-    stickToBottom.current = true;
-    requestAnimationFrame(() => { autosize(); inputRef.current?.focus(); });
-  }
-
-  function onKeyDown(e) {
-    if (e.key === "Enter" && !e.shiftKey && !e.isComposing) {
-      e.preventDefault();
-      submit();
-    }
-  }
-
-  function addEmoji(emoji) {
-    const el = inputRef.current;
-    const start = el?.selectionStart ?? draft.length;
-    const end = el?.selectionEnd ?? draft.length;
-    setDraft(draft.slice(0, start) + emoji + draft.slice(end));
-    requestAnimationFrame(() => {
-      if (!el) return;
-      el.focus();
-      el.selectionStart = el.selectionEnd = start + emoji.length;
-      autosize();
-    });
-  }
-
-  const status = thread.typing
-    ? html`<span class="sk-chat-typing-text">${t("messages.typing")} <${TypingDots} /></span>`
-    : online
-    ? html`<span class="sk-status-online">${t("messages.online")}</span>`
-    : html`<span class="sk-status-offline">${t("messages.offline")}</span>`;
-
-  let prevDay = null;
-  const rows = [];
-  for (const m of messages) {
-    const k = dayKey(m.createdAt);
-    if (k !== prevDay) {
-      rows.push(html`<div key=${`d-${k}`} class="sk-chat-day"><span>${dayLabel(m.createdAt, locale, t)}</span></div>`);
-      prevDay = k;
-    }
-    rows.push(html`<${Bubble} key=${m.id} message=${m} mine=${m.senderId === myId} convId=${conv.id} locale=${locale} t=${t} />`);
-  }
-
-  return html`
-    <section class="sk-chat-pane">
-      <header class="sk-chat-head">
-        <button type="button" class="sk-chat-back" onClick=${onBack} aria-label=${t("messages.back")}><${Icon} name="arrowLeft" size=${20} /></button>
-        <${PersonLink} who=${conv} className="sk-chat-head-who">
-          <${PersonAvatar} name=${conv.otherName} url=${conv.otherAvatarUrl} size=${40} online=${online} />
-          <div class="sk-chat-head-text">
-            <div class="sk-chat-head-name">${conv.otherName ?? t("feed.unknownAuthor")}</div>
-            <div class="sk-chat-head-status">${status}</div>
-          </div>
-        <//>
-      </header>
-
-      <div class="sk-chat-scroll" ref=${listRef} onScroll=${onScroll}>
-        ${thread.loadingOlder && html`<div class="sk-chat-older"><${Spinner} size=${12} /><${LoadingLabel} label=${t("common.loading")} /></div>`}
-        ${!thread.loaded && thread.loading && html`
-          <div class="sk-chat-skeleton">
-            <${Skeleton} className="h-9 w-48 rounded-2xl" /><${Skeleton} className="h-9 w-64 rounded-2xl self-end" /><${Skeleton} className="h-9 w-40 rounded-2xl" />
-          </div>
-        `}
-        ${thread.loaded && messages.length === 0 && html`<div class="sk-chat-hint">${t("messages.noMessagesYet")}</div>`}
-        ${rows}
-        ${thread.typing && html`<div class="sk-msg-row"><div class="sk-bubble sk-bubble-typing"><${TypingDots} /></div></div>`}
-      </div>
-
-      ${canSend
-        ? html`
-          <div class="sk-chat-composer">
-            ${emojiOpen && html`
-              <div class="sk-emoji-panel">
-                ${EMOJI.map((e) => html`<button key=${e} type="button" onClick=${() => addEmoji(e)}>${e}</button>`)}
-              </div>
-            `}
-            <button type="button" class="sk-chat-iconbtn" onClick=${() => setEmojiOpen((v) => !v)} aria-label=${t("messages.emoji")}>
-              <${Icon} name="smile" size=${22} />
-            </button>
-            <textarea
-              ref=${inputRef}
-              rows="1"
-              class="sk-input sk-chat-input"
-              placeholder=${t("messages.placeholder")}
-              maxlength="4000"
-              value=${draft}
-              onInput=${(e) => { setDraft(e.currentTarget.value); signalTyping(); autosize(); }}
-              onKeyDown=${onKeyDown}
-            ></textarea>
-            <button type="button" class="sk-chat-send" onClick=${submit} disabled=${!draft.trim()} aria-label=${t("messages.send")}>
-              <${Icon} name="send" size=${20} />
-            </button>
-          </div>
-        `
-        : html`<div class="sk-chat-locked">${t("messages.notFriends")}</div>`}
-    </section>
-  `;
-}
+import { ChatListItem, MessageHit } from "./messages/ChatList.js";
+import { ChatPane } from "./messages/ChatPane.js";
 
 export function Messages({ query }) {
   const t = useT();
@@ -275,10 +19,13 @@ export function Messages({ query }) {
   const { user } = useSession();
   const myId = user?.id ?? null;
   const { conversations, loaded, error, online, typing } = useConversations();
+  const caps = useMessagingCaps();
   const { friends, loading: friendsLoading } = useFriends();
   const [selectedId, setSelectedId] = useState(query?.get("c") ?? null);
   const [search, setSearch] = useState("");
   const [opening, setOpening] = useState(false);
+  const [hits, setHits] = useState({ state: "idle", items: [] });
+  const [jumpTarget, setJumpTarget] = useState(null);
   const queryKey = query?.toString() ?? "";
 
   // ?c=<conversationId> (from a notification) or ?with=<userId> (from a
@@ -305,16 +52,31 @@ export function Messages({ query }) {
   }, [selectedId]);
   useEffect(() => () => setActiveConversation(null), []);
 
+  // searching the text of the messages (needs the server update 0024; the list still filters by name without it)
+  const q = search.trim();
+  useEffect(() => {
+    if (q.length < 2 || caps.actions === "old") { setHits({ state: caps.actions === "old" && q.length >= 2 ? "old" : "idle", items: [] }); return undefined; }
+    let off = false;
+    setHits((h) => ({ ...h, state: "loading" }));
+    const timer = setTimeout(() => {
+      searchMessages(q).then(
+        (items) => { if (!off) setHits({ state: "ready", items }); },
+        (err) => { if (!off) setHits({ state: err?.code === "updatePending" ? "old" : "error", items: [] }); }
+      );
+    }, 350);
+    return () => { off = true; clearTimeout(timer); };
+  }, [q, caps.actions]);
+
   const items = useMemo(() => {
     const haveConv = new Set(conversations.map((c) => c.otherId));
     const fresh = friends
       .filter((f) => !haveConv.has(f.otherId))
       .map((f) => ({ id: null, otherId: f.otherId, otherName: f.otherName, otherUsername: f.otherUsername, otherAvatarUrl: f.otherAvatarUrl, lastBody: null, lastAt: null, lastSenderId: null, unread: 0 }))
       .sort((a, b) => (a.otherName ?? "").localeCompare(b.otherName ?? ""));
-    const q = search.trim().toLowerCase();
+    const needle = q.toLowerCase();
     const all = [...conversations, ...fresh];
-    return q ? all.filter((i) => `${i.otherName ?? ""} ${i.otherUsername ?? ""}`.toLowerCase().includes(q)) : all;
-  }, [conversations, friends, search]);
+    return needle ? all.filter((i) => `${i.otherName ?? ""} ${i.otherUsername ?? ""}`.toLowerCase().includes(needle)) : all;
+  }, [conversations, friends, q]);
 
   const selected = conversations.find((c) => c.id === selectedId) ?? null;
   const friendIds = useMemo(() => new Set(friends.map((f) => f.otherId)), [friends]);
@@ -333,18 +95,25 @@ export function Messages({ query }) {
     }
   }
 
+  function openHit(hit) {
+    setJumpTarget({ convId: hit.conversationId, messageId: hit.messageId, createdAt: hit.createdAt });
+    setSelectedId(hit.conversationId);
+  }
+
   if (error) {
     return html`<${EmptyState} title=${t("messages.loadErrorTitle")} body=${t("messages.loadErrorBody")} icon="chat" />`;
   }
 
   const listEmpty = loaded && !friendsLoading && conversations.length === 0 && friends.length === 0;
+  const hitRows = hits.items.filter((h) => conversations.some((c) => c.id === h.conversationId));
+  const nothingFound = loaded && q.length >= 2 && items.length === 0 && hitRows.length === 0 && hits.state !== "loading";
 
   return html`
     <div class="sk-chat sk-panel" data-pane=${selectedId ? "chat" : "list"}>
       <aside class="sk-chat-list">
         <div class="sk-chat-list-head">
           <h2>${t("messages.title")}</h2>
-          <input class="sk-input sk-chat-search" type="search" placeholder=${t("messages.search")} value=${search} onInput=${(e) => setSearch(e.currentTarget.value)} />
+          <input class="sk-input sk-chat-search" type="search" data-testid="chat-search" placeholder=${t("messages.search")} value=${search} onInput=${(e) => setSearch(e.currentTarget.value)} />
         </div>
         <div class="sk-chat-items">
           ${!loaded && html`
@@ -368,18 +137,28 @@ export function Messages({ query }) {
               active=${item.id && item.id === selectedId}
               online=${online.has(item.otherId)}
               typing=${item.id ? !!typing[item.id] : false}
+              draft=${item.id ? getDraft(item.id) : ""}
               myId=${myId}
               onOpen=${() => openItem(item)}
               t=${t}
               locale=${locale}
             />
           `)}
-          ${loaded && items.length === 0 && !listEmpty && html`<div class="sk-chat-hint">${t("messages.noResults")}</div>`}
+          ${q.length >= 2 && html`
+            <div class="msg-list-section" data-testid="chat-hits">
+              ${(hitRows.length > 0 || hits.state === "loading") && html`<div class="msg-list-caption">${t("messages.searchMessagesTitle")}</div>`}
+              ${hits.state === "loading" && hitRows.length === 0 && html`<div class="sk-chat-hint"><${LoadingLabel} label=${t("messages.searching")} /></div>`}
+              ${hitRows.map((hit) => html`<${MessageHit} key=${hit.messageId} hit=${hit} conv=${conversations.find((c) => c.id === hit.conversationId)} query=${q} myId=${myId} onOpen=${() => openHit(hit)} t=${t} locale=${locale} />`)}
+              ${hits.state === "old" && html`<div class="sk-chat-hint">${t("messages.searchPending")}</div>`}
+              ${hits.state === "error" && html`<div class="sk-chat-hint">${t("messages.searchFailed")}</div>`}
+            </div>`}
+          ${q.length === 1 && html`<div class="sk-chat-hint">${t("messages.searchMin")}</div>`}
+          ${nothingFound && html`<div class="sk-chat-hint">${t("messages.noResults")}</div>`}
         </div>
       </aside>
 
       ${selected
-        ? html`<${ChatPane} key=${selected.id} conv=${selected} online=${online.has(selected.otherId)} canSend=${canSend} myId=${myId} onBack=${() => setSelectedId(null)} t=${t} locale=${locale} />`
+        ? html`<${ChatPane} key=${selected.id} conv=${selected} online=${online.has(selected.otherId)} canSend=${canSend} myId=${myId} onBack=${() => setSelectedId(null)} locale=${locale} jumpTarget=${jumpTarget} onJumpDone=${() => setJumpTarget(null)} />`
         : html`
           <section class="sk-chat-pane sk-chat-empty">
             <div class="sk-display mb-4 flex h-16 w-16 items-center justify-center rounded-full text-graphite-600"><${Icon} name="chat" size=${26} strokeWidth=${1.9} /></div>

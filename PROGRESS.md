@@ -3675,3 +3675,38 @@ Challenge rounds (`mode: "daily"`, `set: n`), so the existing code counts their 
   claim +150, friends race with/without friends, phone width, kk/en, an older database). Arena suite (109) still passes; `test_marathon`
   is in the regression list.
 - **To apply on the live project**: `supabase db push` (0023; 0020-0022 too if not yet), then `notify pgrst, 'reload schema';`.
+
+## Messages v2: a full messenger (migration 0024)
+
+Requested: "develop messages (chat) and the feed well, keep UX/UI/design". The chat only sent text; 0020 had added the columns for
+pictures and replies but the client never used them.
+
+- **Server** (`supabase/migrations/0024_chat_actions.sql`): `messages.edited_at / deleted_at` (a deleted message keeps its row, loses text + file;
+  the "text or picture" check allows it), `conversations.last_message_deleted`; `edit_message` (sender only, 48 h, a picture may lose its
+  caption), `delete_message` (soft delete, returns the file path so the client removes it from storage, drops reactions, fixes the chat
+  preview), `message_reactions` + `react_to_message` (one emoji per person from a fixed set of six, needs the friendship, taking one back
+  does not), `conversation_prefs` + `set_conversation_pref` (pin / mute, private to each person), `search_messages` (substring, RLS decides what
+  is visible, 2+ characters), `my_unread_counts` ignores deleted messages, `messages_before_insert` clears `edited_at / deleted_at` so a client
+  cannot forge them. No INSERT / UPDATE / DELETE policies for the API roles: every write is a `SECURITY DEFINER` function that checks the caller.
+  Errors are short words (`edit_expired`, `not_found`, `deleted`, `bad_text`, `bad_emoji`, `not_friends`). `message_reactions` joins the Realtime
+  publication.
+- **Store** (`lib/messagesStore.js`, rewritten): messages carry quote / reactions / picture / edited / deleted; reads use PostgREST embeds
+  (`reactions:message_reactions(...)`, `reply:messages!reply_to_id(...)`) and fall back to a plain `select *` on a server without 0024
+  (`caps.actions = "old"`, picture column missing -> `caps.images = "old"`), the UI hides what the server cannot do. Optimistic send / edit /
+  delete / react / pin with rollback and a worded error. Pictures: `prepareChatImage` (new `lib/imageTools.js`, shared with the crowd
+  tests; <= 1600 px, <= 1.5 MB, WebP / JPEG), upload to `message-images/<conversation>/<me>/<uuid>.<ext>`, signed URLs in batches with a
+  cache, local preview kept until the server's copy has loaded, a message thrown away mid-upload is never sent. Realtime: messages + conversations
+  on one channel, reactions on a channel of their own (a database without the table cannot break chat). Drafts per conversation in
+  `localStorage`. `ensureMessageLoaded` reads the stretch of history up to a message (one `gte` query, else pages back) for quote / search jumps.
+  The "N unread" divider is worked out once per visit.
+- **UI** (`pages/Messages.js` is now the shell; pieces in `pages/messages/`: `ChatList`, `ChatPane`, `Bubble`, `ActionMenu`, `Composer`, `parts`):
+  hover tools + right click + long press open one menu (quick reactions, Reply, Copy, Edit, Delete with an in-menu confirmation; a bottom sheet
+  on phones), swipe right to reply, quote blocks that jump to the original, reactions as chips, edit / reply strips over the composer, picture
+  attach / paste / drag & drop with preview, viewer, "N unread" line, jump-to-latest with a counter, header menu (open profile, pin, mute), pinned
+  rows, drafts and picture / deleted previews in the list, message search with highlighted hits that jump to the message, linkified text,
+  large emoji-only bubbles, keep-at-bottom on resize. Styles in the new `messages.css` (no new Tailwind classes), 5 new icons.
+- i18n: `messages.*` +54 keys in each language (1,337 per language).
+- Tests: `/tmp/pgtest/test0024.sql` (74 checks on PostgreSQL 16; the 47 of 0020 and the 104 of 0021 still pass on top of 0024),
+  `test_messages.mjs` (164 browser checks) against `msgfake.mjs`, an in-memory Supabase stand-in (REST + RPC mirroring the SQL + storage + a
+  Phoenix realtime socket); `test_people.mjs` (68) and the crowd tests still pass. Honest limit: not run against a live Supabase.
+- **To apply on the live project**: `supabase db push` (0024; 0020 too if not yet), then `notify pgrst, 'reload schema';`.

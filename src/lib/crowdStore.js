@@ -10,6 +10,7 @@ import { requireSupabase } from "./supabaseClient.js";
 import { getCurrentUser, useSession } from "./auth.js";
 import { isMissingFunction, rpcHint } from "./rpcErrors.js";
 import { withTimeout } from "./async.js";
+import { prepareImage as shrinkImage } from "./imageTools.js";
 import { wilsonInterval, MIN_RELIABLE_SAMPLE } from "./stats.js";
 import { useArenaLocal, arenaRemote, actions as arenaActions } from "./arenaStore.js";
 
@@ -72,38 +73,14 @@ async function rpc(name, args = {}) {
 
 const clientError = (hint) => Object.assign(new Error(hint), { crowd: true, hint, pending: false });
 
-function canvasBlob(canvas, type, quality) {
-  return new Promise((resolve) => canvas.toBlob((b) => resolve(b), type, quality));
-}
-
 /** Shrinks a picked file to at most 1024 px on its long side and re-encodes it (WebP, else JPEG) under
  * 900 KB, so a phone photo uploads in a moment. Throws an error with hint bad_type / unreadable / too_big. */
 export async function prepareImage(file) {
-  if (!file || !PICK_TYPES.includes(file.type)) throw clientError("bad_type");
-  if (file.size > 25 * 1024 * 1024) throw clientError("too_big");
-  let bitmap;
   try {
-    bitmap = await createImageBitmap(file, { imageOrientation: "from-image" });
-  } catch {
-    try { bitmap = await createImageBitmap(file); } catch { throw clientError("unreadable"); }
+    return await shrinkImage(file, { maxSide: MAX_SIDE, maxBytes: MAX_BYTES, types: PICK_TYPES });
+  } catch (err) {
+    throw clientError(err?.hint ?? "unreadable");
   }
-  const scale = Math.min(1, MAX_SIDE / Math.max(bitmap.width, bitmap.height));
-  const width = Math.max(1, Math.round(bitmap.width * scale));
-  const height = Math.max(1, Math.round(bitmap.height * scale));
-  const canvas = document.createElement("canvas");
-  canvas.width = width;
-  canvas.height = height;
-  canvas.getContext("2d").drawImage(bitmap, 0, 0, width, height);
-  bitmap.close?.();
-  for (const [type, ext] of [["image/webp", "webp"], ["image/jpeg", "jpg"]]) {
-    for (const quality of [0.86, 0.76, 0.64, 0.5]) {
-      const blob = await canvasBlob(canvas, type, quality);
-      // a browser that cannot encode the type hands back a PNG instead: skip to the next type
-      if (!blob || blob.type !== type) break;
-      if (blob.size <= MAX_BYTES) return { blob, ext, width, height };
-    }
-  }
-  throw clientError("too_big");
 }
 
 /** The public URL of an uploaded option image. */
