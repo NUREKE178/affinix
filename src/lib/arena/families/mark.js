@@ -353,7 +353,7 @@ function arch(k) {
     if (r3 > 3) s += pth(`M${P(-r3, yB)}V${P(yT + Wd / 2)}A${P(r3, r3)} 0 0 1 ${P(r3, yT + Wd / 2)}V${P(yB)}Z`, a);
   } else if (v === 2) { // outline gate on a ground line with a sun
     const sw = lerp(5, 10, hf), ir = (Wd - sw) / 2;
-    s = strk(`M${P(x0 + sw / 2, yB)}V${P(yT + Wd / 2)}A${P(ir, ir)} 0 0 1 ${P(x1 - sw / 2, yT + Wd / 2)}V${P(yB)}`, a, sw) + pth(`M${P(-ir * 0.55, yB - sw * 0.5)}A${P(ir * 0.55, ir * 0.55)} 0 0 1 ${P(ir * 0.55, yB - sw * 0.5)}Z`, b) + strk(`M${P(-Wd / 2 - 12, yB)}H${P(Wd / 2 + 12, yB)}`, a, sw * 0.8, { "stroke-linecap": "round" });
+    s = strk(`M${P(x0 + sw / 2, yB)}V${P(yT + Wd / 2)}A${P(ir, ir)} 0 0 1 ${P(x1 - sw / 2, yT + Wd / 2)}V${P(yB)}`, a, sw) + pth(`M${P(-ir * 0.55, yB - sw * 0.5)}A${P(ir * 0.55, ir * 0.55)} 0 0 1 ${P(ir * 0.55, yB - sw * 0.5)}Z`, b) + strk(`M${P(-Wd / 2 - 12, yB)}H${f(Wd / 2 + 12)}`, a, sw * 0.8, { "stroke-linecap": "round" });
     return { s, w: Wd + 24 + sw, h: Hh, n, rd: 0.3, hv: 0.3 + hf * 0.5 };
   } else { // twin arches
     const w1 = Wd * 0.56, h1 = Hh, w2 = Wd * 0.56, h2 = Hh * 0.72, g = 6;

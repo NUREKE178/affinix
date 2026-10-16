@@ -210,7 +210,6 @@ export function build(rand, ctx) {
     name: `${LAYOUT_NAMES[E.layout]}${E.n} / ${hs ? hs.id : base.id} / ${["bg", "surface", "dark"][gnd]} / ${["aa-left", "head-top", "slab", "inline"][E.bottom]} / ${["poor", "mid", "excellent"][E.cat]}`,
     svg,
     traits: { warm, bold, round, airy, vivid, rich, dark: dk },
-    dbg: { impact: rz.impact, thick: rz.thick, typeHeft, coverage },
     legibility: { score: Math.round(score * 100) / 100, contrast: cr, size: Math.round(size * 100) / 100 },
   };
 }
@@ -245,7 +244,7 @@ function bands(R, S, o) {
   cols.forEach((c, i) => {
     const l = ws[i] * len;
     s += vertical ? rect(x0 + pos, y0, l + 0.6, h, c) : rect(x0, y0 + pos, w, l + 0.6, c);
-    if (o.t3 < 0.6 && l > 16) { s += vertical ? cap(c, x0 + pos + 6, y0 + h - 8) : cap(c, x0 + 10, y0 + pos + l / 2 + 1.8); caps++; }
+    if (o.t3 < 0.6 && l > (vertical ? 30 : 16)) { s += vertical ? cap(c, x0 + pos + 6, y0 + h - 8) : cap(c, x0 + 10, y0 + pos + l / 2 + 1.8); caps++; }
     pos += l;
   });
   return { svg: s, n, caps, rd: -0.9, cover: 1, thick: clamp(1.15 - n * 0.09), ...stats(cols.map((c, i) => [c, ws[i]])) };
@@ -327,7 +326,7 @@ function strips(R, S, o) {
     const c = cols[i], hh = fr[i] * h, x = x0 + i * (sw + g), y = y0 + h - hh;
     if (o.soft) s += pth(`M${P(x, y0 + h)}V${P(y + sw / 2)}A${P(sw / 2, sw / 2)} 0 0 1 ${P(x + sw, y + sw / 2)}V${P(y0 + h)}Z`, c, outline(c, o.G));
     else s += rect(x, y, sw, hh + 0.5, c, outline(c, o.G));
-    if (o.t3 < 0.55 && hh > 40 && sw > 22) { s += cap(c, x + sw / 2, y0 + h - 7, "middle"); caps++; }
+    if (o.t3 < 0.55 && hh > 40 && sw > 29) { s += cap(c, x + sw / 2, y0 + h - 7, "middle"); caps++; }
     list.push([c, (sw * hh) / (w * h)]); sum += fr[i];
   }
   return { svg: plate(o, R) + s, n, caps, rd: o.soft ? 0.55 : -0.8, cover: (sum / n) * 0.92, thick: clamp(sw / 38), ...stats(list) };
