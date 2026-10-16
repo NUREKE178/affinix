@@ -56,8 +56,8 @@ export function Favorites() {
 
       ${activeHashtag && html`
         <div class="flex items-center gap-2 mb-4">
-          <${Badge} tone="indigo">${activeHashtag}<//>
-          <button type="button" onClick=${() => setActiveHashtag(null)} class="text-xs text-slate-500 hover:text-slate-300">${t("feed.clearFilter")}</button>
+          <${Badge} tone="signal">${activeHashtag}<//>
+          <button type="button" onClick=${() => setActiveHashtag(null)} class="text-xs text-graphite-500 hover:text-graphite-300">${t("feed.clearFilter")}</button>
         </div>
       `}
 
@@ -103,10 +103,10 @@ export function Favorites() {
       `}
 
       ${confirmMounted && html`
-        <div class="sk-backdrop-anim fixed inset-0 z-50 flex items-center justify-center bg-slate-950/70 p-4" data-state=${confirmPhase} onClick=${(e) => e.target === e.currentTarget && setConfirmDelete(null)}>
+        <div class="sk-backdrop-anim fixed inset-0 z-50 flex items-center justify-center bg-graphite-950/70 p-4" data-state=${confirmPhase} onClick=${(e) => e.target === e.currentTarget && setConfirmDelete(null)}>
           <${Card} className="sk-overlay-anim sk-overlay-anim-center max-w-sm p-5" data-state=${confirmPhase}>
-            <div class="font-semibold text-slate-100">${t("feed.confirmDeleteTitle")}</div>
-            <p class="text-sm text-slate-500 mt-1.5">${t("feed.confirmDeleteBody")}</p>
+            <div class="font-semibold text-graphite-100">${t("feed.confirmDeleteTitle")}</div>
+            <p class="text-sm text-graphite-500 mt-1.5">${t("feed.confirmDeleteBody")}</p>
             <div class="flex justify-end gap-2 mt-5">
               <${Button} variant="secondary" size="sm" onClick=${() => setConfirmDelete(null)}>${t("common.cancel")}<//>
               <${Button} variant="danger" size="sm" disabled=${deleting} onClick=${doDelete}>${t("common.delete")}<//>

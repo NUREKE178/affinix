@@ -43,15 +43,15 @@ function AiSummaryCard({ experimentId, t }) {
   };
 
   return html`
-    <${Card} className="p-5 mb-5 border-teal-500/25 bg-teal-500/[0.03]">
+    <${Card} className="p-5 mb-5">
       <div class="flex items-center gap-2 mb-3">
-        <div class="flex h-7 w-7 items-center justify-center rounded-lg bg-teal-500/15 text-teal-300"><${Icon} name="sparkle" size=${15} /></div>
-        <h3 class="font-semibold text-slate-100">${t("insights.aiSummary.title")}</h3>
+        <div class="sk-tile"><${Icon} name="sparkle" size=${15} /></div>
+        <h3 class="font-semibold text-graphite-100">${t("insights.aiSummary.title")}</h3>
       </div>
-      <p class="text-xs text-slate-500 mb-4">${t("insights.aiSummary.subtitle")}</p>
+      <p class="text-xs text-graphite-500 mb-4">${t("insights.aiSummary.subtitle")}</p>
 
       ${row === undefined && html`
-        <div class="flex items-center gap-2 text-sm text-slate-500"><${Spinner} size=${14} /><${LoadingLabel} label=${t("common.loading")} /></div>
+        <div class="flex items-center gap-2 text-sm text-graphite-500"><${Spinner} size=${14} /><${LoadingLabel} label=${t("common.loading")} /></div>
       `}
 
       ${row !== undefined && generating && html`<${GeneratingState} label=${t("insights.aiSummary.generating")} />`}
@@ -73,10 +73,10 @@ function AiSummaryCard({ experimentId, t }) {
 
       ${row !== undefined && !generating && !error && row?.status === "ready" && html`
         <div>
-          <p class="text-sm text-slate-200 leading-relaxed whitespace-pre-line">${row.output?.text}</p>
+          <p class="text-sm text-graphite-200 leading-relaxed whitespace-pre-line">${row.output?.text}</p>
           <div class="flex items-center justify-between mt-4 pt-3 border-t border-black/30">
-            <span class="text-[11px] text-slate-600">${t("insights.aiSummary.generatedAt", { date: formattedDate(row.generated_at), model: row.model ?? "" })}</span>
-            <button class="text-xs text-teal-400 hover:text-teal-300" onClick=${onGenerate}>${t("insights.aiSummary.regenerateCta")}</button>
+            <span class="text-[11px] text-graphite-600">${t("insights.aiSummary.generatedAt", { date: formattedDate(row.generated_at), model: row.model ?? "" })}</span>
+            <button class="text-xs text-signal-400 hover:text-signal-300" onClick=${onGenerate}>${t("insights.aiSummary.regenerateCta")}</button>
           </div>
         </div>
       `}
@@ -152,9 +152,9 @@ export function Insights({ params }) {
       />
 
       <div class="flex items-center gap-2 mb-6 flex-wrap">
-        <span class="font-medium text-slate-200">${experiment.name}</span>
-        <${Badge} tone="indigo">${researchTypeLabel(experiment.researchType, t)}<//>
-        <button class="ml-auto text-sm text-indigo-400 hover:text-indigo-300" onClick=${() => navigate(`/app/experiments/${experiment.id}/results`)}>${t("insights.allResults")}</button>
+        <span class="font-medium text-graphite-200">${experiment.name}</span>
+        <${Badge} tone="signal">${researchTypeLabel(experiment.researchType, t)}<//>
+        <button class="ml-auto text-sm text-signal-400 hover:text-signal-300" onClick=${() => navigate(`/app/experiments/${experiment.id}/results`)}>${t("insights.allResults")}</button>
       </div>
 
       <div class="rounded-xl border border-amber-500/20 bg-amber-500/[0.05] px-4 py-3 text-xs text-amber-200/90 mb-6 flex gap-2">
@@ -166,34 +166,34 @@ export function Insights({ params }) {
 
       <${Card} className="p-5 mb-5">
         <div class="flex items-center gap-2 mb-3">
-          <div class="flex h-7 w-7 items-center justify-center rounded-lg bg-indigo-500/15 text-indigo-300"><${Icon} name="results" size=${15} /></div>
-          <h3 class="font-semibold text-slate-100">${t("insights.whatHappened")}</h3>
+          <div class="sk-tile"><${Icon} name="results" size=${15} /></div>
+          <h3 class="font-semibold text-graphite-100">${t("insights.whatHappened")}</h3>
         </div>
         <ul class="space-y-2.5">
-          ${insights.whatHappened.map((line, i) => html`<li key=${i} class="flex gap-2.5 text-sm text-slate-300"><span class="text-indigo-400 mt-0.5">•</span><span>${line}</span></li>`)}
+          ${insights.whatHappened.map((line, i) => html`<li key=${i} class="flex gap-2.5 text-sm text-graphite-300"><span class="text-signal-400 mt-0.5">•</span><span>${line}</span></li>`)}
         </ul>
       <//>
 
       <${Card} className="p-5 mb-5">
         <div class="flex items-center gap-2 mb-3">
-          <div class="flex h-7 w-7 items-center justify-center rounded-lg bg-teal-500/15 text-teal-300"><${Icon} name="sparkle" size=${15} /></div>
-          <h3 class="font-semibold text-slate-100">${t("insights.whyItMightHaveHappened")}</h3>
+          <div class="sk-tile"><${Icon} name="sparkle" size=${15} /></div>
+          <h3 class="font-semibold text-graphite-100">${t("insights.whyItMightHaveHappened")}</h3>
         </div>
         <ul class="space-y-2.5">
-          ${insights.whyMightHaveHappened.map((line, i) => html`<li key=${i} class="flex gap-2.5 text-sm text-slate-300"><span class="text-teal-400 mt-0.5">•</span><span>${line}</span></li>`)}
+          ${insights.whyMightHaveHappened.map((line, i) => html`<li key=${i} class="flex gap-2.5 text-sm text-graphite-300"><span class="text-graphite-500 mt-0.5">•</span><span>${line}</span></li>`)}
         </ul>
-        <p class="text-xs text-slate-500 mt-4 italic">${t("insights.causalDisclaimer")}</p>
+        <p class="text-xs text-graphite-500 mt-4 italic">${t("insights.causalDisclaimer")}</p>
       <//>
 
-      <${Card} className="p-5 border-indigo-500/30 bg-indigo-500/[0.04]">
+      <${Card} className="p-5 border-signal-500/30 bg-signal-500/[0.04]">
         <div class="flex items-center justify-between gap-2 mb-3">
           <div class="flex items-center gap-2">
-            <div class="flex h-7 w-7 items-center justify-center rounded-lg bg-indigo-500/20 text-indigo-300"><${Icon} name="check" size=${15} /></div>
-            <h3 class="font-semibold text-slate-100">${t("insights.recommendationTitle")}</h3>
+            <div class="sk-tile"><${Icon} name="check" size=${15} /></div>
+            <h3 class="font-semibold text-graphite-100">${t("insights.recommendationTitle")}</h3>
           </div>
           <${ConfidenceBadge} confidence=${insights.recommendation.confidence} t=${t} />
         </div>
-        <p class="text-sm text-slate-200 leading-relaxed">${insights.recommendation.text}</p>
+        <p class="text-sm text-graphite-200 leading-relaxed">${insights.recommendation.text}</p>
       <//>
     </div>
   `;

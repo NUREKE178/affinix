@@ -35,9 +35,9 @@ function AvatarEditor({ profile, displayName, t }) {
     <label class="relative group cursor-pointer shrink-0">
       ${profile?.avatar_url
         ? html`<img src=${profile.avatar_url} class="h-20 w-20 rounded-full object-cover" />`
-        : html`<div class="h-20 w-20 rounded-full bg-gradient-to-br from-indigo-500 to-teal-400 flex items-center justify-center text-2xl font-semibold text-white">${initialsFor(displayName)}</div>`}
-      <div class="absolute inset-0 rounded-full bg-slate-950/60 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity">
-        ${uploading ? html`<${Spinner} size=${18} />` : html`<${Icon} name="upload" size=${18} className="text-slate-100" />`}
+        : html`<div class="h-20 w-20 rounded-full sk-avatar flex items-center justify-center text-2xl font-semibold">${initialsFor(displayName)}</div>`}
+      <div class="absolute inset-0 rounded-full bg-graphite-950/60 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity">
+        ${uploading ? html`<${Spinner} size=${18} />` : html`<${Icon} name="upload" size=${18} className="text-graphite-100" />`}
       </div>
       <input type="file" accept="image/jpeg,image/png,image/webp" class="hidden" disabled=${uploading} onChange=${(e) => onFile(e.target.files?.[0])} />
     </label>
@@ -107,10 +107,10 @@ function PersonalTab({ profile, user, org, t }) {
       <div class="flex items-center gap-4">
         <${AvatarEditor} profile=${profile} displayName=${form.full_name || user?.email} t=${t} />
         <div>
-          <div class="font-semibold text-slate-100">${form.full_name || t("profile.noName")}</div>
-          <div class="text-sm text-slate-500">${org?.name ?? ""}${org?.role ? ` · ${org.role}` : ""}</div>
-          ${profile?.username && html`<div class="text-xs text-slate-600 mt-0.5">${t("profile.publicProfileUrl", { username: profile.username })}</div>`}
-          <button type="button" onClick=${() => navigate("/app/friends")} class="text-xs text-indigo-300 hover:text-indigo-200 mt-1">
+          <div class="font-semibold text-graphite-100">${form.full_name || t("profile.noName")}</div>
+          <div class="text-sm text-graphite-500">${org?.name ?? ""}${org?.role ? ` · ${org.role}` : ""}</div>
+          ${profile?.username && html`<div class="text-xs text-graphite-600 mt-0.5">${t("profile.publicProfileUrl", { username: profile.username })}</div>`}
+          <button type="button" onClick=${() => navigate("/app/friends")} class="text-xs text-signal-300 hover:text-signal-200 mt-1">
             ${t("friends.countLabel", { count: friends.length })}
           </button>
         </div>
@@ -141,21 +141,21 @@ function PersonalTab({ profile, user, org, t }) {
 
       <div class="sk-panel-flat rounded-lg p-3.5">
         <${Switch} label=${t("profile.personal.publicToggle")} checked=${form.public_profile_enabled} onChange=${(v) => patch({ public_profile_enabled: v })} />
-        <p class="text-xs text-slate-500 mt-1">${t("profile.personal.publicHint", { username: form.username || "username" })}</p>
+        <p class="text-xs text-graphite-500 mt-1">${t("profile.personal.publicHint", { username: form.username || "username" })}</p>
       </div>
 
       <div class="flex justify-end">
         <${Button} onClick=${save} loading=${saving}>${saving ? t("common.saving") : t("profile.personal.saveButton")}<//>
       </div>
 
-      <div class="pt-5 border-t border-slate-800">
-        <h4 class="text-sm font-semibold text-slate-200 mb-3">${t("profile.personal.emailTitle")}</h4>
-        <p class="text-sm text-slate-400 mb-3">${t("profile.personal.emailCurrent", { email: user?.email })}</p>
+      <div class="pt-5 border-t border-graphite-800">
+        <h4 class="text-sm font-semibold text-graphite-200 mb-3">${t("profile.personal.emailTitle")}</h4>
+        <p class="text-sm text-graphite-400 mb-3">${t("profile.personal.emailCurrent", { email: user?.email })}</p>
         <div class="flex gap-2 max-w-md">
           <${TextInput} type="email" placeholder=${t("profile.personal.emailPlaceholder")} value=${emailDraft} onInput=${(e) => setEmailDraft(e.target.value)} />
           <${Button} variant="secondary" size="sm" loading=${changingEmail} disabled=${!emailDraft.trim()} onClick=${changeEmail}>${t("profile.personal.emailChange")}<//>
         </div>
-        <p class="text-xs text-slate-500 mt-1.5">${t("profile.personal.emailHint")}</p>
+        <p class="text-xs text-graphite-500 mt-1.5">${t("profile.personal.emailHint")}</p>
       </div>
     </div>
   `;
@@ -183,7 +183,7 @@ function SecurityTab({ t }) {
 
   return html`
     <div class="max-w-md space-y-4">
-      <h4 class="text-sm font-semibold text-slate-200">${t("profile.security.changePassword")}</h4>
+      <h4 class="text-sm font-semibold text-graphite-200">${t("profile.security.changePassword")}</h4>
       <${Field} label=${t("profile.security.newPasswordLabel")} hint=${t("profile.security.passwordHint")}>
         <${TextInput} type="password" autocomplete="new-password" value=${password} onInput=${(e) => setPassword(e.target.value)} />
       <//>
@@ -210,7 +210,7 @@ function NotificationsTab({ profile, t }) {
   }
 
   return html`
-    <div class="max-w-md divide-y divide-slate-800">
+    <div class="max-w-md divide-y divide-graphite-800">
       <${Switch} label=${t("profile.notifications.emailOnResponses")} checked=${responses} onChange=${(v) => toggle("notify_email_responses", v, setResponses)} />
       <${Switch} label=${t("profile.notifications.weeklyDigest")} checked=${digest} onChange=${(v) => toggle("notify_email_digest", v, setDigest)} />
     </div>
@@ -240,7 +240,7 @@ function PreferencesTab({ profile, t }) {
         <div class="flex items-center gap-1.5">
           ${LOCALES.map((l) => html`
             <button key=${l.id} type="button" onClick=${() => setAppLocale(l.id)}
-              class=${`px-3 py-1.5 rounded-lg text-sm font-medium border transition-colors ${appLocale === l.id ? "border-indigo-500 bg-indigo-500/10 text-indigo-200" : "border-slate-700 text-slate-400 hover:border-slate-500"}`}>${l.label}</button>
+              class=${`px-3 py-1.5 rounded-lg text-sm font-medium border transition-colors ${appLocale === l.id ? "border-signal-500 bg-signal-500/10 text-signal-200" : "border-graphite-700 text-graphite-400 hover:border-graphite-500"}`}>${l.label}</button>
           `)}
         </div>
       <//>
@@ -270,15 +270,15 @@ function SessionsTab({ user, t }) {
     <div class="max-w-md space-y-5">
       <div class="sk-panel-flat rounded-lg p-3.5">
         <div class="flex items-center justify-between text-sm">
-          <span class="text-slate-300">${t("profile.sessions.currentSession")}</span>
+          <span class="text-graphite-300">${t("profile.sessions.currentSession")}</span>
           <${Badge} tone="emerald">${t("profile.sessions.active")}<//>
         </div>
-        <p class="text-xs text-slate-500 mt-1.5">${t("profile.sessions.sessionNote")}</p>
+        <p class="text-xs text-graphite-500 mt-1.5">${t("profile.sessions.sessionNote")}</p>
       </div>
       <dl class="space-y-2.5 text-sm">
-        <div class="flex justify-between"><dt class="text-slate-500">${t("profile.sessions.accountCreated")}</dt><dd class="text-slate-200">${shortDate(user?.created_at)}</dd></div>
-        <div class="flex justify-between"><dt class="text-slate-500">${t("profile.sessions.experimentsCreated")}</dt><dd class="text-slate-200">${stats ? stats.experimentCount : statsError ? "—" : html`<${Skeleton} className="h-4 w-8" />`}</dd></div>
-        <div class="flex justify-between"><dt class="text-slate-500">${t("profile.sessions.completedParticipants")}</dt><dd class="text-slate-200">${stats ? stats.completedParticipants : statsError ? "—" : html`<${Skeleton} className="h-4 w-8" />`}</dd></div>
+        <div class="flex justify-between"><dt class="text-graphite-500">${t("profile.sessions.accountCreated")}</dt><dd class="text-graphite-200">${shortDate(user?.created_at)}</dd></div>
+        <div class="flex justify-between"><dt class="text-graphite-500">${t("profile.sessions.experimentsCreated")}</dt><dd class="text-graphite-200">${stats ? stats.experimentCount : statsError ? "—" : html`<${Skeleton} className="h-4 w-8" />`}</dd></div>
+        <div class="flex justify-between"><dt class="text-graphite-500">${t("profile.sessions.completedParticipants")}</dt><dd class="text-graphite-200">${stats ? stats.completedParticipants : statsError ? "—" : html`<${Skeleton} className="h-4 w-8" />`}</dd></div>
       </dl>
       ${statsError && html`
         <div class="flex items-center justify-between gap-3 rounded-lg border border-rose-500/30 bg-rose-500/10 px-3 py-2 text-xs text-rose-300">
@@ -313,7 +313,7 @@ export function Profile() {
         <${SectionHeading} title=${t("profile.title")} subtitle=${t("profile.errorTitle")} />
         <${Card} className="p-5">
           <p class="text-sm text-rose-400 break-words">${error ?? t("profile.errorNotFound")}</p>
-          <p class="text-sm text-slate-500 mt-3 leading-relaxed">${t("profile.errorHint")}</p>
+          <p class="text-sm text-graphite-500 mt-3 leading-relaxed">${t("profile.errorHint")}</p>
           <${Button} className="mt-4" variant="secondary" onClick=${() => location.reload()}>${t("profile.reloadPage")}<//>
         <//>
       </div>

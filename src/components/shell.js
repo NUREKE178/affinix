@@ -47,7 +47,7 @@ function Avatar({ name, url, size = 32 }) {
     return html`<img src=${url} class="rounded-full object-cover shrink-0" style=${{ width: `${size}px`, height: `${size}px` }} />`;
   }
   return html`
-    <div class="rounded-full bg-gradient-to-br from-indigo-500 to-teal-400 flex items-center justify-center font-semibold text-white shrink-0"
+    <div class="sk-avatar flex items-center justify-center rounded-full font-semibold shrink-0"
       style=${{ width: `${size}px`, height: `${size}px`, fontSize: `${Math.max(10, size * 0.38)}px` }}>
       ${name ? initialsFor(name) : html`<${Icon} name="user" size=${Math.round(size * 0.55)} />`}
     </div>
@@ -85,13 +85,13 @@ function Dropdown({ open, onClose, align = "left", children }) {
 function MenuItem({ icon, label, onClick, danger = false }) {
   return html`
     <button onClick=${onClick}
-      class=${`flex w-full items-center gap-2.5 px-3.5 py-2 text-sm text-left transition-colors ${danger ? "text-rose-400 hover:bg-rose-500/10" : "text-slate-300 hover:bg-white/5"}`}>
+      class=${`flex w-full items-center gap-2.5 px-3.5 py-2 text-sm text-left transition-colors ${danger ? "text-rose-400 hover:bg-rose-500/10" : "text-graphite-300 hover:bg-white/5"}`}>
       <${Icon} name=${icon} size=${15} /> ${label}
     </button>
   `;
 }
 
-function UserMenu({ onNavigate, collapsed = false }) {
+function UserMenu({ onNavigate, collapsed = false, sidebarMode, onChangeSidebarMode }) {
   const t = useT();
   const [open, setOpen] = useState(false);
   const { org } = useCurrentOrg();
@@ -105,20 +105,31 @@ function UserMenu({ onNavigate, collapsed = false }) {
         class=${`sk-nav-item flex w-full items-center gap-2.5 overflow-hidden rounded-lg py-2 transition-colors ${collapsed ? "justify-center px-0" : "px-1.5"}`} data-active="false">
         <div class="relative shrink-0">
           <${Avatar} name=${displayName} url=${profile?.avatar_url} />
-          <span class="absolute -bottom-0.5 -right-0.5 h-2.5 w-2.5 rounded-full bg-emerald-400 border-2 border-slate-950"></span>
+          <span class="sk-led absolute -bottom-0.5 -right-0.5 h-2.5 w-2.5 border-2 border-graphite-900" style="--led:#34d399;--led-glow:rgba(52,211,153,.6)"></span>
         </div>
         ${!collapsed && html`
           <div class="min-w-0 flex-1 text-left">
-            <div class="text-sm font-medium text-slate-100 truncate">${displayName || html`<${Skeleton} className="h-4 w-24" />`}</div>
-            <div class="text-[11px] text-slate-500 truncate">${org?.name ?? ""}</div>
+            <div class="text-sm font-medium text-graphite-100 truncate">${displayName || html`<${Skeleton} className="h-4 w-24" />`}</div>
+            <div class="text-[11px] text-graphite-500 truncate">${org?.name ?? ""}</div>
           </div>
-          <${Icon} name="chevronDown" size=${14} className="text-slate-500 shrink-0" />
+          <${Icon} name="chevronDown" size=${14} className="text-graphite-500 shrink-0" />
         `}
       </button>
       <${Dropdown} open=${open} onClose=${() => setOpen(false)}>
         <${MenuItem} icon="user" label=${t("shell.userMenu.profile")} onClick=${() => { setOpen(false); onNavigate("/profile"); }} />
         <${MenuItem} icon="settings" label=${t("shell.userMenu.settings")} onClick=${() => { setOpen(false); onNavigate("/app/settings"); }} />
-        <div class="my-1 border-t border-slate-800"></div>
+        ${onChangeSidebarMode && html`
+          <div class="my-1 border-t border-graphite-800"></div>
+          <div class="sk-caption px-3.5 pt-2 pb-1">${t("shell.sidebar.label")}</div>
+          ${SIDEBAR_MODES.map((m) => html`
+            <button key=${m.id} type="button" onClick=${() => { onChangeSidebarMode(m.id); setOpen(false); }}
+              class="flex w-full items-center gap-2.5 px-3.5 py-2 text-sm text-left text-graphite-300 hover:bg-white/5 transition-colors">
+              <span class="sk-led shrink-0" style=${sidebarMode === m.id ? "--led:#ff6a1f;--led-glow:rgba(255,106,31,.65)" : "--led:#2f3137"}></span>
+              ${t(m.key)}
+            </button>
+          `)}
+        `}
+        <div class="my-1 border-t border-graphite-800"></div>
         <${MenuItem} icon="logout" label=${t("shell.userMenu.logout")} danger onClick=${async () => { setOpen(false); await signOut(); navigate("/"); }} />
       <//>
     </div>
@@ -132,16 +143,15 @@ function NavItem({ item, currentPath, onNavigate, t, collapsed, badgeCount = 0 }
       onClick=${() => onNavigate(item.path)}
       data-active=${active}
       title=${collapsed ? t(item.key) : undefined}
-      class=${`sk-nav-item relative flex w-full items-center gap-3 overflow-hidden whitespace-nowrap rounded-lg py-2 text-sm font-medium ${collapsed ? "justify-center px-0" : "px-3"} ${
-        active ? "text-indigo-300" : "text-slate-400 hover:text-slate-200"
-      }`}
+      aria-current=${active ? "page" : undefined}
+      class=${`sk-nav-item relative flex w-full items-center gap-3 overflow-hidden whitespace-nowrap rounded-lg py-2 text-sm font-medium ${collapsed ? "justify-center px-0" : "px-3"}`}
     >
-      <span class="relative shrink-0">
+      <span class=${`relative shrink-0 ${active ? "text-signal-400" : ""}`}>
         <${Icon} name=${item.icon} size=${17} />
-        ${collapsed && badgeCount > 0 && html`<span class="absolute -top-1 -right-1.5 h-2 w-2 rounded-full bg-rose-400 border border-slate-950"></span>`}
+        ${collapsed && badgeCount > 0 && html`<span class="sk-led absolute -top-1 -right-1.5 h-2 w-2" style="--led:#ff6a1f;--led-glow:rgba(255,106,31,.7)"></span>`}
       </span>
       ${!collapsed && html`<span class="flex-1 text-left">${t(item.key)}</span>`}
-      ${!collapsed && badgeCount > 0 && html`<${Badge} tone="rose" className="shrink-0 px-1.5">${badgeCount}<//>`}
+      ${!collapsed && badgeCount > 0 && html`<span class="sk-count">${badgeCount}</span>`}
     </button>
   `;
 }
@@ -154,33 +164,21 @@ const SIDEBAR_MODES = [
   { id: "hover", key: "shell.sidebar.hover" },
 ];
 
-/** Matches the picker pattern from Supabase's own dashboard (the user's
- * own reference): a small dot marks the active mode, not a checkmark. */
-function SidebarModePicker({ mode, onChange, collapsed }) {
+/** The key at the foot of the sidebar: collapses the rail, expands it again, or (in "expand on hover"
+ * mode) pins it open. All three modes stay reachable from the user menu. `[` does the same from the keyboard. */
+function CollapseKey({ mode, collapsed, onToggle }) {
   const t = useT();
-  const [open, setOpen] = useState(false);
+  const label = collapsed ? t("shell.sidebar.expand") : mode === "hover" ? t("shell.sidebar.pin") : t("shell.sidebar.collapse");
   return html`
-    <div class="relative">
-      <button type="button" onClick=${() => setOpen((v) => !v)}
-        title=${t("shell.sidebar.label")}
-        class="sk-btn h-7 w-7 rounded-lg text-slate-500 hover:text-slate-200">
-        <${Icon} name=${collapsed ? "chevronRight" : "chevronLeft"} size=${14} />
-      </button>
-      <${Dropdown} open=${open} onClose=${() => setOpen(false)}>
-        <div class="px-3.5 py-2 text-[11px] font-semibold uppercase tracking-wider text-slate-600">${t("shell.sidebar.label")}</div>
-        ${SIDEBAR_MODES.map((m) => html`
-          <button key=${m.id} type="button" onClick=${() => { onChange(m.id); setOpen(false); }}
-            class="flex w-full items-center gap-2.5 px-3.5 py-2 text-sm text-left text-slate-300 hover:bg-white/5 transition-colors">
-            <span class=${`h-1.5 w-1.5 rounded-full shrink-0 transition-colors ${mode === m.id ? "bg-indigo-400" : "bg-transparent"}`}></span>
-            ${t(m.key)}
-          </button>
-        `)}
-      <//>
-    </div>
+    <button type="button" onClick=${onToggle} class="sk-collapse" data-rail=${collapsed ? "true" : "false"}
+      title=${collapsed ? `${label}  [` : undefined} aria-label=${label} aria-keyshortcuts="[">
+      <${Icon} name=${collapsed ? "chevronsRight" : "chevronsLeft"} size=${16} className="shrink-0" />
+      ${!collapsed && html`<span class="whitespace-nowrap">${label}</span><span class="sk-kbd" aria-hidden="true">[</span>`}
+    </button>
   `;
 }
 
-function SidebarContent({ currentPath, onNavigate, collapsed = false, sidebarMode, onChangeSidebarMode }) {
+function SidebarContent({ currentPath, onNavigate, collapsed = false, sidebarMode, onChangeSidebarMode, onToggleSidebar }) {
   const t = useT();
   const { org } = useCurrentOrg();
   const { incoming } = useFriends();
@@ -190,11 +188,11 @@ function SidebarContent({ currentPath, onNavigate, collapsed = false, sidebarMod
     <div class="flex h-full flex-col">
       <button type="button" onClick=${() => onNavigate("/app/overview")}
         class=${`flex items-center gap-2.5 overflow-hidden px-5 py-5 text-left hover:opacity-80 transition-opacity ${collapsed ? "justify-center px-0" : "w-full"}`}>
-        <${LogoMark} size=${36} />
+        <${LogoMark} size=${34} />
         ${!collapsed && html`
           <div class="min-w-0">
-            <div class="font-semibold text-slate-50 leading-tight tracking-tight whitespace-nowrap">DecisionOS</div>
-            <div class="text-[11px] text-slate-500 leading-tight truncate max-w-[9rem]">${org?.name ?? html`<${Skeleton} className="mt-1 h-3 w-20" />`}</div>
+            <div class="font-semibold text-graphite-50 leading-tight tracking-tight whitespace-nowrap">DecisionOS</div>
+            <div class="text-[11px] text-graphite-500 leading-tight truncate max-w-[9rem]">${org?.name ?? html`<${Skeleton} className="mt-1 h-3 w-20" />`}</div>
           </div>
         `}
       </button>
@@ -202,8 +200,8 @@ function SidebarContent({ currentPath, onNavigate, collapsed = false, sidebarMod
       <div class="px-4 mb-3">
         <button onClick=${() => onNavigate("/app/experiments/new")}
           title=${collapsed ? t("shell.newResearch") : undefined}
-          class=${`sk-btn sk-btn-primary flex w-full items-center justify-center gap-1.5 overflow-hidden whitespace-nowrap rounded-lg text-white text-sm font-medium py-2.5 ${collapsed ? "px-0" : "px-4"}`}>
-          <${Icon} name="plus" size=${16} className="shrink-0" /> ${!collapsed && t("shell.newResearch")}
+          class=${`sk-btn flex w-full items-center justify-center gap-2 overflow-hidden whitespace-nowrap rounded-lg text-sm font-medium py-2.5 ${collapsed ? "px-0" : "px-4"}`}>
+          <${Icon} name="plus" size=${16} className="shrink-0 text-signal-400" /> ${!collapsed && t("shell.newResearch")}
         </button>
       </div>
 
@@ -211,23 +209,23 @@ function SidebarContent({ currentPath, onNavigate, collapsed = false, sidebarMod
         ${NAV.map((item) => html`<${NavItem} key=${item.id} item=${item} currentPath=${currentPath} onNavigate=${onNavigate} t=${t} collapsed=${collapsed} />`)}
 
         ${collapsed
-          ? html`<div class="my-2 mx-2 border-t border-black/40"></div>`
-          : html`<div class="overflow-hidden whitespace-nowrap pt-4 pb-1.5 px-3 text-[11px] font-semibold uppercase tracking-wider text-slate-600">${t("shell.communityLabel")}</div>`}
+          ? html`<div class="my-3 mx-3 border-t border-graphite-800"></div>`
+          : html`<div class="sk-caption overflow-hidden whitespace-nowrap pt-5 pb-1.5 px-3">${t("shell.communityLabel")}</div>`}
         ${COMMUNITY_NAV.map((item) => html`<${NavItem} key=${item.id} item=${item} currentPath=${currentPath} onNavigate=${onNavigate} t=${t} collapsed=${collapsed} badgeCount=${navBadge(item.id)} />`)}
 
         ${collapsed
-          ? html`<div class="my-2 mx-2 border-t border-black/40"></div>`
-          : html`<div class="overflow-hidden whitespace-nowrap pt-4 pb-1.5 px-3 text-[11px] font-semibold uppercase tracking-wider text-slate-600">${t("shell.workspaceLabel")}</div>`}
+          ? html`<div class="my-3 mx-3 border-t border-graphite-800"></div>`
+          : html`<div class="sk-caption overflow-hidden whitespace-nowrap pt-5 pb-1.5 px-3">${t("shell.workspaceLabel")}</div>`}
         ${WORKSPACE_NAV.map((item) => html`<${NavItem} key=${item.id} item=${item} currentPath=${currentPath} onNavigate=${onNavigate} t=${t} collapsed=${collapsed} />`)}
       </nav>
 
-      <div class="border-t border-black/40 py-3 space-y-1.5">
-        ${onChangeSidebarMode && html`
-          <div class=${`flex ${collapsed ? "justify-center px-0" : "justify-start px-3"}`}>
-            <${SidebarModePicker} mode=${sidebarMode} onChange=${onChangeSidebarMode} collapsed=${collapsed} />
+      <div class="border-t border-graphite-800 py-3 space-y-2">
+        ${onToggleSidebar && html`
+          <div class=${`flex ${collapsed ? "justify-center px-0" : "px-3"}`}>
+            <${CollapseKey} mode=${sidebarMode} collapsed=${collapsed} onToggle=${onToggleSidebar} />
           </div>
         `}
-        <${UserMenu} onNavigate=${onNavigate} collapsed=${collapsed} />
+        <${UserMenu} onNavigate=${onNavigate} collapsed=${collapsed} sidebarMode=${sidebarMode} onChangeSidebarMode=${onChangeSidebarMode} />
       </div>
     </div>
   `;
@@ -280,15 +278,15 @@ function NotificationsMenu() {
 
   return html`
     <div class="relative" ref=${ref}>
-      <button class="sk-btn relative h-8 w-8 rounded-lg text-slate-400 hover:text-slate-200" onClick=${onToggle} aria-label=${t("shell.notifications.title")}>
+      <button class="sk-btn relative h-8 w-8 rounded-lg text-graphite-400 hover:text-graphite-200" onClick=${onToggle} aria-label=${t("shell.notifications.title")}>
         <${Icon} name="bell" size=${17} className=${ringing ? "sk-bell-ring" : ""} />
-        ${unreadCount > 0 && html`<span class="absolute top-1 right-1 h-2 w-2 rounded-full bg-rose-400 border border-slate-950"></span>`}
+        ${unreadCount > 0 && html`<span class="sk-led absolute top-1 right-1 h-2 w-2" style="--led:#ff6a1f;--led-glow:rgba(255,106,31,.7)"></span>`}
       </button>
       ${menuMounted && html`
         <div data-state=${menuPhase} style="transform-origin: top right" class="sk-modal sk-overlay-anim sk-overlay-anim-down fixed right-4 top-[69px] sm:absolute sm:right-0 sm:top-full sm:mt-2 z-40 w-72 max-w-[calc(100vw-2rem)] rounded-xl">
-          <div class="px-4 py-3 border-b border-black/40 text-sm font-medium text-slate-200">${t("shell.notifications.title")}</div>
-          ${loading && html`<div class="px-4 py-8 text-center text-sm text-slate-500">${t("common.loading")}</div>`}
-          ${!loading && notifications.length === 0 && html`<div class="px-4 py-8 text-center text-sm text-slate-500">${t("shell.notifications.empty")}</div>`}
+          <div class="px-4 py-3 border-b border-graphite-800 text-sm font-medium text-graphite-200">${t("shell.notifications.title")}</div>
+          ${loading && html`<div class="px-4 py-8 text-center text-sm text-graphite-500">${t("common.loading")}</div>`}
+          ${!loading && notifications.length === 0 && html`<div class="px-4 py-8 text-center text-sm text-graphite-500">${t("shell.notifications.empty")}</div>`}
           ${!loading && notifications.length > 0 && html`
             <div class="max-h-80 overflow-y-auto py-1">
               ${notifications.map((n) => html`
@@ -296,11 +294,11 @@ function NotificationsMenu() {
                   class="flex w-full items-start gap-2.5 px-4 py-2.5 text-left hover:bg-white/5 transition-colors">
                   <${Avatar} name=${n.actorName} url=${n.actorAvatarUrl} size=${28} />
                   <div class="min-w-0 flex-1">
-                    <div class="text-xs text-slate-300 leading-snug">${t(notificationCopyKey(n.type), { name: n.actorName ?? t("feed.unknownAuthor") })}</div>
-                    ${n.type === "comment" && n.commentBody && html`<div class="text-xs text-slate-500 truncate mt-0.5">«${n.commentBody}»</div>`}
-                    <div class="text-[11px] text-slate-600 mt-0.5">${relativeDate(n.createdAt)}</div>
+                    <div class="text-xs text-graphite-300 leading-snug">${t(notificationCopyKey(n.type), { name: n.actorName ?? t("feed.unknownAuthor") })}</div>
+                    ${n.type === "comment" && n.commentBody && html`<div class="text-xs text-graphite-500 truncate mt-0.5">«${n.commentBody}»</div>`}
+                    <div class="text-[11px] text-graphite-500 mt-0.5">${relativeDate(n.createdAt)}</div>
                   </div>
-                  ${!n.isRead && html`<span class="mt-1.5 h-1.5 w-1.5 rounded-full bg-indigo-400 shrink-0"></span>`}
+                  ${!n.isRead && html`<span class="sk-led mt-1.5 shrink-0" style="--led:#ff6a1f;--led-glow:rgba(255,106,31,.65)"></span>`}
                 </button>
               `)}
             </div>
@@ -331,7 +329,7 @@ export function LanguageSwitch({ variant = "tabs" }) {
     }
   }
   if (variant === "glass") {
-    // Landing-page look (landing.css): sliding violet pill under three 38px buttons -- same choose() logic as below.
+    // Landing-page look (landing.css): a raised key sliding under three 38px legends -- same choose() logic as below.
     const idx = Math.max(0, LOCALES.findIndex((l) => l.id === locale));
     return html`
       <div class="lp-lang" role="group" aria-label=${t("landing.langLabel")}>
@@ -344,10 +342,10 @@ export function LanguageSwitch({ variant = "tabs" }) {
     `;
   }
   return html`
-    <div class="sk-tabs flex items-center rounded-lg p-0.5 text-sm font-medium">
+    <div class="sk-tabs flex items-center rounded-lg p-0.5 text-sm font-medium" data-compact="true" role="group" aria-label=${t("landing.langLabel")}>
       ${LOCALES.map((l) => html`
-        <button key=${l.id} disabled=${pending} data-active=${locale === l.id} onClick=${() => choose(l.id)}
-          class=${`sk-tab px-2.5 py-1.5 rounded-md disabled:opacity-50 ${locale === l.id ? "text-white" : "text-slate-500 hover:text-slate-300"}`}>${l.label}</button>
+        <button key=${l.id} disabled=${pending} data-active=${locale === l.id} aria-pressed=${locale === l.id} onClick=${() => choose(l.id)}
+          class=${`sk-tab px-2.5 py-1.5 rounded-md disabled:opacity-50 ${locale === l.id ? "text-white" : "text-graphite-500 hover:text-graphite-300"}`}>${l.label}</button>
       `)}
     </div>
   `;
@@ -388,6 +386,23 @@ export function Shell({ currentPath, children }) {
     setHoverPeek(false);
   }
 
+  // expanded <-> collapsed; "expand on hover" counts as collapsed, so the key pins it open.
+  function toggleSidebar() { chooseSidebarMode(sidebarMode === "expanded" ? "collapsed" : "expanded"); }
+  // "[" from the keyboard (by physical key, so it works on a Russian/Kazakh layout too), never while typing.
+  const toggleRef = useRef(toggleSidebar);
+  toggleRef.current = toggleSidebar;
+  useEffect(() => {
+    function onKey(e) {
+      if (e.code !== "BracketLeft" || e.ctrlKey || e.metaKey || e.altKey || e.shiftKey) return;
+      const el = e.target;
+      if (el && (el.isContentEditable || ["INPUT", "TEXTAREA", "SELECT"].includes(el.tagName))) return;
+      e.preventDefault();
+      toggleRef.current();
+    }
+    document.addEventListener("keydown", onKey);
+    return () => document.removeEventListener("keydown", onKey);
+  }, []);
+
   function onSearchSubmit(e) {
     e.preventDefault();
     if (search.trim()) navigate(`/app/experiments?q=${encodeURIComponent(search.trim())}`);
@@ -400,7 +415,7 @@ export function Shell({ currentPath, children }) {
   const visuallyExpanded = sidebarMode === "expanded" || peeking;
 
   return html`
-    <div class=${`min-h-screen bg-slate-950 text-slate-100 ${localeFadeClass}`}>
+    <div class=${`min-h-screen bg-graphite-950 text-graphite-100 ${localeFadeClass}`}>
       <!-- On while any skeleton/spinner/page gate below is on screen -->
       <${LoadingBar} />
       <!-- Desktop/tablet sidebar (md and up) -->
@@ -408,7 +423,7 @@ export function Shell({ currentPath, children }) {
         class=${`sk-sidebar hidden md:flex md:flex-col md:fixed md:inset-y-0 transition-all duration-150 ${visuallyExpanded ? "md:w-64" : "md:w-[72px]"} ${peeking ? "z-40 shadow-2xl shadow-black/60" : "z-20"}`}
         onMouseEnter=${() => { if (sidebarMode === "hover") setHoverPeek(true); }}
         onMouseLeave=${() => { if (sidebarMode === "hover") setHoverPeek(false); }}>
-        <${SidebarContent} currentPath=${currentPath} onNavigate=${onNavigate} collapsed=${!visuallyExpanded} sidebarMode=${sidebarMode} onChangeSidebarMode=${chooseSidebarMode} />
+        <${SidebarContent} currentPath=${currentPath} onNavigate=${onNavigate} collapsed=${!visuallyExpanded} sidebarMode=${sidebarMode} onChangeSidebarMode=${chooseSidebarMode} onToggleSidebar=${toggleSidebar} />
       </aside>
 
       <!-- Mobile sidebar (phone only, below md) -->
@@ -424,12 +439,12 @@ export function Shell({ currentPath, children }) {
       <div class=${reservedNarrow ? "md:pl-[72px]" : "md:pl-64"}>
         <header class="sk-topbar sticky top-0 z-30 grid grid-cols-[1fr_auto_1fr] items-center gap-3 px-4 py-3 md:px-8">
           <div class="flex items-center gap-3 justify-self-start">
-            <button class="sk-btn md:!hidden h-9 w-9 rounded-lg text-slate-400 shrink-0" onClick=${() => setMobileOpen(true)}><${Icon} name="menu" size=${19} /></button>
+            <button class="sk-btn md:!hidden h-9 w-9 rounded-lg text-graphite-400 shrink-0" onClick=${() => setMobileOpen(true)}><${Icon} name="menu" size=${19} /></button>
           </div>
-          <form onSubmit=${onSearchSubmit} class="sk-display hidden sm:flex items-center gap-2.5 justify-self-center rounded-lg px-3.5 py-2 text-sm text-slate-400 w-full max-w-xl">
+          <form onSubmit=${onSearchSubmit} class="sk-display hidden sm:flex items-center gap-2.5 justify-self-center rounded-lg px-3.5 py-2 text-sm text-graphite-400 w-full max-w-xl">
             <${Icon} name="search" size=${16} className="shrink-0" />
             <input value=${search} onInput=${(e) => setSearch(e.target.value)} placeholder=${t("shell.searchPlaceholder")}
-              class="bg-transparent outline-none placeholder:text-slate-500 w-full lg:min-w-[18rem] text-slate-200" />
+              class="bg-transparent outline-none placeholder:text-graphite-500 w-full lg:min-w-[18rem] text-graphite-200" />
           </form>
           <div class="flex items-center gap-3 col-start-2 sm:col-start-3 justify-self-center sm:justify-self-end">
             <${LanguageSwitch} />

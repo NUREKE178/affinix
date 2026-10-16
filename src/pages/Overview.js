@@ -3,11 +3,11 @@ import { useExperiments } from "../lib/experimentsStore.js";
 import { useOrgSessions } from "../lib/participants.js";
 import { useMyProfile } from "../lib/profile.js";
 import { useSession } from "../lib/auth.js";
-import { useT } from "../lib/i18n.js";
+import { useT, useLocale } from "../lib/i18n.js";
 import { navigate } from "../router.js";
-import { Card, SectionHeading, StatTile, Badge, Button, EmptyState, Skeleton } from "../components/ui.js";
+import { Card, SectionHeading, StatTile, Badge, Button, EmptyState, Skeleton, ProgressBar } from "../components/ui.js";
 import { Icon } from "../components/icons.js";
-import { DonutChart, LineChart } from "../components/charts.js";
+import { DonutChart, LineChart, SERIES_COLORS } from "../components/charts.js";
 import { experimentSummary, completedParticipants, averageCompletionTimeMs } from "../lib/stats.js";
 import { pct, durationFromMs, relativeDate } from "../lib/format.js";
 import { researchTypeLabel } from "../lib/questionTypes.js";
@@ -18,14 +18,16 @@ function firstName(profile, user) {
   return user?.email?.split("@")[0] ?? "";
 }
 
-const STATUS_TONE = { published: "emerald", completed: "indigo", draft: "slate", paused: "amber", archived: "slate" };
+const STATUS_TONE = { published: "emerald", completed: "steel", draft: "neutral", paused: "amber", archived: "neutral" };
 const STATUS_KEY = { published: "statusActive", completed: "statusCompleted", draft: "statusDraft", paused: "statusPaused" };
 
 function StatusBadge({ status, t }) {
-  return html`<${Badge} tone=${STATUS_TONE[status] ?? "slate"}>${STATUS_KEY[status] ? t(`overview.${STATUS_KEY[status]}`) : status}<//>`;
+  return html`<${Badge} tone=${STATUS_TONE[status] ?? "neutral"}>${STATUS_KEY[status] ? t(`overview.${STATUS_KEY[status]}`) : status}<//>`;
 }
 
-function dailyCompletionSeries(participants) {
+const DATE_TAGS = { ru: "ru-RU", kk: "kk-KZ", en: "en-US" };
+
+function dailyCompletionSeries(participants, locale) {
   const days = 14;
   const buckets = new Array(days).fill(0);
   const now = Date.now();
@@ -36,13 +38,14 @@ function dailyCompletionSeries(participants) {
   }
   const labels = buckets.map((_, i) => {
     const d = new Date(now - (days - 1 - i) * 86400000);
-    return d.toLocaleDateString(undefined, { month: "short", day: "numeric" });
+    return d.toLocaleDateString(DATE_TAGS[locale] ?? "ru-RU", { month: "short", day: "numeric" });
   });
   return { labels, data: buckets };
 }
 
 export function Overview() {
   const t = useT();
+  const locale = useLocale();
   const { experiments, loading: experimentsLoading } = useExperiments();
   const { sessions: participants, loading: sessionsLoading } = useOrgSessions();
   const { profile } = useMyProfile();
@@ -68,7 +71,7 @@ export function Overview() {
     .sort((a, b) => b.rate - a.rate)
     .slice(0, 5);
 
-  const series = dailyCompletionSeries(participants);
+  const series = dailyCompletionSeries(participants, locale);
 
   const mostRecentWithResults = summaries
     .filter((s) => s.experiment.status !== "draft" && s.summary.participantCount > 0)
@@ -80,7 +83,7 @@ export function Overview() {
         title=${t("overview.welcome", { name: firstName(profile, user) ? `, ${firstName(profile, user)}` : "" })}
         subtitle=${t("overview.subtitle")}
         action=${html`
-          <div class="flex items-center gap-2">
+          <div class="flex flex-wrap items-center gap-2">
             ${mostRecentWithResults && html`
               <${Button} variant="secondary" onClick=${() => navigate(`/app/experiments/${mostRecentWithResults.experiment.id}/results`)}>
                 <${Icon} name="results" size=${16}/> ${t("overview.openLatestResults")}
@@ -91,7 +94,7 @@ export function Overview() {
         `}
       />
 
-      <div class="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-6">
+      <div class="sk-stat-strip mb-6">
         <${StatTile} label=${t("overview.stat.active")} value=${activeCount} hint=${t("overview.stat.activeHint", { drafts: draftCount, paused: pausedCount })} />
         <${StatTile} label=${t("overview.stat.completedParticipants")} value=${allCompletedParticipants.length.toLocaleString()} hint=${t("overview.stat.completedHint", { total: totalStarted.toLocaleString() })} />
         <${StatTile} label=${t("overview.stat.completionRate")} value=${pct(responseRate)} hint=${t("overview.stat.completionHint")} />
@@ -102,17 +105,17 @@ export function Overview() {
         <div class="lg:col-span-2 space-y-5">
           <${Card} className="p-5">
             <${SectionHeading} title=${t("overview.chartTitle")} subtitle=${t("overview.chartSubtitle")} />
-            <${LineChart} labels=${series.labels} data=${series.data} color="#6366f1" height=${200} />
+            <${LineChart} labels=${series.labels} data=${series.data} color=${SERIES_COLORS[0]} height=${210} />
           <//>
 
           <${Card} className="p-5">
             <${SectionHeading}
               title=${t("overview.recentTitle")}
-              action=${html`<button class="text-sm text-indigo-400 hover:text-indigo-300" onClick=${() => navigate("/app/experiments")}>${t("overview.recentAll")}<//>`}
+              action=${html`<button class="text-sm text-signal-400 hover:text-signal-300" onClick=${() => navigate("/app/experiments")}>${t("overview.recentAll")}<//>`}
             />
             ${experimentsLoading
               ? html`
-                <div class="divide-y divide-slate-800">
+                <div class="divide-y divide-graphite-800">
                   ${[0, 1, 2].map((i) => html`
                     <div key=${i} class="flex items-center justify-between gap-4 py-3">
                       <div class="min-w-0 flex-1">
@@ -128,21 +131,21 @@ export function Overview() {
               ? html`<${EmptyState} title=${t("overview.recentEmptyTitle")} body=${t("overview.recentEmptyBody")} icon="experiments"
                   action=${html`<${Button} onClick=${() => navigate("/app/experiments/new")}>${t("overview.recentEmptyCta")}<//>`} />`
               : html`
-                <div class="divide-y divide-slate-800">
+                <div class="divide-y divide-graphite-800">
                   ${recent.map(
                     ({ experiment: e, summary }) => html`
                       <button key=${e.id} onClick=${() => navigate(e.status === "draft" ? `/app/experiments/${e.id}/edit` : `/app/experiments/${e.id}/results`)}
-                        class="flex w-full items-center justify-between gap-4 py-3 text-left hover:bg-slate-800/40 rounded-lg px-2 -mx-2">
+                        class="flex w-full items-center justify-between gap-4 py-3 text-left hover:bg-graphite-800/40 rounded-lg px-2 -mx-2">
                         <div class="min-w-0">
                           <div class="flex items-center gap-2">
-                            <span class="font-medium text-sm text-slate-100 truncate">${e.name}</span>
+                            <span class="font-medium text-sm text-graphite-100 truncate">${e.name}</span>
                             <${StatusBadge} status=${e.status} t=${t} />
                           </div>
-                          <div class="text-xs text-slate-500 mt-0.5">${researchTypeLabel(e.researchType, t)} · ${relativeDate(e.updatedAt)}</div>
+                          <div class="text-xs text-graphite-500 mt-0.5">${researchTypeLabel(e.researchType, t)} · ${relativeDate(e.updatedAt)}</div>
                         </div>
                         <div class="text-right shrink-0">
-                          <div class="text-sm font-medium text-slate-200">${t("overview.participantsOf", { count: summary.participantCount, target: e.participantSettings.targetCount })}</div>
-                          <div class="text-xs text-slate-500">${t("overview.participantsLabel")}</div>
+                          <div class="sk-num text-sm text-graphite-200">${t("overview.participantsOf", { count: summary.participantCount, target: e.participantSettings.targetCount })}</div>
+                          <div class="text-xs text-graphite-500">${t("overview.participantsLabel")}</div>
                         </div>
                       </button>
                     `
@@ -158,8 +161,9 @@ export function Overview() {
             <${DonutChart}
               labels=${[t("overview.statusActive"), t("overview.statusCompleted"), t("overview.statusDraft"), t("overview.statusPaused")]}
               data=${[activeCount, completedCount, draftCount, pausedCount]}
-              colors=${["#10b981", "#6366f1", "#64748b", "#f59e0b"]}
-              height=${190}
+              colors=${["#34d399", "#86a5d9", "#4a4d56", "#fbbf24"]}
+              height=${170}
+              center=${{ label: t("overview.statusTotal") }}
             />
           <//>
 
@@ -180,19 +184,17 @@ export function Overview() {
                 </div>
               `
               : topVariants.length === 0
-              ? html`<p class="text-sm text-slate-500">${t("overview.topVariantsEmpty")}</p>`
+              ? html`<p class="text-sm text-graphite-500">${t("overview.topVariantsEmpty")}</p>`
               : html`
                 <div class="space-y-3">
                   ${topVariants.map(
                     (v) => html`
                       <button key=${v.experimentId + v.variantId} onClick=${() => navigate(`/app/experiments/${v.experimentId}/results`)} class="w-full text-left">
                         <div class="flex items-center justify-between text-sm">
-                          <span class="text-slate-200 font-medium truncate pr-2">${v.name} <span class="text-slate-500">· ${v.experimentName}</span></span>
-                          <span class="text-slate-300 shrink-0">${pct(v.rate)}</span>
+                          <span class="text-graphite-200 font-medium truncate pr-2">${v.name} <span class="text-graphite-500">· ${v.experimentName}</span></span>
+                          <span class="sk-num text-graphite-300 shrink-0">${pct(v.rate)}</span>
                         </div>
-                        <div class="sk-display h-2 mt-1.5 w-full rounded-full overflow-hidden">
-                          <div class="h-full rounded-full bg-indigo-500" style=${{ width: `${Math.round(v.rate * 100)}%`, boxShadow: "0 0 6px -1px rgba(99,102,241,.7)" }}></div>
-                        </div>
+                        <div class="mt-2"><${ProgressBar} value=${v.rate} /></div>
                         ${!v.sufficient && html`<div class="text-[11px] text-amber-400 mt-1">${t("overview.smallSample")}</div>`}
                       </button>
                     `

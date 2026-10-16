@@ -28,7 +28,7 @@ function WizardShell({ step, children }) {
   const localeFadeClass = useLocaleFadeClass();
   const pct = Math.round(((step + 1) / TOTAL_STEPS) * 100);
   return html`
-    <div class=${`min-h-screen bg-slate-950 text-slate-100 flex items-center justify-center px-6 py-10 ${localeFadeClass}`}>
+    <div class=${`min-h-screen bg-graphite-950 text-graphite-100 flex items-center justify-center px-6 py-10 ${localeFadeClass}`}>
       <div class="w-full max-w-lg">
         <div class="flex items-center justify-between mb-8">
           <button onClick=${() => navigate("/")} class="flex items-center gap-2.5">
@@ -38,11 +38,11 @@ function WizardShell({ step, children }) {
           <${LanguageSwitch} />
         </div>
         <div class="sk-panel rounded-2xl p-6 sm:p-8 fade-in">
-          <div class="flex items-center justify-between text-xs text-slate-500 mb-2">
+          <div class="flex items-center justify-between text-xs text-graphite-500 mb-2">
             <span>${t("auth.onboarding.stepLabel", { current: step + 1, total: TOTAL_STEPS })}</span>
           </div>
           <div class="sk-display h-1.5 w-full rounded-full overflow-hidden mb-6">
-            <div class="h-full rounded-full transition-all duration-300" style=${{ width: `${pct}%`, background: "linear-gradient(90deg,#818cf8,#6366f1)", boxShadow: "0 0 8px -1px rgba(99,102,241,.6)" }}></div>
+            <div class="h-full rounded-full transition-all duration-300" style=${{ width: `${pct}%`, background: "linear-gradient(90deg,#ff8f55,#ff6a1f)", boxShadow: "0 0 8px -1px rgba(255,106,31,.6)" }}></div>
           </div>
           <!-- Keyed by step so this (and only this) remounts and replays its
                entrance per step -- the progress bar above stays mounted so
@@ -59,8 +59,8 @@ function WizardShell({ step, children }) {
 function StepHeading({ title, subtitle }) {
   return html`
     <div class="mb-6">
-      <h1 class="text-lg font-semibold text-slate-50">${title}</h1>
-      ${subtitle && html`<p class="text-sm text-slate-400 mt-1.5">${subtitle}</p>`}
+      <h1 class="text-lg font-semibold text-graphite-50">${title}</h1>
+      ${subtitle && html`<p class="text-sm text-graphite-400 mt-1.5">${subtitle}</p>`}
     </div>
   `;
 }
@@ -222,9 +222,9 @@ export function Onboarding() {
     return html`
       <${WizardShell} step=${step}>
         <div class="text-center py-4">
-          <div class="sk-display mx-auto h-14 w-14 rounded-2xl flex items-center justify-center text-indigo-300 mb-5"><${Icon} name="sparkle" size=${24} /></div>
-          <h1 class="text-xl font-semibold text-slate-50">${t("auth.onboarding.steps.welcome.title")}</h1>
-          <p class="text-sm text-slate-400 mt-2.5 leading-relaxed max-w-sm mx-auto">${t("auth.onboarding.steps.welcome.body")}</p>
+          <div class="sk-display mx-auto h-14 w-14 rounded-2xl flex items-center justify-center text-signal-300 mb-5"><${Icon} name="sparkle" size=${24} /></div>
+          <h1 class="text-xl font-semibold text-graphite-50">${t("auth.onboarding.steps.welcome.title")}</h1>
+          <p class="text-sm text-graphite-400 mt-2.5 leading-relaxed max-w-sm mx-auto">${t("auth.onboarding.steps.welcome.body")}</p>
         </div>
         <form onSubmit=${next}>
           <${StepNav} showBack=${false} onNext=${next} nextLabel=${t("auth.onboarding.steps.welcome.cta")} />
@@ -274,14 +274,14 @@ export function Onboarding() {
           <label class="relative group cursor-pointer">
             ${profile?.avatar_url
               ? html`<img src=${profile.avatar_url} class="h-24 w-24 rounded-full object-cover" />`
-              : html`<div class="h-24 w-24 rounded-full bg-gradient-to-br from-indigo-500 to-teal-400 flex items-center justify-center text-3xl font-semibold text-white">${initialsFor(form.fullName)}</div>`}
-            <div class="absolute inset-0 rounded-full bg-slate-950/60 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity">
-              ${uploadingAvatar ? html`<span class="sk-spinner" style="width:20px;height:20px"></span>` : html`<${Icon} name="upload" size=${20} className="text-slate-100" />`}
+              : html`<div class="h-24 w-24 rounded-full sk-avatar flex items-center justify-center text-3xl font-semibold">${initialsFor(form.fullName)}</div>`}
+            <div class="absolute inset-0 rounded-full bg-graphite-950/60 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity">
+              ${uploadingAvatar ? html`<span class="sk-spinner" style="width:20px;height:20px"></span>` : html`<${Icon} name="upload" size=${20} className="text-graphite-100" />`}
             </div>
             <input ref=${fileRef} type="file" accept="image/jpeg,image/png,image/webp" class="hidden" disabled=${uploadingAvatar} onChange=${(e) => onAvatarFile(e.target.files?.[0])} />
           </label>
         </div>
-        <p class="text-center text-xs text-slate-500 mt-3">${t("auth.onboarding.steps.avatar.hint")}</p>
+        <p class="text-center text-xs text-graphite-500 mt-3">${t("auth.onboarding.steps.avatar.hint")}</p>
         <form onSubmit=${next}>
           <${StepNav} onBack=${back} onSkip=${skip} nextLabel=${t("auth.onboarding.next")} busy=${uploadingAvatar} />
         </form>
@@ -378,13 +378,13 @@ export function Onboarding() {
               value=${inv.email} onInput=${(e) => updateInviteRow(i, { email: e.target.value })} />
             <${Select} className="w-36 shrink-0" options=${INVITE_ROLES.map((r) => ({ value: r, label: t(`team.roles.${r}`) }))}
               value=${inv.role} onChange=${(e) => updateInviteRow(i, { role: e.target.value })} />
-            <button type="button" onClick=${() => removeInviteRow(i)} class="shrink-0 text-slate-500 hover:text-rose-400 p-1">
+            <button type="button" onClick=${() => removeInviteRow(i)} class="shrink-0 text-graphite-500 hover:text-rose-400 p-1">
               <${Icon} name="close" size=${15} />
             <//>
           </div>
         `)}
       </div>
-      <button type="button" onClick=${addInviteRow} class="mt-3 text-sm text-indigo-400 hover:text-indigo-300 flex items-center gap-1.5">
+      <button type="button" onClick=${addInviteRow} class="mt-3 text-sm text-signal-400 hover:text-signal-300 flex items-center gap-1.5">
         <${Icon} name="plus" size=${14} /> ${t("auth.onboarding.steps.invite.addAnother")}
       </button>
       <form onSubmit=${finish}>

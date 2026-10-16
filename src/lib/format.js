@@ -1,3 +1,5 @@
+import { getLocale, t } from "./i18n.js";
+
 export function pct(x, digits = 0) {
   if (x == null || Number.isNaN(x)) return "—";
   return `${(x * 100).toFixed(digits)}%`;
@@ -18,12 +20,16 @@ export function money(x, digits = 2) {
   return `$${x.toFixed(digits)}`;
 }
 
+/** "2 min 44 s" in the app's language (the unit words come from the locale files). */
 export function durationFromMs(ms) {
   if (ms == null || Number.isNaN(ms)) return "—";
   const totalSeconds = Math.round(ms / 1000);
   const m = Math.floor(totalSeconds / 60);
   const s = totalSeconds % 60;
-  return m > 0 ? `${m} мин ${s} с` : `${s} с`;
+  const locale = getLocale();
+  const min = t(locale, "common.unitMin");
+  const sec = t(locale, "common.unitSec");
+  return m > 0 ? `${m} ${min} ${s} ${sec}` : `${s} ${sec}`;
 }
 
 export function relativeDate(iso) {
@@ -31,15 +37,18 @@ export function relativeDate(iso) {
   const d = new Date(iso);
   const diffMs = Date.now() - d.getTime();
   const days = Math.floor(diffMs / 86400000);
-  if (days <= 0) return "сегодня";
-  if (days === 1) return "вчера";
-  if (days < 30) return `${days} дн. назад`;
+  const locale = getLocale();
+  if (days <= 0) return t(locale, "common.today");
+  if (days === 1) return t(locale, "common.yesterday");
+  if (days < 30) return t(locale, "common.daysAgo", { n: days });
   const months = Math.floor(days / 30);
-  if (months < 12) return `${months} мес. назад`;
-  return `${Math.floor(months / 12)} г. назад`;
+  if (months < 12) return t(locale, "common.monthsAgo", { n: months });
+  return t(locale, "common.yearsAgo", { n: Math.floor(months / 12) });
 }
+
+const DATE_LOCALES = { ru: "ru-RU", kk: "kk-KZ", en: "en-US" };
 
 export function shortDate(iso) {
   if (!iso) return "—";
-  return new Date(iso).toLocaleDateString("ru-RU", { month: "short", day: "numeric", year: "numeric" });
+  return new Date(iso).toLocaleDateString(DATE_LOCALES[getLocale()] ?? "ru-RU", { month: "short", day: "numeric", year: "numeric" });
 }

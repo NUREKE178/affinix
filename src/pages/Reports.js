@@ -2,7 +2,7 @@ import { html, useState, useMemo, useEffect } from "../lib/preact.js";
 import { useExperiments } from "../lib/experimentsStore.js";
 import { fetchSessionsForExperiment } from "../lib/participants.js";
 import { navigate } from "../router.js";
-import { Card, SectionHeading, Badge, Select, Button, EmptyState, LoadingState } from "../components/ui.js";
+import { Card, SectionHeading, StatTile, Badge, Select, Button, EmptyState, LoadingState } from "../components/ui.js";
 import { Icon } from "../components/icons.js";
 import { experimentSummary, choiceStatsForQuestion, primarySelectionQuestion, completedParticipants, segmentBreakdown } from "../lib/stats.js";
 import { generateInsights } from "../lib/insights.js";
@@ -138,20 +138,20 @@ export function Reports() {
         <${Card} className="p-6">
           <div class="flex items-start justify-between gap-3 mb-5 flex-wrap">
             <div>
-              <h3 class="text-lg font-semibold text-slate-100">${experiment.name}</h3>
-              <p class="text-sm text-slate-500 mt-1">${researchTypeLabel(experiment.researchType, t)} · ${shortDate(new Date().toISOString())}</p>
+              <h3 class="text-lg font-semibold text-graphite-100">${experiment.name}</h3>
+              <p class="text-sm text-graphite-500 mt-1">${researchTypeLabel(experiment.researchType, t)} · ${shortDate(new Date().toISOString())}</p>
             </div>
             <${Button} size="sm" variant="secondary" onClick=${() => downloadText(`${experiment.name.replace(/\s+/g, "-").toLowerCase()}-report.md`, buildMarkdownReport(experiment, summary, choice, segments, insights, t, locale))}>
               <${Icon} name="reports" size=${14} /> ${t("reports.download")}
             <//>
           </div>
 
-          <p class="text-sm text-slate-300 mb-5">${experiment.objective}</p>
+          <p class="text-sm text-graphite-300 mb-5">${experiment.objective}</p>
 
-          <div class="grid sm:grid-cols-3 gap-3 mb-6">
-            <div class="sk-display rounded-lg p-3"><div class="text-xs text-slate-500">${t("reports.participants")}</div><div class="text-lg font-semibold text-slate-100" style="font-variant-numeric:tabular-nums">${summary.participantCount}</div></div>
-            <div class="sk-display rounded-lg p-3"><div class="text-xs text-slate-500">${t("reports.completionRate")}</div><div class="text-lg font-semibold text-slate-100" style="font-variant-numeric:tabular-nums">${pct(summary.completion.rate)}</div></div>
-            <div class="sk-display rounded-lg p-3"><div class="text-xs text-slate-500">${t("reports.avgTime")}</div><div class="text-lg font-semibold text-slate-100" style="font-variant-numeric:tabular-nums">${durationFromMs(summary.avgCompletionTimeMs)}</div></div>
+          <div class="sk-stat-strip sk-stat-strip-well mb-6" style="--cols:3">
+            <${StatTile} label=${t("reports.participants")} value=${summary.participantCount} />
+            <${StatTile} label=${t("reports.completionRate")} value=${pct(summary.completion.rate)} />
+            <${StatTile} label=${t("reports.avgTime")} value=${durationFromMs(summary.avgCompletionTimeMs)} />
           </div>
 
           ${!summary.sampleSize.sufficient && html`
@@ -159,16 +159,16 @@ export function Reports() {
           `}
 
           ${choice && html`
-            <h4 class="text-sm font-semibold text-slate-200 mb-2">${t("reports.comparisonTitle")}</h4>
+            <h4 class="text-sm font-semibold text-graphite-200 mb-2">${t("reports.comparisonTitle")}</h4>
             <div class="space-y-1.5 mb-6">
-              ${choice.rows.map((r) => html`<div key=${r.variantId} class="flex justify-between text-sm"><span class="text-slate-300">${r.label} — ${r.name}</span><span class="text-slate-500">${pct(r.rate)} (ДИ ${pct(r.ci[0])}–${pct(r.ci[1])})</span></div>`)}
+              ${choice.rows.map((r) => html`<div key=${r.variantId} class="flex justify-between text-sm"><span class="text-graphite-300">${r.label} — ${r.name}</span><span class="text-graphite-500">${pct(r.rate)} (${t("common.ci")} ${pct(r.ci[0])}–${pct(r.ci[1])})</span></div>`)}
             </div>
           `}
 
-          <h4 class="text-sm font-semibold text-slate-200 mb-2">${t("reports.recommendationTitle")}</h4>
-          <div class="flex items-center gap-2 mb-2"><${Badge} tone="indigo">${t("reports.confidenceLabel", { confidence: t(`insights.confidence.${insights.recommendation.confidence}`) })}<//></div>
-          <p class="text-sm text-slate-300">${insights.recommendation.text}</p>
-          <p class="text-xs text-slate-500 mt-4 italic">${insights.disclaimer}</p>
+          <h4 class="text-sm font-semibold text-graphite-200 mb-2">${t("reports.recommendationTitle")}</h4>
+          <div class="flex items-center gap-2 mb-2"><${Badge} tone="signal">${t("reports.confidenceLabel", { confidence: t(`insights.confidence.${insights.recommendation.confidence}`) })}<//></div>
+          <p class="text-sm text-graphite-300">${insights.recommendation.text}</p>
+          <p class="text-xs text-graphite-500 mt-4 italic">${insights.disclaimer}</p>
         <//>
       `)}
     </div>

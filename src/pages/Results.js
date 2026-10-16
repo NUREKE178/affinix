@@ -4,7 +4,7 @@ import { fetchSessionsForExperiment, watchExperimentLive } from "../lib/particip
 import { navigate } from "../router.js";
 import { Card, SectionHeading, StatTile, Badge, Select, Button, EmptyState, LoadingState } from "../components/ui.js";
 import { Icon } from "../components/icons.js";
-import { BarChart, DonutChart } from "../components/charts.js";
+import { BarChart, DonutChart, SERIES_COLORS } from "../components/charts.js";
 import {
   completedParticipants, experimentSummary, statsForQuestion, segmentBreakdown, responseTimeFor, primarySelectionQuestion,
 } from "../lib/stats.js";
@@ -13,7 +13,7 @@ import { researchTypeLabel } from "../lib/questionTypes.js";
 import { useT } from "../lib/i18n.js";
 import { withTimeout } from "../lib/async.js";
 
-const VARIANT_COLORS = ["#6366f1", "#14b8a6", "#f59e0b", "#ec4899"];
+const VARIANT_COLORS = SERIES_COLORS;
 const STATUS_KEY = { published: "statusActive", completed: "statusCompleted", draft: "statusDraft", paused: "statusPaused" };
 
 function ExperimentPicker({ experiments, selectedId, onChange }) {
@@ -38,8 +38,8 @@ function QuestionCard({ experiment, participants, question, index, t }) {
     <${Card} className="p-5">
       <div class="flex items-start justify-between gap-3 mb-4">
         <div>
-          <div class="text-xs text-slate-500 mb-1">Q${index + 1} · ${question.type.replace("_", " ")}${question.role ? ` · ${question.role}` : ""}</div>
-          <div class="font-medium text-slate-100">${question.prompt || t("results.untitledQuestion")}</div>
+          <div class="text-xs text-graphite-500 mb-1">Q${index + 1} · ${question.type.replace("_", " ")}${question.role ? ` · ${question.role}` : ""}</div>
+          <div class="font-medium text-graphite-100">${question.prompt || t("results.untitledQuestion")}</div>
         </div>
       </div>
 
@@ -54,9 +54,9 @@ function QuestionCard({ experiment, participants, question, index, t }) {
           <div class="space-y-2">
             ${result.data.rows.map(
               (r) => html`
-                <div key=${r.variantId} class="flex items-center justify-between text-sm border-b border-slate-800/60 pb-2 last:border-0">
-                  <span class="text-slate-300">${r.label} — ${r.name}</span>
-                  <span class="text-slate-400">${pct(r.rate)} <span class="text-slate-600">(CI ${pct(r.ci[0])}–${pct(r.ci[1])})</span></span>
+                <div key=${r.variantId} class="flex items-center justify-between text-sm border-b border-graphite-800/60 pb-2 last:border-0">
+                  <span class="text-graphite-300">${r.label} — ${r.name}</span>
+                  <span class="text-graphite-400">${pct(r.rate)} <span class="text-graphite-600">(${t("common.ci")} ${pct(r.ci[0])}–${pct(r.ci[1])})</span></span>
                 </div>
               `
             )}
@@ -73,7 +73,7 @@ function QuestionCard({ experiment, participants, question, index, t }) {
           suffix=""
           height=${180}
         />
-        <div class="flex gap-5 mt-3 text-xs text-slate-500 flex-wrap">
+        <div class="flex gap-5 mt-3 text-xs text-graphite-500 flex-wrap">
           ${result.data.map((r) => html`<span key=${r.variantId ?? r.name}>${r.label ?? r.name}: mean ${num(r.mean, 2)}, median ${num(r.median, 1)} (n=${r.n})</span>`)}
         </div>
       `}
@@ -83,8 +83,8 @@ function QuestionCard({ experiment, participants, question, index, t }) {
           ${result.data.map(
             (r) => html`
               <div key=${r.variantId ?? "overall"} class="flex items-center justify-between text-sm">
-                <span class="text-slate-300">${r.label ? `${r.label} — ${r.name}` : t("results.noAnswer")}</span>
-                <span class="text-slate-400">${pct(r.rate)} (n=${r.n})</span>
+                <span class="text-graphite-300">${r.label ? `${r.label} — ${r.name}` : t("results.noAnswer")}</span>
+                <span class="text-graphite-400">${pct(r.rate)} (n=${r.n})</span>
               </div>
             `
           )}
@@ -96,8 +96,8 @@ function QuestionCard({ experiment, participants, question, index, t }) {
           ${result.data.map(
             (r, i) => html`
               <div key=${r.variantId} class="flex items-center justify-between text-sm">
-                <span class="text-slate-300">#${i + 1} ${r.label} — ${r.name}</span>
-                <span class="text-slate-400">avg. rank ${num(r.avgRank, 2)} (n=${r.n})</span>
+                <span class="text-graphite-300">#${i + 1} ${r.label} — ${r.name}</span>
+                <span class="text-graphite-400">avg. rank ${num(r.avgRank, 2)} (n=${r.n})</span>
               </div>
             `
           )}
@@ -117,14 +117,14 @@ function QuestionCard({ experiment, participants, question, index, t }) {
       ${result.kind === "price" && html`
         ${result.data.rows
           ? html`<${BarChart} labels=${result.data.rows.map((r) => r.option)} data=${result.data.rows.map((r) => Math.round(r.rate * 1000) / 10)} colors=${VARIANT_COLORS} height=${160} />`
-          : html`<p class="text-sm text-slate-400">${t("results.priceAverage", { mean: money(result.data.mean), median: money(result.data.median), n: result.data.n })}</p>`}
+          : html`<p class="text-sm text-graphite-400">${t("results.priceAverage", { mean: money(result.data.mean), median: money(result.data.median), n: result.data.n })}</p>`}
       `}
 
       ${result.kind === "text" && html`
         <div class="flex flex-wrap gap-2">
           ${result.data.length === 0
-            ? html`<p class="text-sm text-slate-500">${t("results.noResponses")}</p>`
-            : result.data.slice(0, 24).map((txt, i) => html`<span key=${i} class="rounded-full bg-slate-800 px-3 py-1 text-xs text-slate-300">"${txt}"</span>`)}
+            ? html`<p class="text-sm text-graphite-500">${t("results.noResponses")}</p>`
+            : result.data.slice(0, 24).map((txt, i) => html`<span key=${i} class="rounded-full bg-graphite-800 px-3 py-1 text-xs text-graphite-300">"${txt}"</span>`)}
         </div>
       `}
     <//>
@@ -207,11 +207,11 @@ export function Results({ params }) {
       />
 
       <div class="flex items-center gap-2 mb-4 flex-wrap">
-        <span class="font-medium text-slate-200">${experiment.name}</span>
-        <${Badge} tone=${experiment.status === "published" ? "emerald" : "indigo"}>${STATUS_KEY[experiment.status] ? t(`overview.${STATUS_KEY[experiment.status]}`) : experiment.status}<//>
-        <span class="text-sm text-slate-500">${researchTypeLabel(experiment.researchType, t)}</span>
+        <span class="font-medium text-graphite-200">${experiment.name}</span>
+        <${Badge} tone=${experiment.status === "published" ? "emerald" : "steel"}>${STATUS_KEY[experiment.status] ? t(`overview.${STATUS_KEY[experiment.status]}`) : experiment.status}<//>
+        <span class="text-sm text-graphite-500">${researchTypeLabel(experiment.researchType, t)}</span>
         ${live && html`<span class="sk-live-badge" title=${t("results.liveHint")}><span class="sk-live-dot"></span>${t("results.live")}</span>`}
-        <button class="ml-auto text-sm text-indigo-400 hover:text-indigo-300" onClick=${() => navigate(`/app/experiments/${experiment.id}/insights`)}>${t("results.aiInsightsLink")}</button>
+        <button class="ml-auto text-sm text-signal-400 hover:text-signal-300" onClick=${() => navigate(`/app/experiments/${experiment.id}/insights`)}>${t("results.aiInsightsLink")}</button>
       </div>
 
       ${participantsError
@@ -229,7 +229,7 @@ export function Results({ params }) {
         </div>
       `}
 
-      <div class="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-6">
+      <div class="sk-stat-strip mb-6">
         <${StatTile} label=${t("results.statCompleted")} value=${summary.participantCount} hint=${t("results.statCompletedHint", { target: experiment.participantSettings.targetCount })} />
         <${StatTile} label=${t("results.statCompletionRate")} value=${pct(summary.completion.rate)} hint=${t("results.statCompletionHint", { total: summary.completion.total })} />
         <${StatTile} label=${t("results.statAvgTime")} value=${durationFromMs(summary.avgCompletionTimeMs)} />
@@ -250,8 +250,8 @@ export function Results({ params }) {
               (seg) => html`
                 <div key=${seg.segment}>
                   <div class="flex items-center justify-between text-sm mb-1.5">
-                    <span class="text-slate-300 font-medium">${seg.segment}</span>
-                    <span class="text-slate-500">n=${seg.n}${!seg.sufficient ? ` · ${t("results.smallSample")}` : ""}</span>
+                    <span class="text-graphite-300 font-medium">${seg.segment}</span>
+                    <span class="text-graphite-500">n=${seg.n}${!seg.sufficient ? ` · ${t("results.smallSample")}` : ""}</span>
                   </div>
                   <div class="sk-display flex h-2.5 w-full overflow-hidden rounded-full">
                     ${seg.rows.map((r) => html`<div key=${r.variantId} style=${{ width: `${r.rate * 100}%`, background: r.color }} title=${`${r.label}: ${pct(r.rate)}`}></div>`)}

@@ -16,7 +16,7 @@ export function Avatar({ name, url, size = 36 }) {
     return html`<img src=${url} class="rounded-full object-cover shrink-0" style=${{ width: `${size}px`, height: `${size}px` }} />`;
   }
   return html`
-    <div class="shrink-0 rounded-full bg-gradient-to-br from-indigo-500 to-teal-400 flex items-center justify-center font-semibold text-white"
+    <div class="shrink-0 rounded-full sk-avatar flex items-center justify-center font-semibold "
       style=${{ width: `${size}px`, height: `${size}px`, fontSize: `${Math.max(10, size * 0.38)}px` }}>
       ${name ? initialsFor(name) : html`<${Icon} name="user" size=${Math.round(size * 0.55)} />`}
     </div>

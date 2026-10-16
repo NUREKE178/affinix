@@ -1,9 +1,9 @@
 ::-webkit-scrollbar { width: 10px; height: 10px; }
 ::-webkit-scrollbar-track { background: transparent; }
-::-webkit-scrollbar-thumb { background: #334155; border-radius: 8px; }
-::-webkit-scrollbar-thumb:hover { background: #475569; }
+::-webkit-scrollbar-thumb { background: #3a3c43; border-radius: 8px; }
+::-webkit-scrollbar-thumb:hover { background: #565963; }
 
-* { scrollbar-color: #334155 transparent; }
+* { scrollbar-color: #3a3c43 transparent; }
 
 body { color-scheme: dark; }
 
@@ -18,10 +18,11 @@ body { color-scheme: dark; }
 /* ---- Loading system -------------------------------------------------------
    One look for every "something is loading" moment: the boot screen, page
    gates, skeleton placeholders, spinners, busy buttons, the thin top bar and
-   the AI "generating" shimmer -- violet/indigo light on the app's dark slate
-   (the accent of the logo tile). Loops animate transform/opacity wherever
-   possible (compositor-only, cheap on a phone); every loop is tamed in the
-   prefers-reduced-motion block that closes this section. */
+   the AI "generating" shimmer. It is the instrument language at rest: graphite
+   surfaces and ONE signal-orange light that moves -- never a field of glow.
+   Loops animate transform/opacity wherever possible (compositor-only, cheap
+   on a phone); every loop is tamed in the prefers-reduced-motion block that
+   closes this section. */
 
 /* A ring with a comet-tail arc. Size comes from width/height (<Spinner> sets
    both, plus --t for the ring thickness); track and arc are one
@@ -31,7 +32,7 @@ body { color-scheme: dark; }
   display: inline-block;
   border-radius: 9999px;
   background:
-    conic-gradient(from 0deg, rgba(167,139,250,0) 0deg, rgba(129,140,248,.45) 150deg, #a78bfa 320deg, #f5f3ff 360deg),
+    conic-gradient(from 0deg, rgba(255,106,31,0) 0deg, rgba(255,106,31,.4) 150deg, #ff6a1f 330deg, #ffc09c 360deg),
     rgba(255,255,255,.09);
   -webkit-mask: radial-gradient(farthest-side, transparent calc(100% - var(--t) - .6px), #000 calc(100% - var(--t)));
   mask: radial-gradient(farthest-side, transparent calc(100% - var(--t) - .6px), #000 calc(100% - var(--t)));
@@ -47,7 +48,7 @@ body { color-scheme: dark; }
 .sk-dots i:nth-child(3) { animation-delay: .32s; }
 @keyframes skDot { 0%, 70%, 100% { opacity: .3; transform: translateY(0); } 35% { opacity: 1; transform: translateY(-.16em); } }
 
-/* A content-shaped placeholder block with a violet light sweep moving across
+/* A content-shaped placeholder block with a quiet light sweep moving across
    it -- stands in for text/images while real data loads, in the exact size and
    position the real content will occupy (prevents layout shift). Sibling
    blocks start a beat after the one before (a waterfall, not every block
@@ -55,7 +56,7 @@ body { color-scheme: dark; }
 .sk-skeleton {
   position: relative;
   overflow: hidden;
-  background: var(--sk-inset, #13151c);
+  background: var(--sk-inset, #0d0d0f);
   border-radius: 6px;
   animation: skSkeletonPulse 2.2s ease-in-out infinite;
   animation-delay: var(--sk-d, 0s);
@@ -65,7 +66,7 @@ body { color-scheme: dark; }
   position: absolute;
   inset: 0;
   transform: translateX(-100%);
-  background: linear-gradient(100deg, transparent 0%, rgba(129,140,248,.05) 30%, rgba(167,139,250,.17) 50%, rgba(129,140,248,.05) 70%, transparent 100%);
+  background: linear-gradient(100deg, transparent 0%, rgba(255,255,255,.03) 32%, rgba(255,255,255,.07) 50%, rgba(255,255,255,.03) 68%, transparent 100%);
   animation: skShimmer 1.7s cubic-bezier(.4, 0, .2, 1) infinite;
   animation-delay: var(--sk-d, 0s);
 }
@@ -81,7 +82,8 @@ body { color-scheme: dark; }
    index.html's static pre-boot placeholder and <BootScreen/> (the app's
    full-screen loader) render the SAME markup against these rules, so Preact
    adopts the DOM that is already on screen and the animation just carries on
-   -- no visible swap once the app mounts. */
+   -- no visible swap once the app mounts. A device powering on: the mark,
+   its LED breathing, the wordmark, a lit bead travelling along an inset slot. */
 .sk-boot {
   position: relative;
   isolation: isolate;
@@ -93,183 +95,108 @@ body { color-scheme: dark; }
   min-height: 100vh;
   min-height: 100dvh;
   padding: 24px;
-  background: #050816;
-  color: #eef0ff;
+  background: #0e0e10;
+  color: #ececee;
   text-align: center;
 }
-/* A faint grid that fades out from the centre. */
+/* One overhead light on the matte surface. */
 .sk-boot::before {
   content: "";
   position: absolute;
   inset: 0;
-  z-index: -2;
-  background-image:
-    linear-gradient(rgba(139,125,255,.06) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(139,125,255,.06) 1px, transparent 1px);
-  background-size: 56px 56px;
-  background-position: center;
-  -webkit-mask-image: radial-gradient(ellipse 62% 56% at 50% 44%, #000 0%, transparent 78%);
-  mask-image: radial-gradient(ellipse 62% 56% at 50% 44%, #000 0%, transparent 78%);
-}
-.sk-boot-stage {
-  position: relative;
-  display: grid;
-  place-items: center;
-  width: 148px;
-  height: 148px;
-}
-/* The violet aura breathing behind the mark. */
-.sk-boot-stage::before {
-  content: "";
-  position: absolute;
   z-index: -1;
-  left: 50%;
-  top: 50%;
-  width: min(140vw, 880px);
-  height: min(140vw, 880px);
-  transform: translate(-50%, -50%);
-  /* many stops, easing out to 0: a straight two-stop fade ends in a visible ring */
-  background: radial-gradient(closest-side, rgba(124,92,255,.36) 0%, rgba(116,96,252,.24) 18%, rgba(104,100,246,.13) 38%, rgba(99,102,241,.06) 58%, rgba(99,102,241,.02) 76%, rgba(99,102,241,0) 100%);
-  will-change: transform, opacity;
-  animation: skBootAura 4s ease-in-out infinite;
+  background: radial-gradient(ellipse 52% 46% at 50% 36%, rgba(255,255,255,.05) 0%, rgba(255,255,255,.02) 45%, rgba(255,255,255,0) 100%);
 }
-@keyframes skBootAura {
-  0%, 100% { opacity: .55; transform: translate(-50%, -50%) scale(.9); }
-  50% { opacity: 1; transform: translate(-50%, -50%) scale(1.05); }
-}
-/* Outer dashed ring turning slowly the other way, with two "data points"
-   orbiting on it... */
-.sk-boot-ring-dash {
-  position: absolute;
-  inset: 0;
-  border-radius: 9999px;
-  border: 1px dashed rgba(167,139,250,.3);
-  animation: skBootSpinRev 24s linear infinite;
-}
-@keyframes skBootSpinRev { to { transform: rotate(-360deg); } }
-.sk-boot-orbit { position: absolute; inset: 0; animation: skSpin 9s linear infinite; }
-.sk-boot-orbit i {
-  position: absolute;
-  left: 50%;
-  top: 0;
-  width: 6px;
-  height: 6px;
-  margin: -3px 0 0 -3px;
-  border-radius: 9999px;
-  background: #c4b5fd;
-  box-shadow: 0 0 10px rgba(167,139,250,.9);
-}
-.sk-boot-orbit i:nth-child(2) {
-  top: auto;
-  bottom: 0;
-  width: 4px;
-  height: 4px;
-  margin: 0 0 -2px -2px;
-  background: #818cf8;
-  box-shadow: 0 0 8px rgba(129,140,248,.8);
-}
-/* ...and the comet arc -- the actual "working" signal -- with its bright
-   head riding the same rotation (a sibling of the masked arc, because the
-   mask would clip the head's glow). */
-.sk-boot-spin { position: absolute; inset: 12px; animation: skSpin 1.25s linear infinite; }
-.sk-boot-arc {
-  position: absolute;
-  inset: 0;
-  border-radius: 9999px;
-  background: conic-gradient(from 0deg, rgba(139,92,246,0) 0deg, rgba(139,92,246,0) 110deg, rgba(139,92,246,.75) 300deg, #ddd6fe 360deg);
-  -webkit-mask: radial-gradient(farthest-side, transparent calc(100% - 3px), #000 calc(100% - 2.2px));
-  mask: radial-gradient(farthest-side, transparent calc(100% - 3px), #000 calc(100% - 2.2px));
-}
-.sk-boot-head {
-  position: absolute;
-  top: -2px;
-  left: 50%;
-  width: 7px;
-  height: 7px;
-  margin-left: -3.5px;
-  border-radius: 9999px;
-  background: #fff;
-  box-shadow: 0 0 10px 2px rgba(196,181,253,.9);
-}
-/* The logo tile: floats a few px, with a light glint sliding across it. */
+.sk-boot-stage { position: relative; display: grid; place-items: center; width: 96px; height: 96px; }
 .sk-boot-tile {
   position: relative;
   display: block;
-  width: 76px;
-  height: 76px;
-  border-radius: 22%;
-  overflow: hidden;
-  box-shadow: 0 0 0 1px rgba(255,255,255,.1), 0 16px 44px -10px rgba(99,102,241,.8), 0 0 34px -2px rgba(124,92,255,.5);
-  animation: skBootFloat 3.4s ease-in-out infinite;
+  width: 88px;
+  height: 88px;
+  border-radius: 22.6%;
+  box-shadow: 0 22px 40px -18px rgba(0,0,0,.9);
 }
 .sk-boot-tile img { display: block; width: 100%; height: 100%; }
+/* The mark's LED breathes: a soft orange halo laid over the dot (49.3% / 74.7% of the tile). */
 .sk-boot-tile::after {
   content: "";
   position: absolute;
-  inset: -40%;
-  background: linear-gradient(105deg, transparent 38%, rgba(255,255,255,.5) 50%, transparent 62%);
-  transform: translateX(-70%);
-  animation: skBootShine 3s ease-in-out infinite;
+  left: 49.3%;
+  top: 74.7%;
+  width: 54%;
+  height: 54%;
+  transform: translate(-50%, -50%);
+  border-radius: 9999px;
+  background: radial-gradient(closest-side, rgba(255,106,31,.7) 0%, rgba(255,106,31,.3) 38%, rgba(255,106,31,.1) 66%, rgba(255,106,31,0) 100%);
+  mix-blend-mode: screen;
+  will-change: transform, opacity;
+  animation: skBootLed 2.1s ease-in-out infinite;
 }
-@keyframes skBootFloat { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-5px); } }
-@keyframes skBootShine { 0%, 40% { transform: translateX(-70%); } 75%, 100% { transform: translateX(70%); } }
+@keyframes skBootLed {
+  0%, 100% { opacity: .12; transform: translate(-50%, -50%) scale(.78); }
+  50% { opacity: 1; transform: translate(-50%, -50%) scale(1.06); }
+}
 .sk-boot-word {
-  margin-top: 30px;
-  font-size: 24px;
-  font-weight: 700;
+  margin-top: 28px;
+  font-size: 22px;
+  font-weight: 650;
   line-height: 1;
-  letter-spacing: -.02em;
-  color: #f1f1ff;
+  letter-spacing: -.03em;
+  color: #f5f5f6;
 }
-.sk-boot-word b { font-weight: 700; color: #b49cff; }
-/* Indeterminate track: a comet of light sliding along a hairline. */
+.sk-boot-word b { font-weight: inherit; color: #ff6a1f; }
+/* An inset slot with a lit bead travelling along it. */
 .sk-boot-track {
   position: relative;
-  width: 152px;
-  height: 3px;
-  margin-top: 22px;
+  width: 168px;
+  height: 6px;
+  margin-top: 24px;
   overflow: hidden;
   border-radius: 9999px;
-  background: rgba(255,255,255,.08);
+  background: linear-gradient(180deg, #09090b 0%, #0d0d0f 100%);
+  box-shadow: inset 0 1px 3px rgba(0,0,0,.75), inset 0 0 0 1px rgba(0,0,0,.35), 0 1px 0 rgba(255,255,255,.045);
 }
 .sk-boot-track > span {
   position: absolute;
-  top: 0;
-  bottom: 0;
-  left: 0;
-  width: 42%;
-  border-radius: inherit;
-  background: linear-gradient(90deg, rgba(139,92,246,0), #8b5cf6 35%, #c4b5fd 85%, #fff);
-  transform: translateX(-100%);
-  animation: skBootBar 1.5s cubic-bezier(.65, 0, .35, 1) infinite;
+  top: 1px;
+  bottom: 1px;
+  left: 1px;
+  width: 34%;
+  border-radius: 9999px;
+  background: linear-gradient(180deg, #ff9560 0%, #ff6a1f 55%, #f0550f 100%);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.45);
+  transform: translateX(0);
+  animation: skBootBead 1.7s cubic-bezier(.65, 0, .35, 1) infinite alternate;
 }
-@keyframes skBootBar { 100% { transform: translateX(240%); } }
+@keyframes skBootBead { to { transform: translateX(190%); } }
 .sk-boot-label {
   display: inline-flex;
   align-items: baseline;
-  margin-top: 14px;
-  font-size: 13px;
-  line-height: 20px;
-  letter-spacing: .01em;
-  color: #a6abcb;
+  margin-top: 18px;
+  font-size: 11px;
+  font-weight: 600;
+  line-height: 18px;
+  letter-spacing: .12em;
+  text-transform: uppercase;
+  color: #868993;
 }
 /* The label changes with the real boot phase (sign-in check -> workspace);
    a keyed remount replays this so each new phase settles in. */
 .sk-boot-phase { animation: skBootPhase .4s var(--sk-ease-out) both; }
 @keyframes skBootPhase { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: none; } }
 @media (max-width: 480px) {
-  .sk-boot-stage { width: 128px; height: 128px; }
-  .sk-boot-tile { width: 66px; height: 66px; }
-  .sk-boot-word { margin-top: 26px; font-size: 22px; }
+  .sk-boot-stage { width: 84px; height: 84px; }
+  .sk-boot-tile { width: 76px; height: 76px; }
+  .sk-boot-word { margin-top: 24px; font-size: 20px; }
 }
 
 /* ---- Page gate (<LoadingState/>): a compact echo of the boot mark -------- */
 .sk-orbit { position: relative; display: inline-grid; place-items: center; width: 52px; height: 52px; }
-.sk-orbit-ring { --t: 3px; position: absolute; inset: 0; }
-.sk-orbit > img, .sk-orbit-core { width: 24px; height: 24px; animation: skOrbitBreathe 2.2s ease-in-out infinite; }
-.sk-orbit > img { border-radius: 22%; box-shadow: 0 0 16px -2px rgba(124,92,255,.65); }
-.sk-orbit-core { border-radius: 9999px; background: radial-gradient(circle, #c4b5fd 0 28%, rgba(167,139,250,0) 70%); }
-@keyframes skOrbitBreathe { 0%, 100% { transform: scale(.92); opacity: .8; } 50% { transform: scale(1.04); opacity: 1; } }
+.sk-orbit-ring { --t: 2.5px; position: absolute; inset: 0; }
+.sk-orbit > img, .sk-orbit-core { width: 26px; height: 26px; }
+.sk-orbit > img { border-radius: 22.6%; box-shadow: 0 6px 12px -6px rgba(0,0,0,.85); }
+.sk-orbit-core { border-radius: 9999px; background: radial-gradient(circle, #ff8f55 0 28%, rgba(255,106,31,.35) 46%, rgba(255,106,31,0) 72%); animation: skOrbitBreathe 2.2s ease-in-out infinite; }
+@keyframes skOrbitBreathe { 0%, 100% { transform: scale(.88); opacity: .75; } 50% { transform: scale(1.06); opacity: 1; } }
 
 /* ---- Top loading bar -----------------------------------------------------
    <LoadingBar/> (mounted once in the app shell) shows this while any
@@ -294,8 +221,7 @@ body { color-scheme: dark; }
   bottom: 0;
   left: 0;
   width: 38%;
-  background: linear-gradient(90deg, rgba(139,92,246,0), #8b5cf6 40%, #c4b5fd 85%, #fff);
-  box-shadow: 0 0 10px rgba(167,139,250,.9);
+  background: linear-gradient(90deg, rgba(255,106,31,0), #ff6a1f 45%, #ffb089 88%, #fff);
   transform: translateX(-100%);
   animation: skLoadbar 1.25s cubic-bezier(.65, 0, .35, 1) infinite;
 }
@@ -311,12 +237,15 @@ button[data-loading="true"]::after {
   inset: 0;
   border-radius: inherit;
   pointer-events: none;
-  background: linear-gradient(100deg, transparent 25%, rgba(255,255,255,.16) 50%, transparent 75%);
+  background: linear-gradient(100deg, transparent 25%, rgba(255,255,255,.14) 50%, transparent 75%);
   transform: translateX(-100%);
   animation: skShimmer 1.5s cubic-bezier(.4, 0, .2, 1) infinite;
 }
-.sk-btn-primary .sk-spinner,
-.sk-btn.text-white .sk-spinner {
+/* on the lit (orange) key the arc is dark, like the legend printed on it */
+.sk-btn-primary .sk-spinner {
+  background: conic-gradient(from 0deg, rgba(29,13,4,0) 0deg, rgba(29,13,4,.5) 200deg, #1d0d04 360deg), rgba(29,13,4,.16);
+}
+.sk-btn-danger .sk-spinner {
   background: conic-gradient(from 0deg, rgba(255,255,255,0) 0deg, rgba(255,255,255,.55) 200deg, #fff 360deg), rgba(255,255,255,.18);
 }
 
@@ -328,17 +257,17 @@ button[data-loading="true"]::after {
   width: 28px;
   height: 28px;
   border-radius: 9999px;
-  color: #5eead4;
-  background: rgba(45,212,191,.12);
+  color: #ff8f55;
+  background: rgba(255,106,31,.12);
   animation: skAiPing 1.7s ease-out infinite;
 }
 .sk-ai-orb svg { animation: skAiTwinkle 1.7s ease-in-out infinite; }
-@keyframes skAiPing { 0% { box-shadow: 0 0 0 0 rgba(45,212,191,.4); } 100% { box-shadow: 0 0 0 12px rgba(45,212,191,0); } }
+@keyframes skAiPing { 0% { box-shadow: 0 0 0 0 rgba(255,106,31,.4); } 100% { box-shadow: 0 0 0 12px rgba(255,106,31,0); } }
 @keyframes skAiTwinkle { 0%, 100% { transform: scale(.88) rotate(0deg); } 50% { transform: scale(1.1) rotate(14deg); } }
 /* Text with a light sweep running through it -- "still working on it". */
 .sk-shimmer-text {
-  color: #94a3b8;
-  background: linear-gradient(100deg, #94a3b8 35%, #f5f3ff 50%, #94a3b8 65%) 150% 0 / 250% 100% no-repeat;
+  color: #a2a5ae;
+  background: linear-gradient(100deg, #a2a5ae 35%, #fff 50%, #a2a5ae 65%) 150% 0 / 250% 100% no-repeat;
   -webkit-background-clip: text;
   background-clip: text;
   -webkit-text-fill-color: transparent;
@@ -350,11 +279,11 @@ button[data-loading="true"]::after {
    turning, slowly -- an indicator that stops reads as a frozen page -- and
    the indeterminate bars become a gentle pulse. */
 @media (prefers-reduced-motion: reduce) {
-  .sk-spinner, .sk-boot-spin { animation-duration: 3s !important; }
-  .sk-boot-stage::before, .sk-boot-ring-dash, .sk-boot-orbit, .sk-boot-tile, .sk-boot-tile::after,
-  .sk-orbit > img, .sk-orbit-core, .sk-ai-orb, .sk-ai-orb svg, .sk-boot-phase { animation: none !important; }
-  .sk-boot-tile::after { display: none; }
+  .sk-spinner { animation-duration: 3s !important; }
+  .sk-boot-tile::after, .sk-orbit-core, .sk-ai-orb, .sk-ai-orb svg, .sk-boot-phase { animation: none !important; }
+  .sk-boot-tile::after { opacity: .7; transform: translate(-50%, -50%); }
   .sk-boot-track > span, .sk-loadbar::before { width: 100%; transform: none !important; animation: skReducedPulse 1.8s ease-in-out infinite !important; }
+  .sk-boot-track > span { left: 1px; right: 1px; width: auto; }
   .sk-skeleton, .sk-skeleton::after, button[data-loading="true"]::after { animation: none !important; }
   .sk-skeleton::after, button[data-loading="true"]::after { display: none; }
   .sk-dots i { animation: none !important; opacity: .6; }
@@ -393,45 +322,130 @@ button[data-loading="true"]::after {
 .stimulus-card:hover { transform: translateY(-2px); }
 
 /* ==========================================================================
-   SKEUOMORPHIC SYSTEM -- "physical research instrument"
-   Dimensional surfaces built from the existing slate neutrals + indigo
-   accent (not a new palette): raised/inset bevels via layered box-shadow +
-   directional gradients, tactile press states, instrument-style displays.
-   Pure CSS -- no raster textures, cheap to render, works at any size.
+   INSTRUMENT SYSTEM -- graphite, one signal colour, tactile controls
+   A quiet matte surface (plates) with depth reserved for what you touch:
+   keys, switches, segmented controls, inputs. One light source (top, a touch
+   left): a 1px highlight on every upper edge, a soft shadow underneath.
+   One accent -- signal orange -- for the primary action and the "on" state;
+   LEDs (green / amber / red / steel) for status. Numbers are set in mono.
+   Pure CSS, no raster textures: cheap to paint, sharp at any size.
+   The ramp below mirrors tailwind.config.js (graphite / signal).
    ========================================================================== */
 
+@font-face {
+  font-family: "Inter";
+  font-style: normal;
+  font-weight: 100 900;
+  font-display: swap;
+  src: url("./vendor/fonts/inter-cyrillic-ext.woff2") format("woff2");
+  unicode-range: U+0460-052F, U+1C80-1C8A, U+20B4, U+2DE0-2DFF, U+A640-A69F, U+FE2E-FE2F;
+}
+@font-face {
+  font-family: "Inter";
+  font-style: normal;
+  font-weight: 100 900;
+  font-display: swap;
+  src: url("./vendor/fonts/inter-cyrillic.woff2") format("woff2");
+  unicode-range: U+0301, U+0400-045F, U+0490-0491, U+04B0-04B1, U+2116;
+}
+@font-face {
+  font-family: "Inter";
+  font-style: normal;
+  font-weight: 100 900;
+  font-display: swap;
+  src: url("./vendor/fonts/inter-latin.woff2") format("woff2");
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+/* Numbers and key legends: Latin plus the two Cyrillic subsets (Russian / Kazakh letters), so a mono figure
+   never falls back to a system monospace mid-word. */
+@font-face {
+  font-family: "JetBrains Mono";
+  font-style: normal;
+  font-weight: 500;
+  font-display: swap;
+  src: url("./vendor/fonts/jetbrains-mono-cyrillic-ext-500.woff2") format("woff2");
+  unicode-range: U+0460-052F, U+1C80-1C8A, U+20B4, U+2DE0-2DFF, U+A640-A69F, U+FE2E-FE2F;
+}
+@font-face {
+  font-family: "JetBrains Mono";
+  font-style: normal;
+  font-weight: 500;
+  font-display: swap;
+  src: url("./vendor/fonts/jetbrains-mono-cyrillic-500.woff2") format("woff2");
+  unicode-range: U+0301, U+0400-045F, U+0490-0491, U+04B0-04B1, U+2116;
+}
+@font-face {
+  font-family: "JetBrains Mono";
+  font-style: normal;
+  font-weight: 500;
+  font-display: swap;
+  src: url("./vendor/fonts/jetbrains-mono-latin-500.woff2") format("woff2");
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+
 :root {
-  --sk-raised: linear-gradient(180deg, #252a38 0%, #1b1f29 55%, #171a22 100%);
-  --sk-raised-hover: linear-gradient(180deg, #2b3040 0%, #1f2330 55%, #1a1d26 100%);
-  --sk-raised-active: linear-gradient(180deg, #1a1d26 0%, #1b1f29 55%, #20242f 100%);
-  --sk-inset: linear-gradient(180deg, #0f1117 0%, #13151c 100%);
-  --sk-inset-deep: linear-gradient(180deg, #0b0c10 0%, #101218 100%);
-  --sk-sidebar: linear-gradient(180deg, #15171e 0%, #0e0f13 100%);
-  --sk-topbar: linear-gradient(180deg, #20232e 0%, #191c24 100%);
+  --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
 
-  --sk-hi: rgba(255,255,255,.08);
-  --sk-hi-strong: rgba(255,255,255,.14);
-  --sk-lo: rgba(0,0,0,.55);
+  /* graphite ramp */
+  --g-50: #f5f5f6; --g-100: #ececee; --g-200: #dcdde1; --g-300: #c3c5cb; --g-400: #a2a5ae; --g-500: #868993;
+  --g-600: #565963; --g-700: #3a3c43; --g-800: #26282d; --g-900: #18191c; --g-950: #0e0e10;
+  --canvas: var(--g-950);
+  --rail: #111113;
 
-  --sk-shadow-raised:
-    inset 0 1px 0 var(--sk-hi),
-    inset 0 -1px 0 rgba(0,0,0,.4),
-    0 1px 0 rgba(255,255,255,.02),
-    0 6px 16px -4px rgba(0,0,0,.5);
-  --sk-shadow-raised-sm:
-    inset 0 1px 0 var(--sk-hi),
-    inset 0 -1px 0 rgba(0,0,0,.35),
-    0 2px 6px -2px rgba(0,0,0,.45);
-  --sk-shadow-inset:
-    inset 0 2px 5px rgba(0,0,0,.6),
-    inset 0 -1px 0 var(--sk-hi),
-    inset 0 0 0 1px rgba(0,0,0,.3);
-  --sk-shadow-inset-deep:
-    inset 0 3px 8px rgba(0,0,0,.7),
-    inset 0 -1px 0 rgba(255,255,255,.05);
+  /* signal + LEDs */
+  --signal: #ff6a1f;
+  --signal-hi: #ff8438;
+  --signal-lo: #f0550f;
+  --signal-ink: #1d0d04;              /* legend colour on a lit key */
+  --led-ok: #34d399;
+  --led-warn: #fbbf24;
+  --led-bad: #fb7185;
+  --led-info: #86a5d9;
+  --led-off: #565963;
 
-  --sk-accent: linear-gradient(180deg, #818cf8 0%, #6366f1 55%, #4f46e5 100%);
-  --sk-accent-active: linear-gradient(180deg, #4338ca 0%, #4f46e5 100%);
+  /* edges */
+  --hair: rgba(255,255,255,.06);
+  --hair-2: rgba(255,255,255,.11);
+  --hi: rgba(255,255,255,.07);
+  --hi-strong: rgba(255,255,255,.14);
+  --edge: rgba(0,0,0,.6);
+
+  /* materials */
+  --plate: linear-gradient(180deg, #1c1d21 0%, #17181b 100%);
+  --plate-hover: linear-gradient(180deg, #202125 0%, #1a1b1e 100%);
+  --well: linear-gradient(180deg, #09090b 0%, #0d0d0f 100%);
+  --key: linear-gradient(180deg, #34363c 0%, #26282d 100%);
+  --key-hover: linear-gradient(180deg, #3b3d44 0%, #2b2d33 100%);
+  --key-down: linear-gradient(180deg, #212327 0%, #26282d 100%);
+  --lit: linear-gradient(180deg, #ff8f55 0%, #ff6a1f 50%, #f65c12 100%);
+  --lit-hover: linear-gradient(180deg, #ff9a64 0%, #ff7430 50%, #ff6519 100%);
+  --lit-down: linear-gradient(180deg, #ee5812 0%, #f26017 100%);
+
+  --sh-plate: inset 0 1px 0 rgba(255,255,255,.055), 0 1px 2px rgba(0,0,0,.45), 0 14px 30px -18px rgba(0,0,0,.85);
+  --sh-plate-sm: inset 0 1px 0 rgba(255,255,255,.05), 0 1px 2px rgba(0,0,0,.4);
+  --sh-well: inset 0 1px 3px rgba(0,0,0,.75), inset 0 0 0 1px rgba(0,0,0,.35), 0 1px 0 rgba(255,255,255,.045);
+  --sh-key: inset 0 1px 0 rgba(255,255,255,.15), inset 0 -1px 0 rgba(0,0,0,.28), 0 1px 0 rgba(0,0,0,.6), 0 2px 5px -1px rgba(0,0,0,.5);
+  --sh-key-down: inset 0 1px 3px rgba(0,0,0,.65), inset 0 0 0 1px rgba(0,0,0,.25), 0 1px 0 rgba(255,255,255,.04);
+  --sh-lit: inset 0 1px 0 rgba(255,255,255,.5), inset 0 -1px 0 rgba(130,42,0,.35), 0 1px 0 #6d2606, 0 3px 10px -3px rgba(255,106,31,.4);
+  --sh-lit-down: inset 0 2px 4px rgba(110,34,0,.55), 0 1px 0 rgba(255,255,255,.1);
+
+  /* names the chat / feed / builder rules further down still read */
+  --sk-raised: var(--plate);
+  --sk-raised-hover: var(--plate-hover);
+  --sk-raised-active: var(--key-down);
+  --sk-inset: var(--well);
+  --sk-inset-deep: var(--well);
+  --sk-sidebar: var(--rail);
+  --sk-topbar: var(--canvas);
+  --sk-hi: var(--hi);
+  --sk-hi-strong: var(--hi-strong);
+  --sk-lo: var(--edge);
+  --sk-shadow-raised: var(--sh-plate);
+  --sk-shadow-raised-sm: var(--sh-plate-sm);
+  --sk-shadow-inset: var(--sh-well);
+  --sk-shadow-inset-deep: var(--sh-well);
+  --sk-accent: var(--lit);
+  --sk-accent-active: var(--lit-down);
 
   /* Motion tokens -- every animation added for the site-wide motion pass
      reads duration/easing from here, so the feel stays one system instead
@@ -551,108 +565,182 @@ button[data-loading="true"]::after {
 @keyframes skLocaleFade { 0% { opacity: 1; } 45% { opacity: .4; } 100% { opacity: 1; } }
 .sk-locale-fade { animation: skLocaleFade .36s var(--sk-ease-standard); }
 
-/* ---- Panels ------------------------------------------------------------ */
+/* ---- Type helpers ------------------------------------------------------------ */
+
+/* Engraved caption: tiny, tracked, uppercase -- section labels, stat labels. */
+.sk-caption { font-size: 11px; font-weight: 600; letter-spacing: .09em; text-transform: uppercase; color: var(--g-500); }
+/* Readouts: mono, tabular, slashed zero. */
+.sk-num { font-family: var(--font-mono); font-weight: 500; font-variant-numeric: tabular-nums slashed-zero; letter-spacing: -.02em; }
+/* A keycap legend, e.g. the "[" shortcut hint on the sidebar key. */
+.sk-kbd {
+  display: inline-flex; align-items: center; justify-content: center; min-width: 20px; height: 20px; padding: 0 5px;
+  border-radius: 5px; font: 500 11px/1 var(--font-mono); color: var(--g-400);
+  background: var(--well); border: 1px solid rgba(0,0,0,.6); box-shadow: var(--sh-well);
+}
+
+::selection { background: rgba(255,106,31,.35); color: #fff; }
+:focus-visible { outline: 2px solid rgba(255,106,31,.7); outline-offset: 2px; }
+
+/* ---- Plates and wells ------------------------------------------------------- */
 
 .sk-panel {
-  background: var(--sk-raised);
-  border: 1px solid rgba(255,255,255,.055);
-  box-shadow: var(--sk-shadow-raised);
+  background: var(--plate);
+  border: 1px solid var(--hair);
+  border-radius: 14px;
+  box-shadow: var(--sh-plate);
 }
 
 .sk-panel-flat {
-  background: var(--sk-raised);
-  border: 1px solid rgba(255,255,255,.045);
-  box-shadow: var(--sk-shadow-raised-sm);
+  background: var(--plate);
+  border: 1px solid var(--hair);
+  box-shadow: var(--sh-plate-sm);
 }
 
-.sk-display {
-  background: var(--sk-inset);
-  border: 1px solid rgba(0,0,0,.55);
-  box-shadow: var(--sk-shadow-inset);
-}
-
+.sk-display,
 .sk-display-deep {
-  background: var(--sk-inset-deep);
+  background: var(--well);
   border: 1px solid rgba(0,0,0,.6);
-  box-shadow: var(--sk-shadow-inset-deep);
+  box-shadow: var(--sh-well);
 }
 
 /* A standby/power-on light breathing behind an inset display -- used for a
    single focal "press to start" control, never more than one at a time. */
 @keyframes skBreathe {
-  0%, 100% { box-shadow: var(--sk-shadow-inset), 0 0 18px 1px rgba(245,158,11,.18); }
-  50% { box-shadow: var(--sk-shadow-inset), 0 0 34px 7px rgba(245,158,11,.38); }
+  0%, 100% { box-shadow: var(--sh-well), 0 0 18px 1px rgba(255,106,31,.14); }
+  50% { box-shadow: var(--sh-well), 0 0 34px 7px rgba(255,106,31,.3); }
 }
 .sk-breathe { animation: skBreathe 2.6s ease-in-out infinite; }
 
-/* ---- Buttons ------------------------------------------------------------ */
+/* ---- Stat readouts ------------------------------------------------------------ */
+
+.sk-stat { min-width: 0; padding: 16px 18px; border-radius: 14px; background: var(--plate); border: 1px solid var(--hair); box-shadow: var(--sh-plate-sm); }
+.sk-stat-label { font-size: 11px; font-weight: 600; letter-spacing: .09em; line-height: 1.35; text-transform: uppercase; color: var(--g-500); }
+.sk-stat-value { margin-top: 10px; font: 500 28px/1.1 var(--font-mono); font-variant-numeric: tabular-nums slashed-zero; letter-spacing: -.03em; color: var(--g-50); }
+.sk-stat-hint { margin-top: 8px; font-size: 12px; line-height: 1.4; color: var(--g-500); }
+/* a unit inside a readout: small, in the text face, a little air on both sides */
+.sk-unit { margin: 0 .5em 0 .22em; font: 500 .48em/1 Inter, system-ui, sans-serif; letter-spacing: .01em; color: var(--g-400); }
+.sk-unit:last-child { margin-right: 0; }
+/* A row of readouts on ONE plate, separated by hairlines (instead of four boxes). */
+.sk-stat-strip {
+  display: grid; grid-template-columns: repeat(var(--cols, 4), minmax(0, 1fr));
+  overflow: hidden; border-radius: 14px; background: var(--plate); border: 1px solid var(--hair); box-shadow: var(--sh-plate);
+}
+/* the same strip sunk into a card as a display window (report preview) */
+.sk-stat-strip-well { background: var(--well); border-color: rgba(0,0,0,.6); box-shadow: var(--sh-well); }
+.sk-stat-strip > .sk-stat { border: 0; border-radius: 0; background: none; box-shadow: none; }
+.sk-stat-strip > .sk-stat + .sk-stat { border-left: 1px solid var(--hair); }
+@media (max-width: 1023px) {
+  .sk-stat-strip { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .sk-stat-strip > .sk-stat:nth-child(odd) { border-left: 0; }
+  .sk-stat-strip > .sk-stat:nth-child(n+3) { border-top: 1px solid var(--hair); }
+  /* an odd last tile (a strip of three) takes the whole row */
+  .sk-stat-strip > .sk-stat:last-child:nth-child(odd) { grid-column: 1 / -1; }
+}
+
+/* ---- Donut readout + legend ----------------------------------------------------------- */
+
+.sk-donut-ring { position: relative; }
+.sk-donut-center { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px; pointer-events: none; }
+.sk-donut-value { font-size: 30px; line-height: 1; color: var(--g-50); }
+.sk-legend { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px 18px; margin: 18px 0 0; padding: 0; list-style: none; }
+.sk-legend li { display: flex; align-items: center; gap: 8px; min-width: 0; font-size: 12px; color: var(--g-400); }
+.sk-legend i { flex: none; width: 7px; height: 7px; border-radius: 50%; }
+.sk-legend span { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.sk-legend b { flex: none; font-size: 12px; color: var(--g-200); }
+
+/* ---- Keys (buttons) --------------------------------------------------------------- */
 
 .sk-btn {
   position: relative;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  background: var(--sk-raised);
-  border: 1px solid rgba(255,255,255,.06);
-  box-shadow: var(--sk-shadow-raised-sm);
-  transition: transform var(--sk-dur-fast) var(--sk-ease-standard), box-shadow var(--sk-dur-fast) var(--sk-ease-standard), background var(--sk-dur-base) var(--sk-ease-standard);
+  color: var(--g-100);
+  background: var(--key);
+  border: 1px solid var(--edge);
+  box-shadow: var(--sh-key);
+  text-shadow: 0 1px 0 rgba(0,0,0,.45);
+  transition: transform var(--sk-dur-fast) var(--sk-ease-standard), box-shadow var(--sk-dur-fast) var(--sk-ease-standard), background var(--sk-dur-base) var(--sk-ease-standard), color var(--sk-dur-fast);
 }
-.sk-btn:hover:not(:disabled) { background: var(--sk-raised-hover); transform: translateY(-1px); }
+.sk-btn:hover:not(:disabled) { background: var(--key-hover); color: #fff; }
 .sk-btn:active:not(:disabled),
 .sk-btn[data-pressed="true"] {
-  background: var(--sk-raised-active);
-  box-shadow: var(--sk-shadow-inset);
+  background: var(--key-down);
+  box-shadow: var(--sh-key-down);
   transform: translateY(1px);
 }
 .sk-btn:disabled { opacity: .45; cursor: not-allowed; }
 
+/* The lit key: dark legend on signal orange, like the record button on a piece of hardware. */
 .sk-btn-primary {
-  background: var(--sk-accent);
-  border: 1px solid rgba(255,255,255,.15);
-  box-shadow:
-    inset 0 1px 0 rgba(255,255,255,.35),
-    inset 0 -1px 0 rgba(49,46,129,.5),
-    0 4px 14px -4px rgba(79,70,229,.35);
-  color: #fff;
+  background: var(--lit);
+  border: 1px solid #a53b0a;
+  box-shadow: var(--sh-lit);
+  color: var(--signal-ink);
+  font-weight: 600;
+  text-shadow: 0 1px 0 rgba(255,255,255,.3);
 }
-.sk-btn-primary:hover:not(:disabled) { filter: brightness(1.07); }
+.sk-btn-primary:hover:not(:disabled) { background: var(--lit-hover); color: var(--signal-ink); }
 .sk-btn-primary:active:not(:disabled) {
-  background: var(--sk-accent-active);
-  box-shadow: inset 0 2px 5px rgba(30,27,75,.6);
+  background: var(--lit-down);
+  box-shadow: var(--sh-lit-down);
   transform: translateY(1px);
-  filter: none;
 }
 
-/* A stronger bloom for a single hero CTA (e.g. the homepage demo's "Start"
-   button) -- not for routine buttons, which already have their own glow. */
-.sk-btn-hero {
-  box-shadow:
-    inset 0 1px 0 rgba(255,255,255,.35),
-    inset 0 -1px 0 rgba(49,46,129,.5),
-    0 8px 28px -6px rgba(99,102,241,.65),
-    0 0 0 1px rgba(129,140,248,.25);
+.sk-btn-danger {
+  color: #fff;
+  background: linear-gradient(180deg, #f2677a 0%, #e5484d 55%, #d23a43 100%);
+  border: 1px solid #8c1d24;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.35), inset 0 -1px 0 rgba(90,10,18,.35), 0 1px 0 #5c0f15, 0 3px 10px -3px rgba(229,72,77,.4);
+  text-shadow: 0 1px 0 rgba(0,0,0,.25);
 }
-.sk-btn-hero:hover:not(:disabled) {
-  box-shadow:
-    inset 0 1px 0 rgba(255,255,255,.4),
-    inset 0 -1px 0 rgba(49,46,129,.5),
-    0 10px 32px -6px rgba(99,102,241,.8),
-    0 0 0 1px rgba(129,140,248,.35);
+.sk-btn-danger:hover:not(:disabled) { background: linear-gradient(180deg, #f5788a 0%, #ea545a 55%, #d8444c 100%); color: #fff; }
+.sk-btn-danger:active:not(:disabled) { background: linear-gradient(180deg, #d23a43 0%, #dc4047 100%); box-shadow: inset 0 2px 4px rgba(90,10,18,.55); transform: translateY(1px); }
+
+/* A key that is not available right now is simply not lit: matte graphite, legend dimmed. */
+.sk-btn-primary:disabled:not([data-loading="true"]),
+.sk-btn-danger:disabled:not([data-loading="true"]) {
+  opacity: 1;
+  color: var(--g-500);
+  background: linear-gradient(180deg, #2c2e33 0%, #26282c 100%);
+  border-color: var(--edge);
+  box-shadow: var(--sh-key);
+  text-shadow: none;
 }
 
-/* ---- Inputs -------------------------------------------------------------- */
+/* A stronger presence for a single hero CTA -- not for routine buttons. */
+.sk-btn-hero { box-shadow: var(--sh-lit), 0 8px 26px -6px rgba(255,106,31,.5); }
+.sk-btn-hero:hover:not(:disabled) { box-shadow: var(--sh-lit), 0 10px 30px -6px rgba(255,106,31,.65); }
 
+/* ---- Inputs (wells) ------------------------------------------------------------------ */
+
+/* full width unless a utility (w-auto, w-36...) says otherwise: :where() keeps this at zero specificity */
+:where(.sk-input) { width: 100%; }
 .sk-input {
-  background: var(--sk-inset);
-  border: 1px solid rgba(0,0,0,.6);
-  box-shadow: var(--sk-shadow-inset);
+  color: var(--g-100);
+  background: var(--well);
+  border: 1px solid rgba(0,0,0,.65);
+  box-shadow: var(--sh-well);
   transition: box-shadow var(--sk-dur-fast) var(--sk-ease-standard), border-color var(--sk-dur-fast) var(--sk-ease-standard);
 }
+.sk-input:hover:not(:disabled):not(:focus) { box-shadow: var(--sh-well), 0 0 0 1px rgba(255,255,255,.05); }
 .sk-input:focus {
   outline: none;
-  border-color: #6366f1;
-  box-shadow: var(--sk-shadow-inset), 0 0 0 3px rgba(99,102,241,.25);
+  border-color: rgba(255,106,31,.75);
+  box-shadow: var(--sh-well), 0 0 0 3px rgba(255,106,31,.18);
 }
+
+/* Select: our own chevron, same well as the text inputs. */
+select.sk-input {
+  appearance: none;
+  -webkit-appearance: none;
+  cursor: pointer;
+  padding-right: 34px;
+  background:
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%23868993' stroke-width='2.6' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M5 9l7 7 7-7'/%3E%3C/svg%3E") no-repeat right 12px center / 12px 12px,
+    var(--well);
+}
+select.sk-input:disabled { cursor: not-allowed; }
 
 /* The closed <select> inherits sk-input's light text color, but its open
    OPTION LIST is rendered by the browser/OS chrome, which ignores most CSS
@@ -661,124 +749,203 @@ button[data-loading="true"]::after {
    background-color/color on <option> are the two properties that actually
    apply cross-browser, unlike the select's own gradient/shadow. */
 select.sk-input option {
-  background-color: #161922;
-  color: #e2e8f0;
+  background-color: #1a1b1e;
+  color: #ececee;
 }
 select.sk-input option:checked {
-  background-color: #312e81;
+  background-color: #7e2f10;
   color: #fff;
 }
 
-/* ---- Tabs ----------------------------------------------------------------- */
+/* ---- Segmented control ------------------------------------------------------------------ */
+/* A well holding flat labels; the active one is a raised key with its LED lit. */
 
 .sk-tabs {
-  background: var(--sk-inset);
-  border: 1px solid rgba(0,0,0,.5);
-  box-shadow: var(--sk-shadow-inset);
+  background: var(--well);
+  border: 1px solid rgba(0,0,0,.65);
+  border-radius: 11px;
+  box-shadow: var(--sh-well);
 }
 .sk-tab {
-  transition: transform var(--sk-dur-fast) var(--sk-ease-standard), box-shadow var(--sk-dur-fast) var(--sk-ease-standard), background var(--sk-dur-base) var(--sk-ease-standard);
+  color: var(--g-400);
+  transition: transform var(--sk-dur-fast) var(--sk-ease-standard), box-shadow var(--sk-dur-fast) var(--sk-ease-standard), background var(--sk-dur-base) var(--sk-ease-standard), color var(--sk-dur-fast);
 }
 .sk-tab[data-active="true"] {
-  background: var(--sk-accent);
-  box-shadow: inset 0 1px 0 rgba(255,255,255,.3), inset 0 -1px 0 rgba(49,46,129,.5), 0 2px 6px -2px rgba(79,70,229,.5);
+  color: var(--g-50);
+  background: var(--key);
+  box-shadow: var(--sh-key), 0 0 0 1px var(--edge);
 }
-.sk-tab[data-active="false"]:hover { background: rgba(255,255,255,.04); }
+.sk-tab[data-active="true"]::before {
+  content: "";
+  display: inline-block;
+  width: 5px; height: 5px; margin: -1px 8px 0 -2px;
+  vertical-align: middle;
+  border-radius: 50%;
+  background: var(--signal);
+  box-shadow: 0 0 6px 1px rgba(255,106,31,.7);
+}
+.sk-tab[data-active="false"]:hover { color: var(--g-100); background: rgba(255,255,255,.04); }
+/* a short toggle (the language switch) is just the raised key -- no LED on it */
+[data-compact="true"] .sk-tab[data-active="true"]::before { display: none; }
 
-/* ---- Switch / toggle -------------------------------------------------------- */
+/* ---- Switch ---------------------------------------------------------------------------- */
 
 .sk-switch-track {
-  background: var(--sk-inset);
-  box-shadow: var(--sk-shadow-inset);
-  transition: background var(--sk-dur-base) var(--sk-ease-standard);
+  background: var(--well);
+  border: 1px solid rgba(0,0,0,.65);
+  box-shadow: var(--sh-well);
+  transition: background var(--sk-dur-base) var(--sk-ease-standard), box-shadow var(--sk-dur-base) var(--sk-ease-standard);
 }
-.sk-switch-track[data-on="true"] { background: var(--sk-accent); box-shadow: inset 0 1px 3px rgba(49,46,129,.6); }
+.sk-switch-track[data-on="true"] {
+  background: linear-gradient(180deg, #8a3109 0%, #d4490e 100%);
+  box-shadow: inset 0 1px 3px rgba(50,12,0,.8), inset 0 0 0 1px rgba(50,12,0,.35), 0 0 12px -2px rgba(255,106,31,.35);
+}
 .sk-switch-knob {
-  background: linear-gradient(180deg, #fff 0%, #e2e8f0 100%);
-  box-shadow: 0 1px 2px rgba(0,0,0,.4), 0 0 0 1px rgba(0,0,0,.08);
+  background: linear-gradient(180deg, #f1f2f4 0%, #b9bcc3 100%);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.7), 0 1px 3px rgba(0,0,0,.6), 0 0 0 1px rgba(0,0,0,.4);
   transition: transform var(--sk-dur-base) var(--sk-ease-spring);
 }
 
-/* ---- Sidebar / topbar ---------------------------------------------------- */
+/* ---- Sidebar / topbar / nav ---------------------------------------------------------------- */
 
-.sk-sidebar { background: var(--sk-sidebar); border-right: 1px solid rgba(0,0,0,.5); box-shadow: inset -1px 0 0 rgba(255,255,255,.04); }
-.sk-topbar { background: var(--sk-topbar); border-bottom: 1px solid rgba(0,0,0,.5); box-shadow: inset 0 1px 0 var(--sk-hi), 0 4px 12px -6px rgba(0,0,0,.5); }
+.sk-sidebar { background: var(--rail); border-right: 1px solid var(--hair); box-shadow: inset -1px 0 0 rgba(0,0,0,.5); }
+.sk-topbar { background: var(--canvas); border-bottom: 1px solid var(--hair); }
 
-.sk-nav-item { transition: background var(--sk-dur-fast) var(--sk-ease-standard), box-shadow var(--sk-dur-fast) var(--sk-ease-standard), color var(--sk-dur-fast) var(--sk-ease-standard); }
-.sk-nav-item[data-active="true"] {
-  background: var(--sk-inset);
-  box-shadow: var(--sk-shadow-inset);
+.sk-nav-item {
+  color: var(--g-400);
+  transition: background var(--sk-dur-fast) var(--sk-ease-standard), box-shadow var(--sk-dur-fast) var(--sk-ease-standard), color var(--sk-dur-fast) var(--sk-ease-standard);
 }
-.sk-nav-item[data-active="false"]:hover { background: var(--sk-hi-strong); }
+/* The page you are on is a key that is held down, with a lit strip on its edge. */
+.sk-nav-item[data-active="true"] {
+  color: var(--g-50);
+  background: var(--well);
+  box-shadow: var(--sh-well);
+}
+.sk-nav-item[data-active="true"]::before {
+  content: "";
+  position: absolute; left: 0; top: 9px; bottom: 9px; width: 2px;
+  border-radius: 0 2px 2px 0;
+  background: var(--signal);
+  box-shadow: 0 0 8px 1px rgba(255,106,31,.6);
+}
+.sk-nav-item[data-active="false"]:hover { background: rgba(255,255,255,.1); color: var(--g-50); }
 
-/* ---- Badge / indicator light ---------------------------------------------- */
+/* The collapse / expand key at the foot of the sidebar. */
+.sk-collapse {
+  display: flex; align-items: center; gap: 10px; width: 100%; height: 34px; padding: 0 8px 0 10px;
+  border-radius: 9px; font-size: 13px; font-weight: 500; color: var(--g-300);
+  background: var(--key); border: 1px solid var(--edge); box-shadow: var(--sh-key); text-shadow: 0 1px 0 rgba(0,0,0,.45);
+  transition: transform var(--sk-dur-fast) var(--sk-ease-standard), box-shadow var(--sk-dur-fast) var(--sk-ease-standard), background var(--sk-dur-base) var(--sk-ease-standard), color var(--sk-dur-fast);
+}
+.sk-collapse:hover { background: var(--key-hover); color: #fff; }
+.sk-collapse:active { background: var(--key-down); box-shadow: var(--sh-key-down); transform: translateY(1px); }
+.sk-collapse .sk-kbd { margin-left: auto; }
+.sk-collapse[data-rail="true"] { width: 40px; padding: 0; justify-content: center; }
+/* the chevrons slide a hair toward the direction they will move the rail */
+.sk-collapse svg { transition: transform var(--sk-dur-base) var(--sk-ease-out); }
+.sk-collapse:hover svg { transform: translateX(-1.5px); }
+.sk-collapse[data-rail="true"]:hover svg { transform: translateX(1.5px); }
+
+/* Unread / request counters: a small lit pill with a mono number. */
+.sk-count {
+  display: inline-flex; align-items: center; justify-content: center; flex-shrink: 0; min-width: 18px; height: 18px; padding: 0 5px;
+  border-radius: 9px; font: 500 11px/1 var(--font-mono); color: var(--signal-ink);
+  background: var(--lit); box-shadow: inset 0 1px 0 rgba(255,255,255,.45), 0 1px 0 rgba(0,0,0,.4);
+}
+
+/* A small key tile carrying one glyph (section icons in cards). */
+.sk-tile {
+  display: flex; align-items: center; justify-content: center; flex: none; width: 28px; height: 28px; border-radius: 8px;
+  color: var(--signal-hi); background: var(--key); border: 1px solid var(--edge); box-shadow: var(--sh-key);
+}
+
+/* Initials medallion (no photo): a small graphite disc with a 1px light edge. */
+.sk-avatar {
+  color: var(--g-100); letter-spacing: .02em;
+  background: linear-gradient(180deg, #3c3e45 0%, #2a2c31 100%);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.15), 0 0 0 1px rgba(0,0,0,.6), 0 1px 3px rgba(0,0,0,.5);
+}
+
+/* ---- Status LED badge ------------------------------------------------------------------------- */
 
 .sk-badge {
-  box-shadow: inset 0 1px 2px rgba(0,0,0,.35), inset 0 0 6px 0 currentColor;
+  display: inline-flex; align-items: center; gap: 6px; padding: 2px 10px 2px 8px; border-radius: 999px;
+  font-size: 12px; font-weight: 500; line-height: 18px; white-space: nowrap; color: var(--g-200);
+  background: rgba(0,0,0,.32); border: 1px solid var(--hair); box-shadow: inset 0 1px 2px rgba(0,0,0,.45);
+}
+.sk-badge[data-tone="emerald"] { --led: #34d399; --led-glow: rgba(52,211,153,.65); }
+.sk-badge[data-tone="amber"] { --led: #fbbf24; --led-glow: rgba(251,191,36,.6); }
+.sk-badge[data-tone="rose"] { --led: #fb7185; --led-glow: rgba(251,113,133,.6); }
+.sk-badge[data-tone="teal"] { --led: #2dd4bf; --led-glow: rgba(45,212,191,.55); }
+.sk-badge[data-tone="steel"] { --led: #86a5d9; --led-glow: rgba(134,165,217,.55); }
+.sk-badge[data-tone="signal"] { --led: #ff6a1f; --led-glow: rgba(255,106,31,.65); }
+.sk-led {
+  width: 6px; height: 6px; flex-shrink: 0; border-radius: 50%;
+  background: var(--led, #565963); box-shadow: 0 0 6px 0 var(--led-glow, transparent);
 }
 
-/* ---- Modal ---------------------------------------------------------------- */
+/* ---- Modal / menus ---------------------------------------------------------------------------------- */
 
 .sk-modal {
-  background: var(--sk-raised);
-  border: 1px solid rgba(255,255,255,.08);
-  box-shadow: inset 0 1px 0 var(--sk-hi), 0 24px 60px -12px rgba(0,0,0,.7);
+  background: var(--plate);
+  border: 1px solid var(--hair-2);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.06), 0 1px 2px rgba(0,0,0,.5), 0 30px 70px -20px rgba(0,0,0,.85);
 }
 
-/* ---- Variant / spec slot (A/B/C/D) ----------------------------------------- */
+/* ---- Variant / spec slot (A/B/C/D) ---------------------------------------------------------------------- */
 
 .sk-slot {
-  background: var(--sk-raised);
-  border: 1px solid rgba(255,255,255,.06);
-  box-shadow: var(--sk-shadow-raised-sm);
-  transition: transform var(--sk-dur-fast) var(--sk-ease-standard), box-shadow var(--sk-dur-fast) var(--sk-ease-standard), background var(--sk-dur-fast) var(--sk-ease-standard);
+  background: var(--plate);
+  border: 1px solid var(--hair);
+  box-shadow: var(--sh-plate-sm);
+  transition: transform var(--sk-dur-fast) var(--sk-ease-standard), box-shadow var(--sk-dur-fast) var(--sk-ease-standard), background var(--sk-dur-fast) var(--sk-ease-standard), border-color var(--sk-dur-fast);
 }
-.sk-slot:hover { transform: translateY(-2px); box-shadow: var(--sk-shadow-raised); }
+.sk-slot:hover { background: var(--plate-hover); border-color: var(--hair-2); }
 .sk-slot[data-selected="true"] {
-  border-color: #6366f1;
-  box-shadow: var(--sk-shadow-raised), 0 0 0 2px rgba(99,102,241,.4), 0 0 20px -4px rgba(99,102,241,.5);
+  border-color: rgba(255,106,31,.7);
+  box-shadow: var(--sh-plate-sm), 0 0 0 1px rgba(255,106,31,.3);
 }
-/* Suggested measurement chips (builder step 4). Plain classes on purpose: the Tailwind utilities first used here
-   (ring-amber-400/60, text-amber-400/90, text-[10px]) are not in the prebuilt vendor/tailwind.css, and .sk-slot's own
-   box-shadow would override a ring anyway. */
-.sk-slot.sk-suggested { border-color: rgba(251,191,36,.55); box-shadow: var(--sk-shadow-raised-sm), 0 0 0 1px rgba(251,191,36,.35); }
-.sk-slot.sk-suggested:hover { box-shadow: var(--sk-shadow-raised), 0 0 0 1px rgba(251,191,36,.55); }
+/* Suggested measurement chips (builder step 4). */
+.sk-slot.sk-suggested { border-color: rgba(251,191,36,.5); box-shadow: var(--sh-plate-sm), 0 0 0 1px rgba(251,191,36,.28); }
+.sk-slot.sk-suggested:hover { box-shadow: var(--sh-plate-sm), 0 0 0 1px rgba(251,191,36,.5); }
 .sk-suggest-hint { color: rgba(251,191,36,.9); }
 .sk-suggest-badge { font-size: 10px; line-height: 1; color: #fbbf24; }
 .sk-slot-label {
-  background: var(--sk-accent);
-  box-shadow: inset 0 1px 0 rgba(255,255,255,.3), 0 2px 6px -2px rgba(0,0,0,.5);
+  color: var(--g-100);
+  background: var(--key);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.14), 0 1px 0 rgba(0,0,0,.5);
 }
 
-/* ---- Checkbox -------------------------------------------------------------- */
+/* ---- Checkbox ----------------------------------------------------------------------------------------------- */
 
 .sk-checkbox {
   appearance: none;
   -webkit-appearance: none;
-  background: var(--sk-inset);
-  box-shadow: var(--sk-shadow-inset);
-  border: 1px solid rgba(0,0,0,.5);
+  background: var(--well);
+  box-shadow: var(--sh-well);
+  border: 1px solid rgba(0,0,0,.65);
   position: relative;
   cursor: pointer;
   flex-shrink: 0;
-  transition: background var(--sk-dur-fast) var(--sk-ease-standard), box-shadow var(--sk-dur-fast) var(--sk-ease-standard);
+  transition: background var(--sk-dur-fast) var(--sk-ease-standard), box-shadow var(--sk-dur-fast) var(--sk-ease-standard), border-color var(--sk-dur-fast);
 }
 .sk-checkbox:checked {
-  background: var(--sk-accent);
-  box-shadow: inset 0 1px 2px rgba(49,46,129,.5);
+  border-color: rgba(255,106,31,.55);
+  box-shadow: var(--sh-well), 0 0 10px -2px rgba(255,106,31,.35);
 }
 .sk-checkbox:checked::after {
   content: "";
   position: absolute;
   left: 4px; top: 1px;
   width: 4px; height: 8px;
-  border: solid white;
+  border: solid var(--signal-hi);
   border-width: 0 2px 2px 0;
   transform: rotate(45deg);
+  filter: drop-shadow(0 0 3px rgba(255,106,31,.7));
   animation: skCheckPop .18s var(--sk-ease-spring);
 }
 @keyframes skCheckPop { from { transform: rotate(45deg) scale(0); } to { transform: rotate(45deg) scale(1); } }
-.sk-checkbox:focus-visible { outline: 2px solid #6366f1; outline-offset: 1px; }
+.sk-checkbox:focus-visible { outline: 2px solid rgba(255,106,31,.7); outline-offset: 1px; }
 
 @media (prefers-reduced-motion: reduce) {
   .sk-btn, .sk-slot, .sk-switch-knob, .sk-tab, .sk-checkbox, .sk-input, .sk-switch-track, .sk-nav-item, .sk-progress-fill { transition: none !important; }
@@ -833,8 +1000,8 @@ html { scroll-behavior: smooth; }
 }
 .sk-chat-list { display: flex; flex-direction: column; min-height: 0; border-right: 1px solid rgba(0,0,0,.45); }
 .sk-chat-list-head { padding: 16px 16px 10px; }
-.sk-chat-list-head h2 { font-size: 18px; font-weight: 600; color: #f1f5f9; margin: 0 0 10px; }
-.sk-chat-search { width: 100%; border-radius: 10px; padding: 8px 12px; font-size: 14px; color: #e2e8f0; }
+.sk-chat-list-head h2 { font-size: 18px; font-weight: 600; color: #ececee; margin: 0 0 10px; }
+.sk-chat-search { width: 100%; border-radius: 10px; padding: 8px 12px; font-size: 14px; color: #dcdde1; }
 .sk-chat-items { flex: 1; overflow-y: auto; padding: 4px 8px 12px; }
 
 .sk-chat-item {
@@ -843,26 +1010,26 @@ html { scroll-behavior: smooth; }
   transition: background var(--sk-dur-fast) var(--sk-ease-standard);
 }
 .sk-chat-item:hover { background: rgba(255,255,255,.04); }
-.sk-chat-item.active { background: rgba(99,102,241,.16); }
+.sk-chat-item.active { background: var(--well); box-shadow: var(--sh-well); }
 .sk-chat-item-main { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 3px; }
 .sk-chat-item-top, .sk-chat-item-bottom { display: flex; align-items: center; justify-content: space-between; gap: 8px; min-width: 0; }
-.sk-chat-name { font-size: 14px; font-weight: 500; color: #e2e8f0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.sk-chat-name { font-size: 14px; font-weight: 500; color: #dcdde1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .sk-chat-name.unread { font-weight: 700; color: #fff; }
-.sk-chat-time { font-size: 11px; color: #64748b; flex-shrink: 0; }
-.sk-chat-preview { font-size: 13px; color: #64748b; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.sk-chat-preview.unread { color: #cbd5e1; }
+.sk-chat-time { font-size: 11px; color: #868993; flex-shrink: 0; }
+.sk-chat-preview { font-size: 13px; color: #868993; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.sk-chat-preview.unread { color: #c3c5cb; }
 .sk-chat-unread {
   flex-shrink: 0; min-width: 20px; height: 20px; padding: 0 6px; border-radius: 999px;
   display: inline-flex; align-items: center; justify-content: center;
-  font-size: 11px; font-weight: 700; color: #fff; background: #6366f1;
+  font-size: 11px; font-weight: 700; color: #fff; background: #ff6a1f;
 }
 .sk-chat-typing-text { color: #34d399; font-style: italic; }
-.sk-chat-hint { padding: 18px 14px; font-size: 13px; color: #64748b; text-align: center; }
+.sk-chat-hint { padding: 18px 14px; font-size: 13px; color: #868993; text-align: center; }
 
 .sk-avatar-wrap { position: relative; display: inline-flex; flex-shrink: 0; }
 .sk-online-dot {
   position: absolute; right: -1px; bottom: -1px; width: 12px; height: 12px; border-radius: 50%;
-  background: #22c55e; border: 2px solid #171a22;
+  background: #22c55e; border: 2px solid #18191c;
 }
 
 .sk-chat-pane { display: flex; flex-direction: column; min-width: 0; min-height: 0; background: rgba(0,0,0,.14); }
@@ -872,35 +1039,37 @@ html { scroll-behavior: smooth; }
   border-bottom: 1px solid rgba(0,0,0,.45); background: rgba(255,255,255,.02);
 }
 .sk-chat-head-text { min-width: 0; }
-.sk-chat-head-name { font-size: 15px; font-weight: 600; color: #f1f5f9; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.sk-chat-head-name { font-size: 15px; font-weight: 600; color: #ececee; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .sk-chat-head-status { font-size: 12px; }
 .sk-status-online { color: #34d399; }
-.sk-status-offline { color: #64748b; }
+.sk-status-offline { color: #868993; }
 .sk-chat-back {
   display: none; align-items: center; justify-content: center; width: 36px; height: 36px; margin-left: -6px;
-  border: 0; border-radius: 10px; background: transparent; color: #cbd5e1; cursor: pointer;
+  border: 0; border-radius: 10px; background: transparent; color: #c3c5cb; cursor: pointer;
 }
 
 .sk-chat-scroll { flex: 1; min-height: 0; overflow-y: auto; padding: 14px 16px; display: flex; flex-direction: column; gap: 3px; overscroll-behavior: contain; }
 .sk-chat-skeleton { display: flex; flex-direction: column; gap: 10px; }
-.sk-chat-older { display: flex; align-items: center; justify-content: center; gap: 8px; font-size: 12px; color: #64748b; padding: 4px 0 8px; }
+.sk-chat-older { display: flex; align-items: center; justify-content: center; gap: 8px; font-size: 12px; color: #868993; padding: 4px 0 8px; }
 .sk-chat-day { display: flex; justify-content: center; margin: 12px 0 6px; }
-.sk-chat-day span { font-size: 11px; color: #94a3b8; background: rgba(255,255,255,.06); padding: 3px 12px; border-radius: 999px; }
+.sk-chat-day span { font-size: 11px; color: #a2a5ae; background: rgba(255,255,255,.06); padding: 3px 12px; border-radius: 999px; }
 
 .sk-msg-row { display: flex; flex-direction: column; align-items: flex-start; }
 .sk-msg-row.mine { align-items: flex-end; }
 .sk-bubble {
   max-width: min(520px, 78%); padding: 7px 11px 6px; border-radius: 16px 16px 16px 5px;
-  background: #262b3a; color: #e2e8f0; font-size: 14.5px; line-height: 1.4;
+  background: linear-gradient(180deg, #24262a 0%, #1f2024 100%); box-shadow: inset 0 0 0 1px var(--hair), inset 0 1px 0 rgba(255,255,255,.05);
+  color: var(--g-200); font-size: 14.5px; line-height: 1.4;
   overflow-wrap: anywhere; animation: skBubbleIn .18s var(--sk-ease-out) backwards;
 }
-.sk-bubble.mine { border-radius: 16px 16px 5px 16px; background: linear-gradient(180deg, #6d70f5 0%, #5558e6 100%); color: #fff; }
+/* my messages: a raised graphite key, not a coloured balloon -- the signal colour is kept for "read" */
+.sk-bubble.mine { border-radius: 16px 16px 5px 16px; background: linear-gradient(180deg, #3d4048 0%, #30333a 100%); box-shadow: inset 0 0 0 1px rgba(0,0,0,.5), inset 0 1px 0 rgba(255,255,255,.12), 0 1px 0 rgba(0,0,0,.45); color: var(--g-50); }
 .sk-bubble.failed { background: rgba(244,63,94,.28); }
 .sk-bubble-text { white-space: pre-wrap; }
 .sk-bubble-meta { display: inline-flex; align-items: center; gap: 3px; float: right; margin: 6px 0 0 10px; font-size: 10.5px; opacity: .75; line-height: 1; }
 .sk-bubble::after { content: ""; display: block; clear: both; }
 .sk-tick { display: inline-flex; align-items: center; }
-.sk-tick-read { color: #5eead4; opacity: 1; }
+.sk-tick-read { color: var(--signal-hi); opacity: 1; }
 .sk-bubble-typing { padding: 11px 14px; }
 .sk-msg-retry { margin-top: 3px; border: 0; background: transparent; color: #fb7185; font-size: 12px; cursor: pointer; display: inline-flex; align-items: center; gap: 4px; }
 @keyframes skBubbleIn { from { opacity: 0; transform: translateY(6px) scale(.98); } to { opacity: 1; transform: none; } }
@@ -915,21 +1084,23 @@ html { scroll-behavior: smooth; }
   position: relative; display: flex; align-items: flex-end; gap: 8px;
   padding: 10px 12px; border-top: 1px solid rgba(0,0,0,.45); background: rgba(255,255,255,.02);
 }
-.sk-chat-input { flex: 1; resize: none; border-radius: 18px; padding: 9px 14px; font-size: 14.5px; line-height: 1.35; max-height: 140px; color: #f1f5f9; }
+.sk-chat-input { flex: 1; resize: none; border-radius: 18px; padding: 9px 14px; font-size: 14.5px; line-height: 1.35; max-height: 140px; color: #ececee; }
 .sk-chat-iconbtn, .sk-chat-send {
   flex-shrink: 0; width: 40px; height: 40px; border-radius: 50%; border: 0; cursor: pointer;
   display: inline-flex; align-items: center; justify-content: center;
 }
-.sk-chat-iconbtn { background: transparent; color: #94a3b8; }
-.sk-chat-iconbtn:hover { color: #e2e8f0; background: rgba(255,255,255,.06); }
-.sk-chat-send { background: var(--sk-accent); color: #fff; transition: transform var(--sk-dur-fast) var(--sk-ease-standard), opacity var(--sk-dur-fast); }
-.sk-chat-send:hover:not(:disabled) { transform: scale(1.06); }
-.sk-chat-send:disabled { opacity: .35; cursor: default; }
-.sk-chat-locked { padding: 14px 16px; text-align: center; font-size: 13px; color: #94a3b8; border-top: 1px solid rgba(0,0,0,.45); }
+.sk-chat-iconbtn { background: transparent; color: #a2a5ae; }
+.sk-chat-iconbtn:hover { color: #dcdde1; background: rgba(255,255,255,.06); }
+.sk-chat-send { background: var(--lit); color: var(--signal-ink); box-shadow: var(--sh-lit); transition: transform var(--sk-dur-fast) var(--sk-ease-standard), box-shadow var(--sk-dur-fast), background var(--sk-dur-base); }
+.sk-chat-send:hover:not(:disabled) { background: var(--lit-hover); }
+.sk-chat-send:active:not(:disabled) { background: var(--lit-down); box-shadow: var(--sh-lit-down); transform: translateY(1px); }
+/* not available = not lit */
+.sk-chat-send:disabled { cursor: default; color: var(--g-500); background: linear-gradient(180deg, #2c2e33 0%, #26282c 100%); box-shadow: var(--sh-key); }
+.sk-chat-locked { padding: 14px 16px; text-align: center; font-size: 13px; color: #a2a5ae; border-top: 1px solid rgba(0,0,0,.45); }
 .sk-emoji-panel {
   position: absolute; left: 12px; bottom: 58px; z-index: 5; width: 264px; padding: 8px;
   display: grid; grid-template-columns: repeat(8, 1fr); gap: 2px;
-  background: #1b1f29; border: 1px solid rgba(255,255,255,.08); border-radius: 12px; box-shadow: 0 10px 30px rgba(0,0,0,.5);
+  background: #1c1d21; border: 1px solid rgba(255,255,255,.08); border-radius: 12px; box-shadow: 0 10px 30px rgba(0,0,0,.5);
 }
 .sk-emoji-panel button { border: 0; background: transparent; font-size: 20px; padding: 4px 0; border-radius: 8px; cursor: pointer; }
 .sk-emoji-panel button:hover { background: rgba(255,255,255,.08); }

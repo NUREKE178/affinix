@@ -17,6 +17,8 @@ const PATHS = {
   chevronRight: html`<path d="M9 5l7 7-7 7"/>`,
   chevronLeft: html`<path d="M15 5l-7 7 7 7"/>`,
   chevronDown: html`<path d="M5 9l7 7 7-7"/>`,
+  chevronsLeft: html`<path d="M12 6l-6 6 6 6"/><path d="M19 6l-6 6 6 6"/>`,
+  chevronsRight: html`<path d="M12 6l6 6-6 6"/><path d="M5 6l6 6-6 6"/>`,
   plus: html`<path d="M12 5v14M5 12h14"/>`,
   upload: html`<path d="M12 16V4M7 8.5l5-5 5 5"/><path d="M4 16.5v2.5a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-2.5"/>`,
   check: html`<path d="M5 12.5l4.5 4.5L19 7"/>`,

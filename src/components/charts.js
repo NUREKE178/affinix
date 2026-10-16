@@ -1,7 +1,30 @@
 import { html, useRef, useEffect } from "../lib/preact.js";
 
-const GRID_COLOR = "rgba(148,163,184,0.12)";
-const TICK_COLOR = "#94a3b8";
+// Chart.js styled to sit directly on a plate: no well behind it, hairline grid, mono tick labels.
+export const SERIES_COLORS = ["#ff6a1f", "#86a5d9", "#d9cfb8", "#4fc3b0", "#c8a1e8"];
+
+const GRID_COLOR = "rgba(255,255,255,0.06)";
+const TICK_COLOR = "#868993";
+const MONO = '"JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, monospace';
+const SANS = 'Inter, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif';
+
+const tooltip = {
+  backgroundColor: "#1a1b1e",
+  borderColor: "rgba(255,255,255,0.12)",
+  borderWidth: 1,
+  titleColor: "#ececee",
+  bodyColor: "#c3c5cb",
+  titleFont: { family: SANS, size: 12, weight: "600" },
+  bodyFont: { family: MONO, size: 12 },
+  padding: 10,
+  cornerRadius: 8,
+  boxPadding: 4,
+};
+
+function withAlpha(hex, alpha) {
+  const n = parseInt(hex.replace("#", ""), 16);
+  return `rgba(${(n >> 16) & 255}, ${(n >> 8) & 255}, ${n & 255}, ${alpha})`;
+}
 
 function useChart(buildConfig, deps) {
   const canvasRef = useRef(null);
@@ -30,69 +53,114 @@ function useChart(buildConfig, deps) {
   return canvasRef;
 }
 
+const axisTicks = { color: TICK_COLOR, font: { family: MONO, size: 10.5 } };
+
+// A variant's own colour when it has one (the column is nullable and the builder leaves it empty), else the series palette.
+const barColors = (colors, n) => Array.from({ length: n }, (_, i) => colors?.[i] || SERIES_COLORS[i % SERIES_COLORS.length]);
+
 export function BarChart({ labels, data, colors, horizontal = false, height = 220, suffix = "%" }) {
   const ref = useChart(
     () => ({
       type: "bar",
       data: {
         labels,
-        datasets: [{ data, backgroundColor: colors, borderRadius: 6, maxBarThickness: 46 }],
+        datasets: [{ data, backgroundColor: barColors(colors, data.length), borderRadius: 5, borderSkipped: false, maxBarThickness: 44 }],
       },
       options: {
         indexAxis: horizontal ? "y" : "x",
         responsive: true,
         maintainAspectRatio: false,
-        plugins: { legend: { display: false }, tooltip: { callbacks: { label: (ctx) => `${ctx.formattedValue}${suffix}` } } },
+        plugins: { legend: { display: false }, tooltip: { ...tooltip, displayColors: false, callbacks: { label: (ctx) => `${ctx.formattedValue}${suffix}` } } },
         scales: {
-          x: { grid: { color: horizontal ? GRID_COLOR : "transparent" }, ticks: { color: TICK_COLOR } },
-          y: { grid: { color: horizontal ? "transparent" : GRID_COLOR }, ticks: { color: TICK_COLOR } },
+          x: { grid: { color: horizontal ? GRID_COLOR : "transparent" }, border: { display: false }, ticks: axisTicks },
+          y: { grid: { color: horizontal ? "transparent" : GRID_COLOR }, border: { display: false }, ticks: axisTicks },
         },
       },
     }),
-    [JSON.stringify(labels), JSON.stringify(data)]
+    [JSON.stringify(labels), JSON.stringify(data), JSON.stringify(colors)]
   );
-  return html`<div class="sk-display rounded-lg p-3" style=${{ height: `${height}px` }}><canvas ref=${ref}></canvas></div>`;
+  return html`<div style=${{ height: `${height}px` }}><canvas ref=${ref}></canvas></div>`;
 }
 
-export function DonutChart({ labels, data, colors, height = 220 }) {
+/** A thin ring with a readout in its hole and a two-column legend underneath (HTML, so the labels
+ * stay in the text face and wrap cleanly). `center` = { value?, label }: value defaults to the sum. */
+export function DonutChart({ labels, data, colors, height = 190, center }) {
+  const total = data.reduce((a, b) => a + (b || 0), 0);
   const ref = useChart(
     () => ({
       type: "doughnut",
-      data: { labels, datasets: [{ data, backgroundColor: colors, borderWidth: 0 }] },
+      // nothing to show yet: one quiet, inert ring instead of an empty canvas
+      data: { labels, datasets: [{ data: total ? data : [1], backgroundColor: total ? colors : ["#26282d"], borderWidth: 0, borderRadius: total ? 4 : 0, spacing: total ? 3 : 0 }] },
       options: {
         responsive: true,
         maintainAspectRatio: false,
-        cutout: "68%",
-        plugins: { legend: { position: "bottom", labels: { color: TICK_COLOR, boxWidth: 10, padding: 12, font: { size: 11 } } } },
+        cutout: "76%",
+        plugins: { legend: { display: false }, tooltip: { ...tooltip, displayColors: false, enabled: total > 0 } },
       },
     }),
     [JSON.stringify(labels), JSON.stringify(data)]
   );
-  return html`<div class="sk-display rounded-lg p-3" style=${{ height: `${height}px` }}><canvas ref=${ref}></canvas></div>`;
+  return html`
+    <div class="sk-donut">
+      <div class="sk-donut-ring" style=${{ height: `${height}px` }}>
+        <canvas ref=${ref}></canvas>
+        ${center && html`
+          <div class="sk-donut-center">
+            <div class="sk-donut-value sk-num">${center.value ?? total}</div>
+            <div class="sk-caption">${center.label}</div>
+          </div>
+        `}
+      </div>
+      <ul class="sk-legend">
+        ${labels.map((label, i) => html`
+          <li key=${i}><i style=${{ background: colors[i] }}></i><span>${label}</span><b class="sk-num">${data[i] ?? 0}</b></li>
+        `)}
+      </ul>
+    </div>
+  `;
 }
 
-export function LineChart({ labels, data, color = "#6366f1", height = 220, fill = true }) {
+export function LineChart({ labels, data, color = SERIES_COLORS[0], height = 220, fill = true }) {
   const ref = useChart(
     () => ({
       type: "line",
       data: {
         labels,
         datasets: [{
-          data, borderColor: color, backgroundColor: `${color}22`, fill, tension: 0.35,
-          pointRadius: 0, pointHoverRadius: 4, borderWidth: 2,
+          data,
+          borderColor: color,
+          borderWidth: 2,
+          tension: 0.35,
+          fill,
+          // the area under the line fades out toward the axis
+          backgroundColor: (ctx) => {
+            const { chart } = ctx;
+            const area = chart.chartArea;
+            if (!area) return "transparent";
+            const g = chart.ctx.createLinearGradient(0, area.top, 0, area.bottom);
+            g.addColorStop(0, withAlpha(color, 0.26));
+            g.addColorStop(1, withAlpha(color, 0));
+            return g;
+          },
+          pointRadius: 0,
+          pointHoverRadius: 4.5,
+          pointHoverBackgroundColor: "#0e0e10",
+          pointHoverBorderColor: color,
+          pointHoverBorderWidth: 2,
         }],
       },
       options: {
         responsive: true,
         maintainAspectRatio: false,
-        plugins: { legend: { display: false } },
+        interaction: { mode: "index", intersect: false },
+        plugins: { legend: { display: false }, tooltip: { ...tooltip, displayColors: false } },
         scales: {
-          x: { grid: { display: false }, ticks: { color: TICK_COLOR, maxRotation: 0, autoSkip: true } },
-          y: { grid: { color: GRID_COLOR }, ticks: { color: TICK_COLOR }, beginAtZero: true },
+          x: { grid: { display: false }, border: { display: false }, ticks: { ...axisTicks, maxRotation: 0, autoSkip: true } },
+          y: { grid: { color: GRID_COLOR }, border: { display: false }, ticks: { ...axisTicks, precision: 0 }, beginAtZero: true },
         },
       },
     }),
     [JSON.stringify(labels), JSON.stringify(data)]
   );
-  return html`<div class="sk-display rounded-lg p-3" style=${{ height: `${height}px` }}><canvas ref=${ref}></canvas></div>`;
+  return html`<div style=${{ height: `${height}px` }}><canvas ref=${ref}></canvas></div>`;
 }

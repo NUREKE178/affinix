@@ -395,12 +395,12 @@ function announceIncoming(conv, row) {
   };
   playNotificationSound();
   if (pageIsVisible()) {
-    toast(`${name}: ${previewText(row.body)}`, "slate");
+    toast(`${name}: ${previewText(row.body)}`, "neutral");
     return;
   }
   if (typeof Notification === "undefined" || Notification.permission !== "granted") return;
   try {
-    const popup = new Notification(name, { body: previewText(row.body), icon: "/favicon.svg", tag: `dm:${row.conversation_id}` });
+    const popup = new Notification(name, { body: previewText(row.body), icon: "/assets/logo/icon-192.png", tag: `dm:${row.conversation_id}` });
     popup.onclick = () => { openIt(); popup.close(); };
   } catch { /* some platforms throw on `new Notification` -- the in-app badge still shows */ }
 }

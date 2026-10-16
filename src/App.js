@@ -121,10 +121,10 @@ function ProtectedApp({ path, query }) {
 
   if (!IS_CONFIGURED) {
     return html`
-      <div class="min-h-screen flex items-center justify-center bg-slate-950 px-6">
+      <div class="min-h-screen flex items-center justify-center bg-graphite-950 px-6">
         <div class="max-w-md text-center">
-          <h1 class="text-lg font-semibold text-slate-100">${t("common.notConfiguredTitle")}</h1>
-          <p class="text-sm text-slate-400 mt-2">${t("common.notConfiguredBody")}</p>
+          <h1 class="text-lg font-semibold text-graphite-100">${t("common.notConfiguredTitle")}</h1>
+          <p class="text-sm text-graphite-400 mt-2">${t("common.notConfiguredBody")}</p>
         </div>
       </div>
     `;
@@ -135,10 +135,10 @@ function ProtectedApp({ path, query }) {
   if (!orgChecked) return html`<${FullScreenLoading} phase="workspace" />`;
   if (orgError) {
     return html`
-      <div class="min-h-screen flex flex-col items-center justify-center gap-4 bg-slate-950 px-6 text-center">
+      <div class="min-h-screen flex flex-col items-center justify-center gap-4 bg-graphite-950 px-6 text-center">
         <div class="max-w-sm">
-          <h1 class="text-lg font-semibold text-slate-100">${t("common.loadOrgErrorTitle")}</h1>
-          <p class="text-sm text-slate-400 mt-2">${t("common.loadOrgErrorBody")}</p>
+          <h1 class="text-lg font-semibold text-graphite-100">${t("common.loadOrgErrorTitle")}</h1>
+          <p class="text-sm text-graphite-400 mt-2">${t("common.loadOrgErrorBody")}</p>
         </div>
         <${Button} onClick=${() => setRetryTick((n) => n + 1)}>${t("common.retry")}<//>
       </div>

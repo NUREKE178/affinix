@@ -47,7 +47,7 @@ export function Register() {
     <${AuthLayout}
       title=${t("auth.register.title")}
       subtitle=${t("auth.register.subtitle")}
-      footer=${html`${t("auth.register.haveAccount")} <button class="text-indigo-400 hover:text-indigo-300" onClick=${() => navigate("/login")}>${t("auth.register.login")}<//>`}
+      footer=${html`${t("auth.register.haveAccount")} <button class="text-signal-400 hover:text-signal-300" onClick=${() => navigate("/login")}>${t("auth.register.login")}<//>`}
     >
       ${!IS_CONFIGURED && html`<${AuthError} message=${t("auth.register.notConfigured")} />`}
       <${AuthError} message=${error} />

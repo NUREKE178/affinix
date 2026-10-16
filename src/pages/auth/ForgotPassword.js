@@ -31,7 +31,7 @@ export function ForgotPassword() {
     <${AuthLayout}
       title=${t("auth.forgot.title")}
       subtitle=${t("auth.forgot.subtitle")}
-      footer=${html`<button class="text-indigo-400 hover:text-indigo-300" onClick=${() => navigate("/login")}>${t("auth.forgot.back")}<//>`}
+      footer=${html`<button class="text-signal-400 hover:text-signal-300" onClick=${() => navigate("/login")}>${t("auth.forgot.back")}<//>`}
     >
       ${!IS_CONFIGURED && html`<${AuthError} message=${t("auth.forgot.notConfigured")} />`}
       ${sent

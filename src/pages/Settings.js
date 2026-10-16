@@ -35,7 +35,7 @@ export function Settings() {
       <${SectionHeading} title=${t("settings.title")} subtitle=${t("settings.subtitle")} />
 
       <${Card} className="p-5">
-        <h3 class="font-semibold text-slate-100 mb-4">${t("settings.orgTitle")}</h3>
+        <h3 class="font-semibold text-graphite-100 mb-4">${t("settings.orgTitle")}</h3>
         <${Field} label=${t("settings.orgNameLabel")}>
           <div class="flex gap-2">
             <${TextInput} value=${name} onInput=${(e) => setName(e.target.value)} />
@@ -43,22 +43,22 @@ export function Settings() {
           </div>
         <//>
         <${Field} label=${t("settings.yourRole")}>
-          <${Badge} tone="indigo">${org.role}<//>
+          <${Badge} tone="signal">${org.role}<//>
         <//>
       <//>
 
       <${Card} className="p-5">
-        <h3 class="font-semibold text-slate-100 mb-4">${t("settings.defaultsTitle")}</h3>
-        <div class="text-sm text-slate-400 space-y-2">
-          <div class="flex justify-between"><span>${t("settings.minSample")}</span><span class="text-slate-200">${t("settings.minSampleValue")}</span></div>
-          <div class="flex justify-between"><span>${t("settings.confidenceInterval")}</span><span class="text-slate-200">${t("settings.confidenceValue")}</span></div>
+        <h3 class="font-semibold text-graphite-100 mb-4">${t("settings.defaultsTitle")}</h3>
+        <div class="text-sm text-graphite-400 space-y-2">
+          <div class="flex justify-between"><span>${t("settings.minSample")}</span><span class="text-graphite-200">${t("settings.minSampleValue")}</span></div>
+          <div class="flex justify-between"><span>${t("settings.confidenceInterval")}</span><span class="text-graphite-200">${t("settings.confidenceValue")}</span></div>
         </div>
-        <p class="text-xs text-slate-500 mt-3">${t("settings.thresholdsNote")}</p>
+        <p class="text-xs text-graphite-500 mt-3">${t("settings.thresholdsNote")}</p>
       <//>
 
       <${Card} className="p-5">
-        <h3 class="font-semibold text-slate-100 mb-4">${t("settings.privacyTitle")}</h3>
-        <ul class="text-sm text-slate-400 space-y-2 list-disc pl-4">
+        <h3 class="font-semibold text-graphite-100 mb-4">${t("settings.privacyTitle")}</h3>
+        <ul class="text-sm text-graphite-400 space-y-2 list-disc pl-4">
           <li>${t("settings.privacy1")}</li>
           <li>${t("settings.privacy2")}</li>
           <li>${t("settings.privacy3")}</li>
@@ -70,7 +70,7 @@ export function Settings() {
           <${Icon} name="shield" size=${18} className="text-amber-400 shrink-0 mt-0.5" />
           <div>
             <h3 class="font-semibold text-amber-200 text-sm mb-1.5">${t("settings.ethicsTitle")}</h3>
-            <p class="text-sm text-slate-400 leading-relaxed">${t("settings.ethicsBody")}</p>
+            <p class="text-sm text-graphite-400 leading-relaxed">${t("settings.ethicsBody")}</p>
           </div>
         </div>
       <//>

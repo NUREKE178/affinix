@@ -28,7 +28,7 @@ function renderPostBody(body, onHashtagClick) {
     const tag = match[0];
     parts.push(html`<button type="button" key=${`${match.index}-${tag}`}
       onClick=${() => onHashtagClick(tag)}
-      class="text-indigo-300 hover:text-indigo-200 font-medium">${tag}</button>`);
+      class="text-signal-300 hover:text-signal-200 font-medium">${tag}</button>`);
     lastIndex = match.index + tag.length;
   }
   if (lastIndex < body.length) parts.push(body.slice(lastIndex));
@@ -45,7 +45,7 @@ function Avatar({ name, url, size = 36 }) {
     return html`<img src=${url} class="rounded-full object-cover shrink-0" style=${{ width: `${size}px`, height: `${size}px` }} />`;
   }
   return html`
-    <div class="shrink-0 rounded-full bg-gradient-to-br from-indigo-500 to-teal-400 flex items-center justify-center font-semibold text-white"
+    <div class="shrink-0 rounded-full sk-avatar flex items-center justify-center font-semibold"
       style=${{ width: `${size}px`, height: `${size}px`, fontSize: `${Math.max(10, size * 0.38)}px` }}>
       ${name ? initialsFor(name) : html`<${Icon} name="user" size=${Math.round(size * 0.55)} />`}
     </div>
@@ -139,7 +139,7 @@ function Composer({ t, profile }) {
               onInput=${onInput}
               rows="1"
               style=${{ height: `${COMPOSER_MIN_H}px` }}
-              class="sk-input w-full rounded-lg px-3.5 py-2.5 text-sm text-slate-100 placeholder:text-slate-500 resize-none overflow-hidden leading-relaxed"
+              class="sk-input w-full rounded-lg px-3.5 py-2.5 text-sm text-graphite-100 placeholder:text-graphite-500 resize-none overflow-hidden leading-relaxed"
             ></textarea>
 
             ${imagePreview && html`
@@ -147,7 +147,7 @@ function Composer({ t, profile }) {
                 <img src=${imagePreview} class="sk-display rounded-lg max-h-48 object-cover" />
                 <button type="button" onClick=${() => setImageFile(null)}
                   aria-label=${t("feed.removeImage")}
-                  class="sk-btn absolute -top-2 -right-2 h-6 w-6 rounded-full text-slate-300">
+                  class="sk-btn absolute -top-2 -right-2 h-6 w-6 rounded-full text-graphite-300">
                   <${Icon} name="close" size=${12} />
                 <//>
               </div>
@@ -155,9 +155,9 @@ function Composer({ t, profile }) {
 
             <div class="flex items-center justify-between mt-3">
               <div class="flex items-center gap-3">
-                <span class="text-xs text-slate-500">${draft.length}/${MAX_LEN}</span>
+                <span class="text-xs text-graphite-500">${draft.length}/${MAX_LEN}</span>
                 <button type="button" onClick=${() => fileRef.current?.click()}
-                  class="text-slate-500 hover:text-indigo-300 transition-colors" aria-label=${t("feed.addImage")}>
+                  class="text-graphite-500 hover:text-signal-300 transition-colors" aria-label=${t("feed.addImage")}>
                   <${Icon} name="image" size=${18} />
                 <//>
                 <input ref=${fileRef} type="file" accept="image/jpeg,image/png,image/webp,image/gif" class="hidden" onChange=${onPickImage} />
@@ -173,10 +173,10 @@ function Composer({ t, profile }) {
   `;
 }
 
-function ActionButton({ icon, filled = false, label, count, active = false, tone = "slate", onClick, disabled = false, className = "" }) {
+function ActionButton({ icon, filled = false, label, count, active = false, tone = "neutral", onClick, disabled = false, className = "" }) {
   const toneClass = active
-    ? (tone === "rose" ? "text-rose-400" : tone === "indigo" ? "text-indigo-300" : "text-slate-200")
-    : "text-slate-500 hover:text-slate-300";
+    ? (tone === "rose" ? "text-rose-400" : tone === "signal" ? "text-signal-300" : "text-graphite-200")
+    : "text-graphite-500 hover:text-graphite-300";
   // A quick pop exactly when this flips INTO its active state (liking,
   // saving) -- not on mount, and not on the way back out.
   const [popping, setPopping] = useState(false);
@@ -263,7 +263,7 @@ function CommentThread({ post, t, currentUserId, canModerate, onCountChange, onA
   return html`
     <div class="mt-3 pt-3 border-t border-black/30 space-y-3">
       ${loading && html`<${LoadingState} compact className="py-1" label=${t("common.loading")} />`}
-      ${!loading && comments.length === 0 && html`<div class="text-xs text-slate-500">${t("feed.noComments")}</div>`}
+      ${!loading && comments.length === 0 && html`<div class="text-xs text-graphite-500">${t("feed.noComments")}</div>`}
       ${!loading && comments.map((c) => {
         const hasProfile = !!c.authorName;
         const openAuthor = () => hasProfile && onAuthorClick(c);
@@ -277,19 +277,19 @@ function CommentThread({ post, t, currentUserId, canModerate, onCountChange, onA
             <div class="sk-display rounded-lg px-3 py-2">
               <div class="flex items-center justify-between gap-2">
                 <button type="button" onClick=${openAuthor} disabled=${!hasProfile}
-                  class=${`text-xs font-medium text-slate-200 ${hasProfile ? "hover:underline cursor-pointer" : "cursor-default"}`}>
+                  class=${`text-xs font-medium text-graphite-200 ${hasProfile ? "hover:underline cursor-pointer" : "cursor-default"}`}>
                   ${c.authorName ?? t("feed.unknownAuthor")}
                 <//>
                 ${(c.authorId === currentUserId || canModerate) && html`
                   <button type="button" onClick=${() => onDelete(c.id)} aria-label=${t("feed.deleteComment")}
-                    class="shrink-0 text-slate-600 hover:text-rose-400 transition-colors">
+                    class="shrink-0 text-graphite-600 hover:text-rose-400 transition-colors">
                     <${Icon} name="trash" size=${12} />
                   <//>
                 `}
               </div>
-              <p class="text-sm text-slate-300 mt-0.5 leading-relaxed whitespace-pre-wrap break-words">${c.body}</p>
+              <p class="text-sm text-graphite-300 mt-0.5 leading-relaxed whitespace-pre-wrap break-words">${c.body}</p>
             </div>
-            <div class="text-[11px] text-slate-500 mt-1">${relativeDate(c.createdAt)}</div>
+            <div class="text-[11px] text-graphite-500 mt-1">${relativeDate(c.createdAt)}</div>
           </div>
         </div>
       `;
@@ -298,7 +298,7 @@ function CommentThread({ post, t, currentUserId, canModerate, onCountChange, onA
       <form onSubmit=${submit} class="flex items-center gap-2.5 pt-1">
         <input value=${draft} onInput=${(e) => setDraft(e.target.value.slice(0, 1000))}
           placeholder=${t("feed.commentPlaceholder")}
-          class="sk-input flex-1 min-w-0 rounded-lg px-3 py-2 text-sm text-slate-100 placeholder:text-slate-500" />
+          class="sk-input flex-1 min-w-0 rounded-lg px-3 py-2 text-sm text-graphite-100 placeholder:text-graphite-500" />
         <${Button} type="submit" size="sm" className="shrink-0" loading=${posting} disabled=${!draft.trim()}>${t("feed.commentSubmit")}<//>
       </form>
     </div>
@@ -357,19 +357,19 @@ export function PostCard({ post, index = 0, t, onHashtagClick, canDelete, canMod
           <div class="flex items-start justify-between gap-2">
             <div class="flex items-baseline gap-2 flex-wrap">
               <button type="button" onClick=${openAuthor} disabled=${!hasProfile}
-                class=${`text-sm font-medium text-slate-100 ${hasProfile ? "hover:underline cursor-pointer" : "cursor-default"}`}>
+                class=${`text-sm font-medium text-graphite-100 ${hasProfile ? "hover:underline cursor-pointer" : "cursor-default"}`}>
                 ${post.authorName ?? t("feed.unknownAuthor")}
               <//>
-              <span class="text-xs text-slate-500">${relativeDate(post.createdAt)}</span>
+              <span class="text-xs text-graphite-500">${relativeDate(post.createdAt)}</span>
             </div>
             ${canDelete && html`
               <button type="button" onClick=${() => onDeleteClick(post)} aria-label=${t("feed.deletePost")}
-                class="shrink-0 text-slate-600 hover:text-rose-400 transition-colors">
+                class="shrink-0 text-graphite-600 hover:text-rose-400 transition-colors">
                 <${Icon} name="trash" size=${15} />
               <//>
             `}
           </div>
-          <p class="text-sm text-slate-300 mt-1 leading-relaxed whitespace-pre-wrap break-words">${renderPostBody(post.body, onHashtagClick)}</p>
+          <p class="text-sm text-graphite-300 mt-1 leading-relaxed whitespace-pre-wrap break-words">${renderPostBody(post.body, onHashtagClick)}</p>
           ${post.imageUrl && html`
             <img src=${post.imageUrl} onClick=${() => setLightboxOpen(true)}
               class="sk-display rounded-lg mt-3 max-h-96 w-full object-cover cursor-zoom-in" />
@@ -380,7 +380,7 @@ export function PostCard({ post, index = 0, t, onHashtagClick, canDelete, canMod
               label=${t("feed.like")} count=${post.likeCount} disabled=${likeBusy} onClick=${onToggleLike} />
             <${ActionButton} icon="comment" active=${commentsOpen}
               label=${t("feed.comment")} count=${commentCount} onClick=${() => setCommentsOpen((v) => !v)} />
-            <${ActionButton} icon="bookmark" filled=${post.viewerSaved} active=${post.viewerSaved} tone="indigo"
+            <${ActionButton} icon="bookmark" filled=${post.viewerSaved} active=${post.viewerSaved} tone="signal"
               label=${t("feed.save")} disabled=${saveBusy} onClick=${onToggleSave} className="ml-auto" />
           </div>
 
@@ -399,7 +399,7 @@ export function PostCard({ post, index = 0, t, onHashtagClick, canDelete, canMod
           onClick=${(e) => e.target === e.currentTarget && setLightboxOpen(false)}
         >
           <button type="button" onClick=${() => setLightboxOpen(false)} aria-label=${t("common.close")}
-            class="sk-btn absolute top-4 right-4 h-9 w-9 rounded-lg text-slate-300 hover:text-white">
+            class="sk-btn absolute top-4 right-4 h-9 w-9 rounded-lg text-graphite-300 hover:text-white">
             <${Icon} name="close" size=${20} />
           <//>
           <img src=${post.imageUrl} data-state=${lightboxPhase} class="sk-overlay-anim sk-overlay-anim-center max-w-full max-h-full object-contain rounded-lg" />
@@ -447,8 +447,8 @@ export function Feed() {
 
       ${activeHashtag && html`
         <div class="flex items-center gap-2 mb-4">
-          <${Badge} tone="indigo">${activeHashtag}<//>
-          <button type="button" onClick=${() => setActiveHashtag(null)} class="text-xs text-slate-500 hover:text-slate-300">${t("feed.clearFilter")}</button>
+          <${Badge} tone="signal">${activeHashtag}<//>
+          <button type="button" onClick=${() => setActiveHashtag(null)} class="text-xs text-graphite-500 hover:text-graphite-300">${t("feed.clearFilter")}</button>
         </div>
       `}
 
@@ -501,10 +501,10 @@ export function Feed() {
       <${Composer} t=${t} profile=${profile} />
 
       ${confirmMounted && html`
-        <div class="sk-backdrop-anim fixed inset-0 z-50 flex items-center justify-center bg-slate-950/70 p-4" data-state=${confirmPhase} onClick=${(e) => e.target === e.currentTarget && setConfirmDelete(null)}>
+        <div class="sk-backdrop-anim fixed inset-0 z-50 flex items-center justify-center bg-graphite-950/70 p-4" data-state=${confirmPhase} onClick=${(e) => e.target === e.currentTarget && setConfirmDelete(null)}>
           <${Card} className="sk-overlay-anim sk-overlay-anim-center max-w-sm p-5" data-state=${confirmPhase}>
-            <div class="font-semibold text-slate-100">${t("feed.confirmDeleteTitle")}</div>
-            <p class="text-sm text-slate-500 mt-1.5">${t("feed.confirmDeleteBody")}</p>
+            <div class="font-semibold text-graphite-100">${t("feed.confirmDeleteTitle")}</div>
+            <p class="text-sm text-graphite-500 mt-1.5">${t("feed.confirmDeleteBody")}</p>
             <div class="flex justify-end gap-2 mt-5">
               <${Button} variant="secondary" size="sm" onClick=${() => setConfirmDelete(null)}>${t("common.cancel")}<//>
               <${Button} variant="danger" size="sm" disabled=${deleting} onClick=${doDelete}>${t("common.delete")}<//>

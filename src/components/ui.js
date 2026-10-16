@@ -11,34 +11,31 @@ export function SectionHeading({ title, subtitle, action }) {
   return html`
     <div class="flex flex-wrap items-start justify-between gap-3 mb-5">
       <div>
-        <h2 class="text-lg font-semibold text-slate-100 tracking-tight">${title}</h2>
-        ${subtitle && html`<p class="text-sm text-slate-400 mt-0.5">${subtitle}</p>`}
+        <h2 class="text-lg font-semibold text-graphite-100 tracking-tight">${title}</h2>
+        ${subtitle && html`<p class="text-sm text-graphite-400 mt-0.5">${subtitle}</p>`}
       </div>
-      ${action && html`<div class="shrink-0">${action}</div>`}
+      ${action && html`<div class="max-w-full">${action}</div>`}
     </div>
   `;
 }
 
 const BUTTON_VARIANTS = {
   primary: "sk-btn sk-btn-primary",
-  secondary: "sk-btn text-slate-100",
-  ghost: "bg-transparent hover:bg-white/5 text-slate-300",
-  danger: "sk-btn text-white",
-  outline: "bg-transparent border border-slate-700 hover:border-slate-500 text-slate-200",
+  secondary: "sk-btn",
+  ghost: "bg-transparent hover:bg-white/5 text-graphite-300",
+  danger: "sk-btn sk-btn-danger",
+  outline: "bg-transparent border border-graphite-700 hover:border-graphite-500 text-graphite-200",
 };
-
-const DANGER_STYLE = "background:linear-gradient(180deg,#fb7185 0%,#f43f5e 55%,#e11d48 100%);border:1px solid rgba(255,255,255,.15);box-shadow:inset 0 1px 0 rgba(255,255,255,.3),inset 0 -1px 0 rgba(136,19,55,.5),0 4px 14px -4px rgba(225,29,72,.5)";
 
 /** `loading` = the action is in flight: the button turns busy (spinner in front
  * of its label, a sheen passing over its face) and stops taking clicks, without
  * looking disabled. Keep swapping the label text ("Saving…") as before. */
 export function Button({ variant = "primary", size = "md", className = "", children, disabled, loading = false, style, ...rest }) {
   const sizes = { sm: "px-3 py-1.5 text-sm", md: "px-4 py-2 text-sm", lg: "px-5 py-2.5 text-base" };
-  const extraStyle = variant === "danger" ? `${DANGER_STYLE};${style ?? ""}` : style;
   return html`
     <button
       class=${`inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-lg font-medium disabled:opacity-40 disabled:cursor-not-allowed ${BUTTON_VARIANTS[variant]} ${sizes[size]} ${className}`}
-      style=${extraStyle}
+      style=${style}
       disabled=${disabled || loading}
       aria-busy=${loading ? "true" : undefined}
       data-loading=${loading ? "true" : undefined}
@@ -47,47 +44,47 @@ export function Button({ variant = "primary", size = "md", className = "", child
   `;
 }
 
-const BADGE_TONES = {
-  slate: "bg-slate-800 text-slate-300 border-slate-700",
-  indigo: "bg-indigo-500/15 text-indigo-300 border-indigo-500/30",
-  emerald: "bg-emerald-500/15 text-emerald-300 border-emerald-500/30",
-  amber: "bg-amber-500/15 text-amber-300 border-amber-500/30",
-  rose: "bg-rose-500/15 text-rose-300 border-rose-500/30",
-  teal: "bg-teal-500/15 text-teal-300 border-teal-500/30",
-};
-
-export function Badge({ tone = "slate", className = "", children }) {
-  return html`<span class=${`sk-badge inline-flex items-center gap-1.5 rounded-full border px-2.5 py-0.5 text-xs font-medium ${BADGE_TONES[tone]} ${className}`}>${children}</span>`;
+/** A status LED with its label. `tone` picks the LED colour (see .sk-badge in styles.css);
+ * `led={false}` leaves the dot out. */
+export function Badge({ tone = "neutral", led = true, className = "", children }) {
+  return html`<span class=${`sk-badge ${className}`} data-tone=${tone}>${led && html`<i class="sk-led" aria-hidden="true"></i>`}${children}</span>`;
 }
 
 export function DemoTag({ className = "" }) {
   return html`<${Badge} tone="amber" className=${className}>Demo data · illustrative<//>`;
 }
 
-export function StatTile({ label, value, hint, tone = "slate" }) {
+/** A value set like a hardware display: digits in mono, any unit words ("min", "с", "сек")
+ * small in the text face -- the mono face has no Cyrillic, and a unit should not shout anyway. */
+export function Readout({ value }) {
+  if (typeof value !== "string") return value;
+  const parts = value.match(/[\d.,/]+%?|[^\d.,/%]+|%/g) ?? [value];
+  return parts.map((p, i) => (/^[\d.,/]+%?$|^%$|^—$/.test(p) || !p.trim() ? p : html`<span key=${i} class="sk-unit">${p.trim()}</span>`));
+}
+
+/** One readout: engraved caption, mono number, a hint line. Several in a row go inside .sk-stat-strip. */
+export function StatTile({ label, value, hint }) {
   return html`
-    <div class="sk-panel-flat rounded-xl p-4">
-      <div class="text-[11px] font-semibold uppercase tracking-wider text-slate-500">${label}</div>
-      <div class="sk-display rounded-lg mt-2 px-3 py-2.5">
-        <div class="text-2xl font-semibold text-slate-50" style="font-variant-numeric:tabular-nums; letter-spacing:.01em">${value}</div>
-      </div>
-      ${hint && html`<div class="mt-1.5 text-xs text-slate-500">${hint}</div>`}
+    <div class="sk-stat">
+      <div class="sk-stat-label">${label}</div>
+      <div class="sk-stat-value"><${Readout} value=${value} /></div>
+      ${hint && html`<div class="sk-stat-hint">${hint}</div>`}
     </div>
   `;
 }
 
-export function ProgressBar({ value, tone = "indigo" }) {
+export function ProgressBar({ value, tone = "signal" }) {
   const colors = {
-    indigo: "linear-gradient(180deg,#818cf8,#6366f1)",
-    emerald: "linear-gradient(180deg,#34d399,#10b981)",
-    amber: "linear-gradient(180deg,#fbbf24,#f59e0b)",
-    rose: "linear-gradient(180deg,#fb7185,#f43f5e)",
-    teal: "linear-gradient(180deg,#2dd4bf,#14b8a6)",
+    signal: "linear-gradient(180deg,#ff8f55,#ff6a1f)",
+    emerald: "linear-gradient(180deg,#4ade9f,#10b981)",
+    amber: "linear-gradient(180deg,#fcd34d,#f59e0b)",
+    rose: "linear-gradient(180deg,#fb7185,#e5484d)",
+    teal: "linear-gradient(180deg,#5eead4,#14b8a6)",
   };
   const pctVal = Math.max(0, Math.min(1, value ?? 0)) * 100;
   return html`
-    <div class="sk-display h-2.5 w-full rounded-full overflow-hidden">
-      <div class="sk-progress-fill h-full rounded-full" style=${{ width: `${pctVal}%`, background: colors[tone] ?? colors.indigo, boxShadow: "0 0 8px -1px rgba(99,102,241,.6), inset 0 1px 0 rgba(255,255,255,.3)", transition: "width var(--sk-dur-slow) var(--sk-ease-out)" }}></div>
+    <div class="sk-display h-2 w-full rounded-full overflow-hidden">
+      <div class="sk-progress-fill h-full rounded-full" style=${{ width: `${pctVal}%`, background: colors[tone] ?? colors.signal, boxShadow: "inset 0 1px 0 rgba(255,255,255,.35)", transition: "width var(--sk-dur-slow) var(--sk-ease-out)" }}></div>
     </div>
   `;
 }
@@ -140,13 +137,13 @@ export function LoadingState({ label, className = "", compact = false, mark = tr
   useLoadingHold();
   if (compact) {
     return html`
-      <div class=${`flex items-center justify-center gap-2.5 text-sm text-slate-500 ${className || "py-6"}`} role="status" aria-live="polite">
+      <div class=${`flex items-center justify-center gap-2.5 text-sm text-graphite-500 ${className || "py-6"}`} role="status" aria-live="polite">
         <${Spinner} size=${16} /><${LoadingLabel} label=${label} />
       </div>
     `;
   }
   return html`
-    <div class=${`flex flex-col items-center justify-center gap-4 py-14 text-sm text-slate-400 ${className}`} role="status" aria-live="polite">
+    <div class=${`flex flex-col items-center justify-center gap-4 py-14 text-sm text-graphite-400 ${className}`} role="status" aria-live="polite">
       <span class="sk-orbit" aria-hidden="true">
         <span class="sk-spinner sk-orbit-ring"></span>
         ${mark ? html`<img src="./assets/logo/logo-mark-256.png" width="24" height="24" alt="" decoding="async" />` : html`<span class="sk-orbit-core"></span>`}
@@ -165,7 +162,7 @@ export function GeneratingState({ label }) {
     <div role="status" aria-live="polite">
       <div class="flex items-center gap-3 text-sm font-medium">
         <span class="sk-ai-orb"><${Icon} name="sparkle" size=${14} /></span>
-        <span><span class="sk-shimmer-text">${text}</span>${dots && html`<span class="sk-dots text-slate-400"><i></i><i></i><i></i></span>`}</span>
+        <span><span class="sk-shimmer-text">${text}</span>${dots && html`<span class="sk-dots text-graphite-400"><i></i><i></i><i></i></span>`}</span>
       </div>
       <div class="mt-4 space-y-2.5" aria-hidden="true">
         <${Skeleton} className="h-3 w-full" /><${Skeleton} className="h-3 w-2/3" /><${Skeleton} className="h-3 w-48 max-w-full" />
@@ -182,10 +179,7 @@ export function BootScreen({ label }) {
   return html`
     <div class="sk-boot" role="status" aria-live="polite">
       <div class="sk-boot-stage" aria-hidden="true">
-        <span class="sk-boot-ring-dash"></span>
-        <span class="sk-boot-orbit"><i></i><i></i></span>
-        <span class="sk-boot-spin"><span class="sk-boot-arc"></span><i class="sk-boot-head"></i></span>
-        <span class="sk-boot-tile"><img src="./assets/logo/logo-mark-256.png" width="76" height="76" alt="" /></span>
+        <span class="sk-boot-tile"><img src="./assets/logo/logo-mark-256.png" width="88" height="88" alt="" /></span>
       </div>
       <div class="sk-boot-word">Decision<b>OS</b></div>
       <div class="sk-boot-track" aria-hidden="true"><span></span></div>
@@ -194,7 +188,7 @@ export function BootScreen({ label }) {
   `;
 }
 
-/** The thin violet bar along the top edge of the app, on while any placeholder
+/** The thin orange bar along the top edge of the app, on while any placeholder
  * is on screen. Debounced both ways: a fetch that settles in a blink never
  * flashes it, and it fades out instead of cutting off. */
 export function LoadingBar() {
@@ -210,9 +204,9 @@ export function LoadingBar() {
 export function EmptyState({ title, body, action, icon = "sparkle" }) {
   return html`
     <div class="sk-panel flex flex-col items-center justify-center text-center py-14 px-6 rounded-xl">
-      <div class="sk-display mb-4 flex h-16 w-16 items-center justify-center rounded-full text-slate-600"><${Icon} name=${icon} size=${26} strokeWidth=${1.4} /></div>
-      <h3 class="text-base font-semibold text-slate-200">${title}</h3>
-      ${body && html`<p class="text-sm text-slate-500 mt-1.5 max-w-sm">${body}</p>`}
+      <div class="sk-display mb-4 flex h-16 w-16 items-center justify-center rounded-full text-graphite-500"><${Icon} name=${icon} size=${26} strokeWidth=${1.4} /></div>
+      <h3 class="text-base font-semibold text-graphite-200">${title}</h3>
+      ${body && html`<p class="text-sm text-graphite-500 mt-1.5 max-w-sm">${body}</p>`}
       ${action && html`<div class="mt-5">${action}</div>`}
     </div>
   `;
@@ -232,8 +226,8 @@ export function Modal({ open, onClose, title, children, footer, wide = false }) 
         data-state=${phase}
       >
         <div class="flex items-center justify-between border-b border-black/40 px-5 py-4">
-          <h3 class="font-semibold text-slate-100">${title}</h3>
-          <button class="sk-btn h-7 w-7 rounded-md text-slate-400 hover:text-slate-100 text-sm" onClick=${onClose}>✕</button>
+          <h3 class="font-semibold text-graphite-100">${title}</h3>
+          <button type="button" class="sk-btn h-7 w-7 rounded-md text-graphite-400" onClick=${onClose} aria-label="Close"><${Icon} name="close" size=${14} /></button>
         </div>
         <div class="px-5 py-4">${children}</div>
         ${footer && html`<div class="flex justify-end gap-2 border-t border-black/40 px-5 py-3">${footer}</div>`}
@@ -252,7 +246,7 @@ export function Tabs({ tabs, active, onChange }) {
             onClick=${() => onChange(t.id)}
             data-active=${active === t.id}
             class=${`sk-tab rounded-md px-3 py-1.5 text-sm font-medium whitespace-nowrap ${
-              active === t.id ? "text-white" : "text-slate-400 hover:text-slate-200"
+              active === t.id ? "text-white" : "text-graphite-400 hover:text-graphite-200"
             }`}
           >${t.label}</button>
         `
@@ -261,25 +255,25 @@ export function Tabs({ tabs, active, onChange }) {
   `;
 }
 
-const CONFIDENCE_TONE = { high: "emerald", moderate: "teal", "low-moderate": "amber", low: "amber", none: "slate" };
+const CONFIDENCE_TONE = { high: "emerald", moderate: "teal", "low-moderate": "amber", low: "amber", none: "neutral" };
 
 /** `t` is the caller's useT()-bound translator. */
 export function ConfidenceBadge({ confidence, t }) {
   const label = t ? t(`insights.confidence.${confidence}`) : confidence;
-  return html`<${Badge} tone=${CONFIDENCE_TONE[confidence] ?? "slate"}>${label}<//>`;
+  return html`<${Badge} tone=${CONFIDENCE_TONE[confidence] ?? "neutral"}>${label}<//>`;
 }
 
 export function Field({ label, hint, children, required }) {
   return html`
     <label class="block mb-4">
-      <span class="block text-sm font-medium text-slate-300 mb-1.5">${label}${required && html`<span class="text-rose-400"> *</span>`}</span>
+      <span class="block text-sm font-medium text-graphite-300 mb-1.5">${label}${required && html`<span class="text-rose-400"> *</span>`}</span>
       ${children}
-      ${hint && html`<span class="block text-xs text-slate-500 mt-1">${hint}</span>`}
+      ${hint && html`<span class="block text-xs text-graphite-500 mt-1">${hint}</span>`}
     </label>
   `;
 }
 
-const inputBase = "sk-input w-full rounded-lg px-3 py-2 text-sm text-slate-100 placeholder:text-slate-500 disabled:opacity-40 disabled:cursor-not-allowed";
+const inputBase = "sk-input rounded-lg px-3 py-2 text-sm text-graphite-100 placeholder:text-graphite-500 disabled:opacity-40 disabled:cursor-not-allowed";
 
 export function TextInput({ className = "", ...rest }) {
   return html`<input class=${`${inputBase} ${className}`} ...${rest} />`;
@@ -299,7 +293,7 @@ export function Select({ options, className = "", ...rest }) {
 
 export function Checkbox({ label, className = "", ...rest }) {
   return html`
-    <label class="flex items-center gap-2.5 text-sm text-slate-300 cursor-pointer select-none py-1">
+    <label class="flex items-center gap-2.5 text-sm text-graphite-300 cursor-pointer select-none py-1">
       <input type="checkbox" class=${`sk-checkbox h-4 w-4 rounded ${className}`} ...${rest} />
       ${label}
     </label>
@@ -309,7 +303,7 @@ export function Checkbox({ label, className = "", ...rest }) {
 export function Switch({ checked, onChange, label }) {
   return html`
     <label class="flex items-center justify-between gap-3 py-2 cursor-pointer select-none">
-      <span class="text-sm text-slate-300">${label}</span>
+      <span class="text-sm text-graphite-300">${label}</span>
       <button
         type="button"
         onClick=${() => onChange(!checked)}
@@ -324,16 +318,16 @@ export function Switch({ checked, onChange, label }) {
 
 let toastRoot = null;
 export function setToastRoot(fn) { toastRoot = fn; }
-export function toast(message, tone = "slate") { toastRoot?.(message, tone); }
+export function toast(message, tone = "neutral") { toastRoot?.(message, tone); }
 
 const TOAST_TONE_TEXT = {
-  slate: "text-slate-100",
+  neutral: "text-graphite-100",
   emerald: "text-emerald-300",
   rose: "text-rose-300",
   amber: "text-amber-300",
 };
 const TOAST_TONE_DOT = {
-  slate: "bg-slate-400",
+  neutral: "bg-graphite-400",
   emerald: "bg-emerald-400",
   rose: "bg-rose-400",
   amber: "bg-amber-400",
@@ -372,8 +366,8 @@ export function ToastHost() {
     <div class="fixed bottom-4 right-4 z-[100] flex flex-col gap-2 max-w-sm">
       ${items.map((t) => html`
         <div key=${t.id} class="sk-panel sk-toast-anim rounded-lg px-4 py-2.5 text-sm shadow-lg slide-up flex items-center gap-2.5" data-state=${t.leaving ? "exiting" : "entered"}>
-          <span class=${`h-1.5 w-1.5 rounded-full shrink-0 ${TOAST_TONE_DOT[t.tone] ?? TOAST_TONE_DOT.slate}`} style="box-shadow:0 0 6px 1px currentColor"></span>
-          <span class=${TOAST_TONE_TEXT[t.tone] ?? TOAST_TONE_TEXT.slate}>${t.message}</span>
+          <span class=${`h-1.5 w-1.5 rounded-full shrink-0 ${TOAST_TONE_DOT[t.tone] ?? TOAST_TONE_DOT.neutral}`} style="box-shadow:0 0 6px 1px currentColor"></span>
+          <span class=${TOAST_TONE_TEXT[t.tone] ?? TOAST_TONE_TEXT.neutral}>${t.message}</span>
         </div>
       `)}
     </div>

@@ -15,10 +15,10 @@ export function Billing() {
       <${Card} className="p-5">
         <div class="flex items-center justify-between">
           <div>
-            <div class="text-sm text-slate-400">${t("billing.currentPlan")}</div>
-            <div class="text-lg font-semibold text-slate-100 mt-0.5">${t("billing.planName")}</div>
+            <div class="text-sm text-graphite-400">${t("billing.currentPlan")}</div>
+            <div class="text-lg font-semibold text-graphite-100 mt-0.5">${t("billing.planName")}</div>
           </div>
-          <${Badge} tone="indigo">${t("billing.planActive")}<//>
+          <${Badge} tone="signal">${t("billing.planActive")}<//>
         </div>
       <//>
 

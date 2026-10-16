@@ -7,7 +7,7 @@ import { useLocaleFadeClass } from "../../lib/i18n.js";
 export function AuthLayout({ title, subtitle, children, footer }) {
   const localeFadeClass = useLocaleFadeClass();
   return html`
-    <div class=${`min-h-screen bg-slate-950 text-slate-100 flex items-center justify-center px-6 py-10 ${localeFadeClass}`}>
+    <div class=${`min-h-screen bg-graphite-950 text-graphite-100 flex items-center justify-center px-6 py-10 ${localeFadeClass}`}>
       <div class="w-full max-w-sm">
         <div class="flex items-center justify-between mb-8">
           <button onClick=${() => navigate("/")} class="flex items-center gap-2.5">
@@ -17,11 +17,11 @@ export function AuthLayout({ title, subtitle, children, footer }) {
           <${LanguageSwitch} />
         </div>
         <div class="sk-panel rounded-2xl p-6 sm:p-7 fade-in">
-          <h1 class="text-lg font-semibold text-slate-50">${title}</h1>
-          ${subtitle && html`<p class="text-sm text-slate-400 mt-1.5">${subtitle}</p>`}
+          <h1 class="text-lg font-semibold text-graphite-50">${title}</h1>
+          ${subtitle && html`<p class="text-sm text-graphite-400 mt-1.5">${subtitle}</p>`}
           <div class="mt-6">${children}</div>
         </div>
-        ${footer && html`<div class="text-center mt-5 text-sm text-slate-500">${footer}</div>`}
+        ${footer && html`<div class="text-center mt-5 text-sm text-graphite-500">${footer}</div>`}
       </div>
     </div>
   `;

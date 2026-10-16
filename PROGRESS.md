@@ -3345,3 +3345,75 @@ read, delete, flat and non-uuid paths refused). Only the database side exists: *
 reply UI) is not written yet**, so nothing in the app uses these columns.
 
 **To go live**: apply `0020` (SQL editor or `supabase db push`), then `notify pgrst, 'reload schema';`.
+
+## "Instrument" design language: graphite + one signal colour, tactile controls ✅ (supersedes the violet / glass look above)
+
+Why: the navy + indigo/violet look (glow fields, gradient text, glass panels) read as an AI-template page. The brief was
+"make it look like one senior designer + engineer built it", skeuomorphism **and** minimalism together, a better
+"свернуть" (collapse) button, and an honest answer on whether violet suits. The answer is no -- violet is the 2023-25
+default of AI products and sits at 4.0:1 on the graphite plates; the product now uses **signal orange on graphite**
+(see the colour study in the Design artifact; swapping colour is one token, below).
+
+**The rules** (also on the first board of the artifact): one signal colour, used only for the primary action and "on"
+states; depth only on what you touch (keys, switches, segmented controls, inputs) while content plates stay flat;
+one light source from above (1px highlight on every upper edge, soft shadow underneath); numbers in mono; no
+gradient text, no neon, no glow fields -- light lives in LEDs.
+
+- **Tokens.** `tailwind.config.js` has the palettes `graphite` (neutrals), `signal` (orange) and `steel` (muted blue,
+  used for "completed" and the 2nd chart series); `src/**/*.js` was renamed mechanically `slate-`->`graphite-`,
+  `indigo-`->`signal-`. `styles.css` -> "INSTRUMENT SYSTEM": `:root` tokens (`--g-*`, `--signal*`, `--lit*`, `--plate`,
+  `--well`, `--key*`, `--sh-*`, status `--led-*`) and the materials: `.sk-panel` (plate), `.sk-display` (well),
+  `.sk-btn` (key) / `.sk-btn-primary` (the lit key: dark legend on orange; a disabled key is simply not lit) /
+  `.sk-btn-danger`, `.sk-input` (+ our own select chevron; width is `:where()`-zero-specificity so `w-auto` / `w-36`
+  finally work -- they used to lose to `w-full`), `.sk-tabs` (segmented; `data-compact` drops the LED), `.sk-switch`,
+  `.sk-checkbox`, `.sk-badge` + `.sk-led` (status LEDs), `.sk-count`, `.sk-avatar`, `.sk-tile`, `.sk-kbd`, `.sk-caption`
+  (engraved caption), `.sk-num` / `.sk-stat-*` / `.sk-unit` (mono readouts). Pure CSS, no raster textures. Fonts are
+  vendored: Inter (`@font-face` now declared -- it used to rely on a locally installed Inter) and JetBrains Mono 500
+  (latin + both Cyrillic subsets, ~28 KB, so Russian/Kazakh text never falls back mid-word).
+- **To change the colour**: edit `--signal`, `--signal-hi`, `--lit`/`--lit-hover`/`--lit-down`, `--signal-ink` (the legend
+  colour on a lit key) and the `signal` ramp in `tailwind.config.js` (then rebuild Tailwind). Nothing else.
+- **Sidebar.** `CollapseKey` in `components/shell.js`: a labelled key ("Свернуть" + a `[` keycap) at the foot of the
+  sidebar, a square `»` key on the rail (tooltip "Развернуть  ["), "Закрепить" in expand-on-hover mode. `[` toggles it
+  from the keyboard (physical `BracketLeft`, so it works on a Russian/Kazakh layout, ignored while typing),
+  `aria-keyshortcuts="["`. The three modes moved into the user menu ("Боковая панель" section, LED on the active one).
+  Active nav item = a pressed-in well with an orange strip on its edge; hover is a plain 10% white veil.
+- **Dashboard & pages.** KPI row is one plate with hairline dividers (`StatTile` + `.sk-stat-strip`), `Readout` renders
+  digits in mono and units ("мин", "с") small in the text face; flat charts (`components/charts.js`: orange line with a
+  fading area, thin donut with a centre readout and an HTML legend, bars fall back to the series palette when a
+  variant has no colour -- the column is nullable and the builder never sets it, which used to paint black bars).
+  Reports preview, Insights (AI blocks no longer teal: one signal colour), participant runner (progress as an inset
+  slot with lit segments), chat (my bubbles are a raised graphite key, "read" ticks and the send key carry the orange),
+  builder stepper (all 7 steps fit), page-header actions wrap on phones.
+- **i18n fixes found on the way**: durations ("2 мин 44 с" / "2 min 44 s"), relative dates and short dates followed Russian
+  regardless of the UI language; the confidence-interval label was hard-coded "ДИ"/"CI". Now `common.unitMin/unitSec/
+  today/yesterday/daysAgo/monthsAgo/yearsAgo/ci` in ru/kk/en; the chart's day labels follow the app language.
+- **Loading system** retinted and quietened: the boot screen is a device powering on (the mark with its LED breathing
+  -- a halo laid over the dot at 49.3% / 74.7% of the tile -- the wordmark, a lit bead travelling in an inset slot, a
+  caption); no aura, rings or comet. Spinner / loading bar / AI orb are orange, skeletons a neutral sweep, the spinner on
+  a lit key is dark. `index.html` pre-boot markup and `<BootScreen/>` stay identical (no whitespace in `#app`).
+  `theme-color` is `#0e0e10`.
+- **Brand.** New mark: a graphite key tile (gradient, 1px top light, dark keyline) carrying the three converging paths
+  (graphite-600 / 400 / white) and one lit orange point -- the decision. PNG only: `assets/logo/` (mark 1024/256,
+  dark + light lockups, 192 / 180 (full-bleed, for iOS) / 32 (heavier glyph for small sizes)). `favicon.svg` (violet)
+  was deleted; desktop notifications use `icon-192.png`.
+- **Landing** (`landing.css` rewritten, `Landing.js` trimmed): the same graphite/orange system -- flat plates, the
+  language switch as a raised key sliding in a well, lit-key CTAs, the dashboard preview as an instrument panel
+  (variants are keys; the chosen one is pressed in with a lit edge; no 3D tilt, no glow blobs, no gradient text),
+  headline = muted lead + white punch (orange stays on the action). Fixed on the way: `.lp-root a { color: inherit }` beat
+  the key classes, so the lit key's legend was white on orange (2.9:1) -- it is `:where(a)` now (6.6:1).
+  The 12 phone mockups (`assets/landing/phone-{participant,builder,report,chat}.{ru,kk,en}.webp`) were re-shot from
+  the new UI in a neutral titanium frame (the report one is now the real Reports page with a 248-response sample).
+- **Design artifact**: "DecisionOS Instrument" (https://claude.ai/artifact/RBr7H69z4HssgSgFfBTFWh) -- language, controls
+  kit with all states, the collapse-key study (old / chosen / edge handle / rail), the dashboard, the colour study
+  (orange vs blue vs the old violet, same UI, computed contrast and hue collisions) and brand + boot.
+
+**Verified** in headless Chromium against a realistic mock backend: every app route at 1440x900 and 390x844 (plus the
+collapsed rail and the hover-peek), auth pages logged out, menus / modal / notifications, the landing at 7 widths
+(no horizontal overflow), in ru / kk / en. Regression suite: the sidebar tests were updated for the collapse key and
+the user-menu modes, selectors for the renamed classes (`text-slate-*` -> `text-graphite-*`, the bell dot is a
+`.sk-led`), the favicon test now checks the PNG icons, the loader test the new boot screen, and the landing tests
+(old hamburger header, old animated SVG logo -- already stale since the previous landing redesign) were replaced by
+`test_landing_instrument.mjs` (24 checks: no gradient text / blur / violet, lit-key legend colour, no overflow at 7
+widths, phone header, sliding language key, preview interaction, scroll-reveal, every image loads, reduced motion).
+Two cases of `test_loading_upgrade.mjs` (results / reports "loading UI clears") still fail exactly as they did before
+this work -- they come from that script's mock data.

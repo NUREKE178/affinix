@@ -78,9 +78,10 @@ function emptyQuestion(type = "single_choice") {
  * whether jumping to a step tab is allowed. Steps with no hard
  * requirement (5-7) are always valid. */
 function stepIsValid(n, draft) {
-  if (n === 1) return draft.name.trim().length > 0 && draft.objective.trim().length > 0;
+  // `?? ""`: a draft saved half-way (Save & exit on step 1) comes back from the database with null text fields.
+  if (n === 1) return (draft.name ?? "").trim().length > 0 && (draft.objective ?? "").trim().length > 0;
   if (n === 2) return !!draft.researchType;
-  if (n === 3) return draft.variants.filter((v) => v.name.trim()).length >= 2;
+  if (n === 3) return draft.variants.filter((v) => (v.name ?? "").trim()).length >= 2;
   if (n === 4) return draft.questions.length >= 1;
   return true;
 }
@@ -204,15 +205,15 @@ export function ExperimentBuilder({ params }) {
         `}
       />
 
-      <div class="sk-display flex items-center gap-1 overflow-x-auto p-1.5 mb-6 rounded-xl">
+      <div class="sk-display flex items-center gap-0.5 overflow-x-auto p-1.5 mb-6 rounded-xl" data-compact="true">
         ${STEP_IDS.map(
           (id, i) => html`
             <div key=${id} class="flex items-center">
               <button
                 onClick=${() => goTo(id)}
                 data-active=${step === id}
-                class=${`sk-tab flex items-center gap-2 rounded-lg px-3 py-1.5 text-sm whitespace-nowrap ${
-                  step === id ? "text-white" : step > id ? "text-emerald-400" : "text-slate-500"
+                class=${`sk-tab flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-[13px] whitespace-nowrap ${
+                  step === id ? "text-white" : step > id ? "text-emerald-400" : "text-graphite-500"
                 }`}
               >
                 <span class=${`flex h-5 w-5 items-center justify-center rounded-full text-[11px] ${step === id ? "bg-white/20" : "bg-black/30"}`}>
@@ -220,7 +221,7 @@ export function ExperimentBuilder({ params }) {
                 </span>
                 ${t(`builder.steps.${STEP_KEYS[id]}`)}
               </button>
-              ${i < STEP_IDS.length - 1 && html`<div class="w-3 h-px bg-black/40 mx-0.5"></div>`}
+              ${i < STEP_IDS.length - 1 && html`<div class="w-2 h-px bg-black/40"></div>`}
             </div>
           `
         )}
@@ -275,15 +276,15 @@ function StepInfo({ draft, patch, t }) {
 function StepResearchType({ draft, patch, t }) {
   return html`
     <div>
-      <p class="text-sm text-slate-400 mb-4">${t("builder.step2.intro")}</p>
+      <p class="text-sm text-graphite-400 mb-4">${t("builder.step2.intro")}</p>
       <div class="grid sm:grid-cols-2 gap-3">
         ${researchTypes(t).map(
           (rt) => html`
             <button key=${rt.id} onClick=${() => patch({ researchType: rt.id })}
               data-selected=${draft.researchType === rt.id}
               class="sk-slot text-left rounded-xl p-4">
-              <div class="font-medium text-slate-100 text-sm">${rt.label}</div>
-              <div class="text-xs text-slate-500 mt-1">${rt.blurb}</div>
+              <div class="font-medium text-graphite-100 text-sm">${rt.label}</div>
+              <div class="text-xs text-graphite-500 mt-1">${rt.blurb}</div>
             </button>
           `
         )}
@@ -336,22 +337,22 @@ function StepStimuli({ draft, patch, orgId, t }) {
 
   return html`
     <div>
-      <p class="text-sm text-slate-400 mb-4">${t("builder.step3.intro")}</p>
+      <p class="text-sm text-graphite-400 mb-4">${t("builder.step3.intro")}</p>
       <div class="grid sm:grid-cols-2 gap-4">
         ${draft.variants.map(
           (v) => html`
             <div key=${v.id} class="sk-slot rounded-xl p-4">
               <div class="flex items-center justify-between mb-3">
                 <span class="sk-slot-label flex h-6 w-6 items-center justify-center rounded-md text-white text-xs font-bold">${v.label}</span>
-                ${draft.variants.length > 2 && html`<button onClick=${() => removeVariant(v.id)} class="text-slate-500 hover:text-rose-400"><${Icon} name="trash" size=${14} /></button>`}
+                ${draft.variants.length > 2 && html`<button onClick=${() => removeVariant(v.id)} class="text-graphite-500 hover:text-rose-400"><${Icon} name="trash" size=${14} /></button>`}
               </div>
 
               <label class="sk-display flex flex-col items-center justify-center rounded-lg h-28 mb-3 cursor-pointer overflow-hidden">
                 ${uploadingId === v.id
-                  ? html`<span class="text-xs text-slate-500">${t("builder.step3.uploading")}</span>`
+                  ? html`<span class="text-xs text-graphite-500">${t("builder.step3.uploading")}</span>`
                   : v.assetUrl
                   ? html`<img src=${v.assetUrl} class="h-full w-full object-cover" />`
-                  : html`<${Icon} name="upload" size=${18} className="text-slate-500" /><span class="text-xs text-slate-500 mt-1">${t("builder.step3.uploadLabel")}</span>`}
+                  : html`<${Icon} name="upload" size=${18} className="text-graphite-500" /><span class="text-xs text-graphite-500 mt-1">${t("builder.step3.uploadLabel")}</span>`}
                 <input type="file" accept="image/jpeg,image/png,image/webp,image/gif" class="hidden" disabled=${uploadingId === v.id} onChange=${(e) => onFile(v.id, e.target.files?.[0])} />
               </label>
 
@@ -363,7 +364,7 @@ function StepStimuli({ draft, patch, orgId, t }) {
         )}
       </div>
       ${draft.variants.length < 4 && html`
-        <button onClick=${addVariant} class="mt-4 flex items-center gap-1.5 text-sm text-indigo-400 hover:text-indigo-300">
+        <button onClick=${addVariant} class="mt-4 flex items-center gap-1.5 text-sm text-signal-400 hover:text-signal-300">
           <${Icon} name="plus" size=${15} /> ${t("builder.step3.addVariant", { label: VARIANT_LABELS[draft.variants.length] })}
         </button>
       `}
@@ -421,10 +422,10 @@ function StepQuestions({ draft, patch, t }) {
 
   return html`
     <div>
-      <p class="text-sm text-slate-400 mb-4">${t("builder.step4.intro")}</p>
+      <p class="text-sm text-graphite-400 mb-4">${t("builder.step4.intro")}</p>
 
       <div class="sk-panel-flat rounded-xl p-4 mb-5">
-        <p class="text-xs text-slate-500 mb-3">${t("builder.dimensions.intro")}</p>
+        <p class="text-xs text-graphite-500 mb-3">${t("builder.dimensions.intro")}</p>
         ${suggestionByDimension.size > 0 && html`
           <p class="text-xs sk-suggest-hint mb-3">${t("builder.dimensions.suggestedIntro")}</p>
         `}
@@ -436,10 +437,10 @@ function StepQuestions({ draft, patch, t }) {
             const title = suggested ? `${d.blurb} — ${t("builder.dimensions.suggestedBadge")}: "${matchedKeyword}"` : d.blurb;
             return html`
               <button key=${d.id} type="button" onClick=${() => addDimension(d.id)} title=${title}
-                class=${`sk-slot flex items-center gap-1.5 rounded-lg pl-2.5 pr-3 py-2 text-xs font-medium text-slate-200 ${suggested ? "sk-suggested" : ""}`}>
-                <${Icon} name=${d.icon} size=${14} className=${already ? "text-emerald-400" : suggested ? "text-amber-400" : "text-indigo-300"} />
+                class=${`sk-slot flex items-center gap-1.5 rounded-lg pl-2.5 pr-3 py-2 text-xs font-medium text-graphite-200 ${suggested ? "sk-suggested" : ""}`}>
+                <${Icon} name=${d.icon} size=${14} className=${already ? "text-signal-400" : suggested ? "text-amber-400" : "text-graphite-400"} />
                 ${d.label}
-                ${already && html`<${Icon} name="check" size=${11} className="text-emerald-400" />`}
+                ${already && html`<${Icon} name="check" size=${11} className="text-signal-400" />`}
                 ${suggested && html`<span class="sk-suggest-badge">${t("builder.dimensions.suggestedBadge")}</span>`}
               </button>
             `;
@@ -452,11 +453,11 @@ function StepQuestions({ draft, patch, t }) {
           (q, i) => html`
             <div key=${q.id} class="sk-panel-flat rounded-xl p-4">
               <div class="flex items-center gap-2 mb-3">
-                <span class="text-xs font-mono text-slate-500 w-5">${i + 1}.</span>
+                <span class="text-xs font-mono text-graphite-500 w-5">${i + 1}.</span>
                 <div class="flex-1"><${TextInput} placeholder=${t("builder.step4.promptPlaceholder")} value=${q.prompt} onInput=${(e) => update(q.id, { prompt: e.target.value })} /></div>
-                <button onClick=${() => move(q.id, -1)} class="p-1.5 text-slate-500 hover:text-slate-200 disabled:opacity-30" disabled=${i === 0}><${Icon} name="chevronLeft" size=${14} className="rotate-90" /></button>
-                <button onClick=${() => move(q.id, 1)} class="p-1.5 text-slate-500 hover:text-slate-200 disabled:opacity-30" disabled=${i === draft.questions.length - 1}><${Icon} name="chevronRight" size=${14} className="rotate-90" /></button>
-                <button onClick=${() => remove(q.id)} class="p-1.5 text-slate-500 hover:text-rose-400"><${Icon} name="trash" size=${14} /></button>
+                <button onClick=${() => move(q.id, -1)} class="p-1.5 text-graphite-500 hover:text-graphite-200 disabled:opacity-30" disabled=${i === 0}><${Icon} name="chevronLeft" size=${14} className="rotate-90" /></button>
+                <button onClick=${() => move(q.id, 1)} class="p-1.5 text-graphite-500 hover:text-graphite-200 disabled:opacity-30" disabled=${i === draft.questions.length - 1}><${Icon} name="chevronRight" size=${14} className="rotate-90" /></button>
+                <button onClick=${() => remove(q.id)} class="p-1.5 text-graphite-500 hover:text-rose-400"><${Icon} name="trash" size=${14} /></button>
               </div>
               <div class="grid sm:grid-cols-3 gap-3 pl-7">
                 <${Select} options=${questionTypes(t).map((qt) => ({ value: qt.id, label: qt.label }))} value=${q.type}
@@ -474,7 +475,7 @@ function StepQuestions({ draft, patch, t }) {
                 </div>
               `}
               ${q.type === "rating" && html`
-                <div class="pl-7 mt-3 flex items-center gap-2 text-sm text-slate-400">
+                <div class="pl-7 mt-3 flex items-center gap-2 text-sm text-graphite-400">
                   ${t("builder.step4.scalePrefix")}
                   <${Select} options=${["5", "7", "10"]} value=${String(q.scale?.max ?? 5)} onChange=${(e) => update(q.id, { scale: { min: 1, max: Number(e.target.value) } })} />
                 </div>
@@ -490,7 +491,7 @@ function StepQuestions({ draft, patch, t }) {
           `
         )}
       </div>
-      <button onClick=${add} class="mt-4 flex items-center gap-1.5 text-sm text-indigo-400 hover:text-indigo-300">
+      <button onClick=${add} class="mt-4 flex items-center gap-1.5 text-sm text-signal-400 hover:text-signal-300">
         <${Icon} name="plus" size=${15} /> ${t("builder.step4.addQuestion")}
       </button>
     </div>
@@ -518,7 +519,7 @@ function StepParticipants({ draft, patch, t }) {
         <${Field} label=${t("builder.step5.ageRangeLabel")}>
           <div class="flex items-center gap-2">
             <${Select} options=${AGE_RANGES} value=${ps.ageRange[0]} onChange=${(e) => updatePs({ ageRange: [e.target.value, ps.ageRange[1]] })} />
-            <span class="text-slate-500">${t("builder.step5.ageRangeTo")}</span>
+            <span class="text-graphite-500">${t("builder.step5.ageRangeTo")}</span>
             <${Select} options=${AGE_RANGES} value=${ps.ageRange[1]} onChange=${(e) => updatePs({ ageRange: [ps.ageRange[0], e.target.value] })} />
           </div>
         <//>
@@ -558,7 +559,7 @@ function StepSettings({ draft, patch, t }) {
   const s = draft.settings;
   function update(fields) { patch({ settings: { ...s, ...fields } }); }
   return html`
-    <div class="divide-y divide-slate-800">
+    <div class="divide-y divide-graphite-800">
       <${Switch} label=${t("builder.step6.randomizeVariants")} checked=${s.randomizeVariantOrder} onChange=${(v) => update({ randomizeVariantOrder: v })} />
       <${Switch} label=${t("builder.step6.randomizeQuestions")} checked=${s.randomizeQuestionOrder} onChange=${(v) => update({ randomizeQuestionOrder: v })} />
       <${Switch} label=${t("builder.step6.anonymous")} checked=${s.anonymous} onChange=${(v) => update({ anonymous: v })} />
@@ -568,7 +569,7 @@ function StepSettings({ draft, patch, t }) {
         <${Checkbox} label=${t("builder.step6.timeLimitLabel")} checked=${s.timeLimitSeconds != null}
           onChange=${(e) => update({ timeLimitSeconds: e.target.checked ? 60 : null })} />
         ${s.timeLimitSeconds != null && html`
-          <div class="mt-2 pl-6 flex items-center gap-2 text-sm text-slate-400">
+          <div class="mt-2 pl-6 flex items-center gap-2 text-sm text-graphite-400">
             <${TextInput} type="number" min="5" className="w-24" value=${s.timeLimitSeconds} onInput=${(e) => update({ timeLimitSeconds: Number(e.target.value) || 60 })} />
             ${t("builder.step6.timeLimitSuffix")}
           </div>
@@ -590,19 +591,19 @@ function StepPreview({ draft, onPublish, t }) {
     <div>
       <div class="grid sm:grid-cols-2 gap-5">
         <div>
-          <h3 class="font-semibold text-slate-100">${draft.name || t("builder.step7.untitled")}</h3>
-          <p class="text-sm text-slate-400 mt-1">${draft.objective}</p>
+          <h3 class="font-semibold text-graphite-100">${draft.name || t("builder.step7.untitled")}</h3>
+          <p class="text-sm text-graphite-400 mt-1">${draft.objective}</p>
           <dl class="mt-4 space-y-2 text-sm">
-            <div class="flex justify-between"><dt class="text-slate-500">${t("builder.step7.researchType")}</dt><dd class="text-slate-200">${draft.researchType || "—"}</dd></div>
-            <div class="flex justify-between"><dt class="text-slate-500">${t("builder.step7.variants")}</dt><dd class="text-slate-200">${draft.variants.length}</dd></div>
-            <div class="flex justify-between"><dt class="text-slate-500">${t("builder.step7.questions")}</dt><dd class="text-slate-200">${draft.questions.length}</dd></div>
-            <div class="flex justify-between"><dt class="text-slate-500">${t("builder.step7.targetParticipants")}</dt><dd class="text-slate-200">${draft.participantSettings.targetCount}</dd></div>
-            <div class="flex justify-between"><dt class="text-slate-500">${t("builder.step7.randomizedOrder")}</dt><dd class="text-slate-200">${randomizedOrderText}</dd></div>
+            <div class="flex justify-between"><dt class="text-graphite-500">${t("builder.step7.researchType")}</dt><dd class="text-graphite-200">${draft.researchType || "—"}</dd></div>
+            <div class="flex justify-between"><dt class="text-graphite-500">${t("builder.step7.variants")}</dt><dd class="text-graphite-200">${draft.variants.length}</dd></div>
+            <div class="flex justify-between"><dt class="text-graphite-500">${t("builder.step7.questions")}</dt><dd class="text-graphite-200">${draft.questions.length}</dd></div>
+            <div class="flex justify-between"><dt class="text-graphite-500">${t("builder.step7.targetParticipants")}</dt><dd class="text-graphite-200">${draft.participantSettings.targetCount}</dd></div>
+            <div class="flex justify-between"><dt class="text-graphite-500">${t("builder.step7.randomizedOrder")}</dt><dd class="text-graphite-200">${randomizedOrderText}</dd></div>
           </dl>
         </div>
         <div class="sk-panel-flat rounded-xl p-4">
-          <div class="text-sm font-medium text-slate-200 mb-2">${t("builder.step7.beforePublish")}</div>
-          <ul class="text-sm text-slate-500 space-y-1.5">
+          <div class="text-sm font-medium text-graphite-200 mb-2">${t("builder.step7.beforePublish")}</div>
+          <ul class="text-sm text-graphite-500 space-y-1.5">
             <li class="flex gap-2"><${Icon} name=${draft.name && draft.objective ? "check" : "close"} size=${14} className=${draft.name && draft.objective ? "text-emerald-400 mt-0.5" : "text-rose-400 mt-0.5"} /> ${t("builder.step7.checkInfo")}</li>
             <li class="flex gap-2"><${Icon} name=${draft.variants.filter((v) => v.name).length >= 2 ? "check" : "close"} size=${14} className=${draft.variants.filter((v) => v.name).length >= 2 ? "text-emerald-400 mt-0.5" : "text-rose-400 mt-0.5"} /> ${t("builder.step7.checkVariants")}</li>
             <li class="flex gap-2"><${Icon} name=${draft.questions.length >= 1 ? "check" : "close"} size=${14} className=${draft.questions.length >= 1 ? "text-emerald-400 mt-0.5" : "text-rose-400 mt-0.5"} /> ${t("builder.step7.checkQuestions")}</li>
@@ -616,8 +617,8 @@ function StepPreview({ draft, onPublish, t }) {
     </div>
 
     ${showRunner && html`
-      <div class="fixed inset-0 z-50 bg-slate-950 overflow-y-auto">
-        <button onClick=${() => setShowRunner(false)} class="fixed top-4 right-4 z-50 rounded-lg bg-slate-800 p-2 text-slate-300 hover:bg-slate-700"><${Icon} name="close" size=${18} /></button>
+      <div class="fixed inset-0 z-50 bg-graphite-950 overflow-y-auto">
+        <button onClick=${() => setShowRunner(false)} class="fixed top-4 right-4 z-50 rounded-lg bg-graphite-800 p-2 text-graphite-300 hover:bg-graphite-700"><${Icon} name="close" size=${18} /></button>
         <${ParticipantRunner} experimentId=${draft.id} preview=${true} previewExperiment=${draft} />
       </div>
     `}

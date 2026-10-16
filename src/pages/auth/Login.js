@@ -37,7 +37,7 @@ export function Login() {
     <${AuthLayout}
       title=${t("auth.login.title")}
       subtitle=${t("auth.login.subtitle")}
-      footer=${html`${t("auth.login.noAccount")} <button class="text-indigo-400 hover:text-indigo-300" onClick=${() => navigate("/register")}>${t("auth.login.register")}<//>`}
+      footer=${html`${t("auth.login.noAccount")} <button class="text-signal-400 hover:text-signal-300" onClick=${() => navigate("/register")}>${t("auth.login.register")}<//>`}
     >
       ${!IS_CONFIGURED && html`<${AuthError} message=${t("auth.login.notConfigured")} />`}
       <${AuthError} message=${error} />
@@ -49,7 +49,7 @@ export function Login() {
           <${TextInput} type="password" required autocomplete="current-password" value=${password} onInput=${(e) => setPassword(e.target.value)} />
         <//>
         <div class="flex justify-end mb-4 -mt-2">
-          <button type="button" class="text-xs text-slate-500 hover:text-slate-300" onClick=${() => navigate("/forgot-password")}>${t("auth.login.forgotPassword")}</button>
+          <button type="button" class="text-xs text-graphite-500 hover:text-graphite-300" onClick=${() => navigate("/forgot-password")}>${t("auth.login.forgotPassword")}</button>
         </div>
         <${Button} type="submit" className="w-full" loading=${loading} disabled=${!IS_CONFIGURED}>${loading ? t("auth.login.submitting") : t("auth.login.submit")}<//>
       </form>

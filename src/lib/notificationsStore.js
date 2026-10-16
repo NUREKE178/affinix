@@ -139,7 +139,7 @@ function maybeShowBrowserNotification(n) {
     const title = translate(locale, notificationCopyKey(n.type), { name: n.actorName ?? translate(locale, "feed.unknownAuthor") });
     const popup = new Notification(title, {
       body: n.type === "comment" && n.commentBody ? `«${n.commentBody}»` : "",
-      icon: "/favicon.svg",
+      icon: "/assets/logo/icon-192.png",
       tag: n.id,
     });
     popup.onclick = () => {

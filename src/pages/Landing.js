@@ -4,9 +4,10 @@ import { LanguageSwitch } from "../components/shell.js";
 import { useT, useLocale, useLocaleFadeClass } from "../lib/i18n.js";
 import { useReveal } from "../lib/motion.js";
 
-// Dark "glass + violet glow" landing. All styling lives in landing.css (every class is lp- prefixed and scoped under
-// .lp-root, because vendor/tailwind.css is prebuilt and cannot gain new utilities without a build step). The design
-// source is the "DecisionOS Landing Page" Design artifact; copy lives in locales/*.js under `landing.*`.
+// The landing in the product's own "Instrument" look (graphite, one orange signal, tactile keys, quiet plates). All
+// styling lives in landing.css (every class is lp- prefixed and scoped under .lp-root, because vendor/tailwind.css is
+// prebuilt and cannot gain new utilities without a build step); it reads the same surface tokens as the app (styles.css).
+// Copy lives in locales/*.js under `landing.*`.
 
 const ASSETS = "./assets/landing/";
 const LOGO = "./assets/logo/";
@@ -58,7 +59,7 @@ function Header({ t }) {
   `;
 }
 
-/** The 3D-tilted dashboard preview: pick a variant card and the share chart, metrics and interpretation follow. */
+/** The dashboard preview: pick a variant key and the share chart, metrics and interpretation follow. */
 function DashboardMock({ t }) {
   const [sel, setSel] = useState(LEAD);
   const v = VARIANTS[sel];
@@ -76,8 +77,6 @@ function DashboardMock({ t }) {
 
   return html`
     <div class="lp-stage" id="lp-sample">
-      <div class="lp-stage-glow"></div>
-
       <div class="lp-fc lp-fc1" aria-hidden="true">
         <span class="lp-fc-l">${t("landing.mock.winner")}</span>
         <span class="lp-fc-v"><b>${t("landing.mock.winnerName")}</b><em>${VARIANTS[LEAD].share}%</em></span>
@@ -159,9 +158,8 @@ function DashboardMock({ t }) {
 function Hero({ t }) {
   return html`
     <section class="lp-hero" id="lp-top">
-      <div class="lp-grid-bg"></div>
       <div class="lp-wrap lp-hero-in slide-up">
-        <div class="lp-pill"><${Icon} name="sparkle" size=${15} className="lp-ic" /><span>${t("landing.badge")}</span></div>
+        <div class="lp-pill"><i class="lp-led" aria-hidden="true"></i><span>${t("landing.badge")}</span></div>
         <h1 class="lp-h1">${t("landing.heroTitleLead")} <span class="lp-g">${t("landing.heroTitleAccent")}</span></h1>
         <p class="lp-lead">${t("landing.heroSubtitle")}</p>
         <div class="lp-cta-row">
@@ -187,7 +185,7 @@ function CanTest({ t }) {
   `;
 }
 
-/** "From stimulus to decision": five glass cards in a bento grid, each with a small live-looking preview. */
+/** "From stimulus to decision": five plates in a bento grid, each with a small live-looking preview. */
 function Workflow({ t, locale }) {
   const chips = [
     { id: "preference", on: true }, { id: "attention" }, { id: "trust", sug: true }, { id: "quality" },
@@ -196,7 +194,7 @@ function Workflow({ t, locale }) {
   const step = (n) => ({ title: t(`landing.workflow.steps.s${n}.title`), desc: t(`landing.workflow.steps.s${n}.desc`) });
   const s1 = step(1), s2 = step(2), s3 = step(3), s4 = step(4), s5 = step(5);
   return html`
-    <section class="lp-sec lp-glow" id="lp-workflow">
+    <section class="lp-sec" id="lp-workflow">
       <div class="lp-wrap">
         <${Reveal}>
           <div class="lp-sec-h">
@@ -332,7 +330,6 @@ function Mobile({ t, locale }) {
         <//>
       </div>
       <div class="lp-fan-wrap">
-        <div class="lp-fan-glow"></div>
         <div class="lp-fan">
           <img class="lp-f lp-f1" src=${phoneSrc("builder", locale)} alt=${t("landing.mobile.altBuilder")} width="864" height="1748" loading="lazy" decoding="async" />
           <img class="lp-f lp-f2" src=${phoneSrc("report", locale)} alt=${t("landing.mobile.altReport")} width="864" height="1748" loading="lazy" decoding="async" />
@@ -348,7 +345,6 @@ function FinalCta({ t }) {
     <section class="lp-sec" id="lp-start">
       <div class="lp-wrap">
         <${Reveal} className="lp-cta-box">
-          <div class="lp-cta-glow"></div>
           <h2 class="lp-h2">${t("landing.cta.title")}</h2>
           <p class="lp-sub">${t("landing.cta.subtitle")}</p>
           <div class="lp-cta-row">

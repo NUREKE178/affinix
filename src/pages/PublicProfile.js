@@ -31,9 +31,9 @@ export function PublicProfile({ params }) {
   }, [username, retryTick]);
 
   return html`
-    <div class="min-h-screen bg-slate-950 text-slate-100 flex flex-col fade-in">
-      <header class="px-6 py-4 border-b border-slate-800/80">
-        <button onClick=${() => navigate("/")} class="flex items-center gap-2 text-sm font-semibold text-slate-200">
+    <div class="min-h-screen bg-graphite-950 text-graphite-100 flex flex-col fade-in">
+      <header class="px-6 py-4 border-b border-graphite-800/80">
+        <button onClick=${() => navigate("/")} class="flex items-center gap-2 text-sm font-semibold text-graphite-200">
           <${LogoMark} size=${28} />
           DecisionOS
         </button>
@@ -45,16 +45,16 @@ export function PublicProfile({ params }) {
           : state.error
           ? html`
             <div class="text-center max-w-sm">
-              <h1 class="text-lg font-semibold text-slate-100">${t("publicProfile.errorTitle")}</h1>
-              <p class="text-sm text-slate-500 mt-2">${t("publicProfile.errorBody")}</p>
+              <h1 class="text-lg font-semibold text-graphite-100">${t("publicProfile.errorTitle")}</h1>
+              <p class="text-sm text-graphite-500 mt-2">${t("publicProfile.errorBody")}</p>
               <${Button} className="mt-5" onClick=${() => setRetryTick((n) => n + 1)}>${t("common.retry")}<//>
             </div>
           `
           : !state.profile
           ? html`
             <div class="text-center max-w-sm">
-              <h1 class="text-lg font-semibold text-slate-100">${t("publicProfile.notFoundTitle")}</h1>
-              <p class="text-sm text-slate-500 mt-2">${t("publicProfile.notFoundBody")}</p>
+              <h1 class="text-lg font-semibold text-graphite-100">${t("publicProfile.notFoundTitle")}</h1>
+              <p class="text-sm text-graphite-500 mt-2">${t("publicProfile.notFoundBody")}</p>
             </div>
           `
           : html`
@@ -62,11 +62,11 @@ export function PublicProfile({ params }) {
               <div class="flex items-center gap-4">
                 ${state.profile.avatar_url
                   ? html`<img src=${state.profile.avatar_url} class="h-16 w-16 rounded-full object-cover" />`
-                  : html`<div class="h-16 w-16 rounded-full bg-gradient-to-br from-indigo-500 to-teal-400 flex items-center justify-center text-xl font-semibold text-white">${initialsFor(state.profile.full_name)}</div>`}
+                  : html`<div class="h-16 w-16 rounded-full sk-avatar flex items-center justify-center text-xl font-semibold">${initialsFor(state.profile.full_name)}</div>`}
                 <div>
-                  <h1 class="text-lg font-semibold text-slate-100">${state.profile.full_name || `@${state.profile.username}`}</h1>
-                  <p class="text-sm text-slate-400">${[state.profile.role_title, state.profile.org_name].filter(Boolean).join(" · ") || " "}</p>
-                  ${friendsCount !== null && html`<p class="text-xs text-slate-500 mt-1">${t("friends.countLabel", { count: friendsCount })}</p>`}
+                  <h1 class="text-lg font-semibold text-graphite-100">${state.profile.full_name || `@${state.profile.username}`}</h1>
+                  <p class="text-sm text-graphite-400">${[state.profile.role_title, state.profile.org_name].filter(Boolean).join(" · ") || " "}</p>
+                  ${friendsCount !== null && html`<p class="text-xs text-graphite-500 mt-1">${t("friends.countLabel", { count: friendsCount })}</p>`}
                 </div>
               </div>
 
@@ -74,17 +74,17 @@ export function PublicProfile({ params }) {
                 <${FriendButton} targetUserId=${state.profile.id} />
               </div>
 
-              ${state.profile.bio && html`<p class="text-sm text-slate-300 mt-5 leading-relaxed">${state.profile.bio}</p>`}
+              ${state.profile.bio && html`<p class="text-sm text-graphite-300 mt-5 leading-relaxed">${state.profile.bio}</p>`}
 
               ${state.profile.research_interests?.length > 0 && html`
                 <div class="mt-5 flex flex-wrap gap-1.5">
                   ${state.profile.research_interests.map((tag) => html`
-                    <span key=${tag} class="rounded-full border border-slate-700 bg-slate-800/60 px-2.5 py-1 text-xs text-slate-300">${tag}</span>
+                    <span key=${tag} class="rounded-full border border-graphite-700 bg-graphite-800/60 px-2.5 py-1 text-xs text-graphite-300">${tag}</span>
                   `)}
                 </div>
               `}
 
-              <p class="text-xs text-slate-600 mt-7">${t("publicProfile.footerNote")}</p>
+              <p class="text-xs text-graphite-600 mt-7">${t("publicProfile.footerNote")}</p>
             </div>
           `}
       </main>
