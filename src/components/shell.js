@@ -98,7 +98,7 @@ function UserMenu({ onNavigate, collapsed = false, sidebarMode, onChangeSidebarM
   const { org } = useCurrentOrg();
   const { user } = useSession();
   const { profile } = useMyProfile();
-  const displayName = profile?.full_name || user?.email || "";
+  const displayName = profile?.full_name || user?.email || user?.phone || "";
 
   return html`
     <div class=${`relative ${collapsed ? "px-2" : "px-3"}`}>
@@ -362,7 +362,7 @@ export function Shell({ currentPath, children }) {
   useMessagingBootstrap();
   const { user } = useSession();
   const { profile } = useMyProfile();
-  const displayName = profile?.full_name || user?.email || "";
+  const displayName = profile?.full_name || user?.email || user?.phone || "";
   const [mobileOpen, setMobileOpen] = useState(false);
   const [sidebarMode, setSidebarMode] = useState(() => {
     try {

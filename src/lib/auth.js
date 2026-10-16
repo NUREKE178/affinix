@@ -7,6 +7,22 @@ let currentSession = null;
 let initialized = false;
 const listeners = new Set();
 
+// A failed OAuth sign-in (the user cancelled on Google, the provider is switched off ...) comes back to the site as
+// `#error=...&error_description=...`. supabase-js removes that from the URL a moment later, so it is read once, here,
+// and the sign-in page shows it with `takeCallbackError()`.
+let callbackError = null;
+try {
+  const m = /[#&?]error_description=([^&#]+)/.exec(location.href);
+  if (m) callbackError = decodeURIComponent(m[1].replace(/\+/g, " "));
+} catch { /* a malformed escape: ignore it */ }
+
+/** The message of a failed OAuth redirect, once (then null). */
+export function takeCallbackError() {
+  const e = callbackError;
+  callbackError = null;
+  return e;
+}
+
 function notify() {
   for (const l of listeners) l();
 }
@@ -72,6 +88,63 @@ export async function signIn({ email, password }) {
   return data;
 }
 
+/** Google sign-in. The browser leaves for Google and comes back to this page with the session in the URL (handled by
+ * App's auth-callback code); a person who has no account yet gets one, and the onboarding wizard follows. The project
+ * needs the Google provider switched on and this site's address in its Redirect URLs (see README).
+ * supabase-js only builds the address; if the provider is off, the browser would land on a raw JSON error page of the
+ * auth server. So the address is asked once first (a plain GET, no redirect followed): a refusal is turned into an error
+ * the sign-in page can word, and anything unexpected (offline, blocked) simply lets the browser try. */
+export async function signInWithGoogle() {
+  const { data, error } = await requireSupabase().auth.signInWithOAuth({
+    provider: "google",
+    options: { redirectTo: `${location.origin}${location.pathname}`, skipBrowserRedirect: true },
+  });
+  if (error) throw error;
+  let refusal = null;
+  try {
+    const res = await fetch(data.url, { redirect: "manual" });
+    if (res.status >= 400) {
+      const body = await res.json().catch(() => null);
+      refusal = new Error(body?.msg ?? body?.error_description ?? body?.message ?? "provider is not enabled");
+    }
+  } catch { /* offline or CORS: let the browser try */ }
+  if (refusal) throw refusal;
+  location.assign(data.url);
+  return data;
+}
+
+/** Whatever a person typed -> E.164 ("+77771234567"), or null when it cannot be a phone number. Domestic Kazakh / Russian
+ * forms ("8 777 123 45 67", "777 123 45 67") get the +7; anything typed with a "+" or "00" is taken as international. */
+export function normalizePhone(raw) {
+  const s = String(raw ?? "").trim();
+  let digits = s.replace(/\D/g, "");
+  if (!digits) return null;
+  if (s.startsWith("+")) {
+    // international as typed
+  } else if (digits.startsWith("00")) {
+    digits = digits.slice(2);
+  } else if (digits.length === 11 && (digits[0] === "8" || digits[0] === "7")) {
+    digits = `7${digits.slice(1)}`;
+  } else if (digits.length === 10) {
+    digits = `7${digits}`;
+  }
+  if (digits.length < 8 || digits.length > 15) return null;
+  return `+${digits}`;
+}
+
+/** Sends a one-time code by SMS. Signing in and signing up are the same step: the account is created on first use. */
+export async function requestPhoneCode(phone) {
+  const { error } = await requireSupabase().auth.signInWithOtp({ phone });
+  if (error) throw error;
+}
+
+/** Checks the SMS code; on success the session is set (and onAuthStateChange fires). */
+export async function verifyPhoneCode({ phone, token }) {
+  const { data, error } = await requireSupabase().auth.verifyOtp({ phone, token, type: "sms" });
+  if (error) throw error;
+  return data;
+}
+
 export async function signOut() {
   const { error } = await requireSupabase().auth.signOut();
   if (error) throw error;
@@ -111,6 +184,12 @@ export function friendlyAuthError(error, t) {
   if (/invalid login credentials/i.test(msg)) return tt("auth.errors.invalidCredentials");
   if (/email not confirmed/i.test(msg)) return tt("auth.errors.emailNotConfirmed");
   if (/password should be at least/i.test(msg)) return tt("auth.errors.passwordTooShort");
-  if (/rate limit/i.test(msg)) return tt("auth.errors.rateLimit");
+  if (/rate limit|for security purposes/i.test(msg)) return tt("auth.errors.rateLimit");
+  if (/provider is not enabled|unsupported provider/i.test(msg)) return tt("auth.errors.providerDisabled");
+  if (/phone.*(disabled|not enabled|provider)|unsupported phone/i.test(msg)) return tt("auth.errors.phoneDisabled");
+  if (/otp.*(expired|invalid)|token has expired|invalid token|invalid.*code/i.test(msg)) return tt("auth.errors.badCode");
+  if (/invalid.*phone|phone.*invalid|phone number/i.test(msg)) return tt("auth.errors.badPhone");
+  if (/error sending|sms|twilio/i.test(msg)) return tt("auth.errors.smsFailed");
+  if (/access_denied|denied|cancel|external code|oauth|exchange/i.test(msg)) return tt("auth.errors.oauthFailed");
   return msg;
 }

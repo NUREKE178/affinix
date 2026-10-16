@@ -105,7 +105,7 @@ function PersonalTab({ profile, user, org, t }) {
   return html`
     <div class="space-y-6">
       <div class="flex items-center gap-4">
-        <${AvatarEditor} profile=${profile} displayName=${form.full_name || user?.email} t=${t} />
+        <${AvatarEditor} profile=${profile} displayName=${form.full_name || user?.email || user?.phone} t=${t} />
         <div>
           <div class="font-semibold text-graphite-100">${form.full_name || t("profile.noName")}</div>
           <div class="text-sm text-graphite-500">${org?.name ?? ""}${org?.role ? ` · ${org.role}` : ""}</div>
@@ -150,7 +150,7 @@ function PersonalTab({ profile, user, org, t }) {
 
       <div class="pt-5 border-t border-graphite-800">
         <h4 class="text-sm font-semibold text-graphite-200 mb-3">${t("profile.personal.emailTitle")}</h4>
-        <p class="text-sm text-graphite-400 mb-3">${t("profile.personal.emailCurrent", { email: user?.email })}</p>
+        <p class="text-sm text-graphite-400 mb-3">${t("profile.personal.emailCurrent", { email: user?.email ?? user?.phone ?? "—" })}</p>
         <div class="flex gap-2 max-w-md">
           <${TextInput} type="email" placeholder=${t("profile.personal.emailPlaceholder")} value=${emailDraft} onInput=${(e) => setEmailDraft(e.target.value)} />
           <${Button} variant="secondary" size="sm" loading=${changingEmail} disabled=${!emailDraft.trim()} onClick=${changeEmail}>${t("profile.personal.emailChange")}<//>

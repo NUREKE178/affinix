@@ -3,6 +3,7 @@ import { navigate } from "../../router.js";
 import { AuthLayout, AuthError, AuthSuccess } from "./AuthLayout.js";
 import { Field, TextInput, Button } from "../../components/ui.js";
 import { signUp, friendlyAuthError } from "../../lib/auth.js";
+import { GoogleButton, OrDivider, MethodSwitch, PhoneAuth } from "./SocialAuth.js";
 import { IS_CONFIGURED } from "../../lib/env.js";
 import { useT } from "../../lib/i18n.js";
 
@@ -14,6 +15,7 @@ export function Register() {
   const [error, setError] = useState(null);
   const [done, setDone] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [method, setMethod] = useState("email");
 
   async function onSubmit(e) {
     e.preventDefault();
@@ -51,6 +53,12 @@ export function Register() {
     >
       ${!IS_CONFIGURED && html`<${AuthError} message=${t("auth.register.notConfigured")} />`}
       <${AuthError} message=${error} />
+      <${GoogleButton} onError=${setError} />
+      <${OrDivider} />
+      <${MethodSwitch} value=${method} onChange=${(m) => { setError(null); setMethod(m); }} />
+      ${method === "phone"
+        ? html`<${PhoneAuth} onError=${setError} note=${t("auth.social.autoCreate")} />`
+        : html`
       <form onSubmit=${onSubmit}>
         <${Field} label=${t("auth.fields.fullName")} required>
           <${TextInput} required autocomplete="name" value=${fullName} onInput=${(e) => setFullName(e.target.value)} />
@@ -62,7 +70,7 @@ export function Register() {
           <${TextInput} type="password" required minlength="6" autocomplete="new-password" value=${password} onInput=${(e) => setPassword(e.target.value)} />
         <//>
         <${Button} type="submit" className="w-full" loading=${loading} disabled=${!IS_CONFIGURED}>${loading ? t("auth.register.submitting") : t("auth.register.submit")}<//>
-      </form>
+      </form>`}
     <//>
   `;
 }
