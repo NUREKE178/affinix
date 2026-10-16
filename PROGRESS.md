@@ -3621,3 +3621,25 @@ A person puts 2-4 options (images and/or short texts) and one question in front 
   is a separate call); the gate on the Research hero is announced only once the server has been asked by something else, while
   the create page asks it itself (`useCreateGate({ sync: true })`), so opening Research never starts Arena traffic.
 - **To apply on the live project**: `supabase db push` (0022; 0020 and 0021 too if not yet), then `notify pgrst, 'reload schema';`.
+
+## Navigation clean-up, Google + phone sign-in, "New research" chooser
+
+Requested together: "remove Insights; every page must have an important purpose (what is Team for?); sign in with Google and with a phone
+number; make it the place people want to stay in for hours".
+
+- **Insights removed.** The sidebar item, both routes (`/app/insights`, `/app/experiments/:id/insights`), `pages/Insights.js`, the AI-summary
+  client calls (`fetchLatestAiInsight`, `generateAiInsight`), the Results link and the page's translations are gone; the old URLs fall back to
+  the Arena. What stays: `lib/insights.js` (the rule-based "what happened / why it might have / recommendation" text) which the Report
+  still prints and downloads. The `generate-insights` Edge Function and the `ai_insights` table are untouched but no screen reaches them.
+- **Every page has one home.** Sidebar = Arena, Research | Community (Feed, Favorites, Friends, Messages) | Account (Profile, Settings).
+  Participants and Reports are tabs of Research, Team and Billing are tabs of Settings (`components/subNav.js`, nav items have `also`
+  paths so the sidebar item stays lit). Team's subtitle now says what it is for (collaborators and roles).
+- **"New research" asks what kind** (`pages/crowd/Chooser.js`): quick test (Arena crowd, one question, answers in hours) or full experiment
+  (own participants, many questions, segments, report), each card saying who it is for.
+- **Sign in with Google / phone** (`lib/auth.js`, `pages/auth/SocialAuth.js`, used by Login and Register): `signInWithOAuth` with the
+  address pre-checked (a provider that is off becomes a worded error, not a raw JSON page), `signInWithOtp` + `verifyOtp`; numbers typed
+  the Kazakh / Russian way become +7...; the code field is `one-time-code`, six digits submit by themselves, resend after 60 s, change
+  number; a failed Google redirect returns to the sign-in page with a message; accounts without e-mail show the phone number. Needs the
+  providers switched on in the Supabase dashboard (README, "Sign in with Google and with a phone number"); nothing in the database changes.
+- i18n: 1,254 keys per language (+23 auth, +7 chooser, -`insights.*` page keys, +2 subnav). Tests: `test_auth_social.mjs` (37 checks),
+  `test_nav_tabs.mjs` (31), `test_nav_experiments_results_removed.mjs` and `test_sidebar_collapse.mjs` updated, `test_ai_insights.mjs` removed.

@@ -52,6 +52,22 @@ by phase.
    not a secret key). Never put the service role key or `AI_API_KEY` there.
 6. Serve the frontend (still no build step): `npx http-server . -p 8080`.
 
+### Sign in with Google and with a phone number
+
+Both are ready in the app and both need a switch flipped in the Supabase dashboard (until then the app says so in words:
+"Google sign-in is not switched on yet" / "Phone sign-in is not switched on yet").
+
+- **Google.** In Google Cloud Console create an OAuth client (type *Web application*); as its *Authorised redirect URI* use
+  `https://<project-ref>.supabase.co/auth/v1/callback`. In Supabase: Authentication -> Providers -> Google -> enable, paste the
+  client ID and secret. In Authentication -> URL Configuration add the site address (for example
+  `https://<your-domain>/index.html` and the Vercel preview domain) to *Redirect URLs*, and set *Site URL*.
+- **Phone (SMS code).** In Supabase: Authentication -> Providers -> Phone -> enable and choose an SMS provider (Twilio,
+  MessageBird, Vonage ...), fill its credentials; the code length (6 by default) and expiry are set there too. SMS costs money
+  and some providers need sender registration for Kazakhstan numbers; the *test phone numbers* option lets you try the flow
+  without sending real messages.
+- A person who signs in for the first time with either method gets an account automatically; the onboarding wizard asks for
+  the name. An account made by phone has no e-mail (the app shows the number instead).
+
 ### Running the migrations locally without a Supabase project
 
 `supabase/migrations/*.sql` were authored and verified against real

@@ -1,4 +1,4 @@
-import { html } from "../lib/preact.js";
+import { html, useState } from "../lib/preact.js";
 import { useExperiments } from "../lib/experimentsStore.js";
 import { useOrgSessions } from "../lib/participants.js";
 import { useMyProfile } from "../lib/profile.js";
@@ -13,6 +13,7 @@ import { pct, durationFromMs, relativeDate } from "../lib/format.js";
 import { researchTypeLabel } from "../lib/questionTypes.js";
 import { useArenaLocal } from "../lib/arenaStore.js";
 import { CrowdSection } from "./crowd/Section.js";
+import { CreateChooser } from "./crowd/Chooser.js";
 import { ResearchTabs } from "../components/subNav.js";
 
 /** A doorway to the Arena: today's daily challenge, the streak, one key. Reads local progress only (no network). */
@@ -71,6 +72,7 @@ function dailyCompletionSeries(participants, locale) {
 
 export function Overview() {
   const t = useT();
+  const [chooser, setChooser] = useState(false);
   const locale = useLocale();
   const { experiments, loading: experimentsLoading } = useExperiments();
   const { sessions: participants, loading: sessionsLoading } = useOrgSessions();
@@ -116,11 +118,12 @@ export function Overview() {
                 <${Icon} name="results" size=${16}/> ${t("overview.openLatestResults")}
               <//>
             `}
-            <${Button} onClick=${() => navigate("/app/experiments/new")}><${Icon} name="plus" size=${16}/> ${t("overview.newResearch")}<//>
+            <${Button} onClick=${() => setChooser(true)} data-testid="overview-new"><${Icon} name="plus" size=${16}/> ${t("overview.newResearch")}<//>
           </div>
         `}
       />
 
+      <${CreateChooser} open=${chooser} onClose=${() => setChooser(false)} />
       <${CrowdSection} />
 
       <${SectionHeading} title=${t("overview.classicTitle")} subtitle=${t("overview.classicSubtitle")} />

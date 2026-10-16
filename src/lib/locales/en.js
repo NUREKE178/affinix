@@ -849,6 +849,15 @@ export default {
     delete: "Delete",
     deleteConfirm: "Delete the test and all its votes?",
     back: "Back",
+    chooser: {
+      title: "What do you want to find out?",
+      quickTitle: "Quick test",
+      quickTag: "For everyone · answers in hours",
+      quickBody: "Show 2–4 options to Arena players: a logo, a poster, a name. One question, no links to send. You get a winner with a confidence interval.",
+      fullTitle: "Full experiment",
+      fullTag: "For researchers · your own participants",
+      fullBody: "Your participants by link, many questions, segments, statistics and a report. For when your own audience's opinion is what matters.",
+    },
     q: {
       preference: "Which option do you like more?",
       attention: "Which option grabs your attention more?",
