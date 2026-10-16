@@ -123,23 +123,25 @@ export function nextStreak(prev, lastDay, day) {
 export const QUEST_TIERS = ["easy", "medium", "hard"];
 export const QUEST_XP = { easy: 30, medium: 60, hard: 120 };
 
+// `retired`: no longer offered in a new day's slate (time only counts in the Daily Challenge now, which is far
+// too short for "play N minutes"), but still defined so a slate saved earlier keeps working.
 export const QUEST_DEFS = [
   { id: "votes_15", tier: "easy", kind: "votes", target: 15 },
   { id: "fam_3", tier: "easy", kind: "families", target: 3 },
   { id: "dims_3", tier: "easy", kind: "dims", target: 3 },
-  { id: "time_5", tier: "easy", kind: "time", target: 300 },
+  { id: "time_5", tier: "easy", kind: "time", target: 300, retired: true },
   { id: "votes_40", tier: "medium", kind: "votes", target: 40 },
   { id: "fam_5", tier: "medium", kind: "families", target: 5 },
   { id: "dims_5", tier: "medium", kind: "dims", target: 5 },
   { id: "combo_6", tier: "medium", kind: "combo", target: 6 },
   { id: "eye_5", tier: "medium", kind: "eye", target: 5 },
-  { id: "time_15", tier: "medium", kind: "time", target: 900 },
+  { id: "time_15", tier: "medium", kind: "time", target: 900, retired: true },
   { id: "votes_100", tier: "hard", kind: "votes", target: 100 },
   { id: "combo_12", tier: "hard", kind: "combo", target: 12 },
   { id: "eye_12", tier: "hard", kind: "eye", target: 12 },
   { id: "fam_7", tier: "hard", kind: "families", target: 7 },
-  { id: "time_30", tier: "hard", kind: "time", target: 1800 },
-  { id: "time_60", tier: "hard", kind: "time", target: 3600 },
+  { id: "time_30", tier: "hard", kind: "time", target: 1800, retired: true },
+  { id: "time_60", tier: "hard", kind: "time", target: 3600, retired: true },
 ].map((q) => ({ ...q, xp: QUEST_XP[q.tier] }));
 
 export const QUEST_BY_ID = Object.fromEntries(QUEST_DEFS.map((q) => [q.id, q]));
@@ -167,7 +169,7 @@ export function pickSlate(rand) {
   const used = new Set();
   const slate = [];
   for (const tier of QUEST_TIERS) {
-    const pool = QUEST_DEFS.filter((q) => q.tier === tier && !used.has(q.kind));
+    const pool = QUEST_DEFS.filter((q) => q.tier === tier && !q.retired && !used.has(q.kind));
     const q = pool[Math.floor(rand() * pool.length)];
     used.add(q.kind);
     slate.push(q.id);

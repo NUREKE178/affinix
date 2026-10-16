@@ -295,6 +295,19 @@ function ResultStrip({ last, duel, info, remote, t, insight }) {
   return html`<div class="ar-result" role="status" data-testid="arena-result">${parts}</div>`;
 }
 
+/** The Arena clock in the console: lit and counting in the Daily Challenge, paused (and saying why) in free play. */
+function ClockChip({ on }) {
+  const t = useT();
+  const seconds = useArenaClock();
+  return html`
+    <span class="ar-clock" data-on=${on} title=${t(on ? "arena.console.clockOnTitle" : "arena.console.clockOffTitle")} data-testid="arena-clock">
+      <i class="sk-led" aria-hidden="true"></i>
+      ${on ? html`<b class="sk-num" data-testid="arena-clock-value">${clock(seconds)}</b>` : null}
+      <span>${t(on ? "arena.console.clockOn" : "arena.console.clockOff")}</span>
+    </span>
+  `;
+}
+
 function Console({ arena }) {
   const t = useT();
   const { round, prefs, actions, remote } = arena;
@@ -332,6 +345,7 @@ function Console({ arena }) {
             <button type="button" class="ar-leave" onClick=${actions.endRound} aria-label=${t("arena.console.leave")} title=${`${t("arena.console.leave")}  Esc`} data-testid="arena-leave"><${Icon} name="close" size=${14} /></button>
           </div>
           <span class="ar-round-count sk-num" data-testid="arena-progress">${round.idx + 1}<span class="sk-unit">/ ${round.duels.length}</span></span>
+          <${ClockChip} on=${round.mode === "daily" || round.mode === "mission"} />
         </div>
       </header>
 

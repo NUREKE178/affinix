@@ -199,6 +199,7 @@ export function ProfileTab({ arena }) {
             <div class="ar-time-stat"><span class="sk-caption">${t("arena.profile.timeToday")}</span><b class="sk-num" data-testid="arena-time-today">${clock(seconds)}</b></div>
             <div class="ar-time-stat"><span class="sk-caption">${t("arena.profile.timeWeek")}</span><b class="sk-num">${clock(weekSeconds + (seconds - view.today.sec))}</b></div>
             <div class="ar-time-stat"><span class="sk-caption">${t("arena.profile.timeBest")}</span><b class="sk-num">${clock(view.bestDaySeconds)}</b></div>
+            <p class="ar-muted ar-time-note" data-testid="arena-time-note">${t("arena.profile.timeNote")}</p>
           </div>
         </div>
       </section>

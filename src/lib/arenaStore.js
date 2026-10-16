@@ -609,7 +609,18 @@ export function secondsToday() {
   return (getView()?.today.sec ?? 0) + (S.sliceAcc ?? 0);
 }
 
-/** Counts a second whenever the player is actually here: tab visible, window focused, input within IDLE_CUTOFF_S. */
+/** Rounds whose time counts. Time in the Arena is the time spent in the Daily Challenge (its ten shared duels and,
+ * after them, the research missions); free play, the lobby and the other tabs never move the clock. */
+const TIMED_MODES = ["daily", "mission"];
+
+/** Is a timed duel on screen right now (read straight from the store, never a render behind)? */
+export function clockRunning() {
+  const r = S?.round;
+  return !!r && TIMED_MODES.includes(r.mode) && (r.phase === "choose" || r.phase === "reveal");
+}
+
+/** Counts a second whenever the player is actually here (tab visible, input within IDLE_CUTOFF_S) AND is
+ * inside the Daily Challenge. */
 export function startActivityTracking() {
   let last = Date.now();
   const touch = () => { last = Date.now(); };
@@ -618,6 +629,7 @@ export function startActivityTracking() {
   const timer = setInterval(() => {
     if (document.visibilityState !== "visible") return;
     if (Date.now() - last > IDLE_CUTOFF_S * 1000) return;
+    if (!clockRunning()) return;
     tickSecond();
   }, 1000);
   return () => {

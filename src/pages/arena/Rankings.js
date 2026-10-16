@@ -46,6 +46,7 @@ function AdminStats() {
   return html`
     <section class="ar-admin sk-panel" data-testid="arena-admin">
       <div class="ar-admin-head"><span class="sk-caption">${t("arena.admin.title")}</span><${Badge} tone="steel">${t("arena.admin.badge")}<//></div>
+      <p class="ar-muted">${t("arena.admin.note")}</p>
       ${state.loading
         ? html`<${Skeleton} className="h-24 w-full rounded-lg" />`
         : html`

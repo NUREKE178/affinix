@@ -89,6 +89,13 @@
 .ar-leave:active { background: var(--key-down); box-shadow: var(--sh-key-down); transform: translateY(1px); }
 .ar-round-count { font-size: 13px; color: var(--g-300); }
 .ar-round-count .sk-unit { font-size: 13px; color: var(--g-500); }
+/* the Arena clock: it only runs in the Daily Challenge, so the console says whether it is running */
+.ar-clock { display: inline-flex; align-items: center; gap: 7px; font-size: 11.5px; line-height: 1; color: var(--g-500); white-space: nowrap; }
+.ar-clock b { font-size: 12.5px; font-weight: 500; color: var(--g-100); }
+.ar-clock[data-on="true"] { color: var(--g-300); }
+.ar-clock[data-on="true"] .sk-led { --led: var(--signal); --led-glow: rgba(255,106,31,.7); animation: arClockLed 1.6s ease-in-out infinite; }
+@keyframes arClockLed { 0%, 100% { opacity: 1; } 50% { opacity: .45; } }
+@media (prefers-reduced-motion: reduce) { .ar-clock[data-on="true"] .sk-led { animation: none; } }
 
 .ar-ladder { display: flex; align-items: center; gap: 6px; }
 .ar-led {
@@ -314,6 +321,7 @@
 .ar-time-stats { display: grid; grid-template-columns: repeat(3, minmax(0, auto)); gap: 8px 36px; }
 .ar-time-stat { display: flex; flex-direction: column; gap: 8px; }
 .ar-time-stat b { font-size: 26px; line-height: 1; font-weight: 500; color: var(--g-50); }
+.ar-time-note { grid-column: 1 / -1; margin: 0; }
 .ar-heat-cell[data-level="x"] { background: transparent; box-shadow: none; }
 .ar-heat-cell[data-level="1"] { background: rgba(255,106,31,.28); box-shadow: none; }
 .ar-heat-cell[data-level="2"] { background: rgba(255,106,31,.5); box-shadow: none; }
