@@ -3710,3 +3710,25 @@ pictures and replies but the client never used them.
   `test_messages.mjs` (164 browser checks) against `msgfake.mjs`, an in-memory Supabase stand-in (REST + RPC mirroring the SQL + storage + a
   Phoenix realtime socket); `test_people.mjs` (68) and the crowd tests still pass. Honest limit: not run against a live Supabase.
 - **To apply on the live project**: `supabase db push` (0024; 0020 too if not yet), then `notify pgrst, 'reload schema';`.
+
+## Feed v2: tabs, order, tags, edit, links to posts, paging (no migration)
+
+Same request as Messages v2 ("develop the feed well, keep UX/UI/design"). The feed was one flat list of the latest 50 posts; the composer stays
+below the list (an earlier, explicit decision).
+
+- **Data** (`lib/postsStore.js`): pages of 30 (`loadMorePosts`, `hasMore`), a quiet refresh re-reads everything already loaded (the pages the reader
+  scrolled through are not thrown away; a real error still gives the full reload that "Try again" needs), `fetchPostById` (a link to an older
+  post), `updatePost` (RLS `posts_update_own` already exists; `updated_at` is stamped by the existing trigger, so "edited" = `updated_at` later
+  than `created_at` + 3 s), `patchPost`. Likes and saves (`lib/postInteractions.js`) are optimistic with rollback and also patch the Favorites
+  store (`patchFavoritePost`), so the heart answers at once on both pages.
+- **Rich text** (`lib/richText.js`, pure): links (http / https only, trailing punctuation stays text, `#` inside a link is not a tag), hashtags
+  (a `#` glued to a word is not one), `extractTags`, `hasTag` (exact: #ui does not match #uiux).
+- **UI** (`pages/Feed.js` is the page; pieces in `pages/feed/`: `FeedBar`, `PostCard`, `CommentThread`, `Composer`, `parts`; `PostCard` is still
+  exported from `Feed.js` for Favorites): tabs All / Friends / Mine and order New / Popular (likes x 2 + comments x 3), both remembered; trending
+  tags with counts; long posts folded to six lines; inline editor (Ctrl+Enter saves, Esc leaves, refused saves keep the text); copy link + `?post=<id>`
+  (scroll + flash, or the post fetched and shown on top when it is older than what is loaded); comments show the last 3, "earlier" on request, "Reply"
+  starts `@Name `; posts that arrive while the reader is far down wait behind a "New posts: N" pill; the composer keeps a draft, Ctrl+Enter sends,
+  and after a post the page goes up to it and lights it; `timeAgo` ("12 min ago", "3 h ago"). Styles in the new `feed.css`; arrowUp icon.
+- i18n: +31 `feed.*` and +3 `common.*` keys (1,371 per language).
+- Tests: `test_feed_v2.mjs` (75 browser checks) against the in-memory Supabase stand-in (`msgfake.mjs`, extended with posts / likes / saves / comments);
+  all 14 earlier feed / favorites / notification tests still pass. Honest limit: not run against a live Supabase.

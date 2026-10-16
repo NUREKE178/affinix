@@ -1,0 +1,43 @@
+/* Feed v2: tabs, order, trending tags, folded posts, the "new posts" pill. The base look is the existing .sk-panel-flat card. */
+
+.feed-bar-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+.feed-sort { display: inline-flex; gap: 2px; }
+.feed-sort-btn { padding: 6px 11px; border: 0; border-radius: 9px; background: transparent; color: var(--g-500); font-size: 13px; font-weight: 500; cursor: pointer; transition: color var(--sk-dur-fast), background var(--sk-dur-fast); }
+.feed-sort-btn:hover { color: var(--g-200); }
+.feed-sort-btn[data-active="true"] { color: var(--g-50); background: rgba(255,255,255,.07); }
+
+.feed-tags { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin-top: 12px; }
+.feed-tags-label { margin-right: 4px; font-size: 11px; font-weight: 600; letter-spacing: .08em; text-transform: uppercase; color: var(--g-500); }
+.feed-tag { padding: 3px 10px; border: 0; border-radius: 999px; background: var(--g-800); box-shadow: inset 0 0 0 1px rgba(255,255,255,.08); color: var(--g-300); font-size: 12.5px; cursor: pointer; transition: background var(--sk-dur-fast), color var(--sk-dur-fast); }
+.feed-tag:hover { color: var(--g-50); }
+.feed-tag b { margin-left: 6px; font-weight: 600; color: var(--g-500); }
+.feed-tag[data-active="true"] { background: rgba(255,106,31,.16); box-shadow: inset 0 0 0 1px rgba(255,106,31,.62); color: var(--signal-hi); }
+.feed-tag[data-active="true"] b { color: var(--signal-hi); }
+
+/* long posts are folded to six lines */
+.feed-clamp { display: -webkit-box; -webkit-line-clamp: 6; -webkit-box-orient: vertical; overflow: hidden; }
+.feed-fold { margin-top: 4px; padding: 0; border: 0; background: none; color: var(--signal-hi); font-size: 12.5px; font-weight: 500; cursor: pointer; }
+.feed-fold:hover { text-decoration: underline; text-underline-offset: 3px; }
+.feed-link { color: var(--signal-hi); text-decoration: underline; text-underline-offset: 2px; word-break: break-all; }
+.feed-link:hover { color: #ffa064; }
+
+.feed-earlier, .feed-reply { padding: 0; border: 0; background: none; font-size: 12px; color: var(--g-500); cursor: pointer; }
+.feed-earlier { color: var(--signal-hi); font-weight: 500; text-align: left; }
+.feed-reply:hover { color: var(--g-200); }
+.feed-earlier:hover { text-decoration: underline; text-underline-offset: 3px; }
+
+/* a post lit up after it was found by a link, or just published */
+@keyframes feedFlash { 0% { box-shadow: inset 0 0 0 2px rgba(255,106,31,.9); } 100% { box-shadow: inset 0 0 0 2px rgba(255,106,31,0); } }
+.feed-flash { animation: feedFlash 2s ease-out; }
+
+/* posts that arrived while the reader was far down */
+.feed-newpill { position: fixed; top: 76px; left: 50%; z-index: 35; transform: translateX(-50%); display: inline-flex; align-items: center; gap: 6px; padding: 8px 15px; border: 0; border-radius: 999px; background: var(--lit); color: var(--signal-ink); font-size: 13px; font-weight: 600; box-shadow: var(--sh-lit), 0 8px 22px rgba(0,0,0,.5); cursor: pointer; animation: feedPill .22s var(--sk-ease-out); }
+.feed-newpill:hover { background: var(--lit-hover); }
+@keyframes feedPill { from { opacity: 0; transform: translate(-50%, -10px); } to { opacity: 1; transform: translate(-50%, 0); } }
+@media (min-width: 768px) { .feed-newpill { left: calc(50% + 128px); } }
+
+.feed-shared { padding-left: 12px; border-left: 3px solid var(--signal); }
+.feed-shared-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; }
+.feed-more { display: flex; justify-content: center; padding: 14px 0 2px; }
+
+@media (prefers-reduced-motion: reduce) { .feed-flash, .feed-newpill { animation: none !important; } }

@@ -31,6 +31,13 @@ export function invalidateFavorites() {
   load();
 }
 
+/** Changes one saved post at once (a like toggled on the Favorites page, before the server has answered). */
+export function patchFavoritePost(id, patch) {
+  if (!state.posts.some((p) => p.id === id)) return;
+  state = { ...state, posts: state.posts.map((p) => (p.id === id ? { ...p, ...(typeof patch === "function" ? patch(p) : patch) } : p)) };
+  notify();
+}
+
 export function useFavorites() {
   const [, setTick] = useState(0);
 

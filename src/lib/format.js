@@ -46,6 +46,17 @@ export function relativeDate(iso) {
   return t(locale, "common.yearsAgo", { n: Math.floor(months / 12) });
 }
 
+/** "just now", "5 min ago", "3 h ago", then the coarser relativeDate(): for the feed, where the hour matters. */
+export function timeAgo(iso) {
+  if (!iso) return "—";
+  const minutes = Math.floor((Date.now() - new Date(iso).getTime()) / 60000);
+  const locale = getLocale();
+  if (minutes < 1) return t(locale, "common.justNow");
+  if (minutes < 60) return t(locale, "common.minutesAgo", { n: minutes });
+  if (minutes < 1440) return t(locale, "common.hoursAgo", { n: Math.floor(minutes / 60) });
+  return relativeDate(iso);
+}
+
 const DATE_LOCALES = { ru: "ru-RU", kk: "kk-KZ", en: "en-US" };
 
 export function shortDate(iso) {

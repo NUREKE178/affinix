@@ -69,6 +69,7 @@ const PATHS = {
   pin: html`<path class="b" d="M8.6 3.5h6.8l-.9 5.6 2.9 3.2v1.5h-4.9v5.7L12 21.2l-.5-1.7v-5.7H6.6v-1.5l2.9-3.2z"/>`,
   bellOff: html`<path class="b" d="M5.5 10a6.5 6.5 0 0 1 13 0v3.2l1.7 3.3H3.8l1.7-3.3z"/><path d="M9.5 19.5a2.6 2.6 0 0 0 5 0"/><path d="M4 4l16 16" stroke-width="2.5"/>`,
   more: html`<circle class="f" cx="5.5" cy="12" r="1.8"/><circle class="f" cx="12" cy="12" r="1.8"/><circle class="f" cx="18.5" cy="12" r="1.8"/>`,
+  arrowUp: html`<path d="M12 20V4M5.5 10.5L12 4l6.5 6.5" stroke-width="2.4"/>`,
   arrowDown: html`<path d="M12 4v16M5.5 13.5L12 20l6.5-6.5" stroke-width="2.4"/>`,
 };
 

@@ -1,37 +1,54 @@
 import { requireSupabase } from "./supabaseClient.js";
-import { invalidatePosts, fetchAuthorsById } from "./postsStore.js";
-import { invalidateFavorites } from "./favoritesStore.js";
+import { invalidatePosts, fetchAuthorsById, patchPost } from "./postsStore.js";
+import { invalidateFavorites, patchFavoritePost } from "./favoritesStore.js";
 import { createCommentNotification } from "./notificationsStore.js";
+
+/** Like / save change what the card shows at once (heart filled, count up) and are put back if the server refuses; the
+ * quiet refresh that follows brings the real numbers. */
+function patchEverywhere(postId, patch) {
+  patchPost(postId, patch);
+  patchFavoritePost(postId, patch);
+}
 
 /** post_likes/post_saves rows are toggled by (post_id, user_id) uniqueness
  * -- the caller already knows the viewer's current state (it came back on
  * the post object from postsStore), so these just flip it rather than
  * reading it back first. user_id is never sent on insert (defaults to
  * auth.uid() server-side, same pattern as posts.author_id); delete relies
- * on RLS to scope "own row only", same as deletePost(). Both reload the
- * posts list afterward -- this codebase has no optimistic-update
- * precedent anywhere (createPost/deletePost work the same way), so a like
- * or save takes a beat to reflect, same as everything else. */
+ * on RLS to scope "own row only", same as deletePost(). */
 export async function toggleLike(postId, currentlyLiked) {
   const sb = requireSupabase();
-  if (currentlyLiked) {
-    const { error } = await sb.from("post_likes").delete().eq("post_id", postId);
-    if (error) throw error;
-  } else {
-    const { error } = await sb.from("post_likes").insert({ post_id: postId });
-    if (error) throw error;
+  const flip = (liked) => (p) => ({ viewerLiked: liked, likeCount: Math.max(0, p.likeCount + (liked ? 1 : -1)) });
+  patchEverywhere(postId, flip(!currentlyLiked));
+  try {
+    if (currentlyLiked) {
+      const { error } = await sb.from("post_likes").delete().eq("post_id", postId);
+      if (error) throw error;
+    } else {
+      const { error } = await sb.from("post_likes").insert({ post_id: postId });
+      if (error) throw error;
+    }
+  } catch (err) {
+    patchEverywhere(postId, flip(currentlyLiked));
+    throw err;
   }
   invalidatePosts();
 }
 
 export async function toggleSave(postId, currentlySaved) {
   const sb = requireSupabase();
-  if (currentlySaved) {
-    const { error } = await sb.from("post_saves").delete().eq("post_id", postId);
-    if (error) throw error;
-  } else {
-    const { error } = await sb.from("post_saves").insert({ post_id: postId });
-    if (error) throw error;
+  patchEverywhere(postId, { viewerSaved: !currentlySaved });
+  try {
+    if (currentlySaved) {
+      const { error } = await sb.from("post_saves").delete().eq("post_id", postId);
+      if (error) throw error;
+    } else {
+      const { error } = await sb.from("post_saves").insert({ post_id: postId });
+      if (error) throw error;
+    }
+  } catch (err) {
+    patchEverywhere(postId, { viewerSaved: currentlySaved });
+    throw err;
   }
   invalidatePosts();
   // A save/unsave can happen from the main feed OR the Favorites page --
