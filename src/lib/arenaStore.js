@@ -12,7 +12,6 @@ import { supabase } from "./supabaseClient.js";
 import { useSession } from "./auth.js";
 import { mulberry32, hashStringToSeed } from "./prng.js";
 import { t as translate, getLocale } from "./i18n.js";
-import { toast } from "../components/ui.js";
 import { FAMILY_IDS, DIMENSION_IDS } from "./arena/stimuli.js";
 import { duelCode, encodeEntry, entryFromRow } from "./arena/ledger.js";
 import { planRound, planDaily } from "./arena/sampler.js";
@@ -365,9 +364,31 @@ function tt(key, vars) {
   return translate(getLocale(), key, vars);
 }
 
+// Level-ups, badges and claimed rewards show as small notices inside the Arena page (not the app-wide toast,
+// which sits on top of the Next key at the bottom of the console).
+let notices = [];
+let noticeSeq = 0;
+
+export function dismissNotice(id) {
+  notices = notices.filter((n) => n.id !== id);
+  notify();
+}
+
+function pushNotice(kind, text) {
+  const id = ++noticeSeq;
+  notices = [...notices, { id, kind, text }].slice(-3);
+  notify();
+  setTimeout(() => dismissNotice(id), 4800);
+}
+
+function badgeLabel(id) {
+  const m = /^(votes|streak|daily|level)_(\d+)$/.exec(id);
+  return m ? tt(`arena.badgeName.${m[1]}`, { n: new Intl.NumberFormat(getLocale()).format(Number(m[2])) }) : tt(`arena.badge.${id}.name`);
+}
+
 function announceBadge(id) {
   if (!S.announced.badges.includes(id)) S.announced.badges.push(id);
-  toast(tt("arena.toast.badge", { name: tt(`arena.badge.${id}.name`) }), "signal");
+  pushNotice("badge", tt("arena.toast.badge", { name: badgeLabel(id) }));
 }
 
 /** First load for a player: whatever they already have is not news. */
@@ -381,7 +402,7 @@ function checkMilestones(before, after) {
   if (!S.announced) { initAnnounced(); return; }
   if (after.level > before.level && after.level > (S.announced.level ?? 1)) {
     S.announced.level = after.level;
-    toast(tt("arena.toast.levelUp", { level: after.level, rank: tt(`arena.rank.${after.rank}`) }), "signal");
+    pushNotice("level", tt("arena.toast.levelUp", { level: after.level, rank: tt(`arena.rank.${after.rank}`) }));
   }
   for (const b of after.badges) if (b.unlocked && !S.announced.badges.includes(b.id)) announceBadge(b.id);
 }
@@ -488,6 +509,11 @@ export function endRound() {
   notify();
 }
 
+/** The current screen of the Play tab, read straight from the store so a key handler is never a render behind. */
+export function roundPhase() {
+  return S?.round?.phase ?? "lobby";
+}
+
 export function summarize(round) {
   const played = round.results.filter((x) => !x.skipped && !x.repeat);
   const eyeRes = played.filter((x) => x.eye !== null && x.eye !== undefined);
@@ -530,7 +556,7 @@ export function claim(questId) {
   S.pending.claims.push({ day, quest: questId });
   notify();
   checkMilestones(before, getView());
-  toast(tt("arena.toast.claimed", { xp: claimReward(questId) }), "emerald");
+  pushNotice("xp", tt("arena.toast.claimed", { xp: claimReward(questId) }));
   persist();
   flush({ force: true });
   return true;
@@ -701,6 +727,7 @@ export function useArena() {
     prefs: ready ? S.prefs : { auto: true, sound: false },
     remote: ready ? S.remote : "unknown",
     pendingCount: ready ? S.pending.votes.length : 0,
+    notices,
     actions,
   };
 }

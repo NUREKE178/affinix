@@ -136,6 +136,7 @@ export function ProfileTab({ arena }) {
   const cur = dna ? (dim === "all" ? dna.all : dna.byDim[dim] ?? emptyDna()) : null;
   const lean = cur ? leanOf(cur) : null;
   const standout = dna ? standoutDifference(dna) : null;
+  const weekSeconds = view.heat.slice(-7).reduce((n, d) => n + d.sec, 0);
   const eyePct = view.eye.total ? Math.round((view.eye.correct / view.eye.total) * 100) : null;
   const crowdPct = view.crowd.total ? Math.round((view.crowd.hits / view.crowd.total) * 100) : null;
   const dimTabs = [{ id: "all", label: t("arena.dna.allQuestions") }, ...DIMENSION_IDS.map((d) => ({ id: d, label: t(`builder.dimensions.${d}.label`) }))];
@@ -171,12 +172,19 @@ export function ProfileTab({ arena }) {
               ${t("arena.dna.standout", { dim: t(`builder.dimensions.${standout.dim}.label`), pole: t(`arena.traits.${standout.trait}.${standout.delta >= 0 ? "hi" : "lo"}`).toLowerCase() })}
             </p>`}
         </section>
-        <${ArchetypeCard} dna=${dna ?? emptyDna()} lean=${lean ?? leanOf(emptyDna())} t=${t} />
+        <${ArchetypeCard} dna=${dna ? dna.all : emptyDna()} lean=${leanOf(dna ? dna.all : emptyDna())} t=${t} />
       </div>
 
       <section class="ar-activity sk-panel" data-testid="arena-activity">
         <div class="ar-section-head"><span class="sk-caption">${t("arena.profile.activity")}</span><span class="ar-muted">${t("arena.profile.activityHint")}</span></div>
-        <${Heatmap} view=${view} t=${t} />
+        <div class="ar-activity-body">
+          <${Heatmap} view=${view} t=${t} />
+          <div class="ar-time-stats">
+            <div class="ar-time-stat"><span class="sk-caption">${t("arena.profile.timeToday")}</span><b class="sk-num" data-testid="arena-time-today">${clock(seconds)}</b></div>
+            <div class="ar-time-stat"><span class="sk-caption">${t("arena.profile.timeWeek")}</span><b class="sk-num">${clock(weekSeconds + (seconds - view.today.sec))}</b></div>
+            <div class="ar-time-stat"><span class="sk-caption">${t("arena.profile.timeBest")}</span><b class="sk-num">${clock(view.bestDaySeconds)}</b></div>
+          </div>
+        </div>
       </section>
 
       <${Badges} view=${view} t=${t} />

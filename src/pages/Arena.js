@@ -5,14 +5,28 @@ import { Tabs, Skeleton } from "../components/ui.js";
 import { Icon } from "../components/icons.js";
 import { useT } from "../lib/i18n.js";
 import { navigate } from "../router.js";
-import { useArena, startActivityTracking } from "../lib/arenaStore.js";
-import { LevelPlate } from "./arena/parts.js";
+import { useArena, startActivityTracking, dismissNotice } from "../lib/arenaStore.js";
+import { LevelPlate, daysLabel } from "./arena/parts.js";
 import { PlayTab } from "./arena/Play.js";
 import { QuestsTab } from "./arena/Quests.js";
 import { RankingsTab } from "./arena/Rankings.js";
 import { ProfileTab } from "./arena/Profile.js";
 
 const TAB_IDS = ["play", "quests", "rankings", "profile"];
+const NOTICE_ICON = { level: "medal", badge: "medal", xp: "bolt" };
+
+function Notices({ items }) {
+  if (!items.length) return null;
+  return html`
+    <div class="ar-notices" role="status" aria-live="polite">
+      ${items.map((n) => html`
+        <button type="button" key=${n.id} class="ar-notice" data-kind=${n.kind} onClick=${() => dismissNotice(n.id)} data-testid="arena-notice">
+          <span class="sk-tile"><${Icon} name=${NOTICE_ICON[n.kind] ?? "bolt"} size=${15} /></span>
+          <span class="ar-notice-text">${n.text}</span>
+        </button>`)}
+    </div>
+  `;
+}
 
 export function Arena({ query }) {
   const t = useT();
@@ -36,6 +50,7 @@ export function Arena({ query }) {
 
   return html`
     <div class="ar-page" data-testid="arena-page">
+      <${Notices} items=${arena.notices ?? []} />
       <div class="ar-head">
         <div class="ar-head-title">
           <h2>${t("arena.title")}</h2>
@@ -47,7 +62,7 @@ export function Arena({ query }) {
               <div class="ar-streak-chip" data-on=${view.streak > 0} title=${t("arena.quests.streakTitle")} data-testid="arena-streak-chip">
                 <${Icon} name="flame" size=${20} />
                 <div><b class="sk-num">${view.streak}</b></div>
-                <span class="sk-caption">${t("arena.quests.days")}</span>
+                <span class="sk-caption">${daysLabel(view.streak, t)}</span>
               </div>
               <${LevelPlate} view=${view} />`
             : html`<${Skeleton} className="h-14 w-72 rounded-xl" />`}

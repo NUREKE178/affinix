@@ -56,6 +56,7 @@ export function Ladder({ total, idx, results, phase }) {
 
 /** A specimen in its well. In `reveal` it also carries the community numbers. */
 export function Specimen({ stim, svg, side, state, kbd, onPick, name, children }) {
+  const t = useT();
   return html`
     <button
       type="button"
@@ -68,7 +69,11 @@ export function Specimen({ stim, svg, side, state, kbd, onPick, name, children }
     >
       <span class="ar-spec-art" role="img" aria-label=${stim.name} dangerouslySetInnerHTML=${{ __html: svg }}></span>
       <span class="ar-spec-key sk-kbd" aria-hidden="true">${kbd}</span>
-      ${children}
+      <span class="ar-spec-slot">
+        ${state === "idle"
+          ? html`<span class="ar-spec-choose"><b>${side === 0 ? "A" : "B"}</b><span>${t("arena.console.choose")}</span></span>`
+          : children}
+      </span>
     </button>
   `;
 }
@@ -77,6 +82,11 @@ export function Specimen({ stim, svg, side, state, kbd, onPick, name, children }
 export function Thumb({ season, family, index, size = 64 }) {
   const svg = useMemo(() => renderSvg(getStimulus(season, family, index)), [season, family, index]);
   return html`<span class="ar-thumb" style=${{ width: `${size}px`, height: `${size}px` }} dangerouslySetInnerHTML=${{ __html: svg }}></span>`;
+}
+
+/** "day" / "days": English needs the singular for 1; Russian and Kazakh use an invariant short form. */
+export function daysLabel(n, t) {
+  return n === 1 ? t("arena.quests.dayOne") : t("arena.quests.days");
 }
 
 export function Glyph({ name, size = 16 }) {

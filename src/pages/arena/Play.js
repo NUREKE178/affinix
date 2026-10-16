@@ -1,11 +1,11 @@
 // The Play tab: lobby (daily challenge + free play), the duel console, the round summary.
-import { html, useState, useEffect, useMemo } from "../../lib/preact.js";
+import { html, useState, useEffect, useMemo, useRef } from "../../lib/preact.js";
 import { Button, Badge, StatTile, ProgressBar, Switch, Skeleton } from "../../components/ui.js";
 import { Icon } from "../../components/icons.js";
 import { useT } from "../../lib/i18n.js";
 import { getStimulus, renderSvg } from "../../lib/arena/stimuli.js";
 import { flowBonus, DAILY_SET_BONUS, DAILY_SET_SIZE, MAX_FLOW_BONUS, XP_BASE, PIONEER_BONUS } from "../../lib/arena/rules.js";
-import { summarize, useArenaClock } from "../../lib/arenaStore.js";
+import { summarize, useArenaClock, roundPhase } from "../../lib/arenaStore.js";
 import { navigate } from "../../router.js";
 import { Specimen, Ladder, nf, clock } from "./parts.js";
 import { DailyReport } from "./DailyReport.js";
@@ -17,8 +17,9 @@ const AUTO_MS = 2600;
 // ---------------------------------------------------------------------------
 
 function useArenaKeys(arena, onStart) {
-  const { round, actions } = arena;
-  const phase = round?.phase ?? "lobby";
+  const { actions } = arena;
+  const startRef = useRef(onStart);
+  startRef.current = onStart;
   useEffect(() => {
     function onKey(e) {
       if (e.defaultPrevented || e.metaKey || e.ctrlKey || e.altKey || e.repeat) return;
@@ -27,6 +28,7 @@ function useArenaKeys(arena, onStart) {
       // a focused key (Start, Next ...) already handles Enter / Space itself
       if (el?.closest?.("[data-ar-native]") && (e.key === "Enter" || e.key === " ")) return;
       const k = e.key;
+      const phase = roundPhase(); // read at the moment of the key press, never from a stale render
       if (phase === "choose") {
         if (k === "1" || k === "ArrowLeft") { e.preventDefault(); actions.vote(0); }
         else if (k === "2" || k === "ArrowRight") { e.preventDefault(); actions.vote(1); }
@@ -34,14 +36,14 @@ function useArenaKeys(arena, onStart) {
       } else if (phase === "reveal") {
         if (k === " " || k === "Enter" || k === "ArrowRight") { e.preventDefault(); actions.next(); }
       } else if (phase === "summary") {
-        if (k === "Enter") { e.preventDefault(); onStart("free"); }
+        if (k === "Enter") { e.preventDefault(); startRef.current("free"); }
       } else if (phase === "lobby") {
-        if (k === "Enter") { e.preventDefault(); onStart(); }
+        if (k === "Enter") { e.preventDefault(); startRef.current(); }
       }
     }
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [phase, actions, onStart]);
+  }, [actions]);
 }
 
 // ---------------------------------------------------------------------------
@@ -155,7 +157,7 @@ function Lobby({ arena, onStart }) {
       <div class="sk-stat-strip" style="--cols:4">
         <${StatTile} label=${t("arena.lobby.statDuels")} value=${`${view.today.votes}`} hint=${t("arena.lobby.statDuelsHint", { n: view.votes })} />
         <${StatTile} label=${t("arena.lobby.statStreak")} value=${`${view.streak}`} hint=${view.streakAtRisk ? t("arena.lobby.streakRisk") : view.streakDoneToday ? t("arena.lobby.streakSafe") : t("arena.lobby.streakStart")} />
-        <${StatTile} label=${t("arena.lobby.statTime")} value=${clock(seconds)} hint=${t("arena.lobby.statTimeHint")} />
+        <${StatTile} label=${t("arena.lobby.statTime")} value=${html`<span data-testid="arena-time">${clock(seconds)}</span>`} hint=${t("arena.lobby.statTimeHint")} />
         <${StatTile} label=${t("arena.lobby.statEye")} value=${eyePct} hint=${t("arena.lobby.statEyeHint", { c: view.eye.correct, n: view.eye.total })} />
       </div>
       <div class="ar-lobby-meta"><${SyncBadge} remote=${remote} pending=${pendingCount} /></div>
@@ -297,13 +299,14 @@ function Console({ arena }) {
         <div class="ar-foot-actions">
           <label class="ar-auto" title=${t("arena.console.autoHint")}>
             <span>${t("arena.console.auto")}</span>
-            <button type="button" role="switch" aria-checked=${!!prefs.auto} data-on=${!!prefs.auto} class="sk-switch-track relative h-5 w-9 shrink-0 rounded-full" onClick=${() => actions.setPref("auto", !prefs.auto)} data-testid="arena-auto">
+            <button type="button" role="switch" aria-checked=${!!prefs.auto} data-on=${!!prefs.auto} data-ar-native=${true} class="sk-switch-track relative h-5 w-9 shrink-0 rounded-full"
+              onClick=${(e) => { actions.setPref("auto", !prefs.auto); if (e.detail > 0) e.currentTarget.blur(); }} data-testid="arena-auto">
               <span class="sk-switch-knob absolute top-0.5 left-0.5 h-4 w-4 rounded-full" style=${{ transform: prefs.auto ? "translateX(16px)" : "translateX(0)" }}></span>
             </button>
           </label>
           ${revealing
             ? html`<${Button} data-ar-native=${true} className="ar-next" onClick=${actions.next} data-testid="arena-next">
-                ${t("arena.console.next")}<span class="sk-kbd ar-next-kbd">␣</span>
+                ${t("arena.console.next")}<span class="sk-kbd ar-next-kbd">Space</span>
                 ${prefs.auto && html`<i class="ar-next-timer" style=${{ animationDuration: `${AUTO_MS}ms` }} key=${`${round.id}-${round.idx}`}></i>`}
               <//>`
             : html`<${Button} data-ar-native=${true} variant="secondary" onClick=${actions.skip} data-testid="arena-skip">${t("arena.console.skip")}<span class="sk-kbd">S</span><//>`}

@@ -2,9 +2,9 @@
 import { html } from "../../lib/preact.js";
 import { Button, Badge, ProgressBar } from "../../components/ui.js";
 import { Icon } from "../../components/icons.js";
-import { useT } from "../../lib/i18n.js";
+import { useT, getLocale } from "../../lib/i18n.js";
 import { addDays } from "../../lib/arena/rules.js";
-import { nf } from "./parts.js";
+import { nf, daysLabel } from "./parts.js";
 
 const KIND_ICON = { votes: "bolt", families: "globe", dims: "sliders", combo: "flame", eye: "target", time: "clock" };
 
@@ -45,9 +45,9 @@ function StreakCard({ view }) {
         <span class="sk-tile"><${Icon} name="flame" size=${15} /></span>
         <span class="sk-caption">${t("arena.quests.streakTitle")}</span>
       </div>
-      <div class="ar-streak-big sk-num">${view.streak}<span class="sk-unit">${t("arena.quests.days")}</span></div>
+      <div class="ar-streak-big sk-num">${view.streak}<span class="sk-unit">${daysLabel(view.streak, t)}</span></div>
       <div class="ar-week" aria-hidden="true">
-        ${week.map((d) => html`<span key=${d.day} class="ar-week-day" data-on=${d.votes > 0} data-today=${d.day === today}><i></i><b>${new Date(`${d.day}T12:00:00`).toLocaleDateString(undefined, { weekday: "narrow" })}</b></span>`)}
+        ${week.map((d) => html`<span key=${d.day} class="ar-week-day" data-on=${d.votes > 0} data-today=${d.day === today}><i></i><b>${new Date(`${d.day}T12:00:00`).toLocaleDateString(getLocale(), { weekday: "narrow" })}</b></span>`)}
       </div>
       <p class="ar-streak-note">${view.streakDoneToday ? t("arena.quests.streakSafe") : view.streak > 0 ? t("arena.quests.streakRisk") : t("arena.quests.streakStart")}</p>
       <div class="ar-streak-best sk-caption">${t("arena.quests.best")}: <span class="sk-num">${view.bestStreak}</span></div>
