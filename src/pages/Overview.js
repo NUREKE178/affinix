@@ -12,6 +12,7 @@ import { experimentSummary, completedParticipants, averageCompletionTimeMs } fro
 import { pct, durationFromMs, relativeDate } from "../lib/format.js";
 import { researchTypeLabel } from "../lib/questionTypes.js";
 import { useArenaLocal } from "../lib/arenaStore.js";
+import { CrowdSection } from "./crowd/Section.js";
 
 /** A doorway to the Arena: today's daily challenge, the streak, one key. Reads local progress only (no network). */
 function ArenaCard({ t }) {
@@ -118,6 +119,9 @@ export function Overview() {
         `}
       />
 
+      <${CrowdSection} />
+
+      <${SectionHeading} title=${t("overview.classicTitle")} subtitle=${t("overview.classicSubtitle")} />
       <div class="sk-stat-strip mb-6">
         <${StatTile} label=${t("overview.stat.active")} value=${activeCount} hint=${t("overview.stat.activeHint", { drafts: draftCount, paused: pausedCount })} />
         <${StatTile} label=${t("overview.stat.completedParticipants")} value=${allCompletedParticipants.length.toLocaleString()} hint=${t("overview.stat.completedHint", { total: totalStarted.toLocaleString() })} />

@@ -6,13 +6,14 @@ import { useT, getLocale } from "../../lib/i18n.js";
 import { getStimulus, renderSvg } from "../../lib/arena/stimuli.js";
 import { TRAIT_IDS } from "../../lib/arena/traits.js";
 import { flowBonus, DAILY_SET_BONUS, DAILY_SET_SIZE, MAX_FLOW_BONUS, XP_BASE, PIONEER_BONUS, seasonOf } from "../../lib/arena/rules.js";
-import { summarize, useArenaClock, roundPhase, fetchLeaderboard } from "../../lib/arenaStore.js";
+import { summarize, useArenaClock, roundPhase, roundMode, fetchLeaderboard } from "../../lib/arenaStore.js";
 import { Avatar } from "../../components/avatar.js";
 import { PersonLink } from "../../components/profileViewer.js";
 import { isProfileOpen } from "../../lib/profileViewer.js";
 import { navigate } from "../../router.js";
 import { Specimen, Ladder, nf, clock } from "./parts.js";
 import { DailyReport } from "./DailyReport.js";
+import { MissionBlock, MissionConsole, MissionSummary } from "./Mission.js";
 
 const AUTO_MS = 2600;
 
@@ -42,7 +43,8 @@ function useArenaKeys(arena, onStart) {
       } else if (phase === "reveal") {
         if (k === " " || k === "Enter" || k === "ArrowRight") { e.preventDefault(); actions.next(); }
       } else if (phase === "summary") {
-        if (k === "Enter") { e.preventDefault(); startRef.current("free"); }
+        // a mission summary has no "play again": Enter goes back to the lobby
+        if (k === "Enter") { e.preventDefault(); if (roundMode() === "mission") actions.endRound(); else startRef.current("free"); }
       } else if (phase === "lobby") {
         if (k === "Enter") { e.preventDefault(); startRef.current(); }
       }
@@ -202,6 +204,8 @@ function Lobby({ arena, onStart }) {
           </div>
         </article>
       </div>
+
+      <${MissionBlock} arena=${arena} unlocked=${daily.done} />
 
       <div class="sk-stat-strip" style="--cols:4">
         <${StatTile} label=${t("arena.lobby.statDuels")} value=${`${view.today.votes}`} hint=${t("arena.lobby.statDuelsHint", { n: view.votes })} />
@@ -455,6 +459,9 @@ export function PlayTab({ arena }) {
     return html`<div class="ar-lobby"><${Skeleton} className="h-40 w-full rounded-xl" /><${Skeleton} className="h-24 w-full rounded-xl" /></div>`;
   }
   if (!round) return html`<${Lobby} arena=${arena} onStart=${start} />`;
+  if (round.mode === "mission") {
+    return round.phase === "summary" ? html`<${MissionSummary} arena=${arena} />` : html`<${MissionConsole} arena=${arena} />`;
+  }
   if (round.phase === "summary") return html`<${Summary} arena=${arena} onStart=${start} />`;
   return html`<${Console} arena=${arena} />`;
 }

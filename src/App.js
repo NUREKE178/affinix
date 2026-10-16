@@ -35,9 +35,15 @@ import { lazyPage } from "./lib/lazyPage.js";
 
 // The Arena (and the specimen generators behind it) loads the first time it is opened.
 const Arena = lazyPage(() => import("./pages/Arena.js"), "Arena");
+// Crowd tests: the page that makes one and the page that reads one (the list lives on the Research page).
+const CrowdCreate = lazyPage(() => import("./pages/crowd/Create.js"), "CrowdCreate");
+const CrowdResults = lazyPage(() => import("./pages/crowd/Results.js"), "CrowdResults");
 
 const DASHBOARD_ROUTES = [
   { pattern: "/app/overview", Page: Overview },
+  // under /app/overview so the sidebar keeps "Research" lit
+  { pattern: "/app/overview/tests/new", Page: CrowdCreate },
+  { pattern: "/app/overview/tests/:id", Page: CrowdResults },
   { pattern: "/app/experiments", Page: ExperimentsList },
   { pattern: "/app/experiments/new", Page: ExperimentBuilder },
   { pattern: "/app/experiments/:id/edit", Page: ExperimentBuilder },

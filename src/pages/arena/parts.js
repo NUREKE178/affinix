@@ -54,8 +54,9 @@ export function Ladder({ total, idx, results, phase }) {
   `;
 }
 
-/** A specimen in its well. In `reveal` it also carries the community numbers. */
-export function Specimen({ stim, svg, side, state, kbd, onPick, name, children }) {
+/** A specimen in its well. In `reveal` it also carries the community numbers.
+ * `svg` is a generated specimen; `art` is any node (a research mission shows someone's image or text). */
+export function Specimen({ stim, svg, art, side, state, kbd, onPick, name, children }) {
   const t = useT();
   return html`
     <button
@@ -67,7 +68,9 @@ export function Specimen({ stim, svg, side, state, kbd, onPick, name, children }
       aria-label=${name}
       onClick=${() => state === "idle" && onPick(side)}
     >
-      <span class="ar-spec-art" aria-hidden="true" dangerouslySetInnerHTML=${{ __html: svg }}></span>
+      ${art
+        ? html`<span class="ar-spec-art ar-spec-art-free" aria-hidden="true">${art}</span>`
+        : html`<span class="ar-spec-art" aria-hidden="true" dangerouslySetInnerHTML=${{ __html: svg }}></span>`}
       <span class="ar-spec-key sk-kbd" aria-hidden="true">${kbd}</span>
       <span class="ar-spec-slot">
         ${state === "idle"

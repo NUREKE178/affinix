@@ -9,6 +9,7 @@
 // as friendsStore.js / postsStore.js.
 import { useState, useEffect } from "./preact.js";
 import { supabase } from "./supabaseClient.js";
+import { isMissingFunction, rpcHint } from "./rpcErrors.js";
 import { useSession } from "./auth.js";
 import { mulberry32, hashStringToSeed } from "./prng.js";
 import { t as translate, getLocale } from "./i18n.js";
@@ -199,9 +200,6 @@ async function rpc(name, args) {
   return data;
 }
 
-const isMissingFunction = (err) =>
-  err?.code === "PGRST202" || err?.code === "42883" || err?.code === "NOT_CONFIGURED" || err?.status === 404 ||
-  /could not find the function|function .* does not exist/i.test(err?.message ?? "");
 
 function noteFailure(err) {
   if (!S) return;
@@ -456,6 +454,7 @@ const canonicalSide = (duel, side) => (duel.swap ? 1 - side : side);
 export function vote(side) {
   const r = S?.round;
   if (!r || r.phase !== "choose") return;
+  if (r.mode === "mission") { voteMission(side); return; }
   const duel = r.duels[r.idx];
   if (!duel) return;
   const before = getView();
@@ -499,14 +498,21 @@ export function skip() {
 export function next() {
   const r = S?.round;
   if (!r || r.phase !== "reveal") return;
+  if (r.mode === "mission") {
+    // a mission answer must reach the server before the next duel: wait for it, or let the player retry
+    if (r.last?.pending) return;
+    if (r.last?.error) { if (MISSION_STOPS.includes(r.last.error)) endRound(); return; }
+  }
   advance();
 }
 
 function advance() {
   const r = S.round;
-  if (r.idx + 1 >= r.duels.length) {
+  // a mission whose test closed (its vote target was reached) is over, whatever pairs are left
+  const testClosed = r.mode === "mission" && !!r.testStatus && r.testStatus !== "open";
+  if (r.idx + 1 >= r.duels.length || testClosed) {
     r.phase = "summary";
-    S.recent = [...S.recent, ...r.duels.map((d) => ({ family: d.family, a: d.a, b: d.b, dim: d.dim }))].slice(-8);
+    if (r.mode !== "mission") S.recent = [...S.recent, ...r.duels.map((d) => ({ family: d.family, a: d.a, b: d.b, dim: d.dim }))].slice(-8);
     flush();
   } else {
     r.idx++;
@@ -528,6 +534,99 @@ export function endRound() {
 /** The current screen of the Play tab, read straight from the store so a key handler is never a render behind. */
 export function roundPhase() {
   return S?.round?.phase ?? "lobby";
+}
+
+/** "daily" | "free" | "mission" | null (no round on screen). */
+export function roundMode() {
+  return S?.round?.mode ?? null;
+}
+
+// ---------------------------------------------------------------------------
+// research missions: the duels of someone's crowd test (migration 0022), played inside the Daily Challenge
+// ---------------------------------------------------------------------------
+
+/** Errors that end a mission instead of offering a retry (see arena_test_vote). */
+const MISSION_STOPS = ["closed", "own", "pending"];
+
+/** Starts a mission from a queue entry (crowdStore.fetchQueue): the pairs this player still owes, in random
+ * order and with random sides. Answers go to the server one by one, which pays the XP and returns the split. */
+export function startMission(test) {
+  if (!S || !test?.pairs?.length) return false;
+  const now = Date.now();
+  const rand = mulberry32(hashStringToSeed(`${S.userId}/${test.id}/${now}/${Math.random()}`));
+  const order = test.pairs.map((_, i) => ({ i, k: rand() })).sort((x, y) => x.k - y.k);
+  const duels = order.map(({ i }) => ({ id: `${test.pairs[i][0]}|${test.pairs[i][1]}`, a: test.pairs[i][0], b: test.pairs[i][1], swap: rand() < 0.5 }));
+  const items = Object.fromEntries((test.items ?? []).map((it) => [it.id, it]));
+  S.round = {
+    id: uuid(), mode: "mission", day: localDay(), season: seasonOf(),
+    test: { id: test.id, title: test.title, dim: test.dim, owner: test.owner ?? null, items },
+    duels, idx: 0, phase: "choose", results: [], combo: 0, startedAt: now, shownAt: now, tallies: {}, last: null, missionXp: null,
+  };
+  persist();
+  notify();
+  return true;
+}
+
+function voteMission(side) {
+  const r = S.round;
+  const duel = r.duels[r.idx];
+  if (!duel) return;
+  const left = duel.swap ? duel.b : duel.a;
+  const right = duel.swap ? duel.a : duel.b;
+  const pick = side === 0 ? left : right;
+  const ms = Math.max(0, Date.now() - r.shownAt);
+  const result = { duelId: duel.id, pick, side, ms, a: duel.a, b: duel.b, xp: null, bonus: 0, pending: true, error: null, tally: null, capped: false };
+  r.phase = "reveal";
+  r.results.push(result);
+  r.last = result;
+  notify();
+  persist();
+  sendMissionVote(r, result);
+}
+
+/** One answer to the server. Also the retry: a failed answer stays on the reveal screen with a button. */
+async function sendMissionVote(r, result) {
+  result.pending = true;
+  result.error = null;
+  notify();
+  const userId = S?.userId;
+  try {
+    const res = await rpc("arena_test_vote", { p_test: r.test.id, p_votes: [{ a: result.a, b: result.b, pick: result.pick, ms: result.ms }], p_day: localDay() });
+    if (!S || S.userId !== userId) return;
+    const out = res?.results?.[0] ?? {};
+    result.pending = false;
+    result.accepted = !!out.accepted;
+    result.xp = out.xp ?? 0;
+    result.bonus = out.bonus ?? 0;
+    result.capped = !!out.capped;
+    result.reason = out.reason ?? null;
+    // the server sends the votes for the lower item id (a) and the higher (b); the screen needs them per item
+    const aIsLow = result.a < result.b;
+    const lowVotes = out.aVotes ?? null;
+    const highVotes = out.bVotes ?? null;
+    result.tally = lowVotes === null ? null : (aIsLow ? { a: lowVotes, b: highVotes } : { a: highVotes, b: lowVotes });
+    r.missionXp = res.missionXp ?? r.missionXp;
+    r.testStatus = res.status ?? r.testStatus;
+    adopt(res.state?.profile, res.days);
+    S.remote = "ready";
+    announceServerBadges(res.newBadges);
+  } catch (err) {
+    if (S && S.userId === userId) {
+      result.pending = false;
+      const hint = isMissingFunction(err) ? "pending" : rpcHint(err);
+      result.error = hint ?? "offline";
+      if (!hint) S.remote = "offline";
+    }
+  } finally {
+    if (S) { persist(); notify(); }
+  }
+}
+
+/** Sends the current reveal's answer again (after "no connection"). */
+export function retryMissionVote() {
+  const r = S?.round;
+  if (r?.mode !== "mission" || r.phase !== "reveal" || !r.last?.error) return;
+  sendMissionVote(r, r.last);
 }
 
 export function summarize(round) {
@@ -747,7 +846,12 @@ function ensureSynced() {
   if (S.round && S.round.phase !== "summary") prefetchTallies(S.round);
 }
 
-export const actions = { startRound, vote, skip, next, endRound, claim, setPref, syncNow, flush };
+/** "ready" once the server has been asked, "offline" / "unavailable" when it could not answer, "unknown" before. */
+export function arenaRemote() {
+  return S?.remote ?? "unknown";
+}
+
+export const actions = { startRound, startMission, retryMissionVote, vote, skip, next, endRound, claim, setPref, syncNow, flush };
 
 export function useArena() {
   const [, setTick] = useState(0);

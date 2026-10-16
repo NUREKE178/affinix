@@ -3556,3 +3556,68 @@ signed-in member (name, @username, avatar, role, bio; never e-mail; not readable
   self / stranger states; a search that never answers ends in the error state after 12 s; the popover from Feed, Friends, Messages (header and list avatars), Team, notifications, back button; phone width; ru / kk / en;
   screenshots), Arena suite extended with B4b–d and N1–N9 (twins, lobby board, rankings rows with the real database, Enter / Esc
   behind the popover). `check_locale_parity` now takes `ROOT` so it checks the working copy, not `main`.
+
+## Arena clock = the Daily Challenge only; Research gets a purpose: crowd tests (migration 0022)
+
+Two requests in one: "time should move only while the Daily Challenge is being played" and "Research must have a reason to exist for
+a person".
+
+### 1. The clock (client only, no migration)
+- `startActivityTracking` ticks only while `clockRunning()` (`arenaStore.js`): a round of mode `daily` or `mission` is in its
+  `choose` / `reveal` phase, the tab is visible and the player was active in the last `IDLE_CUTOFF_S`. Free play, the lobby, the
+  summary and every other tab / page never move it. The slices still go out through `arena_submit` as before, so the server needs
+  no change; nothing recomputes time that was counted earlier (older days keep their numbers).
+- A chip in the duel console shows "Время идёт" (lit LED, counting) in the Daily Challenge and a muted "Время не идёт" in free play
+  (`ClockChip` in `Play.js`, `.ar-clock*` in `arena.css`). Labels that promised more were reworded in ru / kk / en: lobby tile "Время
+  в испытании", profile note, rankings admin panel ("Использование Арены": counts only the Daily Challenge), badge texts (1 h / 3 h
+  "in the challenge").
+- Time quests (`time_5/15/30/60`) are `retired: true` in `rules.js`: `pickSlate` no longer offers them (a ten-duel challenge cannot
+  fill "play 30 minutes"), the definitions stay so a slate saved earlier still resolves.
+
+### 2. Crowd tests: what Research is for
+A person puts 2-4 options (images and/or short texts) and one question in front of the Arena crowd; the players answer as
+**research missions** in a second stage of the Daily Challenge; the owner reads a verdict with confidence intervals.
+- **Database** (`supabase/migrations/0022_crowd_tests.sql`, idempotent, tested on local PostgreSQL 16: 97 assertions in
+  `/tmp/pgtest/test0022.sql`): tables `arena_tests`, `arena_test_items`, `arena_test_votes` (one row per voter and pair, unique),
+  `arena_test_reports`; `arena_daily.mission_votes / mission_xp`; public storage bucket `arena-tests` (1 MB, jpeg/png/webp, a user
+  writes only into `<uid>/`); every table is RLS-closed, all access goes through SECURITY DEFINER functions: `arena_test_create`
+  (level 2 = 100 XP, at most 3 open tests, 5 new tests per 24 h, 2-4 options each with a label or an image path in the caller's own
+  folder), `arena_test_mine`, `arena_test_results` (owner only: options, pair splits, average answer time; never who voted),
+  `arena_test_set_status` / `arena_test_delete` (returns the image paths so the client can clean the bucket), `arena_test_queue`
+  (other people's open tests with the pairs this player still owes; never own, closed, flagged, removed or reported-by-me tests;
+  least-answered first), `arena_test_vote` (12 XP per accepted answer, +20 when the player has now answered every pair, at most 300
+  XP a day from missions, answers past the cap still count for the author; duplicates refused, so a retry is harmless; closes the
+  test at its target), `arena_test_report` (3 different reporters flag a test), `arena_test_flagged` / `arena_test_moderate`
+  (admins: remove / restore); `arena_admin_stats` extended with test and test-answer counts and missions per day. A mission answer
+  counts as an active day for the streak.
+- **Verdict** (`crowdStore.testVerdict`): per option wins / duels with a 95 % Wilson interval (`stats.js`); `empty` -> `collecting`
+  (leader below 30 duels, `MIN_RELIABLE_SAMPLE`: no verdict) -> `winner` (leader's interval wholly above the runner-up's) or `close`.
+- **Research page** (`pages/crowd/Section.js` above the classic section of `Overview.js`): a hero that says what it is for (three
+  steps, three reasons, use cases) and the XP gate (shown only after the Arena profile has synced, `useCreateGate`, so a level-2
+  player never sees a notice that is about to vanish); once the person has tests, "Your tests" cards with progress and a one-line
+  verdict. `Create.js`: title, one of the seven questions, 2-4 options with image (shrunk to 1024 px and re-encoded WebP / JPEG under
+  900 KB in the browser, uploaded to `arena-tests/<uid>/<uuid>.<ext>`, removed again if the database refuses) or caption; the same
+  checks as the database run before any upload. `Results.js`: verdict, ranked options with bars and interval ticks, pair splits,
+  close / reopen / delete (with confirm). Routes `/app/overview/tests/new` and `/app/overview/tests/:id`. If 0022 is not applied
+  the page says so ("server not updated") instead of failing.
+- **Missions in the Arena** (`pages/arena/Mission.js`, `arenaStore.startMission / voteMission / sendMissionVote /
+  retryMissionVote`): after the day's ten duels a "Stage 2 - researchers' missions" block in the lobby offers up to three tests
+  (author, question, XP budget of the day). A mission is an Arena round of mode `mission`: the same duel console with the author's
+  images / texts (`Specimen` got an `art` prop), the Arena clock lit, the author as a clickable profile, a Report link. Each answer
+  goes to the server at once; Next waits for it (and Space / auto-advance too), a failed answer offers Retry, a closed test ends the
+  mission. The reveal shows the real split of the crowd (my vote counted). Summary: XP earned, answers, speed, bonus; "Next mission"
+  / back to the lobby (Enter). Mission answers do not enter the local ledger, so they do not change the Taste DNA.
+- **Admins**: `CrowdModeration` under the usage panel in Rankings lists reported / flagged tests with reasons, Remove / Restore;
+  usage panel shows tests and test answers.
+- Fixed on the way: a network failure reaches the client as an error with an empty `hint`; `rpcHint()` (`rpcErrors.js`) now accepts
+  only short machine words, so an empty hint or one of PostgREST's sentence hints can never pose as an error code.
+- i18n: `crowd.*` (120 keys) + `arena.admin.tests / testVotes`; all three locales at 1,245 keys. Styles: `crowd.css` (new file,
+  linked in `index.html`; no new Tailwind classes).
+- Tests: `test_crowd.mjs` (115 browser checks against the real database: missing migration, hero + gate, create with image upload
+  (mocked storage), verdict maths at 10 and 36 duels, owner controls, Stage 2 locked / unlocked, a full 3-pair mission with 12 + 12 + 32
+  XP, retry after a failed answer, report -> hidden from the reporter -> flagged -> admin remove / restore, phone widths, ru / kk / en
+  without raw keys, delete). `arena/env.mjs` knows the new RPCs, parses hints and mocks the storage bucket. The Arena suite
+  (109 checks) passes with M3 narrowed to "no Arena *sync* calls from the dashboard" (the Research section's `arena_test_mine`
+  is a separate call); the gate on the Research hero is announced only once the server has been asked by something else, while
+  the create page asks it itself (`useCreateGate({ sync: true })`), so opening Research never starts Arena traffic.
+- **To apply on the live project**: `supabase db push` (0022; 0020 and 0021 too if not yet), then `notify pgrst, 'reload schema';`.

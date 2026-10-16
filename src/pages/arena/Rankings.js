@@ -8,6 +8,7 @@ import { useT } from "../../lib/i18n.js";
 import { useMyProfile } from "../../lib/profile.js";
 import { fetchLeaderboard, setLeaderboardVisibility, fetchAdminStats } from "../../lib/arenaStore.js";
 import { toast } from "../../components/ui.js";
+import { CrowdModeration } from "../crowd/Moderation.js";
 import { nf } from "./parts.js";
 
 function Row({ r, t, scope }) {
@@ -55,6 +56,10 @@ function AdminStats() {
             <div class="sk-stat"><div class="sk-stat-label">${t("arena.admin.avg")}</div><div class="sk-stat-value">${last ? last.avgMinutes : "—"}<span class="sk-unit">${t("common.unitMin")}</span></div></div>
             <div class="sk-stat"><div class="sk-stat-label">${t("arena.admin.over1h")}</div><div class="sk-stat-value">${last ? last.over1h : "—"}</div></div>
             <div class="sk-stat"><div class="sk-stat-label">${t("arena.admin.over3h")}</div><div class="sk-stat-value">${last ? last.over3h : "—"}</div></div>
+          </div>
+          <div class="sk-stat-strip sk-stat-strip-well" style="--cols:2" data-testid="arena-admin-crowd">
+            <div class="sk-stat"><div class="sk-stat-label">${t("arena.admin.tests")}</div><div class="sk-stat-value">${nf(state.data.tests ?? 0)}</div></div>
+            <div class="sk-stat"><div class="sk-stat-label">${t("arena.admin.testVotes")}</div><div class="sk-stat-value">${nf(state.data.testVotes ?? 0)}</div></div>
           </div>
           <div class="ar-admin-table" role="table">
             <div class="ar-admin-tr ar-admin-th" role="row"><span>${t("arena.admin.day")}</span><span>${t("arena.admin.players")}</span><span>${t("arena.admin.votes")}</span><span>${t("arena.admin.avg")}</span><span>≥1h</span><span>≥3h</span></div>
@@ -121,7 +126,7 @@ export function RankingsTab({ arena }) {
         <p class="ar-muted">${t("arena.rankings.visibleHint")}</p>
       </div>
 
-      ${profile?.is_admin && html`<${AdminStats} />`}
+      ${profile?.is_admin && html`<${AdminStats} /><${CrowdModeration} />`}
     </div>
   `;
 }
