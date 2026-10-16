@@ -10,6 +10,7 @@ import {
   loadOlderMessages, openConversationWith, signalTyping,
 } from "../lib/messagesStore.js";
 import { navigate } from "../router.js";
+import { PersonLink } from "../components/profileViewer.js";
 
 const EMOJI = ["😀", "😂", "😍", "🥰", "😎", "🤔", "😢", "😡", "👍", "👎", "🙏", "👏", "🔥", "🎉", "❤️", "💯", "✅", "👀", "🤝", "💪", "🚀", "☕", "😴", "🙌"];
 const DATE_LOCALES = { ru: "ru-RU", kk: "kk-KZ", en: "en-US" };
@@ -206,11 +207,13 @@ function ChatPane({ conv, online, canSend, myId, onBack, t, locale }) {
     <section class="sk-chat-pane">
       <header class="sk-chat-head">
         <button type="button" class="sk-chat-back" onClick=${onBack} aria-label=${t("messages.back")}><${Icon} name="arrowLeft" size=${20} /></button>
-        <${PersonAvatar} name=${conv.otherName} url=${conv.otherAvatarUrl} size=${40} online=${online} />
-        <div class="sk-chat-head-text">
-          <div class="sk-chat-head-name">${conv.otherName ?? t("feed.unknownAuthor")}</div>
-          <div class="sk-chat-head-status">${status}</div>
-        </div>
+        <${PersonLink} who=${conv} className="sk-chat-head-who">
+          <${PersonAvatar} name=${conv.otherName} url=${conv.otherAvatarUrl} size=${40} online=${online} />
+          <div class="sk-chat-head-text">
+            <div class="sk-chat-head-name">${conv.otherName ?? t("feed.unknownAuthor")}</div>
+            <div class="sk-chat-head-status">${status}</div>
+          </div>
+        <//>
       </header>
 
       <div class="sk-chat-scroll" ref=${listRef} onScroll=${onScroll}>

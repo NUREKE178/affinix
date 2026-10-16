@@ -70,7 +70,7 @@ export async function fetchOrgMembers(organizationId) {
   const sb = requireSupabase();
   const { data, error } = await sb
     .from("organization_members")
-    .select("id, role, user_id, created_at, profile:profiles(full_name, email)")
+    .select("id, role, user_id, created_at, profile:profiles(full_name, email, avatar_url)")
     .eq("organization_id", organizationId)
     .order("created_at");
   if (error) throw error;
@@ -79,6 +79,9 @@ export async function fetchOrgMembers(organizationId) {
     userId: row.user_id,
     role: row.role,
     name: row.profile?.full_name || row.profile?.email || "—",
+    // the real name only (never the e-mail fallback above): this is what the profile popover shows
+    fullName: row.profile?.full_name ?? null,
+    avatarUrl: row.profile?.avatar_url ?? null,
     email: row.profile?.email ?? "",
   }));
 }

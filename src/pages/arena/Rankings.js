@@ -2,6 +2,7 @@
 import { html, useState, useEffect } from "../../lib/preact.js";
 import { Badge, Skeleton, Switch, Tabs, Button, EmptyState } from "../../components/ui.js";
 import { Avatar } from "../../components/avatar.js";
+import { PersonLink } from "../../components/profileViewer.js";
 import { Icon } from "../../components/icons.js";
 import { useT } from "../../lib/i18n.js";
 import { useMyProfile } from "../../lib/profile.js";
@@ -9,15 +10,19 @@ import { fetchLeaderboard, setLeaderboardVisibility, fetchAdminStats } from "../
 import { toast } from "../../components/ui.js";
 import { nf } from "./parts.js";
 
-function Row({ r, t }) {
+function Row({ r, t, scope }) {
+  // the avatar and the name are one button: it opens this player's profile, with the numbers already on the row
+  const arena = { rank: r.rank, level: r.level, xp: r.xp, streak: r.streak, scope };
   return html`
     <div class="ar-row" data-me=${r.isMe} data-top=${r.rank <= 3} data-testid="arena-row">
       <span class="ar-row-rank sk-num">${r.rank}</span>
-      <${Avatar} name=${r.name} url=${r.avatarUrl} size=${34} />
-      <div class="ar-row-who">
-        <div class="ar-row-name">${r.name ?? t("feed.unknownAuthor")}${r.isMe ? html` <span class="ar-row-you">${t("arena.rankings.you")}</span>` : null}</div>
-        ${r.username && html`<div class="ar-row-user">@${r.username}</div>`}
-      </div>
+      <${PersonLink} who=${r} arena=${arena} className="sk-person-grow">
+        <${Avatar} name=${r.name} url=${r.avatarUrl} size=${34} />
+        <div class="ar-row-who">
+          <div class="ar-row-name">${r.name ?? t("feed.unknownAuthor")}${r.isMe ? html` <span class="ar-row-you">${t("arena.rankings.you")}</span>` : null}</div>
+          ${r.username && html`<div class="ar-row-user">@${r.username}</div>`}
+        </div>
+      <//>
       ${r.streak > 0 && html`<span class="ar-row-streak sk-num" title=${t("arena.quests.streakTitle")}><${Icon} name="flame" size=${13} />${r.streak}</span>`}
       <span class="ar-row-level sk-num"><span class="sk-caption">${t("arena.level")}</span> ${r.level}</span>
       <span class="ar-row-xp sk-num">${nf(r.xp)}<span class="sk-unit">XP</span></span>
@@ -106,7 +111,7 @@ export function RankingsTab({ arena }) {
             : rows.length === 0
               ? html`<div class="ar-rank-empty"><${EmptyState} icon="trophy" title=${t(friends ? "arena.rankings.emptyFriendsTitle" : "arena.rankings.emptyTitle")} body=${t(friends ? "arena.rankings.emptyFriendsBody" : "arena.rankings.emptyBody")} /></div>`
               : html`
-                ${rows.map((r) => html`<${Row} key=${r.userId} r=${r} t=${t} />`)}
+                ${rows.map((r) => html`<${Row} key=${r.userId} r=${r} t=${t} scope=${scope} />`)}
                 ${me && !meInList && html`<div class="ar-row ar-row-gap" data-me="true"><span class="ar-row-rank sk-num">${me.rank}</span><div class="ar-row-who"><div class="ar-row-name">${t("arena.rankings.you")}</div></div><span class="ar-row-xp sk-num">${nf(me.xp)}<span class="sk-unit">XP</span></span></div>`}`}
       </section>
 

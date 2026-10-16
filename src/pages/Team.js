@@ -4,6 +4,8 @@ import { useSession } from "../lib/auth.js";
 import { fetchOrgMembers, addMemberByEmail, updateMemberRole, removeMember } from "../lib/org.js";
 import { Card, SectionHeading, Badge, Button, Modal, Field, TextInput, Select, toast, Skeleton } from "../components/ui.js";
 import { Icon } from "../components/icons.js";
+import { Avatar } from "../components/avatar.js";
+import { PersonLink } from "../components/profileViewer.js";
 import { useT } from "../lib/i18n.js";
 
 const ROLE_TONE = { owner: "signal", admin: "steel", researcher: "neutral", viewer: "neutral" };
@@ -112,15 +114,13 @@ export function Team() {
         ${members.map(
           (m) => html`
             <div key=${m.id} class="flex items-center justify-between gap-3 px-5 py-4">
-              <div class="flex items-center gap-3 min-w-0">
-                <div class="h-9 w-9 rounded-full sk-avatar flex items-center justify-center text-xs font-semibold shrink-0">
-                  ${m.name.split(" ").map((p) => p[0]).slice(0, 2).join("").toUpperCase()}
-                </div>
+              <${PersonLink} who=${{ id: m.userId, name: m.fullName, avatarUrl: m.avatarUrl }} className="sk-person-grow">
+                <${Avatar} name=${m.name} url=${m.avatarUrl} size=${36} />
                 <div class="min-w-0">
-                  <div class="text-sm font-medium text-graphite-100 truncate">${m.name}</div>
+                  <div class="text-sm font-medium text-graphite-100 truncate sk-person-name">${m.name}</div>
                   <div class="text-xs text-graphite-500 truncate">${m.email}</div>
                 </div>
-              </div>
+              <//>
               <div class="flex items-center gap-3 shrink-0">
                 ${canManage && m.role !== "owner"
                   ? html`<${Select} className="w-auto text-xs" options=${ROLES.filter((r) => r.value !== "owner")} value=${m.role} onChange=${(e) => changeRole(m.id, e.target.value)} />`

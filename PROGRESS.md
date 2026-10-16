@@ -3514,3 +3514,44 @@ challenges, a hall of fame per season.
   `filled` still sets the svg's `fill="currentColor"` and also makes the tint solid (heart / bookmark toggles).
 - Sidebar glyphs are 19px (were 17); the active page's glyph gets a soft signal-orange glow and a stronger tint. Empty-state
   icons went from 1.4 to 1.9 stroke. The `Icon` API is unchanged.
+
+## People: find anyone by name or @username; every avatar + name opens a profile
+
+No migration: everything reads `profiles_public` (0011 + 0013), the identity-only view the Feed already used for every
+signed-in member (name, @username, avatar, role, bio; never e-mail; not readable by anon).
+
+- **Find people** (`src/lib/people.js`, `pages/Friends.js`): a search box under the Friends heading. Two characters minimum,
+  260 ms debounce, answers to text that is no longer current are dropped (closure flag per effect run), previous results stay
+  on screen (dimmed) while the next ones load. Up to three parallel PostgREST queries, ordered and limited to 20: the name must
+  contain every word typed (so "сатпаева алия" finds "Алия Сатпаева"), and for a one-word query the `@username` starts with /
+  contains it. Results are ranked client-side: exact @username, username prefix, name prefix, the rest. `cleanQuery` strips a
+  leading `@`, `*` and control characters; `%`, `_` and `\` are escaped, so typing `a_b` finds `a_b_c` and not `axb` and `%%`
+  finds nobody (usernames may contain `_`). Each row has the avatar/name (opens the profile), `@username · role`, and the one
+  action that fits the relationship: Add friend / Request sent / Accept (the shared `FriendButton`), Write for a friend, a "You"
+  badge for yourself. Empty, "no one found", error + Retry and a one-character hint are covered.
+- **One profile popover for the whole app** (`lib/profileViewer.js` store, `components/profileViewer.js`
+  `ProfileViewerHost` mounted once in `Shell`): `openProfile(who, { arena })` accepts a person or any author-like object
+  (`toPerson` understands `author*`, `other*`, `actor*`, a leaderboard row's `userId`; the specific id keys are tried before
+  `id`, which on a notification / friendship / team row belongs to the row). It shows what the caller already knows at once,
+  then replaces it with the authoritative `profiles_public` row (cached for 60 s). Content: avatar, name, `@username`, role,
+  bio (skeleton while loading, the old "no bio" line afterwards), friends count (`friends_count`), the Arena strip (place /
+  level / XP, plus streak) when the caller had those numbers, and the actions: the friend button, Write for friends; for yourself
+  "This is you" + "My profile". Esc, backdrop, the X and the browser back button close it; focus moves in and returns to the
+  element that opened it. `PersonLink` (avatar + name as one button) is the helper for the new call sites.
+- **Where a person is now clickable**: Feed posts and comments (as before, now through the shared popover; comments also carry
+  `authorUsername`), Favorites, Friends rows and search results, the open chat's header in Messages, the actor's avatar in the
+  notification bell (the text still navigates), Team members (real avatars now; the name shown to others is the profile name,
+  never the e-mail fallback: `fetchOrgMembers` returns `fullName` / `avatarUrl`), Arena Rankings rows, the lobby's top three
+  and the "taste twins" of the daily report. `AuthorCard` and the per-page popover state in Feed / Favorites / Friends were
+  removed. Messages list rows still open the conversation (the profile is one tap away in the chat header).
+- **Arena keys stand down** while a profile is open (`isProfileOpen()` in `useArenaKeys`); the popover's Esc is marked handled so
+  it does not also mean "leave the round".
+- **Bug fixed on the way**: the Friends state of `FriendButton` used the translation key `friends.friends`, which did not exist
+  (raw key on screen); added to ru / kk / en. `friends.subtitle` / `friends.emptyBody` now mention the search.
+- i18n: `people.*` (17 keys) + `friends.friends`; all three locales at 1,115 keys. Styles: `.sk-person*`, `.sk-profile*`,
+  `.sk-pstats`, `.sk-find*` at the end of `styles.css` (no new Tailwind classes; the popover keeps `font-semibold
+  text-graphite-100` / `text-sm text-graphite-400` on name / role so older selectors still match).
+- Tests: `test_people.mjs` (58 checks: search incl. debounce, escaping, stale answers, error + retry, Kazakh letters, friend /
+  self / stranger states; the popover from Feed, Friends, Messages, Team, notifications, back button; phone width; ru / kk / en;
+  screenshots), Arena suite extended with B4b–d and N1–N9 (twins, lobby board, rankings rows with the real database, Enter / Esc
+  behind the popover). `check_locale_parity` now takes `ROOT` so it checks the working copy, not `main`.

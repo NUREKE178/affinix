@@ -1,6 +1,6 @@
 import { html, useState, useMemo } from "../lib/preact.js";
 import { SectionHeading, Button, Badge, EmptyState, Card, toast, Skeleton } from "../components/ui.js";
-import { AuthorCard } from "../components/authorCard.js";
+import { openProfile } from "../lib/profileViewer.js";
 import { useT } from "../lib/i18n.js";
 import { useMyProfile } from "../lib/profile.js";
 import { getCurrentUser } from "../lib/auth.js";
@@ -26,9 +26,7 @@ export function Favorites() {
   const [activeHashtag, setActiveHashtag] = useState(null);
   const [confirmDelete, setConfirmDelete] = useState(null);
   const [deleting, setDeleting] = useState(false);
-  const [viewingAuthor, setViewingAuthor] = useState(null);
   const { mounted: confirmMounted, phase: confirmPhase, value: confirmPost } = useMountedValue(confirmDelete);
-  const { mounted: authorMounted, phase: authorPhase, value: authorPost } = useMountedValue(viewingAuthor);
 
   const visiblePosts = useMemo(() => {
     if (!activeHashtag) return posts;
@@ -97,7 +95,7 @@ export function Favorites() {
             <${PostCard} key=${post.id} post=${post} index=${i} t=${t} onHashtagClick=${setActiveHashtag}
               canDelete=${post.authorId === currentUserId || !!profile?.is_admin}
               canModerate=${!!profile?.is_admin} currentUserId=${currentUserId}
-              onDeleteClick=${setConfirmDelete} onAuthorClick=${setViewingAuthor} />
+              onDeleteClick=${setConfirmDelete} onAuthorClick=${openProfile} />
           `)}
         </div>
       `}
@@ -115,7 +113,6 @@ export function Favorites() {
         </div>
       `}
 
-      <${AuthorCard} author=${authorPost} mounted=${authorMounted} phase=${authorPhase} onClose=${() => setViewingAuthor(null)} t=${t} />
     </div>
   `;
 }

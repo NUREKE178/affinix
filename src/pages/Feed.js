@@ -11,7 +11,7 @@ import { relativeDate } from "../lib/format.js";
 import { withTimeout } from "../lib/async.js";
 import { moderatePost } from "../lib/profanityFilter.js";
 import { useMountTransition, useMountedValue } from "../lib/motion.js";
-import { AuthorCard } from "../components/authorCard.js";
+import { openProfile } from "../lib/profileViewer.js";
 import { invalidateFavorites } from "../lib/favoritesStore.js";
 
 const MAX_LEN = 2000;
@@ -417,9 +417,7 @@ export function Feed() {
   const [activeHashtag, setActiveHashtag] = useState(null);
   const [confirmDelete, setConfirmDelete] = useState(null);
   const [deleting, setDeleting] = useState(false);
-  const [viewingAuthor, setViewingAuthor] = useState(null);
   const { mounted: confirmMounted, phase: confirmPhase, value: confirmPost } = useMountedValue(confirmDelete);
-  const { mounted: authorMounted, phase: authorPhase, value: authorPost } = useMountedValue(viewingAuthor);
 
   const visiblePosts = useMemo(() => {
     if (!activeHashtag) return posts;
@@ -493,7 +491,7 @@ export function Feed() {
             <${PostCard} key=${post.id} post=${post} index=${i} t=${t} onHashtagClick=${setActiveHashtag}
               canDelete=${post.authorId === currentUserId || !!profile?.is_admin}
               canModerate=${!!profile?.is_admin} currentUserId=${currentUserId}
-              onDeleteClick=${setConfirmDelete} onAuthorClick=${setViewingAuthor} />
+              onDeleteClick=${setConfirmDelete} onAuthorClick=${openProfile} />
           `)}
         </div>
       `}
@@ -513,7 +511,6 @@ export function Feed() {
         </div>
       `}
 
-      <${AuthorCard} author=${authorPost} mounted=${authorMounted} phase=${authorPhase} onClose=${() => setViewingAuthor(null)} t=${t} />
     </div>
   `;
 }

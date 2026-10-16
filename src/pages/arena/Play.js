@@ -8,6 +8,8 @@ import { TRAIT_IDS } from "../../lib/arena/traits.js";
 import { flowBonus, DAILY_SET_BONUS, DAILY_SET_SIZE, MAX_FLOW_BONUS, XP_BASE, PIONEER_BONUS, seasonOf } from "../../lib/arena/rules.js";
 import { summarize, useArenaClock, roundPhase, fetchLeaderboard } from "../../lib/arenaStore.js";
 import { Avatar } from "../../components/avatar.js";
+import { PersonLink } from "../../components/profileViewer.js";
+import { isProfileOpen } from "../../lib/profileViewer.js";
 import { navigate } from "../../router.js";
 import { Specimen, Ladder, nf, clock } from "./parts.js";
 import { DailyReport } from "./DailyReport.js";
@@ -25,6 +27,7 @@ function useArenaKeys(arena, onStart) {
   useEffect(() => {
     function onKey(e) {
       if (e.defaultPrevented || e.metaKey || e.ctrlKey || e.altKey || e.repeat) return;
+      if (isProfileOpen()) return; // a profile is on screen: 1 / 2 / S / Enter must not play behind it
       const el = e.target;
       if (el && (el.isContentEditable || /^(INPUT|TEXTAREA|SELECT)$/.test(el.tagName))) return;
       // a focused key (Start, Next ...) already handles Enter / Space itself
@@ -99,8 +102,10 @@ function LobbyBoard({ t, remote }) {
         ${rows.slice(0, 3).map((r) => html`
           <div class="ar-board-row" key=${r.userId} data-me=${r.isMe}>
             <span class="ar-row-rank sk-num">${r.rank}</span>
-            <${Avatar} name=${r.name} url=${r.avatarUrl} size=${28} />
-            <span class="ar-board-name">${r.name ?? t("feed.unknownAuthor")}${r.isMe ? html` <span class="ar-row-you">${t("arena.rankings.you")}</span>` : null}</span>
+            <${PersonLink} who=${r} arena=${{ rank: r.rank, level: r.level, xp: r.xp, streak: r.streak, scope: "week" }} className="sk-person-grow">
+              <${Avatar} name=${r.name} url=${r.avatarUrl} size=${28} />
+              <span class="ar-board-name">${r.name ?? t("feed.unknownAuthor")}${r.isMe ? html` <span class="ar-row-you">${t("arena.rankings.you")}</span>` : null}</span>
+            <//>
             <span class="sk-num ar-board-xp">${nf(r.xp)}<span class="sk-unit">XP</span></span>
           </div>`)}
         ${data?.me && !me && rows.length >= 3 && html`<div class="ar-board-row ar-board-me" data-me="true"><span class="ar-row-rank sk-num">${data.me.rank}</span><span class="ar-board-name">${t("arena.rankings.you")}</span><span class="sk-num ar-board-xp">${nf(data.me.xp)}<span class="sk-unit">XP</span></span></div>`}

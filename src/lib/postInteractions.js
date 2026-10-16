@@ -45,6 +45,7 @@ function mapComment(row, author) {
     postId: row.post_id,
     authorId: row.author_id,
     authorName: author?.full_name ?? null,
+    authorUsername: author?.username ?? null,
     authorAvatarUrl: author?.avatar_url ?? null,
     // role_title/bio are already part of fetchAuthorsById's own select
     // (postsStore.js) -- carried through here too so a comment's author can

@@ -12,6 +12,8 @@ import { useArenaLocal, arenaAttention } from "../lib/arenaStore.js";
 import { relativeDate } from "../lib/format.js";
 import { toast, Badge, LoadingBar, Skeleton } from "./ui.js";
 import { useMountTransition } from "../lib/motion.js";
+import { ProfileViewerHost } from "./profileViewer.js";
+import { openProfile } from "../lib/profileViewer.js";
 
 // "experiments" and "results" removed from the sidebar for now (not
 // deleted -- routes/pages/code are untouched, just unreachable via nav)
@@ -286,16 +288,24 @@ function NotificationsMenu() {
           ${!loading && notifications.length > 0 && html`
             <div class="max-h-80 overflow-y-auto py-1">
               ${notifications.map((n) => html`
-                <button key=${n.id} type="button" onClick=${() => onItemClick(n)}
-                  class="flex w-full items-start gap-2.5 px-4 py-2.5 text-left hover:bg-white/5 transition-colors">
-                  <${Avatar} name=${n.actorName} url=${n.actorAvatarUrl} size=${28} />
-                  <div class="min-w-0 flex-1">
-                    <div class="text-xs text-graphite-300 leading-snug">${t(notificationCopyKey(n.type), { name: n.actorName ?? t("feed.unknownAuthor") })}</div>
-                    ${n.type === "comment" && n.commentBody && html`<div class="text-xs text-graphite-500 truncate mt-0.5">«${n.commentBody}»</div>`}
-                    <div class="text-[11px] text-graphite-500 mt-0.5">${relativeDate(n.createdAt)}</div>
-                  </div>
-                  ${!n.isRead && html`<span class="sk-led mt-1.5 shrink-0" style="--led:#ff6a1f;--led-glow:rgba(255,106,31,.65)"></span>`}
-                </button>
+                <div key=${n.id} class="flex w-full items-start gap-2.5 px-4 py-2.5 hover:bg-white/5 transition-colors">
+                  ${n.actorId
+                    ? html`
+                      <button type="button" class="sk-person shrink-0" data-testid="notification-actor"
+                        title=${t("people.openProfile", { name: n.actorName ?? t("feed.unknownAuthor") })}
+                        onClick=${() => { setOpen(false); openProfile({ id: n.actorId, name: n.actorName, avatarUrl: n.actorAvatarUrl }); }}>
+                        <${Avatar} name=${n.actorName} url=${n.actorAvatarUrl} size=${28} />
+                      </button>`
+                    : html`<${Avatar} name=${n.actorName} url=${n.actorAvatarUrl} size=${28} />`}
+                  <button type="button" onClick=${() => onItemClick(n)} class="flex min-w-0 flex-1 items-start gap-2.5 text-left">
+                    <div class="min-w-0 flex-1">
+                      <div class="text-xs text-graphite-300 leading-snug">${t(notificationCopyKey(n.type), { name: n.actorName ?? t("feed.unknownAuthor") })}</div>
+                      ${n.type === "comment" && n.commentBody && html`<div class="text-xs text-graphite-500 truncate mt-0.5">«${n.commentBody}»</div>`}
+                      <div class="text-[11px] text-graphite-500 mt-0.5">${relativeDate(n.createdAt)}</div>
+                    </div>
+                    ${!n.isRead && html`<span class="sk-led mt-1.5 shrink-0" style="--led:#ff6a1f;--led-glow:rgba(255,106,31,.65)"></span>`}
+                  </button>
+                </div>
               `)}
             </div>
           `}
@@ -456,6 +466,8 @@ export function Shell({ currentPath, children }) {
           </div>
         </main>
       </div>
+      <!-- Every avatar + name in the app opens its person here -->
+      <${ProfileViewerHost} />
     </div>
   `;
 }

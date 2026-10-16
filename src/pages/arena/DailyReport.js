@@ -2,6 +2,7 @@
 import { html, useState, useEffect, useMemo } from "../../lib/preact.js";
 import { Badge, Skeleton } from "../../components/ui.js";
 import { Avatar } from "../../components/avatar.js";
+import { PersonLink } from "../../components/profileViewer.js";
 import { useT } from "../../lib/i18n.js";
 import { planDaily } from "../../lib/arena/sampler.js";
 import { seasonOf } from "../../lib/arena/rules.js";
@@ -64,8 +65,10 @@ export function DailyReport({ day, season = seasonOf() }) {
           : twins.length
             ? twins.map((u) => html`
                 <div class="ar-twin" key=${u.userId} data-testid="arena-twin">
-                  <${Avatar} name=${u.name} url=${u.avatarUrl} size=${32} />
-                  <div class="ar-twin-who"><div class="ar-twin-name">${u.name ?? t("feed.unknownAuthor")}</div>${u.username && html`<div class="ar-twin-user">@${u.username}</div>`}</div>
+                  <${PersonLink} who=${u} className="sk-person-grow">
+                    <${Avatar} name=${u.name} url=${u.avatarUrl} size=${32} />
+                    <div class="ar-twin-who"><div class="ar-twin-name">${u.name ?? t("feed.unknownAuthor")}</div>${u.username && html`<div class="ar-twin-user">@${u.username}</div>`}</div>
+                  <//>
                   ${u.isFriend && html`<${Badge} tone="steel">${t("arena.report.friend")}<//>`}
                   <span class="ar-twin-score sk-num">${Math.round((u.agree / u.shared) * 100)}<span class="sk-unit">%</span></span>
                 </div>`)
