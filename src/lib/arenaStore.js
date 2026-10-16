@@ -642,9 +642,16 @@ export function setPref(key, value) {
 
 export async function setLeaderboardVisibility(visible) {
   if (!S) return;
+  const before = S.base.profile.visible;
   S.base.profile.visible = !!visible;
   notify();
-  try { await rpc("arena_set_visibility", { p_visible: !!visible }); } catch (err) { noteFailure(err); notify(); throw err; }
+  try { await rpc("arena_set_visibility", { p_visible: !!visible }); } catch (err) {
+    noteFailure(err);
+    S.base.profile.visible = before; // the server did not take it: show the truth, not the optimistic flip
+    notify();
+    // `serverPending`: the Arena migration has not been applied yet (PostgREST: "Could not find the function ... in the schema cache")
+    throw Object.assign(new Error(err?.message ?? String(err)), { code: err?.code, serverPending: isMissingFunction(err) });
+  }
   persist();
 }
 

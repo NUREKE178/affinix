@@ -1,5 +1,5 @@
 import { html, useState } from "../../lib/preact.js";
-import { navigate } from "../../router.js";
+import { navigate, HOME_PATH } from "../../router.js";
 import { AuthLayout, AuthError } from "./AuthLayout.js";
 import { Field, TextInput, Button } from "../../components/ui.js";
 import { signIn, friendlyAuthError, useSession } from "../../lib/auth.js";
@@ -17,7 +17,7 @@ export function Login() {
   // Already signed in (e.g. clicked "Sign in" from the landing page in another
   // tab, or the session outlived this page in history) -- go straight into the
   // app instead of making them log in again.
-  if (!sessionLoading && session) { navigate("/app/overview"); return null; }
+  if (!sessionLoading && session) { navigate(HOME_PATH); return null; }
 
   async function onSubmit(e) {
     e.preventDefault();
@@ -25,7 +25,7 @@ export function Login() {
     setLoading(true);
     try {
       await signIn({ email, password });
-      navigate("/app/overview");
+      navigate(HOME_PATH);
     } catch (err) {
       setError(friendlyAuthError(err, t));
     } finally {

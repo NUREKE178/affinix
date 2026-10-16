@@ -1,5 +1,5 @@
 import { html, useState, useEffect, useRef } from "../../lib/preact.js";
-import { navigate } from "../../router.js";
+import { navigate, HOME_PATH } from "../../router.js";
 import { Icon, LogoMark } from "../../components/icons.js";
 import { LanguageSwitch } from "../../components/shell.js";
 import { AuthError } from "./AuthLayout.js";
@@ -108,7 +108,7 @@ export function Onboarding() {
   useEffect(() => {
     withTimeout(fetchMyOrganizations(), 15000)
       .then((orgs) => {
-        if (orgs.length > 0) navigate("/app/overview");
+        if (orgs.length > 0) navigate(HOME_PATH);
         else setChecking(false);
       })
       .catch(() => setChecking(false));
@@ -209,7 +209,7 @@ export function Onboarding() {
           toast(`${inv.email}: ${err.message ?? String(err)}`, "rose");
         }
       }
-      navigate("/app/overview");
+      navigate(HOME_PATH);
     } catch (err) {
       setError(err.message ?? String(err));
       setFinishing(false);

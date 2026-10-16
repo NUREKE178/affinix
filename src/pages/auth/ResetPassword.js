@@ -1,5 +1,5 @@
 import { html, useState } from "../../lib/preact.js";
-import { navigate } from "../../router.js";
+import { navigate, HOME_PATH } from "../../router.js";
 import { AuthLayout, AuthError, AuthSuccess } from "./AuthLayout.js";
 import { Field, TextInput, Button } from "../../components/ui.js";
 import { updatePassword, friendlyAuthError } from "../../lib/auth.js";
@@ -35,7 +35,7 @@ export function ResetPassword() {
     return html`
       <${AuthLayout} title=${t("auth.reset.successTitle")} subtitle=${t("auth.reset.successSubtitle")}>
         <${AuthSuccess} message=${t("auth.reset.success")} />
-        <${Button} className="w-full" onClick=${() => navigate("/app/overview")}>${t("auth.reset.successCta")}<//>
+        <${Button} className="w-full" onClick=${() => navigate(HOME_PATH)}>${t("auth.reset.successCta")}<//>
       <//>
     `;
   }

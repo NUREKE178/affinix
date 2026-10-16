@@ -1,5 +1,5 @@
 import { html, useState, useEffect, useRef } from "./lib/preact.js";
-import { useRoute, matchRoute, navigate } from "./router.js";
+import { useRoute, matchRoute, navigate, HOME_PATH } from "./router.js";
 import { Shell } from "./components/shell.js";
 import { Landing } from "./pages/Landing.js";
 import { Feed } from "./pages/Feed.js";
@@ -162,7 +162,7 @@ function ProtectedApp({ path, query }) {
       `;
     }
   }
-  navigate("/app/overview");
+  navigate(HOME_PATH);
   return null;
 }
 
@@ -197,7 +197,7 @@ export function App() {
     if (!authCallback || handledRef.current || sessionLoading) return;
     handledRef.current = true;
     if (location.search) history.replaceState(null, "", location.pathname + location.hash);
-    navigate(authCallback.leadingPath === "/reset-password" ? "/reset-password" : (session ? "/app/overview" : "/login"));
+    navigate(authCallback.leadingPath === "/reset-password" ? "/reset-password" : (session ? HOME_PATH : "/login"));
   }, [authCallback, sessionLoading, session]);
   if (authCallback && path === originalPathRef.current) return html`<${FullScreenLoading} phase="session" />`;
 

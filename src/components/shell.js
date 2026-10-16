@@ -1,5 +1,5 @@
 import { html, useState, useEffect, useRef } from "../lib/preact.js";
-import { navigate } from "../router.js";
+import { navigate, HOME_PATH } from "../router.js";
 import { Icon, LogoMark } from "./icons.js";
 import { useCurrentOrg } from "../lib/currentOrg.js";
 import { useSession, signOut } from "../lib/auth.js";
@@ -16,7 +16,9 @@ import { useMountTransition } from "../lib/motion.js";
 // "experiments" and "results" removed from the sidebar for now (not
 // deleted -- routes/pages/code are untouched, just unreachable via nav)
 // while the product direction is reconsidered.
+// The Arena is the home of the app (first item; see HOME_PATH); the old "Overview" is the research dashboard.
 const NAV = [
+  { id: "arena", key: "shell.community.arena", icon: "arena", path: "/app/arena" },
   { id: "overview", key: "shell.nav.overview", icon: "overview", path: "/app/overview" },
   { id: "participants", key: "shell.nav.participants", icon: "participants", path: "/app/participants" },
   { id: "insights", key: "shell.nav.insights", icon: "insights", path: "/app/insights" },
@@ -24,7 +26,6 @@ const NAV = [
 ];
 
 const COMMUNITY_NAV = [
-  { id: "arena", key: "shell.community.arena", icon: "arena", path: "/app/arena" },
   { id: "feed", key: "shell.community.feed", icon: "globe", path: "/app/feed" },
   { id: "favorites", key: "shell.community.favorites", icon: "bookmark", path: "/app/favorites" },
   { id: "friends", key: "shell.community.friends", icon: "friends", path: "/app/friends" },
@@ -189,7 +190,7 @@ function SidebarContent({ currentPath, onNavigate, collapsed = false, sidebarMod
   const navBadge = (id) => (id === "friends" ? incoming.length : id === "messages" ? unreadTotal : id === "arena" ? arenaAttention(arena.view) : 0);
   return html`
     <div class="flex h-full flex-col">
-      <button type="button" onClick=${() => onNavigate("/app/overview")}
+      <button type="button" onClick=${() => onNavigate(HOME_PATH)}
         class=${`flex items-center gap-2.5 overflow-hidden px-5 py-5 text-left hover:opacity-80 transition-opacity ${collapsed ? "justify-center px-0" : "w-full"}`}>
         <${LogoMark} size=${34} />
         ${!collapsed && html`
@@ -200,16 +201,8 @@ function SidebarContent({ currentPath, onNavigate, collapsed = false, sidebarMod
         `}
       </button>
 
-      <div class="px-4 mb-3">
-        <button onClick=${() => onNavigate("/app/experiments/new")}
-          title=${collapsed ? t("shell.newResearch") : undefined}
-          class=${`sk-btn flex w-full items-center justify-center gap-2 overflow-hidden whitespace-nowrap rounded-lg text-sm font-medium py-2.5 ${collapsed ? "px-0" : "px-4"}`}>
-          <${Icon} name="plus" size=${16} className="shrink-0 text-signal-400" /> ${!collapsed && t("shell.newResearch")}
-        </button>
-      </div>
-
       <nav class="flex-1 overflow-y-auto overflow-x-hidden px-2 py-1 space-y-0.5">
-        ${NAV.map((item) => html`<${NavItem} key=${item.id} item=${item} currentPath=${currentPath} onNavigate=${onNavigate} t=${t} collapsed=${collapsed} />`)}
+        ${NAV.map((item) => html`<${NavItem} key=${item.id} item=${item} currentPath=${currentPath} onNavigate=${onNavigate} t=${t} collapsed=${collapsed} badgeCount=${navBadge(item.id)} />`)}
 
         ${collapsed
           ? html`<div class="my-3 mx-3 border-t border-graphite-800"></div>`

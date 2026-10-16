@@ -34,7 +34,7 @@ export default {
 
   shell: {
     nav: {
-      overview: "Overview",
+      overview: "Research",
       experiments: "Experiments",
       participants: "Participants",
       results: "Results",
@@ -56,7 +56,6 @@ export default {
       profile: "Profile",
       settings: "Settings",
     },
-    newResearch: "New research",
     sidebar: {
       label: "Sidebar",
       expanded: "Expanded",
@@ -552,6 +551,8 @@ export default {
       you: "You",
       visible: "Show me in rankings",
       visibleHint: "Others see your name and avatar from your profile. Turn it off to play privately.",
+      serverPending: "The ranking server has not been updated yet, so the setting was not saved. An admin needs to apply the Arena database update (migration).",
+      saveFailed: "Could not save the setting. Check your connection and try again.",
       offlineTitle: "Rankings are not available yet",
       offlineBody: "The Arena database isn't reachable. Your progress is safe on this device.",
       retry: "Try again",

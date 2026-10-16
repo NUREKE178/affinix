@@ -3488,3 +3488,20 @@ the rest of the regression suite passes, `test_loading_upgrade.mjs` keeps its tw
 
 **Not done / next.** Researchers opting real experiments into the Arena (a community-votes card in Results), sound, friend
 challenges, a hall of fame per season.
+
+## Arena becomes the home of the app; sidebar clean-up; jury script
+
+- **Home is `/app/arena`** (`HOME_PATH` in `src/router.js`): the logo, a signed-in visit to `/login`, the end of onboarding,
+  the password-reset success button, auth callbacks and any unknown address all lead there. The Arena is the first sidebar item
+  (it moved out of "Community"; its attention badge works as before).
+- **"Обзор" / Overview is now "Исследования" / "Зерттеулер" / "Research"** in the sidebar: it is the researcher dashboard (study
+  KPIs and the "New research" action). The sidebar's own "Новое исследование" key duplicated the one on that page and was
+  removed (`shell.newResearch` deleted from the three locales); participants / insights / reports stay, below the Arena.
+- **Missing migration, friendly error**: the "visible in rankings" switch used to toast PostgREST's raw
+  `Could not find the function public.arena_set_visibility(p_visible) in the schema cache` when migration 0021 had not been
+  applied. It now undoes the optimistic flip and says the server update is pending (`arena.rankings.serverPending` /
+  `saveFailed`). Checks D4b / D4c in the Arena suite.
+- **`ғылыми_жоба.txt`** (repo root) is the user's Kazakh speaking script for the jury; `CLAUDE.md` tells every session to update
+  it together with each product change (section edit + a dated line in its changelog).
+- Regression tests adjusted to the new home / nav order / label (sidebar hover, collapse and mode tests, dashboard polish,
+  logo + login redirect, auth callback, onboarding wizard + skip, nav-removed test).

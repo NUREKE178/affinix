@@ -9,6 +9,9 @@ function parseHash() {
 const listeners = new Set();
 window.addEventListener("hashchange", () => listeners.forEach((l) => l()));
 
+/** The app's home: where the logo, a fresh sign-in and any unknown address lead. */
+export const HOME_PATH = "/app/arena";
+
 export function navigate(path) {
   if (location.hash.slice(1) === path) return;
   location.hash = `#${path}`;

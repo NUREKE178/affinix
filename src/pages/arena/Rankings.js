@@ -83,7 +83,7 @@ export function RankingsTab({ arena }) {
   }, []);
 
   async function toggleVisible(v) {
-    try { await setLeaderboardVisibility(v); setTick((n) => n + 1); } catch (e) { toast(e.message ?? String(e), "rose"); }
+    try { await setLeaderboardVisibility(v); setTick((n) => n + 1); } catch (e) { toast(t(e.serverPending ? "arena.rankings.serverPending" : "arena.rankings.saveFailed"), "rose"); }
   }
 
   const rows = state.data?.rows ?? [];
