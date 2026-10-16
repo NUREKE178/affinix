@@ -11,6 +11,7 @@ import {
 } from "../lib/messagesStore.js";
 import { navigate } from "../router.js";
 import { PersonLink } from "../components/profileViewer.js";
+import { openProfile } from "../lib/profileViewer.js";
 
 const EMOJI = ["😀", "😂", "😍", "🥰", "😎", "🤔", "😢", "😡", "👍", "👎", "🙏", "👏", "🔥", "🎉", "❤️", "💯", "✅", "👀", "🤝", "💪", "🚀", "☕", "😴", "🙌"];
 const DATE_LOCALES = { ru: "ru-RU", kk: "kk-KZ", en: "en-US" };
@@ -67,20 +68,29 @@ function ChatListItem({ item, active, online, typing, myId, onOpen, t, locale })
     : item.lastBody
     ? `${item.lastSenderId === myId ? `${t("messages.you")}: ` : ""}${item.lastBody}`
     : t("messages.startChat");
+  // The row opens the chat; the avatar on top of it opens the person's profile (two sibling buttons, like the
+  // messengers do it: nothing interactive inside another interactive element).
   return html`
-    <button type="button" class=${`sk-chat-item ${active ? "active" : ""}`} onClick=${onOpen}>
-      <${PersonAvatar} name=${item.otherName} url=${item.otherAvatarUrl} size=${44} online=${online} />
-      <span class="sk-chat-item-main">
-        <span class="sk-chat-item-top">
-          <span class=${`sk-chat-name ${item.unread > 0 ? "unread" : ""}`}>${item.otherName ?? t("feed.unknownAuthor")}</span>
-          <span class="sk-chat-time">${listTime(item.lastAt, locale, t)}</span>
+    <div class="sk-chat-row">
+      <button type="button" class=${`sk-chat-item ${active ? "active" : ""}`} onClick=${onOpen}>
+        <span class="sk-chat-item-slot" aria-hidden="true"></span>
+        <span class="sk-chat-item-main">
+          <span class="sk-chat-item-top">
+            <span class=${`sk-chat-name ${item.unread > 0 ? "unread" : ""}`}>${item.otherName ?? t("feed.unknownAuthor")}</span>
+            <span class="sk-chat-time">${listTime(item.lastAt, locale, t)}</span>
+          </span>
+          <span class="sk-chat-item-bottom">
+            <span class=${`sk-chat-preview ${item.unread > 0 ? "unread" : ""}`}>${preview}</span>
+            ${item.unread > 0 && html`<span class="sk-chat-unread">${item.unread > 99 ? "99+" : item.unread}</span>`}
+          </span>
         </span>
-        <span class="sk-chat-item-bottom">
-          <span class=${`sk-chat-preview ${item.unread > 0 ? "unread" : ""}`}>${preview}</span>
-          ${item.unread > 0 && html`<span class="sk-chat-unread">${item.unread > 99 ? "99+" : item.unread}</span>`}
-        </span>
-      </span>
-    </button>
+      </button>
+      <button type="button" class="sk-chat-avatar-hit" data-testid="chat-list-avatar"
+        title=${t("people.openProfile", { name: item.otherName ?? t("feed.unknownAuthor") })}
+        onClick=${() => openProfile(item)}>
+        <${PersonAvatar} name=${item.otherName} url=${item.otherAvatarUrl} size=${44} online=${online} />
+      </button>
+    </div>
   `;
 }
 

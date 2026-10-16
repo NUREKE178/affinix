@@ -8,6 +8,7 @@
 // @username, avatar, role and bio. Never e-mail, and never readable by anon.
 import { useState, useEffect } from "./preact.js";
 import { requireSupabase } from "./supabaseClient.js";
+import { withTimeout } from "./async.js";
 import { fetchAuthorsById } from "./postsStore.js";
 
 export const MIN_QUERY = 2;
@@ -66,7 +67,7 @@ export async function fetchPerson(id) {
   if (!id) return null;
   const hit = cachedPerson(id);
   if (hit) return hit;
-  const rows = await fetchAuthorsById([id]);
+  const rows = await withTimeout(fetchAuthorsById([id]), 10000); // a dropped connection must not leave the bio skeleton up forever
   const person = rows[id] ? toPerson(rows[id]) : null;
   remember(person);
   return person;
@@ -103,7 +104,7 @@ export async function searchPeople(raw) {
     queries.push(sb.from("profiles_public").select(COLUMNS).ilike("username", `${likeEscape(handle)}%`).order("username", { ascending: true }).limit(MAX_RESULTS));
     queries.push(sb.from("profiles_public").select(COLUMNS).ilike("username", `%${likeEscape(handle)}%`).order("username", { ascending: true }).limit(MAX_RESULTS));
   }
-  const answers = await Promise.all(queries);
+  const answers = await withTimeout(Promise.all(queries), 12000);
   const failed = answers.filter((a) => a.error);
   if (failed.length === answers.length) throw failed[0].error;
 

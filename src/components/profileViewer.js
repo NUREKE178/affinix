@@ -129,7 +129,7 @@ function ProfileCard({ view, mounted, phase, t }) {
         ${arena && html`<${ArenaStrip} arena=${arena} t=${t} />`}
         ${(showFriends || showStreak) && html`
           <div class="sk-profile-chips">
-            ${showStreak && html`<span class="sk-pchip" title=${t("arena.quests.streakTitle")}><${Icon} name="flame" size=${13} /> ${arena.streak}</span>`}
+            ${showStreak && html`<span class="sk-pchip" title=${t("arena.quests.streakTitle")}><${Icon} name="flame" size=${13} /> ${arena.streak} ${t(arena.streak === 1 ? "arena.quests.dayOne" : "arena.quests.days")}</span>`}
             ${showFriends && html`<span class="sk-pchip" data-testid="profile-friends"><${Icon} name="friends" size=${13} /> ${t("friends.countLabel", { count: friendsCount })}</span>`}
           </div>
         `}

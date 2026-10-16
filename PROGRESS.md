@@ -3543,7 +3543,8 @@ signed-in member (name, @username, avatar, role, bio; never e-mail; not readable
   notification bell (the text still navigates), Team members (real avatars now; the name shown to others is the profile name,
   never the e-mail fallback: `fetchOrgMembers` returns `fullName` / `avatarUrl`), Arena Rankings rows, the lobby's top three
   and the "taste twins" of the daily report. `AuthorCard` and the per-page popover state in Feed / Favorites / Friends were
-  removed. Messages list rows still open the conversation (the profile is one tap away in the chat header).
+  removed. In the Messages list the avatar is its own button laid over the row's reserved slot (two sibling buttons, nothing
+  interactive inside another): the avatar opens the profile, the rest of the row still opens the conversation.
 - **Arena keys stand down** while a profile is open (`isProfileOpen()` in `useArenaKeys`); the popover's Esc is marked handled so
   it does not also mean "leave the round".
 - **Bug fixed on the way**: the Friends state of `FriendButton` used the translation key `friends.friends`, which did not exist
@@ -3551,7 +3552,7 @@ signed-in member (name, @username, avatar, role, bio; never e-mail; not readable
 - i18n: `people.*` (17 keys) + `friends.friends`; all three locales at 1,115 keys. Styles: `.sk-person*`, `.sk-profile*`,
   `.sk-pstats`, `.sk-find*` at the end of `styles.css` (no new Tailwind classes; the popover keeps `font-semibold
   text-graphite-100` / `text-sm text-graphite-400` on name / role so older selectors still match).
-- Tests: `test_people.mjs` (58 checks: search incl. debounce, escaping, stale answers, error + retry, Kazakh letters, friend /
-  self / stranger states; the popover from Feed, Friends, Messages, Team, notifications, back button; phone width; ru / kk / en;
+- Tests: `test_people.mjs` (68 checks: search incl. debounce, escaping, stale answers, error + retry, Kazakh letters, friend /
+  self / stranger states; a search that never answers ends in the error state after 12 s; the popover from Feed, Friends, Messages (header and list avatars), Team, notifications, back button; phone width; ru / kk / en;
   screenshots), Arena suite extended with B4b–d and N1–N9 (twins, lobby board, rankings rows with the real database, Enter / Esc
   behind the popover). `check_locale_parity` now takes `ROOT` so it checks the working copy, not `main`.

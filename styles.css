@@ -1021,6 +1021,17 @@ html { scroll-behavior: smooth; }
 }
 .sk-chat-item:hover { background: rgba(255,255,255,.04); }
 .sk-chat-item.active { background: var(--well); box-shadow: var(--sh-well); }
+/* the avatar is its own button (opens the profile) laid over the row's reserved slot */
+.sk-chat-row { position: relative; }
+.sk-chat-row:hover > .sk-chat-item:not(.active) { background: rgba(255,255,255,.04); }
+.sk-chat-item-slot { flex: 0 0 44px; width: 44px; height: 44px; }
+.sk-chat-avatar-hit {
+  position: absolute; left: 10px; top: 50%; transform: translateY(-50%);
+  padding: 0; margin: 0; border: 0; border-radius: 50%; background: none; color: inherit; line-height: 0; cursor: pointer;
+  transition: filter var(--sk-dur-fast), transform var(--sk-dur-fast) var(--sk-ease-standard);
+}
+.sk-chat-avatar-hit:hover { filter: brightness(1.18); }
+.sk-chat-avatar-hit:active { transform: translateY(-50%) scale(.96); }
 .sk-chat-item-main { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 3px; }
 .sk-chat-item-top, .sk-chat-item-bottom { display: flex; align-items: center; justify-content: space-between; gap: 8px; min-width: 0; }
 .sk-chat-name { font-size: 14px; font-weight: 500; color: #dcdde1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
@@ -1183,7 +1194,7 @@ html { scroll-behavior: smooth; }
 }
 /* Arena numbers on the popover: a small display window, three readouts */
 .sk-pstats {
-  display: grid; grid-template-columns: repeat(var(--cols, 3), minmax(0, 1fr)); margin-top: 14px; overflow: hidden;
+  display: grid; grid-template-columns: minmax(0, .8fr) minmax(0, .8fr) minmax(0, 1.4fr); margin-top: 14px; overflow: hidden;
   border-radius: 12px; background: var(--well); border: 1px solid rgba(0,0,0,.6); box-shadow: var(--sh-well);
 }
 .sk-pstat { min-width: 0; padding: 10px 12px; }
