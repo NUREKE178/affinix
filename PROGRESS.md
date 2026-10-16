@@ -3417,3 +3417,69 @@ the user-menu modes, selectors for the renamed classes (`text-slate-*` -> `text-
 widths, phone header, sliding language key, preview interaction, scroll-reveal, every image loads, reduced motion).
 Two cases of `test_loading_upgrade.mjs` (results / reports "loading UI clears") still fail exactly as they did before
 this work -- they come from that script's mock data.
+
+---
+
+## Arena -- design duels that keep people on the site for hours (migration 0021)
+
+Goal of this pass: give people a reason to stay 3-4 hours instead of 5 minutes, and make that measurable.
+**Arena** (sidebar -> Community -> Arena, `#/app/arena`) is a game built on what the product is about -- judging designs:
+two specimens side by side, one question ("Which looks more premium?"), pick one.
+
+**The loop.** Rounds of 10 duels; specimens are procedurally drawn SVGs of 7 families (logo marks, brand colour
+cards, CTA buttons, UI cards, packaging, ad/type posters, app icons), questions are the experiment builder's own
+dimensions (Preference, Attention, Trust, Quality, Premium, Clarity, Purchase intention), so researchers and players share
+one vocabulary. Keys: `1`/`2` or arrows to pick, `Space`/`Enter` to continue, `S` to skip; auto-advance after the reveal is
+a switch (default on, 2.6 s, shown as a countdown on the Next key). The reveal shows the community split when there is one
+(the specimen's record over all its duels otherwise), XP, the combo bonus, an instant insight about the pick ("You went for
+the warm one") and, for eye tests, the measured contrast of each side.
+
+**What keeps people playing** (all real, nothing fabricated):
+- XP = 10 per vote + up to +10 flow bonus (consecutive answers faster than 12 s and slower than 0.6 s) + 5 for the first vote
+  ever on a duel; levels cost `50*L*(L-1)` XP (L2 = 100, L10 = 4 500), 8 ranks (Novice ... Maestro).
+- Daily streak (local day), 3 quests a day (one easy / medium / hard, never two of a kind, e.g. "Spend 60 minutes in the
+  Arena") + a clear bonus, 23 badges incl. 1 h and 3 h in a single day.
+- **Daily challenge**: the same 10 duels for everybody on a given day (+100 XP). Because everyone answers the same pairs the
+  community numbers fill in fast even with few players; afterwards a report shows how everyone answered and **who thinks
+  like you** (agreement on the shared duels, friends flagged).
+- **Eye tests**: some questions ("Which text is easier to read?") have a measurable right answer (WCAG contrast x size);
+  a pair is only dealt when one side clearly wins, so feedback is never a judgement call.
+- **Taste DNA**: seven trait axes (cool-warm, delicate-bold, sharp-round, dense-airy, muted-vivid, minimal-rich,
+  light-dark), measured on every specimen; the player's lean on each axis (overall and per question), nine taste types,
+  a one-line standout insight, "Share to Feed".
+- Rankings (week / all time, everyone / friends, opt-out switch), a "Top this week" preview in the lobby, a dashboard card
+  and an attention badge on the sidebar item once someone has played.
+- **Seasons**: a season is a UTC month and re-seeds every pool, so the Arena never runs out of fresh specimens.
+
+**Measuring the goal.** Active time (page visible, input within 20 s) is counted per day in 30 s slices and synced; the
+Profile tab shows today / last 7 days / best day, and admins get an "Arena usage" panel in Rankings (players per day, avg
+minutes, players over 1 h and over 3 h) from `arena_admin_stats()`.
+
+**Architecture.**
+- `src/lib/arena/` -- `catalog.js` (vocabulary), `stimuli.js` + `families/*.js` (specimen generators, pure functions of
+  `(season, family, index)`; a throwing builder falls back to a neutral tile), `sampler.js` (round planner, daily set, eye-test
+  pair finder), `rules.js` (XP / levels / quests / badges / streaks), `progress.js` (state = confirmed base + pending events,
+  `fold`), `ledger.js` (every answered duel as one integer), `dna.js`, `traits.js`, `color.js`, `palettes.js`.
+- `src/lib/arenaStore.js` -- local-first: everything is applied on screen and written to localStorage at once; votes, time slices
+  and claims queue and sync in the background (UUID-keyed, so a retry never double-counts). Without migration 0021 (or offline)
+  it keeps working from the device and catches up on the next visit. Flushes and state refreshes never overlap.
+- `src/pages/Arena.js` + `src/pages/arena/{Play,Quests,Rankings,Profile,DailyReport,parts}.js`, `arena.css`. The page and the
+  generators are a lazy chunk (`lib/lazyPage.js`): the dashboard only loads `arenaStore.js` (progress without network).
+- **Database** `supabase/migrations/0021_arena.sql` (apply with `supabase db push`): `arena_votes` (private, one row per
+  player/duel/question), `arena_stim` (per-specimen win/loss), `arena_profiles`, `arena_daily`, `arena_slices`,
+  `arena_quest_defs`; RLS on, no direct access except reading your own totals; everything goes through SECURITY DEFINER
+  functions `arena_state / arena_tallies / arena_submit / arena_claim / arena_my_votes / arena_leaderboard /
+  arena_set_visibility / arena_daily_report / arena_admin_stats` which re-derive XP, streaks, quest claims and badges
+  (the browser cannot forge the ranking). Eye accuracy is the one stat taken on trust (it is private and not ranked).
+
+**Verified.** PostgreSQL 16 (local harness): 104 SQL assertions (idempotent retries, duplicate duels, XP rules, validation,
+crowd match, streak gaps / back-dating / clamping, time slices, quest slate + claims, badges, tallies, paging, rankings,
+friends filter, privacy, daily report, admin gate, closed tables, daily cap); JS rules vs SQL functions 1 598 comparisons,
+0 mismatches. Headless Chromium with the arena RPCs wired to the real database: 76 checks (full round by keyboard, reload
+persistence, DB mirror, daily challenge + claim + report + twins, quests, offline and "migration not applied" recovery,
+profile / DNA / badges, rankings and privacy, phone layout, ru / kk / en, time tracking, reduced motion, dashboard card,
+lazy loading). Specimens: all 7 families x 32 x 12 seasons built without NaN / forbidden elements / unprefixed ids,
+deterministic, ~0.2-0.5 ms each, trait spread checked per family.
+
+**Not done / next.** Researchers opting real experiments into the Arena (a community-votes card in Results), sound, friend
+challenges, a hall of fame per season.

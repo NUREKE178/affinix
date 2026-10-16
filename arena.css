@@ -53,6 +53,16 @@
 .ar-lobby-meta { display: flex; justify-content: flex-end; }
 .ar-back { display: flex; }
 
+.ar-board { padding: 16px 20px; display: flex; flex-direction: column; gap: 10px; }
+.ar-board-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.ar-board-link { display: inline-flex; align-items: center; gap: 5px; font-size: 12.5px; font-weight: 500; color: var(--g-400); transition: color var(--sk-dur-fast); }
+.ar-board-link:hover { color: var(--g-50); }
+.ar-board-rows { display: grid; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); gap: 8px 14px; }
+.ar-board-row { position: relative; display: flex; align-items: center; gap: 10px; min-width: 0; padding: 8px 12px; border-radius: 10px; background: rgba(0,0,0,.2); border: 1px solid var(--hair); }
+.ar-board-row[data-me="true"] { background: var(--well); box-shadow: var(--sh-well); }
+.ar-board-name { flex: 1; min-width: 0; font-size: 13.5px; font-weight: 500; color: var(--g-100); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.ar-board-xp { font-size: 14px; color: var(--g-50); }
+
 .ar-intro { padding: 18px 20px; display: flex; flex-direction: column; gap: 14px; }
 .ar-intro-title { font-size: 14px; font-weight: 600; color: var(--g-100); }
 .ar-intro-steps { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 18px; }
@@ -73,6 +83,10 @@
 .ar-q-tag[data-tag="eye"] { color: #86e0b9; }
 .ar-q-text { margin-top: 9px; font-size: 22px; line-height: 1.2; font-weight: 600; letter-spacing: -.02em; color: var(--g-50); text-wrap: balance; }
 .ar-console-side { display: flex; flex-direction: column; align-items: flex-end; gap: 8px; flex: none; }
+.ar-console-side-top { display: flex; align-items: center; gap: 14px; }
+.ar-leave { display: inline-grid; place-items: center; width: 26px; height: 26px; border-radius: 8px; color: var(--g-400); background: var(--key); border: 1px solid var(--edge); box-shadow: var(--sh-key); transition: color var(--sk-dur-fast), background var(--sk-dur-fast), transform var(--sk-dur-fast); }
+.ar-leave:hover { color: #fff; background: var(--key-hover); }
+.ar-leave:active { background: var(--key-down); box-shadow: var(--sh-key-down); transform: translateY(1px); }
 .ar-round-count { font-size: 13px; color: var(--g-300); }
 .ar-round-count .sk-unit { font-size: 13px; color: var(--g-500); }
 

@@ -6,7 +6,8 @@ import { useT, getLocale } from "../../lib/i18n.js";
 import { getStimulus, renderSvg } from "../../lib/arena/stimuli.js";
 import { TRAIT_IDS } from "../../lib/arena/traits.js";
 import { flowBonus, DAILY_SET_BONUS, DAILY_SET_SIZE, MAX_FLOW_BONUS, XP_BASE, PIONEER_BONUS, seasonOf } from "../../lib/arena/rules.js";
-import { summarize, useArenaClock, roundPhase } from "../../lib/arenaStore.js";
+import { summarize, useArenaClock, roundPhase, fetchLeaderboard } from "../../lib/arenaStore.js";
+import { Avatar } from "../../components/avatar.js";
 import { navigate } from "../../router.js";
 import { Specimen, Ladder, nf, clock } from "./parts.js";
 import { DailyReport } from "./DailyReport.js";
@@ -30,6 +31,7 @@ function useArenaKeys(arena, onStart) {
       if (el?.closest?.("[data-ar-native]") && (e.key === "Enter" || e.key === " ")) return;
       const k = e.key;
       const phase = roundPhase(); // read at the moment of the key press, never from a stale render
+      if ((phase === "choose" || phase === "reveal") && k === "Escape") { e.preventDefault(); actions.endRound(); return; }
       if (phase === "choose") {
         if (k === "1" || k === "ArrowLeft") { e.preventDefault(); actions.vote(0); }
         else if (k === "2" || k === "ArrowRight") { e.preventDefault(); actions.vote(1); }
@@ -73,6 +75,38 @@ function SyncBadge({ remote, pending }) {
     : remote === "offline" ? t("arena.sync.offline")
     : remote === "unavailable" ? t("arena.sync.device") : t("arena.sync.checking");
   return html`<span title=${remote === "unavailable" ? t("arena.sync.deviceHint") : undefined} data-testid="arena-sync" data-remote=${remote}><${Badge} tone=${tone}>${label}<//></span>`;
+}
+
+/** The top of this week's table, right in the lobby: a reason to play one more round. */
+function LobbyBoard({ t, remote }) {
+  const [data, setData] = useState(null);
+  useEffect(() => {
+    if (remote !== "ready") return undefined;
+    let off = false;
+    fetchLeaderboard("week", false).then((d) => { if (!off) setData(d); }).catch(() => {});
+    return () => { off = true; };
+  }, [remote]);
+  const rows = data?.rows ?? [];
+  if (rows.length < 2) return null;
+  const me = rows.find((r) => r.isMe);
+  return html`
+    <section class="ar-board sk-panel" data-testid="arena-lobby-board">
+      <div class="ar-board-head">
+        <span class="sk-caption">${t("arena.lobby.boardTitle")}</span>
+        <button type="button" class="ar-board-link" onClick=${() => navigate("/app/arena?tab=rankings")}>${t("arena.lobby.boardAll")}<${Icon} name="arrowRight" size=${13} /></button>
+      </div>
+      <div class="ar-board-rows">
+        ${rows.slice(0, 3).map((r) => html`
+          <div class="ar-board-row" key=${r.userId} data-me=${r.isMe}>
+            <span class="ar-row-rank sk-num">${r.rank}</span>
+            <${Avatar} name=${r.name} url=${r.avatarUrl} size=${28} />
+            <span class="ar-board-name">${r.name ?? t("feed.unknownAuthor")}${r.isMe ? html` <span class="ar-row-you">${t("arena.rankings.you")}</span>` : null}</span>
+            <span class="sk-num ar-board-xp">${nf(r.xp)}<span class="sk-unit">XP</span></span>
+          </div>`)}
+        ${data?.me && !me && rows.length >= 3 && html`<div class="ar-board-row ar-board-me" data-me="true"><span class="ar-row-rank sk-num">${data.me.rank}</span><span class="ar-board-name">${t("arena.rankings.you")}</span><span class="sk-num ar-board-xp">${nf(data.me.xp)}<span class="sk-unit">XP</span></span></div>`}
+      </div>
+    </section>
+  `;
 }
 
 function Intro() {
@@ -170,6 +204,7 @@ function Lobby({ arena, onStart }) {
         <${StatTile} label=${t("arena.lobby.statTime")} value=${html`<span data-testid="arena-time">${clock(seconds)}</span>`} hint=${t("arena.lobby.statTimeHint")} />
         <${StatTile} label=${t("arena.lobby.statEye")} value=${eyePct} hint=${t("arena.lobby.statEyeHint", { c: view.eye.correct, n: view.eye.total })} />
       </div>
+      <${LobbyBoard} t=${t} remote=${remote} />
       <div class="ar-lobby-meta"><${SyncBadge} remote=${remote} pending=${pendingCount} /></div>
     </div>
   `;
@@ -287,7 +322,10 @@ function Console({ arena }) {
           <h3 class="ar-q-text" data-testid="arena-question">${t(`arena.q.${duel.dim}`)}</h3>
         </div>
         <div class="ar-console-side">
-          <${Ladder} total=${round.duels.length} idx=${round.idx} results=${round.results} phase=${round.phase} />
+          <div class="ar-console-side-top">
+            <${Ladder} total=${round.duels.length} idx=${round.idx} results=${round.results} phase=${round.phase} />
+            <button type="button" class="ar-leave" onClick=${actions.endRound} aria-label=${t("arena.console.leave")} title=${`${t("arena.console.leave")}  Esc`} data-testid="arena-leave"><${Icon} name="close" size=${14} /></button>
+          </div>
           <span class="ar-round-count sk-num" data-testid="arena-progress">${round.idx + 1}<span class="sk-unit">/ ${round.duels.length}</span></span>
         </div>
       </header>

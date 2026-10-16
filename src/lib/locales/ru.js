@@ -452,6 +452,8 @@ export default {
       freeTitle: "Свободная игра",
       freeBody: "Бесконечные раунды по 10 свежих дуэлей. Быстрые ответы по чутью набирают серию.",
       season: "Сезон {name} · новые дизайны каждый месяц",
+      boardTitle: "Лидеры недели",
+      boardAll: "Весь рейтинг",
       freeStart: "Начать раунд",
       goal: "Цель на сегодня",
       statDuels: "Дуэлей сегодня",
@@ -466,6 +468,7 @@ export default {
       statEyeHint: "Верно {c} из {n}",
     },
     console: {
+      leave: "Завершить раунд",
       choose: "Выбрать",
       progress: "Дуэль {n} из {total}",
       stage: "Два дизайна для сравнения",

@@ -452,6 +452,8 @@ export default {
       freeTitle: "Free play",
       freeBody: "Endless rounds of 10 fresh duels. Quick gut calls build your flow.",
       season: "Season {name} · new designs every month",
+      boardTitle: "Top this week",
+      boardAll: "Full rankings",
       freeStart: "Start a round",
       goal: "Today's goal",
       statDuels: "Duels today",
@@ -466,6 +468,7 @@ export default {
       statEyeHint: "{c} of {n} right",
     },
     console: {
+      leave: "End round",
       choose: "Choose",
       progress: "Duel {n} of {total}",
       stage: "Two designs to compare",

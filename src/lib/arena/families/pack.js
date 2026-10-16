@@ -156,17 +156,22 @@ function planPack(season) {
     slots.push(...shuffle(r, block));
   }
   slots.length = 32;
-  const cats = [];
-  while (cats.length < 32) cats.push(...shuffle(r, CATS));
-  const lists = {}, used = {};
-  const brands = shuffle(r, BRAND_NAMES);
-  slots.forEach((s, i) => {
-    const cat = s.design === "premium" ? "dark" : cats[i];
-    lists[cat] = lists[cat] ?? shuffle(r, CAT[cat]);
-    used[cat] = (used[cat] ?? -1) + 1;
-    s.pal = lists[cat][used[cat] % lists[cat].length];
-    s.cat = cat;
-    s.brand = brands[i % brands.length];
+  // colour moods: premium prints are always dark; the "vivid" mood only goes to loud prints (never minimal / kraft)
+  const brands = shuffle(r, BRAND_NAMES), lists = {}, used = {};
+  const rest = slots.filter((x) => x.design !== "premium"), cats = [];
+  while (cats.length < rest.length) cats.push(...shuffle(r, CATS));
+  const pool = rest.slice();
+  cats.slice(0, rest.length).forEach((cat) => {
+    let k = 0;
+    if (cat === "vivid") while (k < pool.length - 1 && (pool[k].design === "minimal" || pool[k].design === "kraft")) k++;
+    pool.splice(k, 1)[0].cat = cat;
+  });
+  slots.forEach((x, i) => {
+    if (x.design === "premium") x.cat = "dark";
+    lists[x.cat] = lists[x.cat] ?? shuffle(r, CAT[x.cat]);
+    used[x.cat] = (used[x.cat] ?? -1) + 1;
+    x.pal = lists[x.cat][used[x.cat] % lists[x.cat].length];
+    x.brand = brands[i % brands.length];
   });
   return slots;
 }
@@ -670,9 +675,13 @@ function stage(g, res) {
   const { r, pal, id } = g, d = res.d, gy = res.gy;
   const L = lightness(d.base), [ha, sa] = hexToHsl(pal.a);
   const gray = ha > 200 && ha < 330 ? "#e8ebee" : "#eeebe5", tintA = mix(pal.a, "#ffffff", 0.84), tintB = mix(pal.b, "#ffffff", 0.82);
-  const moody = chance(r, L < 34 ? 0.8 : L > 80 ? 0.1 : 0.18);
+  const loud = g.cat === "vivid", moody = !loud && chance(r, L < 34 ? 0.8 : L > 80 ? 0.1 : 0.18);
   let wall, spot = false;
-  if (moody) wall = hsl(ha, Math.min(0.3, sa * 0.5), range(r, 0.09, 0.15));
+  if (loud) {
+    wall = hsl(pick(r, [ha, hexToHsl(pal.b)[0]]), 0.8, L > 70 ? 0.62 : 0.74);
+    if (Math.abs(lightness(wall) - L) < 16) wall = hsl(ha + 180, 0.8, L > 55 ? 0.5 : 0.78);
+    spot = chance(r, 0.4);
+  } else if (moody) wall = hsl(ha, Math.min(0.3, sa * 0.5), range(r, 0.09, 0.15));
   else {
     const opts = L < 40 ? [tintA, gray, tintB, mix(pal.b, "#fff", 0.66), mix(pal.a, "#fff", 0.7)] : L > 80 ? [mix(pal.a, "#fff", 0.52), mix(pal.b, "#fff", 0.5), "#d9dde2", mix(pal.a, "#fff", 0.66)] : [tintA, gray, tintB, mix(pal.b, "#fff", 0.6)];
     wall = pick(r, opts);
@@ -699,7 +708,7 @@ export function build(rand, ctx) {
   const slot = planPack(String(ctx.season))[ctx.index % 32];
   const pal = PAL[slot.pal];
   const g = {
-    id: ctx.id, r: rand, pal, form: slot.form, design: slot.design, brand: slot.brand,
+    id: ctx.id, r: rand, pal, form: slot.form, design: slot.design, brand: slot.brand, cat: slot.cat,
     dark: lightness(pal.bg) < 40,
     ink: contrast(pal.ink, lightness(pal.bg) < 40 ? pal.bg : pal.surface) >= 4.5 ? pal.ink : lightness(pal.bg) < 40 ? LT : DK,
     dk: lightness(pal.ink) < 30 ? pal.ink : DK,
