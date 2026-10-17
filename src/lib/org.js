@@ -78,6 +78,7 @@ export async function fetchOrgMembers(organizationId) {
     id: row.id,
     userId: row.user_id,
     role: row.role,
+    joinedAt: row.created_at ?? null,
     name: row.profile?.full_name || row.profile?.email || "—",
     // the real name only (never the e-mail fallback above): this is what the profile popover shows
     fullName: row.profile?.full_name ?? null,

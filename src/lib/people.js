@@ -10,6 +10,7 @@ import { useState, useEffect } from "./preact.js";
 import { requireSupabase } from "./supabaseClient.js";
 import { withTimeout } from "./async.js";
 import { fetchAuthorsById } from "./postsStore.js";
+import { withPlatformRole, platformColumnMissing } from "./platformRole.js";
 
 export const MIN_QUERY = 2;
 export const MAX_RESULTS = 20;
@@ -32,6 +33,7 @@ export function toPerson(x) {
     avatarUrl: present(x.avatarUrl, x.avatar_url, x.authorAvatarUrl, x.otherAvatarUrl, x.actorAvatarUrl),
     roleTitle: present(x.roleTitle, x.role_title, x.authorRoleTitle, x.otherRoleTitle),
     bio: present(x.bio, x.authorBio, x.otherBio),
+    platformRole: present(x.platformRole, x.platform_role),
   };
 }
 
@@ -95,18 +97,22 @@ export async function searchPeople(raw) {
   const handle = q.replace(/ /g, "").toLowerCase(); // a username never contains a space
   const oneWord = words.length === 1;
 
-  let byName = sb.from("profiles_public").select(COLUMNS);
+  const columns = withPlatformRole(COLUMNS);
+  let byName = sb.from("profiles_public").select(columns);
   for (const w of words) byName = byName.ilike("full_name", `%${likeEscape(w)}%`);
   byName = byName.order("full_name", { ascending: true }).limit(MAX_RESULTS);
   const queries = [byName];
   if (oneWord) {
     // ordered, so an exact @username (a prefix of every longer one) always sorts first
-    queries.push(sb.from("profiles_public").select(COLUMNS).ilike("username", `${likeEscape(handle)}%`).order("username", { ascending: true }).limit(MAX_RESULTS));
-    queries.push(sb.from("profiles_public").select(COLUMNS).ilike("username", `%${likeEscape(handle)}%`).order("username", { ascending: true }).limit(MAX_RESULTS));
+    queries.push(sb.from("profiles_public").select(columns).ilike("username", `${likeEscape(handle)}%`).order("username", { ascending: true }).limit(MAX_RESULTS));
+    queries.push(sb.from("profiles_public").select(columns).ilike("username", `%${likeEscape(handle)}%`).order("username", { ascending: true }).limit(MAX_RESULTS));
   }
   const answers = await withTimeout(Promise.all(queries), 12000);
   const failed = answers.filter((a) => a.error);
-  if (failed.length === answers.length) throw failed[0].error;
+  if (failed.length === answers.length) {
+    if (platformColumnMissing(failed[0].error)) return searchPeople(raw); // migration 0025 is not applied yet: once more without the column
+    throw failed[0].error;
+  }
 
   const byId = new Map();
   for (const a of answers) for (const row of a.data ?? []) if (!byId.has(row.id)) byId.set(row.id, toPerson(row));

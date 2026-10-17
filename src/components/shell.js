@@ -32,6 +32,9 @@ const COMMUNITY_NAV = [
 ];
 
 // Team and billing are tabs of Settings (the organisation's own page), not sidebar items.
+// only platform admins (and the owner) see this one
+const ADMIN_NAV_ITEM = { id: "admin", key: "shell.workspace.admin", icon: "shield", path: "/app/admin" };
+
 const WORKSPACE_NAV = [
   { id: "profile", key: "shell.workspace.profile", icon: "user", path: "/profile" },
   { id: "settings", key: "shell.workspace.settings", icon: "settings", path: "/app/settings", also: ["/app/team", "/app/billing"] },
@@ -182,6 +185,8 @@ function CollapseKey({ mode, collapsed, onToggle }) {
 function SidebarContent({ currentPath, onNavigate, collapsed = false, sidebarMode, onChangeSidebarMode, onToggleSidebar }) {
   const t = useT();
   const { org } = useCurrentOrg();
+  const { profile } = useMyProfile();
+  const workspaceNav = profile?.is_admin ? [ADMIN_NAV_ITEM, ...WORKSPACE_NAV] : WORKSPACE_NAV;
   const { incoming } = useFriends();
   const { unreadTotal } = useConversations();
   const arena = useArenaLocal();
@@ -210,7 +215,7 @@ function SidebarContent({ currentPath, onNavigate, collapsed = false, sidebarMod
         ${collapsed
           ? html`<div class="my-3 mx-3 border-t border-graphite-800"></div>`
           : html`<div class="sk-caption overflow-hidden whitespace-nowrap pt-5 pb-1.5 px-3">${t("shell.workspaceLabel")}</div>`}
-        ${WORKSPACE_NAV.map((item) => html`<${NavItem} key=${item.id} item=${item} currentPath=${currentPath} onNavigate=${onNavigate} t=${t} collapsed=${collapsed} />`)}
+        ${workspaceNav.map((item) => html`<${NavItem} key=${item.id} item=${item} currentPath=${currentPath} onNavigate=${onNavigate} t=${t} collapsed=${collapsed} />`)}
       </nav>
 
       <div class="border-t border-graphite-800 py-3 space-y-2">

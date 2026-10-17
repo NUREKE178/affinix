@@ -37,6 +37,7 @@ const Arena = lazyPage(() => import("./pages/Arena.js"), "Arena");
 // Crowd tests: the page that makes one and the page that reads one (the list lives on the Research page).
 const CrowdCreate = lazyPage(() => import("./pages/crowd/Create.js"), "CrowdCreate");
 const CrowdResults = lazyPage(() => import("./pages/crowd/Results.js"), "CrowdResults");
+const Admin = lazyPage(() => import("./pages/Admin.js"), "Admin");
 
 const DASHBOARD_ROUTES = [
   { pattern: "/app/overview", Page: Overview },
@@ -58,6 +59,7 @@ const DASHBOARD_ROUTES = [
   { pattern: "/app/team", Page: Team },
   { pattern: "/app/billing", Page: Billing },
   { pattern: "/app/settings", Page: Settings },
+  { pattern: "/app/admin", Page: Admin },
   { pattern: "/profile", Page: Profile },
 ];
 

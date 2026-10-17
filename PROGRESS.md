@@ -3732,3 +3732,34 @@ below the list (an earlier, explicit decision).
 - i18n: +31 `feed.*` and +3 `common.*` keys (1,371 per language).
 - Tests: `test_feed_v2.mjs` (75 browser checks) against the in-memory Supabase stand-in (`msgfake.mjs`, extended with posts / likes / saves / comments);
   all 14 earlier feed / favorites / notification tests still pass. Honest limit: not run against a live Supabase.
+
+## Platform roles, admin panel, Team with a purpose (migration 0025)
+
+Request: "make a strong admin panel; `owner` only for my account, nobody else may show `owner` on a profile; give Team a purpose".
+
+- **Two different roles were being mixed.** The company role (`organization_members.role`: owner / admin / researcher / viewer) is "owner" for
+  everybody, because every signup founds its own company. That is what showed on every profile. The *platform* role is new and separate:
+  `profiles.is_owner` (exactly one person: partial unique index `profiles_single_owner`, check `is_owner => is_admin`) and `profiles.is_admin`.
+  The company role is now called **Founder** in the UI (`team.roles.owner`) and the profile hides it; the platform badge (crown / shield, new
+  `components/platformBadge.js`) shows only for the owner and admins: own profile, public profile, the profile popover, Team rows, the admin panel.
+- **Security hole closed.** `profiles: update own` (0002) had no column list, so anyone could `update profiles set is_admin = true` on themselves
+  and see the Arena admin panel. A BEFORE UPDATE trigger (`profiles_guard_platform_flags`) now refuses changes of `is_admin` / `is_owner` when
+  `current_user` is `authenticated` or `anon`; SECURITY DEFINER functions and migrations still can. The owner is set by
+  `bootstrap_platform_owner('nu4lan')` at the end of the migration (by username; if the username does not exist nobody is owner until it is run again).
+- **Backend** (`supabase/migrations/0025_platform_admin.sql`): `profiles_public.platform_role`, `get_public_profile` returns it, table `admin_audit`
+  (RLS on, no policies, written by triggers / functions only), triggers that log a post / comment deleted by somebody other than its author
+  (cascade-deleted comments are skipped), `admin_overview()`, `admin_users(query, limit, offset)`, `admin_set_admin(user, bool)` (owner only),
+  `admin_audit_list(limit)`. All `_require_admin()`; the stats tolerate tables that older migrations did not create.
+- **Admin panel** (`/app/admin`, sidebar item for admins; tabs in `?tab=`): *Overview* (attention card for reported Arena tests, four KPI strips,
+  the Arena usage block moved here from Rankings), *People* (search, paging, who is admin/owner, company chip, posts / XP / date; grant and revoke
+  with a confirmation, owner only), *Moderation* (Arena crowd-test reports, latest posts and comments with remove + confirmation + link to the feed),
+  *Log* (what admins did). Without migration 0025 it shows a friendly "not connected yet" state; client reads of `platform_role` fall back to the
+  old columns when the column is missing (`lib/platformRole.js`).
+- **Team** (`pages/Team.js`) now has a purpose: a strip that says what it is for, KPIs (members, experiments, published), member rows with avatar,
+  platform badge, experiments created, "in the team since", role select (not for yourself / the founder), remove with confirmation, "Leave team" for
+  a non-founder, an empty "just you" state with an invite button, a "who can do what" matrix that mirrors the RLS policies (cards on a phone),
+  and a role description in the invite dialog.
+- i18n: +~110 keys (`admin.*`, `platform.*`, `team.*`, `shell.workspace.admin`): 1,487 per language, parity OK. Styles: new `admin.css`.
+- Tests: `/tmp/pgtest/test0025.sql` (62 checks on PostgreSQL 16), `test_admin.mjs` (browser, real database behind the admin RPCs), `test_crowd.mjs`
+  adjusted (the moderation block moved from Rankings to the admin panel). Honest limit: not run against a live Supabase.
+- **To apply on the live project**: `supabase db push` (0025; 0023 and 0024 too if not yet), then `notify pgrst, 'reload schema';`.

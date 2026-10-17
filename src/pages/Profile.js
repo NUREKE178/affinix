@@ -10,6 +10,8 @@ import { COUNTRIES, TIMEZONES } from "../lib/questionTypes.js";
 import { shortDate } from "../lib/format.js";
 import { useT, useLocale, setLocale as setAppLocale, LOCALES } from "../lib/i18n.js";
 import { withTimeout } from "../lib/async.js";
+import { PlatformBadge } from "../components/platformBadge.js";
+import { platformRoleOf } from "../lib/platformRole.js";
 
 function initialsFor(nameOrEmail) {
   if (!nameOrEmail) return "?";
@@ -107,8 +109,12 @@ function PersonalTab({ profile, user, org, t }) {
       <div class="flex items-center gap-4">
         <${AvatarEditor} profile=${profile} displayName=${form.full_name || user?.email || user?.phone} t=${t} />
         <div>
-          <div class="font-semibold text-graphite-100">${form.full_name || t("profile.noName")}</div>
-          <div class="text-sm text-graphite-500">${org?.name ?? ""}${org?.role ? ` · ${org.role}` : ""}</div>
+          <div class="flex items-center gap-2 flex-wrap">
+            <span class="font-semibold text-graphite-100">${form.full_name || t("profile.noName")}</span>
+            <${PlatformBadge} role=${platformRoleOf(profile)} />
+          </div>
+          <!-- the role in the company is shown only when it says something: everyone founds their own company, so "owner" is on everybody -->
+          <div class="text-sm text-graphite-500" data-testid="profile-org-line">${org?.name ?? ""}${org?.role && org.role !== "owner" ? ` · ${t(`team.roles.${org.role}`)}` : ""}</div>
           ${profile?.username && html`<div class="text-xs text-graphite-600 mt-0.5">${t("profile.publicProfileUrl", { username: profile.username })}</div>`}
           <button type="button" onClick=${() => navigate("/app/friends")} class="text-xs text-signal-300 hover:text-signal-200 mt-1">
             ${t("friends.countLabel", { count: friends.length })}

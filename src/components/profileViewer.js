@@ -10,6 +10,7 @@ import { useFriendStatus, useFriendsCount } from "../lib/friendsStore.js";
 import { cachedPerson, fetchPerson, toPerson } from "../lib/people.js";
 import { useProfileViewer, openProfile, closeProfile } from "../lib/profileViewer.js";
 import { navigate } from "../router.js";
+import { PlatformBadge } from "./platformBadge.js";
 
 /** The caller's version of the person is shown at once; the authoritative row
  * from profiles_public (cached for a minute) replaces it when it arrives, so a
@@ -118,6 +119,7 @@ function ProfileCard({ view, mounted, phase, t }) {
           <${Avatar} name=${person.name} url=${person.avatarUrl} size=${56} />
           <div class="sk-profile-id">
             <div class="sk-profile-name font-semibold text-graphite-100" data-testid="profile-name">${name}</div>
+            ${person.platformRole && html`<${PlatformBadge} role=${person.platformRole} className="mt-1" />`}
             ${person.username && html`<div class="sk-profile-handle" data-testid="profile-username">@${person.username}</div>`}
             ${person.roleTitle && html`<div class="sk-profile-role text-sm text-graphite-400">${person.roleTitle}</div>`}
           </div>

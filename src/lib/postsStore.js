@@ -2,6 +2,7 @@ import { useState, useEffect } from "./preact.js";
 import { requireSupabase } from "./supabaseClient.js";
 import { getCurrentUser } from "./auth.js";
 import { watchTables, debounce } from "./realtime.js";
+import { withPlatformRole, platformColumnMissing } from "./platformRole.js";
 
 function mapPost(row, author, likedIds, savedIds) {
   return {
@@ -34,7 +35,9 @@ function mapPost(row, author, likedIds, savedIds) {
 export async function fetchAuthorsById(authorIds) {
   if (!authorIds.length) return {};
   const sb = requireSupabase();
-  const { data, error } = await sb.from("profiles_public").select("id, full_name, username, avatar_url, role_title, bio").in("id", authorIds);
+  const run = () => sb.from("profiles_public").select(withPlatformRole("id, full_name, username, avatar_url, role_title, bio")).in("id", authorIds);
+  let { data, error } = await run();
+  if (error && platformColumnMissing(error)) ({ data, error } = await run()); // migration 0025 is not applied yet
   if (error) throw error;
   return Object.fromEntries((data ?? []).map((a) => [a.id, a]));
 }

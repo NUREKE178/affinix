@@ -2,9 +2,12 @@ import { useState, useEffect } from "./preact.js";
 import { useSession } from "./auth.js";
 import { requireSupabase } from "./supabaseClient.js";
 import { adoptProfileLocale } from "./i18n.js";
+import { withPlatformRole, platformColumnMissing } from "./platformRole.js";
 
 const PROFILE_COLUMNS =
   "id, full_name, avatar_url, locale, email, username, bio, role_title, country, timezone, research_interests, public_profile_enabled, notify_email_responses, notify_email_digest, is_admin";
+// is_owner comes with migration 0025
+const columns = () => withPlatformRole(PROFILE_COLUMNS).replace(", platform_role", ", is_owner");
 
 let state = { profile: null, loading: true, loadedForUser: null, error: null };
 const listeners = new Set();
@@ -17,7 +20,8 @@ async function reload(userId) {
   notify();
   try {
     const sb = requireSupabase();
-    const { data, error } = await sb.from("profiles").select(PROFILE_COLUMNS).eq("id", userId).single();
+    let { data, error } = await sb.from("profiles").select(columns()).eq("id", userId).single();
+    if (error && platformColumnMissing(error)) ({ data, error } = await sb.from("profiles").select(columns()).eq("id", userId).single());
     if (error) throw error;
     state = { profile: data, loading: false, loadedForUser: userId, error: null };
     if (data?.locale) adoptProfileLocale(data.locale);

@@ -45,7 +45,7 @@ export function Settings() {
           </div>
         <//>
         <${Field} label=${t("settings.yourRole")}>
-          <${Badge} tone="signal">${org.role}<//>
+          <${Badge} tone="signal">${t(`team.roles.${org.role}`)}<//>
         <//>
       <//>
 

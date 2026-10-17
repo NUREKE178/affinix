@@ -7,6 +7,7 @@ import { FriendButton } from "../components/friendButton.js";
 import { useFriendsCount } from "../lib/friendsStore.js";
 import { useT } from "../lib/i18n.js";
 import { withTimeout } from "../lib/async.js";
+import { PlatformBadge } from "../components/platformBadge.js";
 
 function initialsFor(name) {
   if (!name) return "?";
@@ -64,7 +65,10 @@ export function PublicProfile({ params }) {
                   ? html`<img src=${state.profile.avatar_url} class="h-16 w-16 rounded-full object-cover" />`
                   : html`<div class="h-16 w-16 rounded-full sk-avatar flex items-center justify-center text-xl font-semibold">${initialsFor(state.profile.full_name)}</div>`}
                 <div>
-                  <h1 class="text-lg font-semibold text-graphite-100">${state.profile.full_name || `@${state.profile.username}`}</h1>
+                  <div class="flex items-center gap-2 flex-wrap">
+                    <h1 class="text-lg font-semibold text-graphite-100">${state.profile.full_name || `@${state.profile.username}`}</h1>
+                    <${PlatformBadge} role=${state.profile.platform_role} />
+                  </div>
                   <p class="text-sm text-graphite-400">${[state.profile.role_title, state.profile.org_name].filter(Boolean).join(" · ") || " "}</p>
                   ${friendsCount !== null && html`<p class="text-xs text-graphite-500 mt-1">${t("friends.countLabel", { count: friendsCount })}</p>`}
                 </div>
