@@ -1,13 +1,10 @@
-// Ways into the app besides an email and a password: Google, and a phone number with an SMS code. Shared by the
-// sign-in and sign-up pages (for both of them the first use creates the account).
-import { html, useState, useEffect, useRef } from "../../lib/preact.js";
-import { navigate, HOME_PATH } from "../../router.js";
-import { Field, TextInput, Button } from "../../components/ui.js";
-import { signInWithGoogle, normalizePhone, requestPhoneCode, verifyPhoneCode, friendlyAuthError } from "../../lib/auth.js";
+// The way into the app besides an email and a password: Google. Shared by the sign-in and sign-up pages (for both of
+// them the first use creates the account).
+import { html, useState } from "../../lib/preact.js";
+import { Button } from "../../components/ui.js";
+import { signInWithGoogle, friendlyAuthError } from "../../lib/auth.js";
 import { IS_CONFIGURED } from "../../lib/env.js";
 import { useT } from "../../lib/i18n.js";
-
-const RESEND_SECONDS = 60;
 
 /** The four-colour Google "G" (brand mark, drawn inline so nothing is fetched). */
 function GoogleMark() {
@@ -44,105 +41,4 @@ export function GoogleButton({ onError }) {
 export function OrDivider() {
   const t = useT();
   return html`<div class="au-or" role="separator"><span>${t("auth.social.or")}</span></div>`;
-}
-
-/** Email | Phone switch above the form. */
-export function MethodSwitch({ value, onChange }) {
-  const t = useT();
-  const items = [["email", t("auth.social.methodEmail")], ["phone", t("auth.social.methodPhone")]];
-  return html`
-    <div class="au-seg" role="tablist" data-testid="auth-method">
-      ${items.map(([id, label]) => html`
-        <button type="button" key=${id} role="tab" aria-selected=${value === id} data-on=${value === id} data-testid=${`auth-method-${id}`} onClick=${() => onChange(id)}>${label}</button>`)}
-    </div>
-  `;
-}
-
-/** Phone number -> SMS code -> signed in. */
-export function PhoneAuth({ onError, note }) {
-  const t = useT();
-  const [step, setStep] = useState("phone"); // phone | code
-  const [raw, setRaw] = useState("");
-  const [phone, setPhone] = useState(null);   // the normalised number the code was sent to
-  const [code, setCode] = useState("");
-  const [busy, setBusy] = useState(false);
-  const [wait, setWait] = useState(0);
-  const checking = useRef(false);
-
-  useEffect(() => {
-    if (wait <= 0) return undefined;
-    const id = setTimeout(() => setWait((w) => w - 1), 1000);
-    return () => clearTimeout(id);
-  }, [wait]);
-
-  async function send(e) {
-    e?.preventDefault();
-    onError?.(null);
-    const normal = normalizePhone(raw);
-    if (!normal) { onError?.(t("auth.errors.badPhone")); return; }
-    setBusy(true);
-    try {
-      await requestPhoneCode(normal);
-      setPhone(normal);
-      setCode("");
-      setStep("code");
-      setWait(RESEND_SECONDS);
-    } catch (err) {
-      onError?.(friendlyAuthError(err, t));
-    } finally {
-      setBusy(false);
-    }
-  }
-
-  async function verify(token) {
-    if (checking.current) return;
-    checking.current = true;
-    onError?.(null);
-    setBusy(true);
-    try {
-      await verifyPhoneCode({ phone, token });
-      navigate(HOME_PATH);
-    } catch (err) {
-      onError?.(friendlyAuthError(err, t));
-      setCode("");
-    } finally {
-      checking.current = false;
-      setBusy(false);
-    }
-  }
-
-  function onCodeInput(e) {
-    const digits = e.target.value.replace(/\D/g, "").slice(0, 10);
-    setCode(digits);
-    if (digits.length === 6) verify(digits); // the usual length; a longer code is sent with the button
-  }
-
-  if (step === "code") {
-    return html`
-      <form onSubmit=${(e) => { e.preventDefault(); if (code.length >= 4) verify(code); }} data-testid="auth-phone-code-form">
-        <p class="au-note" data-testid="auth-code-sent">${t("auth.phone.codeSent", { phone })}</p>
-        <${Field} label=${t("auth.phone.codeLabel")} required>
-          <div class="au-code">
-            <${TextInput} value=${code} inputmode="numeric" autocomplete="one-time-code" maxlength="10" autofocus=${true} disabled=${busy}
-              data-testid="auth-code" onInput=${onCodeInput} />
-          </div>
-        <//>
-        <${Button} type="submit" className="w-full" loading=${busy} disabled=${code.length < 4} data-testid="auth-verify">${busy ? t("auth.phone.verifying") : t("auth.phone.verify")}<//>
-        <div class="au-links">
-          <button type="button" class="au-link" disabled=${busy} onClick=${() => { onError?.(null); setStep("phone"); }} data-testid="auth-change-phone">${t("auth.phone.change")}</button>
-          <button type="button" class="au-link" disabled=${busy || wait > 0} onClick=${send} data-testid="auth-resend">${wait > 0 ? t("auth.phone.resendIn", { s: wait }) : t("auth.phone.resend")}</button>
-        </div>
-      </form>
-    `;
-  }
-  return html`
-    <form onSubmit=${send} data-testid="auth-phone-form">
-      <${Field} label=${t("auth.phone.label")} required hint=${t("auth.phone.hint")}>
-        <${TextInput} type="tel" inputmode="tel" autocomplete="tel" required value=${raw} placeholder=${t("auth.phone.placeholder")}
-          data-testid="auth-phone" onInput=${(e) => setRaw(e.target.value)} />
-      <//>
-      <${Button} type="submit" className="w-full" loading=${busy} disabled=${!IS_CONFIGURED || raw.trim().length < 6} data-testid="auth-send-code">${busy ? t("auth.phone.sending") : t("auth.phone.sendCode")}<//>
-      ${note && html`<p class="au-note au-note-below">${note}</p>`}
-    </form>
-  `;
 }

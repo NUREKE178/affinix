@@ -113,38 +113,6 @@ export async function signInWithGoogle() {
   return data;
 }
 
-/** Whatever a person typed -> E.164 ("+77771234567"), or null when it cannot be a phone number. Domestic Kazakh / Russian
- * forms ("8 777 123 45 67", "777 123 45 67") get the +7; anything typed with a "+" or "00" is taken as international. */
-export function normalizePhone(raw) {
-  const s = String(raw ?? "").trim();
-  let digits = s.replace(/\D/g, "");
-  if (!digits) return null;
-  if (s.startsWith("+")) {
-    // international as typed
-  } else if (digits.startsWith("00")) {
-    digits = digits.slice(2);
-  } else if (digits.length === 11 && (digits[0] === "8" || digits[0] === "7")) {
-    digits = `7${digits.slice(1)}`;
-  } else if (digits.length === 10) {
-    digits = `7${digits}`;
-  }
-  if (digits.length < 8 || digits.length > 15) return null;
-  return `+${digits}`;
-}
-
-/** Sends a one-time code by SMS. Signing in and signing up are the same step: the account is created on first use. */
-export async function requestPhoneCode(phone) {
-  const { error } = await requireSupabase().auth.signInWithOtp({ phone });
-  if (error) throw error;
-}
-
-/** Checks the SMS code; on success the session is set (and onAuthStateChange fires). */
-export async function verifyPhoneCode({ phone, token }) {
-  const { data, error } = await requireSupabase().auth.verifyOtp({ phone, token, type: "sms" });
-  if (error) throw error;
-  return data;
-}
-
 export async function signOut() {
   const { error } = await requireSupabase().auth.signOut();
   if (error) throw error;
@@ -186,10 +154,6 @@ export function friendlyAuthError(error, t) {
   if (/password should be at least/i.test(msg)) return tt("auth.errors.passwordTooShort");
   if (/rate limit|for security purposes/i.test(msg)) return tt("auth.errors.rateLimit");
   if (/provider is not enabled|unsupported provider/i.test(msg)) return tt("auth.errors.providerDisabled");
-  if (/phone.*(disabled|not enabled|provider)|unsupported phone/i.test(msg)) return tt("auth.errors.phoneDisabled");
-  if (/otp.*(expired|invalid)|token has expired|invalid token|invalid.*code/i.test(msg)) return tt("auth.errors.badCode");
-  if (/invalid.*phone|phone.*invalid|phone number/i.test(msg)) return tt("auth.errors.badPhone");
-  if (/error sending|sms|twilio/i.test(msg)) return tt("auth.errors.smsFailed");
   if (/access_denied|denied|cancel|external code|oauth|exchange/i.test(msg)) return tt("auth.errors.oauthFailed");
   return msg;
 }

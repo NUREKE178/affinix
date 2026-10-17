@@ -3,7 +3,7 @@ import { navigate, HOME_PATH } from "../../router.js";
 import { AuthLayout, AuthError } from "./AuthLayout.js";
 import { Field, TextInput, Button } from "../../components/ui.js";
 import { signIn, friendlyAuthError, useSession, takeCallbackError } from "../../lib/auth.js";
-import { GoogleButton, OrDivider, MethodSwitch, PhoneAuth } from "./SocialAuth.js";
+import { GoogleButton, OrDivider } from "./SocialAuth.js";
 import { IS_CONFIGURED } from "../../lib/env.js";
 import { useT } from "../../lib/i18n.js";
 
@@ -14,7 +14,6 @@ export function Login() {
   const [password, setPassword] = useState("");
   const [error, setError] = useState(() => { const m = takeCallbackError(); return m ? friendlyAuthError({ message: m }, t) : null; });
   const [loading, setLoading] = useState(false);
-  const [method, setMethod] = useState("email");
 
   // Already signed in (e.g. clicked "Sign in" from the landing page in another
   // tab, or the session outlived this page in history) -- go straight into the
@@ -45,10 +44,6 @@ export function Login() {
       <${AuthError} message=${error} />
       <${GoogleButton} onError=${setError} />
       <${OrDivider} />
-      <${MethodSwitch} value=${method} onChange=${(m) => { setError(null); setMethod(m); }} />
-      ${method === "phone"
-        ? html`<${PhoneAuth} onError=${setError} note=${t("auth.social.autoCreate")} />`
-        : html`
       <form onSubmit=${onSubmit}>
         <${Field} label=${t("auth.fields.email")} required>
           <${TextInput} type="email" required autocomplete="email" value=${email} onInput=${(e) => setEmail(e.target.value)} />
@@ -60,7 +55,7 @@ export function Login() {
           <button type="button" class="text-xs text-graphite-500 hover:text-graphite-300" onClick=${() => navigate("/forgot-password")}>${t("auth.login.forgotPassword")}</button>
         </div>
         <${Button} type="submit" className="w-full" loading=${loading} disabled=${!IS_CONFIGURED}>${loading ? t("auth.login.submitting") : t("auth.login.submit")}<//>
-      </form>`}
+      </form>
     <//>
   `;
 }
