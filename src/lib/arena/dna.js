@@ -55,6 +55,28 @@ export function dnaFromLedger(ledgerBySeason) {
   return { all, byDim };
 }
 
+/** Folds the answers given since `agg` was last extended: { done: { season: entries counted }, all, byDim }.
+ * Starts from nothing when there is no `agg` or the ledger of a season is shorter than what was counted (it was
+ * rebuilt), so the fold never double counts. Seasons that were pruned from the ledger stay counted. */
+export function extendDna(agg, ledgerBySeason) {
+  let cur = agg;
+  if (cur) for (const [season, codes] of Object.entries(ledgerBySeason)) if ((cur.done[season] ?? 0) > codes.length) { cur = null; break; }
+  cur ??= { done: {}, all: emptyDna(), byDim: {} };
+  for (const [season, codes] of Object.entries(ledgerBySeason)) {
+    for (let i = cur.done[season] ?? 0; i < codes.length; i++) {
+      const e = decodeEntry(codes[i]);
+      if (!e.family) continue;
+      const sa = getStimulus(season, e.family, e.a);
+      const sb = getStimulus(season, e.family, e.b);
+      const [chosen, other] = e.pick === 0 ? [sa, sb] : [sb, sa];
+      addToDna(cur.all, chosen.traits, other.traits);
+      addToDna((cur.byDim[e.dim] ??= emptyDna()), chosen.traits, other.traits);
+    }
+    cur.done[season] = codes.length;
+  }
+  return cur;
+}
+
 /** "No lean / slight / clear / strong" from |lean|. */
 export function leanStrength(v) {
   const m = Math.abs(v);

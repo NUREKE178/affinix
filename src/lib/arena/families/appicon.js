@@ -22,7 +22,7 @@ import { mix, contrast, hexToHsl, hsl, lightness } from "../color.js";
 import { warmOf, vividOf, darkOf, richOf, clamp } from "../traits.js";
 import { mulberry32, hashStringToSeed, shuffle } from "../../prng.js";
 
-export const DIMS = ["preference", "attention", "trust", "quality", "premium"];
+export const DIMS = ["preference", "attention", "trust", "quality", "premium", "friendly", "modern", "energetic"];
 export const TEXT = false;
 export const VIEWBOX = [240, 240];
 

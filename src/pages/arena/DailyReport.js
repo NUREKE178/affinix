@@ -6,13 +6,16 @@ import { PersonLink } from "../../components/profileViewer.js";
 import { useT } from "../../lib/i18n.js";
 import { planDaily } from "../../lib/arena/sampler.js";
 import { seasonOf } from "../../lib/arena/rules.js";
-import { fetchDailyReport, answeredPick } from "../../lib/arenaStore.js";
+import { fetchDailyReport, answeredPick, ensureDrops, dropsEnabled } from "../../lib/arenaStore.js";
 import { Thumb } from "./parts.js";
 
 export function DailyReport({ day, season = seasonOf() }) {
   const t = useT();
   const [state, setState] = useState({ loading: true, data: null, error: null });
-  const duels = useMemo(() => planDaily(day, season), [day, season]);
+  // today's challenge is dealt from today's drop once the server takes drops (the same rule the game used when it was played)
+  const [drops, setDrops] = useState(dropsEnabled());
+  useEffect(() => { ensureDrops().then(setDrops); }, []);
+  const duels = useMemo(() => planDaily(day, season, undefined, { drops }), [day, season, drops]);
 
   useEffect(() => {
     let off = false;

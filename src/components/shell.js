@@ -22,7 +22,7 @@ import { GlobalSearch, SearchSheetButton } from "./globalSearch.js";
 const NAV = [
   { id: "arena", key: "shell.community.arena", icon: "arena", path: "/app/arena" },
   { id: "overview", key: "shell.nav.overview", icon: "overview", path: "/app/overview",
-    also: ["/app/experiments", "/app/results", "/app/participants", "/app/reports"] },
+    also: ["/app/experiments", "/app/results", "/app/participants", "/app/reports", "/app/styles"] },
 ];
 
 const COMMUNITY_NAV = [

@@ -3,8 +3,8 @@
 // Nothing here is stored or uploaded: a specimen is a pure function of
 // (season, family, index), built with a seeded PRNG, so every browser (and the
 // server, which only ever sees the keys) agrees on what "mark:7" looked like in
-// 2026-11. Each season (a UTC month) re-seeds every pool, so the Arena stays
-// fresh without anyone authoring content.
+// 2026-11. Each season (a UTC month) re-seeds every pool, and every day of the month has its own DROP pool
+// (index = pool * 32 + slot, see catalog.js), so the Arena stays fresh without anyone authoring content.
 import { mulberry32, hashStringToSeed } from "../prng.js";
 import { TRAIT_IDS, finishTraits } from "./traits.js";
 import * as mark from "./families/mark.js";
@@ -14,11 +14,16 @@ import * as card from "./families/card.js";
 import * as pack from "./families/pack.js";
 import * as poster from "./families/poster.js";
 import * as appicon from "./families/appicon.js";
+import * as scene from "./families/scene.js";
+import * as shot from "./families/shot.js";
 
 import { POOL_SIZE, FAMILY_IDS, DIMENSIONS, DIMENSION_IDS, isObjective } from "./catalog.js";
 
 export { POOL_SIZE, FAMILY_IDS, DIMENSIONS, DIMENSION_IDS, isObjective };
-const MODS = { mark, palette, button, card, pack, poster, appicon };
+
+/** The pool a specimen belongs to: the season's own for the classics, "<season>-d<N>" for the drop of day N. */
+const poolSeason = (season, pool) => (pool === 0 ? season : `${season}-d${pool}`);
+const MODS = { mark, palette, button, card, pack, poster, appicon, scene, shot };
 
 export function familyDims(famId) {
   return MODS[famId].DIMS;
@@ -60,7 +65,8 @@ export function getStimulus(season, famId, index) {
   const rand = mulberry32(hashStringToSeed(ck));
   let built;
   try {
-    built = mod.build(rand, { id: "__ID__", season, index });
+    // the family only ever sees its pool's slot (0..31) and the pool's own season key
+    built = mod.build(rand, { id: "__ID__", season: poolSeason(season, Math.floor(index / POOL_SIZE)), index: index % POOL_SIZE });
   } catch (err) {
     // A generator bug must never take the game down: show a neutral placeholder (and say so once in the console).
     if (!warned.has(famId)) { warned.add(famId); console.error(`Arena: ${famId} specimen ${index} failed to build`, err); }

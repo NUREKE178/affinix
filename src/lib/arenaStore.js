@@ -14,7 +14,7 @@ import { useSession } from "./auth.js";
 import { mulberry32, hashStringToSeed } from "./prng.js";
 import { t as translate, getLocale } from "./i18n.js";
 import { FAMILY_IDS, DIMENSION_IDS } from "./arena/catalog.js";
-import { duelCode, encodeEntry, entryFromRow } from "./arena/ledger.js";
+import { duelCode, encodeEntry, entryFromRow, convertLedgerEntryV1 } from "./arena/ledger.js";
 import {
   ROUND_SIZE, CROWD_MIN_VOTES, IDLE_CUTOFF_S, localDay, seasonOf, addDays, flowBonus, isFlowMs, voteXp, pickSlate,
   DAILY_SET_SIZE, QUEST_BY_ID, EXTRA_SETS, SET_SIZE, THEME_QUEST,
@@ -26,7 +26,7 @@ import { emptyBase, emptyProfile, emptyDay, fold, deriveView, claimReward } from
 let samplerMod = null;
 const loadSampler = async () => (samplerMod ??= await import("./arena/sampler.js"));
 
-const STORAGE_PREFIX = "decisionos_arena_v1:";
+const STORAGE_PREFIX = "decisionos_arena_v1:"; // the key kept its name; the payload's own `v` says which layout it is
 const MAX_PENDING_VOTES = 3000;
 const SLICE_SECONDS = 30;
 const BATCH = 50;
@@ -54,12 +54,15 @@ function notify() {
 
 function defaults(userId) {
   return {
-    v: 1,
+    v: 2,
     userId,
     base: emptyBase(),
     pending: { votes: [], slices: [], claims: [], slate: null },
     sliceAcc: 0,
-    ledger: {},                 // season -> [duel code * 2 + pick]
+    ledger: {},                 // season -> [duel code * 2 + pick] (v2 encoding, see arena/ledger.js)
+    dnaAgg: null,               // Taste DNA folded so far: { done: { season: entries counted }, all, byDim }
+    drops: "unknown",           // unknown | yes | no: whether the server takes the daily-drop specimen indexes (migration 0026)
+    dropsAt: 0,                 // when a "no" was last seen (it is asked again after a few minutes)
     pullSeq: {},                // season -> last server seq pulled
     round: null,
     recent: [],
@@ -75,7 +78,7 @@ function readLocal(userId) {
     const raw = localStorage.getItem(STORAGE_PREFIX + userId);
     if (!raw) return null;
     const j = JSON.parse(raw);
-    return j && j.v === 1 && j.userId === userId ? j : null;
+    return j && (j.v === 1 || j.v === 2) && j.userId === userId ? j : null;
   } catch { return null; }
 }
 
@@ -91,7 +94,12 @@ function hydrateLocal(userId) {
     base,
     pending: { votes: j.pending?.votes ?? [], slices: j.pending?.slices ?? [], claims: j.pending?.claims ?? [], slate: j.pending?.slate ?? null },
     sliceAcc: j.sliceAcc ?? 0,
-    ledger: j.ledger ?? {},
+    // v1 stored duels of pools of 32 with eight question slots; v2 packs the drop indexes too (and drops the DNA fold,
+    // which refers to the old codes -- it is rebuilt once from the ledger)
+    ledger: j.v === 1 ? Object.fromEntries(Object.entries(j.ledger ?? {}).map(([k, a]) => [k, a.map(convertLedgerEntryV1)])) : (j.ledger ?? {}),
+    dnaAgg: j.v === 1 ? null : (j.dnaAgg ?? null),
+    drops: j.drops === "yes" ? "yes" : "unknown",
+    dropsAt: 0,
     pullSeq: j.pullSeq ?? {},
     round: j.round ?? null,
     recent: j.recent ?? [],
@@ -150,16 +158,43 @@ function seenFor(season) {
 }
 
 const dailyCodeCache = new Map();
-function dailyCodes(day, season, planDaily) {
-  const key = `${day}/${season}`;
+function dailyCodes(day, season, planDaily, drops) {
+  const key = `${day}/${season}/${drops}`;
   let set = dailyCodeCache.get(key);
   if (!set) {
-    const sets = EXTRA_SETS.flatMap((n) => samplerMod.planSet(day, season, n));
-    set = new Set([...planDaily(day, season), ...sets].map((d) => duelCode(d.family, d.a, d.b, d.dim)));
+    const sets = EXTRA_SETS.flatMap((n) => samplerMod.planSet(day, season, n, undefined, { drops }));
+    set = new Set([...planDaily(day, season, undefined, { drops }), ...sets].map((d) => duelCode(d.family, d.a, d.b, d.dim)));
     dailyCodeCache.set(key, set);
   }
   return set;
 }
+
+const DROPS_RETRY_MS = 10 * 60 * 1000;
+/** Does the server take drop specimens (indexes above 31, the newer questions)? Asked once, with a harmless read: an old
+ * server's pair check refuses the index and simply leaves the item out. Without an answer (offline) the Arena deals from
+ * the classics, exactly as before. */
+export async function ensureDrops() {
+  if (!S) return false;
+  if (S.drops === "yes") return true;
+  if (S.drops === "no" && Date.now() - S.dropsAt < DROPS_RETRY_MS) return false;
+  const userId = S.userId;
+  let ok = false;
+  try {
+    const season = seasonOf();
+    const data = await rpc("arena_tallies", { p_items: [{ pair: `${season}/mark/100-101`, dim: "friendly" }] });
+    ok = Array.isArray(data) && data.length === 1;
+  } catch { ok = false; }
+  if (!S || S.userId !== userId) return false;
+  const changed = S.drops !== (ok ? "yes" : "no");
+  S.drops = ok ? "yes" : "no";
+  S.dropsAt = Date.now();
+  persist();
+  if (changed) notify();
+  return ok;
+}
+
+/** Synchronous answer for screens that only render what was already decided. */
+export const dropsEnabled = () => S?.drops === "yes";
 
 function addToLedger(season, code) {
   (S.ledger[season] ??= []).push(code);
@@ -435,6 +470,7 @@ function checkMilestones(before, after) {
 export async function startRound(mode = "free") {
   if (!S) return;
   const { planRound, planDaily } = await loadSampler();
+  const drops = await ensureDrops();
   if (!S) return;
   const day = localDay();
   const season = seasonOf();
@@ -443,12 +479,12 @@ export async function startRound(mode = "free") {
   const seen = seenFor(season);
   let duels;
   if (mode === "daily") {
-    duels = planDaily(day, season).filter((d) => !seen.has(duelCode(d.family, d.a, d.b, d.dim)));
+    duels = planDaily(day, season, undefined, { drops }).filter((d) => !seen.has(duelCode(d.family, d.a, d.b, d.dim)));
     if (!duels.length) { S.round = null; notify(); return; }
   } else {
     const rand = mulberry32(hashStringToSeed(`${S.userId}/${day}/${Date.now()}/${Math.random()}`));
-    const taken = new Set([...seen, ...dailyCodes(day, season, planDaily)]);
-    duels = planRound({ season, rand, size: ROUND_SIZE, seen: taken, recent: S.recent, focus: focusFromView(getView()) });
+    const taken = new Set([...seen, ...dailyCodes(day, season, planDaily, drops)]);
+    duels = planRound({ season, rand, size: ROUND_SIZE, seen: taken, recent: S.recent, focus: focusFromView(getView()), day, drops });
   }
   const now = Date.now();
   S.round = { id: uuid(), mode, day, season, duels, idx: 0, phase: "choose", results: [], combo: 0, startedAt: now, shownAt: now, tallies: {}, last: null };
@@ -463,6 +499,7 @@ export async function startRound(mode = "free") {
 export async function startSet(n) {
   if (!S || !EXTRA_SETS.includes(n)) return false;
   const { planSet } = await loadSampler();
+  const drops = await ensureDrops();
   if (!S) return false;
   const day = localDay();
   const season = seasonOf();
@@ -472,7 +509,7 @@ export async function startSet(n) {
   const entry = v.sets[n - 2];
   if (!open || entry.done) return false;
   const seen = seenFor(season);
-  const duels = planSet(day, season, n).filter((d) => !seen.has(duelCode(d.family, d.a, d.b, d.dim))).slice(0, SET_SIZE - entry.votes);
+  const duels = planSet(day, season, n, undefined, { drops }).filter((d) => !seen.has(duelCode(d.family, d.a, d.b, d.dim))).slice(0, SET_SIZE - entry.votes);
   if (!duels.length) return false;
   const now = Date.now();
   S.round = { id: uuid(), mode: "daily", set: n, day, season, duels, idx: 0, phase: "choose", results: [], combo: 0, startedAt: now, shownAt: now, tallies: {}, last: null };
@@ -828,9 +865,13 @@ export async function computeDna() {
   const n = Object.values(S.ledger).reduce((s, a) => s + a.length, 0);
   if (dnaMemo && dnaMemo.userId === S.userId && dnaMemo.n === n) return dnaMemo.dna;
   const userId = S.userId;
-  const { dnaFromLedger } = await import("./arena/dna.js");
+  const { extendDna } = await import("./arena/dna.js");
   if (!S || S.userId !== userId) return null;
-  const dna = dnaFromLedger(S.ledger);
+  // folded once and then only extended with the answers given since: a player who has answered thousands of duels
+  // (each of them on specimens that may never be seen again) must not make the profile page rebuild all of them
+  S.dnaAgg = extendDna(S.dnaAgg, S.ledger);
+  persist();
+  const dna = { all: S.dnaAgg.all, byDim: S.dnaAgg.byDim };
   dnaMemo = { userId, n, dna };
   return dna;
 }
@@ -918,6 +959,7 @@ export function useArena() {
     prefs: ready ? S.prefs : { auto: true, sound: false },
     remote: ready ? S.remote : "unknown",
     setsApi: ready ? S.setsApi : "unknown",
+    drops: ready ? S.drops === "yes" : false,
     pendingCount: ready ? S.pending.votes.length : 0,
     notices,
     actions,

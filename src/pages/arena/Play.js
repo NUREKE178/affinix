@@ -6,12 +6,13 @@ import { useT, getLocale } from "../../lib/i18n.js";
 import { getStimulus, renderSvg } from "../../lib/arena/stimuli.js";
 import { TRAIT_IDS } from "../../lib/arena/traits.js";
 import { flowBonus, DAILY_SET_BONUS, DAILY_SET_SIZE, MAX_FLOW_BONUS, XP_BASE, PIONEER_BONUS, seasonOf } from "../../lib/arena/rules.js";
-import { summarize, useArenaClock, roundPhase, roundMode, roundSet, getView, fetchLeaderboard } from "../../lib/arenaStore.js";
+import { summarize, useArenaClock, roundPhase, roundMode, roundSet, getView, fetchLeaderboard, ensureDrops } from "../../lib/arenaStore.js";
+import { FAMILY_IDS, dropPoolForDay, indexOf } from "../../lib/arena/catalog.js";
 import { Avatar } from "../../components/avatar.js";
 import { PersonLink } from "../../components/profileViewer.js";
 import { isProfileOpen } from "../../lib/profileViewer.js";
 import { navigate } from "../../router.js";
-import { Specimen, Ladder, nf, clock } from "./parts.js";
+import { Specimen, Ladder, Thumb, nf, clock } from "./parts.js";
 import { DailyReport } from "./DailyReport.js";
 import { MissionBlock, MissionConsole, MissionSummary } from "./Mission.js";
 import { MarathonBlock } from "./Marathon.js";
@@ -151,11 +152,30 @@ function Intro() {
   `;
 }
 
+/** Today's drop: a few of the specimens nobody has seen before, one of every kind. */
+function DropStrip({ day, season }) {
+  const t = useT();
+  const pool = dropPoolForDay(day);
+  const shown = useMemo(() => FAMILY_IDS.map((family, i) => ({ family, index: indexOf(pool, (i * 7 + pool * 3) % 32) })), [pool]);
+  const date = new Date(`${day}T12:00:00`).toLocaleDateString(getLocale() === "kk" ? "kk-KZ" : getLocale() === "en" ? "en-GB" : "ru-RU", { day: "numeric", month: "long" });
+  return html`
+    <section class="ar-drop sk-panel" data-testid="arena-drop" data-pool=${pool}>
+      <div class="ar-drop-head">
+        <span class="sk-caption">${t("arena.drop.title", { date })}</span>
+        <span class="ar-drop-sub">${t("arena.drop.sub", { n: FAMILY_IDS.length * 32, kinds: FAMILY_IDS.length })}</span>
+      </div>
+      <div class="ar-drop-row">
+        ${shown.map((s) => html`<span class="ar-drop-spec" key=${s.family} title=${t(`arena.family.${s.family}`)}><${Thumb} season=${season} family=${s.family} index=${s.index} size=88 /></span>`)}
+      </div>
+    </section>`;
+}
+
 function Lobby({ arena, onStart }) {
   const t = useT();
   const { view, remote, pendingCount, prefs, actions } = arena;
   const seconds = useArenaClock();
   const [report, setReport] = useState(false);
+  useEffect(() => { ensureDrops(); }, []);
   const daily = view.daily;
   const dailyLead = !daily.done;
   const eyePct = view.eye.total >= 5 ? `${Math.round((view.eye.correct / view.eye.total) * 100)}%` : "—";
@@ -215,6 +235,7 @@ function Lobby({ arena, onStart }) {
         </article>
       </div>
 
+      ${arena.drops && html`<${DropStrip} day=${view.today.day} season=${seasonOf()} />`}
       <${MissionBlock} arena=${arena} unlocked=${daily.done} />
       <${MarathonBlock} arena=${arena} unlocked=${daily.done} />
 
@@ -350,6 +371,7 @@ function Console({ arena }) {
           <span class="ar-q-meta">
             <i class="sk-led" aria-hidden="true"></i>${t(`arena.family.${duel.family}`)} · ${t(`builder.dimensions.${duel.dim}.label`)}
             ${duel.objective && html`<span class="ar-q-tag" data-tag="eye">${t("arena.console.eyeTag")}</span>`}
+            ${duel.pool > 0 && duel.pool === dropPoolForDay(round.day) && html`<span class="ar-q-tag" data-tag="new" data-testid="arena-new-tag">${t("arena.console.newTag")}</span>`}
             ${round.mode === "daily" && html`<span class="ar-q-tag" data-testid="arena-set-tag">${round.set ? t("arena.marathon.setTag", { n: round.set }) : t("arena.console.dailyTag")}</span>`}
           </span>
           <h3 class="ar-q-text" data-testid="arena-question">${t(`arena.q.${duel.dim}`)}</h3>

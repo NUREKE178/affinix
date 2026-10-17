@@ -3794,3 +3794,32 @@ one quiet line (avatar, field, picture, send) while the feed scrolls under a fad
 (counter, "Ctrl+Enter" hint, field grows to 240px). On a phone the avatar is dropped and the send key is an arrow. "Write the first post"
 now focuses the field; toasts move up while the dock is on screen. +1 key `feed.composerHint` (1,497 per language). Styles in `feed.css`.
 Tests: the 14 feed / favorites / notification tests pass unchanged (the old `Опубликовать` label is still in the button).
+
+## Arena: daily drops, photo-like families, new questions, Pro "Styles" page (migration 0026) + phone sign-in removed
+
+Request: remove phone sign-in; develop the Arena; marketers need to learn which styles people prefer (Pro mode); more photos / generated
+imagery, new styles every day, nothing repetitive or boring.
+
+- **Phone sign-in removed** (commit b80d41d): Google + email remain. `SocialAuth.js` keeps only the Google button; phone helpers, locale keys
+  and `.au-seg/.au-code/...` styles are gone.
+- **Daily drops** (`arena/catalog.js`, `stimuli.js`, `sampler.js`): a specimen index is `pool*32 + slot`; pool 0 = the month's classics, pool N
+  (1..31) = the drop of day-of-month N, so every day brings 32 new specimens per family (pure functions of season/family/index, no storage).
+  Free play draws 0.7 today's drop / 0.18 classics / 0.12 yesterday's; daily challenge and extra sets come from today's drop. A "new" tag marks
+  today's specimens; the lobby has a drop strip.
+- **Two photo-like families**: `scene` (16 cinematic landscape types x 16 colour grades) and `shot` (studio product shots: 13 forms, stages,
+  lighting, backdrops, moods). Algorithmic SVG, not real photographs. Now 9 families; four new non-core questions (friendly, modern, natural,
+  energetic), 11 dimensions in total. Theme of the week rotates through 9 families.
+- **Ledger v2 / Taste DNA**: encoding `((((family*1024+a)*1024+b)*16+dim)*2+pick)`; v1 ledgers are converted on load (`convertLedgerEntryV1`);
+  DNA is incremental (`extendDna`, persisted `dnaAgg`).
+- **Backward compatibility**: `ensureDrops()` probes the server (`arena_tallies` with a 3-digit pair); an old server -> "legacy" mode (classics
+  only, first 7 families, core 7 questions). So the client can ship before the migration is applied.
+- **Migration 0026**: wider pair check in `arena_tallies` / `arena_submit` (indexes < 1024, 11 dims), `arena_theme_family` (9), new
+  `arena_style_report` and `arena_style_segments` (admin/pro only, country split only for countries with >= 8 distinct voters).
+  Must be applied: `supabase db push` then `notify pgrst, 'reload schema';` (0023-0025 first if not yet).
+- **Pro "Styles" page** (`/app/styles`, Research tab; `pages/Styles.js`, `lib/styleInsights.js`, `insights.css`): which style traits win, by
+  family; lift = difference of win rates with a two-proportion z (>= 40 answers each side; hint 1.28 / clear 1.96 / strong 2.58); Wilson-ranked
+  top specimens; country segments; CSV export. It shows the taste of Arena players, not of a target audience; no age/gender.
+- Tests: `test_arena_engine.mjs` (55), `test_styles.mjs` (57), SQL `test0026.sql` (38) against local PostgreSQL 16; older SQL suites updated for
+  9 families / wider pairs. Both new files added to the regression list. Locale parity: 1,537 keys per language.
+- Honest limits: question format is still pairwise; imagery is generated vector art; live Supabase and the Vercel deploy were not verifiable
+  from the sandbox.

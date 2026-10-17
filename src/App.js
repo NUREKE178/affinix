@@ -38,6 +38,7 @@ const Arena = lazyPage(() => import("./pages/Arena.js"), "Arena");
 const CrowdCreate = lazyPage(() => import("./pages/crowd/Create.js"), "CrowdCreate");
 const CrowdResults = lazyPage(() => import("./pages/crowd/Results.js"), "CrowdResults");
 const Admin = lazyPage(() => import("./pages/Admin.js"), "Admin");
+const Styles = lazyPage(() => import("./pages/Styles.js"), "Styles");
 
 const DASHBOARD_ROUTES = [
   { pattern: "/app/overview", Page: Overview },
@@ -60,6 +61,7 @@ const DASHBOARD_ROUTES = [
   { pattern: "/app/billing", Page: Billing },
   { pattern: "/app/settings", Page: Settings },
   { pattern: "/app/admin", Page: Admin },
+  { pattern: "/app/styles", Page: Styles },
   { pattern: "/profile", Page: Profile },
 ];
 
