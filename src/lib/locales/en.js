@@ -72,7 +72,7 @@ export default {
       expand: "Expand",
       pin: "Pin open",
     },
-    searchPlaceholder: "Search research…",
+    searchPlaceholder: "Search",
     notifications: {
       title: "Notifications",
       empty: "No notifications yet",
@@ -1330,6 +1330,18 @@ export default {
       nextExperimentSufficient: "Consider a follow-up study with different audience segmentation or additional questions (perceived quality, influence factor) to deepen the “why”.",
       nextExperimentInsufficient: "Collect more responses (at least {n}) before making decisions based on this study.",
     },
+  },
+
+  search: {
+    aria: "Search the platform",
+    clear: "Clear",
+    pages: "Pages",
+    people: "People",
+    posts: "Posts",
+    searching: "Searching…",
+    empty: "Nothing found",
+    error: "Search failed. Please try again.",
+    scope: "Searches people, public posts and pages of the platform. Your own experiments and messages are not searched.",
   },
 
   team: {

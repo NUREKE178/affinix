@@ -14,6 +14,7 @@ import { toast, Badge, LoadingBar, Skeleton } from "./ui.js";
 import { useMountTransition } from "../lib/motion.js";
 import { ProfileViewerHost } from "./profileViewer.js";
 import { openProfile } from "../lib/profileViewer.js";
+import { GlobalSearch, SearchSheetButton } from "./globalSearch.js";
 
 // Two work areas. The Arena is the home of the app (first item; see HOME_PATH). "Research" holds everything about
 // experiments and crowd tests: its overview, participants and reports are tabs of that one area (`also` keeps the
@@ -104,20 +105,18 @@ function UserMenu({ onNavigate, collapsed = false, sidebarMode, onChangeSidebarM
   const displayName = profile?.full_name || user?.email || user?.phone || "";
 
   return html`
-    <div class=${`relative ${collapsed ? "px-2" : "px-3"}`}>
+    <div class="relative sk-rail-gutter">
       <button onClick=${() => setOpen((v) => !v)} title=${collapsed ? displayName : undefined}
-        class=${`sk-nav-item flex w-full items-center gap-2.5 overflow-hidden rounded-lg py-2 transition-colors ${collapsed ? "justify-center px-0" : "px-1.5"}`} data-active="false">
+        class="sk-nav-item sk-user flex w-full items-center overflow-hidden" data-active="false">
         <div class="relative shrink-0">
           <${Avatar} name=${displayName} url=${profile?.avatar_url} />
           <span class="sk-led absolute -bottom-0.5 -right-0.5 h-2.5 w-2.5 border-2 border-graphite-900" style="--led:#34d399;--led-glow:rgba(52,211,153,.6)"></span>
         </div>
-        ${!collapsed && html`
-          <div class="min-w-0 flex-1 text-left">
-            <div class="text-sm font-medium text-graphite-100 truncate">${displayName || html`<${Skeleton} className="h-4 w-24" />`}</div>
-            <div class="text-[11px] text-graphite-500 truncate">${org?.name ?? ""}</div>
-          </div>
-          <${Icon} name="chevronDown" size=${14} className="text-graphite-500 shrink-0" />
-        `}
+        <div class="sk-fade min-w-0 flex-1 text-left">
+          <div class="text-sm font-medium text-graphite-100 truncate">${displayName || html`<${Skeleton} className="h-4 w-24" />`}</div>
+          <div class="text-[11px] text-graphite-500 truncate">${org?.name ?? ""}</div>
+        </div>
+        <${Icon} name="chevronDown" size=${14} className="sk-fade text-graphite-500 shrink-0" />
       </button>
       <${Dropdown} open=${open} onClose=${() => setOpen(false)}>
         <${MenuItem} icon="user" label=${t("shell.userMenu.profile")} onClick=${() => { setOpen(false); onNavigate("/profile"); }} />
@@ -148,14 +147,14 @@ function NavItem({ item, currentPath, onNavigate, t, collapsed, badgeCount = 0 }
       data-active=${active}
       title=${collapsed ? t(item.key) : undefined}
       aria-current=${active ? "page" : undefined}
-      class=${`sk-nav-item relative flex w-full items-center gap-3 overflow-hidden whitespace-nowrap rounded-lg py-2 text-sm font-medium ${collapsed ? "justify-center px-0" : "px-3"}`}
+      class="sk-nav-item relative flex w-full items-center overflow-hidden whitespace-nowrap text-sm font-medium"
     >
       <span class=${`relative shrink-0 ${active ? "text-signal-400" : ""}`}>
         <${Icon} name=${item.icon} size=${19} />
-        ${collapsed && badgeCount > 0 && html`<span class="sk-led absolute -top-1 -right-1.5 h-2 w-2" style="--led:#ff6a1f;--led-glow:rgba(255,106,31,.7)"></span>`}
+        <span class="sk-nav-dot" data-on=${badgeCount > 0}></span>
       </span>
-      ${!collapsed && html`<span class="flex-1 text-left">${t(item.key)}</span>`}
-      ${!collapsed && badgeCount > 0 && html`<span class="sk-count">${badgeCount}</span>`}
+      <span class="sk-fade flex-1 text-left">${t(item.key)}</span>
+      ${badgeCount > 0 && html`<span class="sk-fade sk-count">${badgeCount}</span>`}
     </button>
   `;
 }
@@ -177,7 +176,7 @@ function CollapseKey({ mode, collapsed, onToggle }) {
     <button type="button" onClick=${onToggle} class="sk-collapse" data-rail=${collapsed ? "true" : "false"}
       title=${collapsed ? `${label}  [` : undefined} aria-label=${label} aria-keyshortcuts="[">
       <${Icon} name=${collapsed ? "chevronsRight" : "chevronsLeft"} size=${16} className="shrink-0" />
-      ${!collapsed && html`<span class="whitespace-nowrap">${label}</span><span class="sk-kbd" aria-hidden="true">[</span>`}
+      <span class="sk-fade whitespace-nowrap">${label}</span><span class="sk-fade sk-kbd" aria-hidden="true">[</span>
     </button>
   `;
 }
@@ -192,35 +191,28 @@ function SidebarContent({ currentPath, onNavigate, collapsed = false, sidebarMod
   const arena = useArenaLocal();
   const navBadge = (id) => (id === "friends" ? incoming.length : id === "messages" ? unreadTotal : id === "arena" ? arenaAttention(arena.view) : 0);
   return html`
-    <div class="flex h-full flex-col">
-      <button type="button" onClick=${() => onNavigate(HOME_PATH)}
-        class=${`flex items-center gap-2.5 overflow-hidden px-5 py-5 text-left hover:opacity-80 transition-opacity ${collapsed ? "justify-center px-0" : "w-full"}`}>
+    <div class="sk-rail flex h-full flex-col" data-collapsed=${collapsed}>
+      <button type="button" onClick=${() => onNavigate(HOME_PATH)} class="sk-brand">
         <${LogoMark} size=${34} />
-        ${!collapsed && html`
-          <div class="min-w-0">
-            <div class="font-semibold text-graphite-50 leading-tight tracking-tight whitespace-nowrap">DecisionOS</div>
-            <div class="text-[11px] text-graphite-500 leading-tight truncate max-w-[9rem]">${org?.name ?? html`<${Skeleton} className="mt-1 h-3 w-20" />`}</div>
-          </div>
-        `}
+        <div class="sk-fade min-w-0">
+          <div class="font-semibold text-graphite-50 leading-tight tracking-tight whitespace-nowrap">DecisionOS</div>
+          <div class="text-[11px] text-graphite-500 leading-tight truncate max-w-[9rem]">${org?.name ?? html`<${Skeleton} className="mt-1 h-3 w-20" />`}</div>
+        </div>
       </button>
 
-      <nav class="flex-1 overflow-y-auto overflow-x-hidden px-2 py-1 space-y-0.5">
+      <nav class="sk-rail-gutter flex-1 overflow-y-auto overflow-x-hidden py-1 space-y-0.5">
         ${NAV.map((item) => html`<${NavItem} key=${item.id} item=${item} currentPath=${currentPath} onNavigate=${onNavigate} t=${t} collapsed=${collapsed} badgeCount=${navBadge(item.id)} />`)}
 
-        ${collapsed
-          ? html`<div class="my-3 mx-3 border-t border-graphite-800"></div>`
-          : html`<div class="sk-caption overflow-hidden whitespace-nowrap pt-5 pb-1.5 px-3">${t("shell.communityLabel")}</div>`}
+        <div class="sk-rail-caption"><span class="sk-caption sk-fade">${t("shell.communityLabel")}</span></div>
         ${COMMUNITY_NAV.map((item) => html`<${NavItem} key=${item.id} item=${item} currentPath=${currentPath} onNavigate=${onNavigate} t=${t} collapsed=${collapsed} badgeCount=${navBadge(item.id)} />`)}
 
-        ${collapsed
-          ? html`<div class="my-3 mx-3 border-t border-graphite-800"></div>`
-          : html`<div class="sk-caption overflow-hidden whitespace-nowrap pt-5 pb-1.5 px-3">${t("shell.workspaceLabel")}</div>`}
+        <div class="sk-rail-caption"><span class="sk-caption sk-fade">${t("shell.workspaceLabel")}</span></div>
         ${workspaceNav.map((item) => html`<${NavItem} key=${item.id} item=${item} currentPath=${currentPath} onNavigate=${onNavigate} t=${t} collapsed=${collapsed} />`)}
       </nav>
 
       <div class="border-t border-graphite-800 py-3 space-y-2">
         ${onToggleSidebar && html`
-          <div class=${`flex ${collapsed ? "justify-center px-0" : "px-3"}`}>
+          <div class="sk-rail-gutter">
             <${CollapseKey} mode=${sidebarMode} collapsed=${collapsed} onToggle=${onToggleSidebar} />
           </div>
         `}
@@ -378,7 +370,6 @@ export function Shell({ currentPath, children }) {
   // "hover" mode sits collapsed at rest and only grows while the pointer is
   // over it -- that growth is a transient visual state, never persisted.
   const [hoverPeek, setHoverPeek] = useState(false);
-  const [search, setSearch] = useState("");
   const { mounted: drawerMounted, phase: drawerPhase } = useMountTransition(mobileOpen);
   // A brief dip-and-recover across the whole shell whenever the language
   // actually changes, so every translated label on screen (sidebar, header,
@@ -410,10 +401,16 @@ export function Shell({ currentPath, children }) {
     return () => document.removeEventListener("keydown", onKey);
   }, []);
 
-  function onSearchSubmit(e) {
-    e.preventDefault();
-    if (search.trim()) navigate(`/app/experiments?q=${encodeURIComponent(search.trim())}`);
-  }
+  // what the search can jump to: every page a person can reach (the admin panel only for admins)
+  const searchPages = [
+    ...NAV, ...COMMUNITY_NAV,
+    { id: "participants", key: "shell.nav.participants", icon: "participants", path: "/app/participants" },
+    { id: "reports", key: "shell.nav.reports", icon: "reports", path: "/app/reports" },
+    ...(profile?.is_admin ? [ADMIN_NAV_ITEM] : []),
+    ...WORKSPACE_NAV,
+    { id: "team", key: "shell.workspace.team", icon: "team", path: "/app/team" },
+    { id: "billing", key: "shell.workspace.billing", icon: "card", path: "/app/billing" },
+  ].map((p) => ({ id: p.id, label: t(p.key), path: p.path, icon: p.icon }));
 
   // The layout's reserved width only grows for a real "expanded" choice --
   // "hover" keeps the narrow rail reserved so peeking never reflows content.
@@ -427,7 +424,7 @@ export function Shell({ currentPath, children }) {
       <${LoadingBar} />
       <!-- Desktop/tablet sidebar (md and up) -->
       <aside
-        class=${`sk-sidebar hidden md:flex md:flex-col md:fixed md:inset-y-0 transition-all duration-150 ${visuallyExpanded ? "md:w-64" : "md:w-[72px]"} ${peeking ? "z-40 shadow-2xl shadow-black/60" : "z-20"}`}
+        class=${`sk-sidebar sk-aside hidden md:flex md:flex-col md:fixed md:inset-y-0 ${peeking ? "shadow-2xl shadow-black/60" : ""}`} data-rail=${!visuallyExpanded}
         onMouseEnter=${() => { if (sidebarMode === "hover") setHoverPeek(true); }}
         onMouseLeave=${() => { if (sidebarMode === "hover") setHoverPeek(false); }}>
         <${SidebarContent} currentPath=${currentPath} onNavigate=${onNavigate} collapsed=${!visuallyExpanded} sidebarMode=${sidebarMode} onChangeSidebarMode=${chooseSidebarMode} onToggleSidebar=${toggleSidebar} />
@@ -437,30 +434,28 @@ export function Shell({ currentPath, children }) {
       ${drawerMounted && html`
         <div class="fixed inset-0 z-40 md:hidden">
           <div class="sk-backdrop-anim absolute inset-0 bg-black/70" data-state=${drawerPhase} onClick=${() => setMobileOpen(false)}></div>
-          <aside class="sk-sidebar sk-drawer-anim absolute inset-y-0 left-0 w-64" data-state=${drawerPhase}>
+          <aside class="sk-sidebar sk-drawer-anim absolute inset-y-0 left-0 w-64 overflow-hidden" data-state=${drawerPhase}>
             <${SidebarContent} currentPath=${currentPath} onNavigate=${onNavigate} />
           </aside>
         </div>
       `}
 
-      <div class=${reservedNarrow ? "md:pl-[72px]" : "md:pl-64"}>
-        <header class="sk-topbar sticky top-0 z-30 grid grid-cols-[1fr_auto_1fr] items-center gap-3 px-4 py-3 md:px-8">
-          <div class="flex items-center gap-3 justify-self-start">
-            <button class="sk-btn md:!hidden h-9 w-9 rounded-lg text-graphite-400 shrink-0" onClick=${() => setMobileOpen(true)}><${Icon} name="menu" size=${19} /></button>
-          </div>
-          <form onSubmit=${onSearchSubmit} class="sk-display hidden sm:flex items-center gap-2.5 justify-self-center rounded-lg px-3.5 py-2 text-sm text-graphite-400 w-full max-w-xl">
-            <${Icon} name="search" size=${16} className="shrink-0" />
-            <input value=${search} onInput=${(e) => setSearch(e.target.value)} placeholder=${t("shell.searchPlaceholder")}
-              class="bg-transparent outline-none placeholder:text-graphite-500 w-full lg:min-w-[18rem] text-graphite-200" />
-          </form>
-          <div class="flex items-center gap-3 col-start-2 sm:col-start-3 justify-self-center sm:justify-self-end">
-            <${LanguageSwitch} />
-            <${NotificationsMenu} />
-          </div>
-          <button onClick=${() => navigate("/profile")} class="md:hidden col-start-3 justify-self-end">
-            <${Avatar} name=${displayName} url=${profile?.avatar_url} size=${30} />
-          </button>
-        </header>
+      <!-- The top bar does not depend on the sidebar at all: the search and the buttons never move when the rail opens or closes -->
+      <header class="sk-topbar sk-topbar-grid sticky top-0 z-30 items-center gap-3 px-4 py-3 md:px-8">
+        <div class="flex items-center gap-3 justify-self-start">
+          <button class="sk-btn md:!hidden h-9 w-9 rounded-lg text-graphite-400 shrink-0" onClick=${() => setMobileOpen(true)}><${Icon} name="menu" size=${19} /></button>
+        </div>
+        <div class="sk-topbar-search"><${GlobalSearch} pages=${searchPages} /></div>
+        <div class="flex items-center gap-3 col-start-2 sm:col-start-3 justify-self-center sm:justify-self-end">
+          <${SearchSheetButton} pages=${searchPages} />
+          <${LanguageSwitch} />
+          <${NotificationsMenu} />
+        </div>
+        <button onClick=${() => navigate("/profile")} class="md:hidden col-start-3 justify-self-end">
+          <${Avatar} name=${displayName} url=${profile?.avatar_url} size=${30} />
+        </button>
+      </header>
+      <div class="sk-shell-main" data-narrow=${reservedNarrow}>
         <main class="px-4 py-6 md:px-8 md:py-8 max-w-[1400px] mx-auto">
           <div key=${currentPath} class="sk-page-enter">
             ${children}

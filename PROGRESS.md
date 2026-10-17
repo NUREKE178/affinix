@@ -3763,3 +3763,25 @@ Request: "make a strong admin panel; `owner` only for my account, nobody else ma
 - Tests: `/tmp/pgtest/test0025.sql` (62 checks on PostgreSQL 16), `test_admin.mjs` (browser, real database behind the admin RPCs), `test_crowd.mjs`
   adjusted (the moderation block moved from Rankings to the admin panel). Honest limit: not run against a live Supabase.
 - **To apply on the live project**: `supabase db push` (0025; 0023 and 0024 too if not yet), then `notify pgrst, 'reload schema';`.
+
+## Platform-wide search, a top bar that stays put, a calmer sidebar rail (no migration)
+
+Request: "make it just `Поиск` and let it find everything on the platform, but nothing personal; the sidebar looked rough when opening and
+closing; the search box must not move when the menu collapses, nothing should move".
+
+- **Search** (`components/globalSearch.js`, `lib/globalSearch.js`): the box is now "Поиск" / "Іздеу" / "Search" and a small command palette:
+  *Pages* (everything the person can reach; the admin panel only for admins), *People* (`searchPeople`, name or @username), *Posts* (newest 5
+  public posts containing the text, with their author). Arrow keys + Enter, `/` focuses, Esc clears then closes, results debounced and stale answers
+  ignored. Choosing a person opens the profile popover, a post opens `/app/feed?post=<id>`. A footer line says what is *not* searched (own
+  experiments, results, messages). On a phone the box is a button that opens a full-screen sheet. The old behaviour (box = filter of your own
+  experiments, `/app/experiments?q=`) is gone from the header; that page is unchanged.
+- **Top bar** no longer sits inside the column that is pushed by the rail: it is full width with a constant left inset, so the search, language
+  switch and bell have the same coordinates open, collapsed or peeking. The sidebar is above it (z 40) and simply covers its empty left end.
+- **Rail** (`shell.css`): icons keep the same x in both states (every row has a 14px gutter and a fixed-size icon cell), labels are always rendered
+  and fade (`.sk-fade`), the section captions turn into a hairline, counters become a dot on the icon, the collapse key and the user row keep their
+  glyph/avatar in place. Width and the page's left padding animate together (0.2s), so the content slides instead of jumping. Reduced motion respected.
+- i18n: `shell.searchPlaceholder` changed, +10 `search.*` keys (1,496 per language). Styles: new `shell.css` (no new Tailwind classes;
+  `sm:block` and friends are not in the compiled sheet, so the top bar uses its own classes).
+- Tests: `test_shell_search.mjs` (47 browser checks, incl. coordinates of the search, icons, logo, avatar and chevron before / during / after a
+  collapse); `test_org_role_scoping.mjs` was adjusted earlier for the Founder label. Honest limit: the page still reflows when the rail is
+  collapsed (that is what collapsing is for); only the top bar is fixed. A layout where nothing at all moves is the "expand on hover" mode.

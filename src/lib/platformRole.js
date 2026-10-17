@@ -21,7 +21,8 @@ export function platformColumnMissing(error) {
 /** "owner" | "admin" | null from a profiles row (is_owner / is_admin) or a profiles_public row (platform_role). */
 export function platformRoleOf(row) {
   if (!row) return null;
-  if (row.platform_role === "owner" || row.is_owner) return "owner";
-  if (row.platform_role === "admin" || row.is_admin) return "admin";
+  const role = row.platform_role ?? row.platformRole;
+  if (role === "owner" || row.is_owner) return "owner";
+  if (role === "admin" || row.is_admin) return "admin";
   return null;
 }
