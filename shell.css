@@ -2,7 +2,7 @@
    put, and the platform-wide search. Instrument tokens; no new Tailwind classes. */
 
 /* ---- sidebar rail ---------------------------------------------------------------------------------------- */
-.sk-aside { width: 256px; overflow: hidden; transition: width .2s var(--sk-ease-standard); }
+.sk-aside { width: 256px; transition: width .2s var(--sk-ease-standard); }
 .sk-aside[data-rail="true"] { width: 72px; }
 
 /* Every row keeps its icon at the same x (22px inside a 14px gutter) whether the rail is open or not. */
@@ -12,8 +12,9 @@
 .sk-rail .sk-nav-item { height: 40px; padding: 0 12px; gap: 12px; border-radius: 10px; }
 .sk-rail .sk-nav-item > .sk-fade:first-of-type { flex: 1; text-align: left; }
 
-.sk-rail .sk-fade { opacity: 1; transition: opacity .16s var(--sk-ease-standard) .05s; white-space: nowrap; }
-.sk-rail[data-collapsed="true"] .sk-fade { opacity: 0; pointer-events: none; transition-delay: 0s; transition-duration: .08s; }
+.sk-rail .sk-fade { opacity: 1; visibility: visible; transition: opacity .16s var(--sk-ease-standard) .05s, visibility 0s; white-space: nowrap; }
+/* hidden labels leave the page for screen readers and text search once they have faded */
+.sk-rail[data-collapsed="true"] .sk-fade { opacity: 0; visibility: hidden; pointer-events: none; transition: opacity .08s, visibility 0s .08s; }
 
 /* section captions turn into a hairline in the rail */
 .sk-rail-caption { position: relative; height: 34px; margin-top: 10px; padding: 0 12px; display: flex; align-items: flex-end; padding-bottom: 6px; overflow: hidden; white-space: nowrap; }
@@ -41,7 +42,9 @@
 /* ---- top bar --------------------------------------------------------------------------------------------- */
 .sk-topbar-grid { display: grid; grid-template-columns: 1fr auto 1fr; }
 @media (min-width: 640px) { .sk-topbar-grid { grid-template-columns: minmax(0, 1fr) minmax(0, 34rem) minmax(0, 1fr); } }
-@media (min-width: 768px) { .sk-topbar-grid.sk-topbar { padding-left: calc(72px + 20px); } }
+/* A medium window has no room for the search to sit under the open rail: it starts after the narrow rail instead.
+   Wide windows keep it exactly centred. Either way the rail's state never matters. */
+@media (min-width: 768px) and (max-width: 1099px) { .sk-topbar-grid.sk-topbar { padding-left: calc(72px + 20px); } }
 
 .sk-topbar-search { display: none; }
 @media (min-width: 640px) { .sk-topbar-search { display: block; } .sk-search-btn { display: none !important; } }

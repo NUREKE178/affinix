@@ -434,7 +434,7 @@ export function Shell({ currentPath, children }) {
       ${drawerMounted && html`
         <div class="fixed inset-0 z-40 md:hidden">
           <div class="sk-backdrop-anim absolute inset-0 bg-black/70" data-state=${drawerPhase} onClick=${() => setMobileOpen(false)}></div>
-          <aside class="sk-sidebar sk-drawer-anim absolute inset-y-0 left-0 w-64 overflow-hidden" data-state=${drawerPhase}>
+          <aside class="sk-sidebar sk-drawer-anim absolute inset-y-0 left-0 w-64" data-state=${drawerPhase}>
             <${SidebarContent} currentPath=${currentPath} onNavigate=${onNavigate} />
           </aside>
         </div>
