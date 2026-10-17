@@ -3785,3 +3785,12 @@ closing; the search box must not move when the menu collapses, nothing should mo
 - Tests: `test_shell_search.mjs` (47 browser checks, incl. coordinates of the search, icons, logo, avatar and chevron before / during / after a
   collapse); `test_org_role_scoping.mjs` was adjusted earlier for the Founder label. Honest limit: the page still reflows when the rail is
   collapsed (that is what collapsing is for); only the top bar is fixed. A layout where nothing at all moves is the "expand on hover" mode.
+
+## Feed composer docked at the bottom of the screen (no migration)
+
+"The place where you write a post is awkward: it should sit at the bottom." The box used to be the last thing after the list, which
+with paging / infinite scroll is effectively unreachable. It is now a docked bar (`position: sticky; bottom: 0` inside the feed column):
+one quiet line (avatar, field, picture, send) while the feed scrolls under a fade; it opens up on focus or when there is text / a picture
+(counter, "Ctrl+Enter" hint, field grows to 240px). On a phone the avatar is dropped and the send key is an arrow. "Write the first post"
+now focuses the field; toasts move up while the dock is on screen. +1 key `feed.composerHint` (1,497 per language). Styles in `feed.css`.
+Tests: the 14 feed / favorites / notification tests pass unchanged (the old `Опубликовать` label is still in the button).

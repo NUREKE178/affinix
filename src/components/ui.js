@@ -363,7 +363,7 @@ export function ToastHost() {
   if (items.length === 0) return null;
 
   return html`
-    <div class="fixed bottom-4 right-4 z-[100] flex flex-col gap-2 max-w-sm">
+    <div class="sk-toast-stack fixed bottom-4 right-4 z-[100] flex flex-col gap-2 max-w-sm">
       ${items.map((t) => html`
         <div key=${t.id} class="sk-panel sk-toast-anim rounded-lg px-4 py-2.5 text-sm shadow-lg slide-up flex items-center gap-2.5" data-state=${t.leaving ? "exiting" : "entered"}>
           <span class=${`h-1.5 w-1.5 rounded-full shrink-0 ${TOAST_TONE_DOT[t.tone] ?? TOAST_TONE_DOT.neutral}`} style="box-shadow:0 0 6px 1px currentColor"></span>

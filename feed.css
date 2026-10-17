@@ -41,3 +41,36 @@
 .feed-more { display: flex; justify-content: center; padding: 14px 0 2px; }
 
 @media (prefers-reduced-motion: reduce) { .feed-flash, .feed-newpill { animation: none !important; } }
+
+/* ---- the composer, docked at the bottom of the screen -------------------------------------------------------
+   One quiet line while the feed scrolls under it; it opens up (counter, hint, room to grow) when you write. */
+.feed-dock { position: sticky; bottom: 0; z-index: 25; margin-top: 12px; padding: 22px 0 max(12px, env(safe-area-inset-bottom));
+  background: linear-gradient(180deg, rgba(14,14,16,0) 0%, var(--canvas) 38%); pointer-events: none; }
+.feed-dock-card { pointer-events: auto; position: relative; padding: 9px 10px 9px 12px; border-radius: 18px; background: var(--plate);
+  box-shadow: var(--sh-plate), 0 0 0 1px var(--hair-2), 0 -10px 30px -12px rgba(0,0,0,.65); transition: box-shadow var(--sk-dur-base) var(--sk-ease-standard); }
+.feed-dock[data-open="true"] .feed-dock-card { box-shadow: var(--sh-plate), 0 0 0 1px rgba(255,106,31,.5), 0 -12px 34px -12px rgba(0,0,0,.7); }
+.feed-dock-row { display: flex; align-items: flex-end; gap: 10px; }
+.feed-dock-avatar { flex-shrink: 0; padding-bottom: 4px; }
+.feed-dock-input { flex: 1; min-width: 0; resize: none; overflow: hidden; line-height: 1.5; padding: 10px 14px; border-radius: 14px; font-size: 14px; color: var(--g-100); }
+.feed-dock-input::placeholder { color: var(--g-500); }
+.feed-dock-attach { flex-shrink: 0; display: inline-flex; align-items: center; justify-content: center; width: 40px; height: 40px; border: 0; border-radius: 12px;
+  background: transparent; color: var(--g-500); cursor: pointer; transition: color var(--sk-dur-fast), background var(--sk-dur-fast); }
+.feed-dock-attach:hover { color: var(--signal-hi); background: rgba(255,255,255,.06); }
+.feed-dock-send { flex-shrink: 0; height: 40px; padding: 0 16px; border-radius: 12px; }
+.feed-dock-meta { display: none; justify-content: space-between; gap: 12px; padding: 6px 4px 0 52px; font-size: 11.5px; color: var(--g-500); }
+.feed-dock[data-open="true"] .feed-dock-meta { display: flex; }
+.feed-dock-preview { position: relative; display: inline-block; margin: 2px 0 10px 48px; }
+.feed-dock-preview img { max-height: 120px; border-radius: 10px; object-fit: cover; }
+.feed-dock-x { position: absolute; top: -7px; right: -7px; display: inline-flex; align-items: center; justify-content: center; width: 22px; height: 22px; border: 0; border-radius: 50%;
+  background: var(--key); color: var(--g-200); box-shadow: var(--sh-key); cursor: pointer; }
+
+/* phone: no avatar, the send key is just an arrow */
+@media (max-width: 640px) {
+  .feed-dock-avatar { display: none; }
+  .feed-dock-meta { padding-left: 4px; }
+  .feed-dock-send { width: 40px; padding: 0; }
+  .feed-dock-send-label { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+}
+/* a toast must not sit on top of the dock's send key */
+body:has(.feed-dock) .sk-toast-stack { bottom: 92px; }
+@media (prefers-reduced-motion: reduce) { .feed-dock-card { transition: none; } }

@@ -728,6 +728,7 @@ export default {
     title: "Таспа",
     subtitle: "Кәсіби қауымдастықпен бөлісіңіз және басқалар немен бөлісіп жатқанын көріңіз.",
     composerPlaceholder: "Немен бөлісесіз?",
+    composerHint: "Ctrl+Enter — жіберу",
     posting: "Жариялануда…",
     publish: "Жариялау",
     posted: "Жазба жарияланды",

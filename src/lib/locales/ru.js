@@ -728,6 +728,7 @@ export default {
     title: "Лента",
     subtitle: "Делитесь с профессиональным сообществом и смотрите, чем делятся другие.",
     composerPlaceholder: "Чем поделитесь?",
+    composerHint: "Ctrl+Enter — отправить",
     posting: "Публикация…",
     publish: "Опубликовать",
     posted: "Пост опубликован",

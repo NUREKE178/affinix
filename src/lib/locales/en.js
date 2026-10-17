@@ -728,6 +728,7 @@ export default {
     title: "Feed",
     subtitle: "Share with the professional community and see what others are posting.",
     composerPlaceholder: "What's on your mind?",
+    composerHint: "Ctrl+Enter to post",
     posting: "Posting…",
     publish: "Post",
     posted: "Post published",

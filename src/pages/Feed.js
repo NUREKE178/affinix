@@ -179,7 +179,7 @@ export function Feed({ query }) {
   });
   const empty = !loading && !error && posts.length === 0;
   const tabEmpty = !loading && !error && posts.length > 0 && inView.length === 0;
-  const scrollToComposer = () => composerRef.current?.scrollIntoView({ block: "center", behavior: "smooth" });
+  const scrollToComposer = () => composerRef.current?.querySelector("textarea")?.focus();
 
   return html`
     <div>
@@ -263,7 +263,7 @@ export function Feed({ query }) {
             : html`<${Button} variant="secondary" size="sm" loading=${loadingMore} onClick=${() => loadMorePosts()}>${t("feed.loadMore")}<//>`}
         </div>`}
 
-      <div ref=${composerRef}><${Composer} t=${t} profile=${profile} onPosted=${onPosted} /></div>
+      <div ref=${composerRef} style="display:contents"><${Composer} t=${t} profile=${profile} onPosted=${onPosted} /></div>
 
       ${confirmMounted && html`
         <div class="sk-backdrop-anim fixed inset-0 z-50 flex items-center justify-center bg-graphite-950/70 p-4" data-state=${confirmPhase} onClick=${(e) => e.target === e.currentTarget && setConfirmDelete(null)}>
