@@ -48,14 +48,20 @@ function place(host, thumb, animate) {
   const moved = from && (Math.abs(from.x - now.x) > 0.5 || Math.abs(from.y - now.y) > 0.5 || Math.abs(from.w - now.w) > 0.5);
   // a size change that lands in the middle of a glide re-aims it (shorter), so the key never jumps
   if (!(animate || running.length) || !moved || prefersReducedMotion() || typeof thumb.animate !== "function") return;
+  // while it travels the key covers both choices (sideways for tabs, up / down for the sidebar), then tightens on the new one
   const left = Math.min(from.x, now.x);
-  const right = Math.max(from.x + from.w, now.x + now.w);
-  const stretch = { x: left, y: (from.y + now.y) / 2, w: right - left };
+  const top = Math.min(from.y, now.y);
+  const stretch = {
+    x: left,
+    y: top,
+    w: Math.max(from.x + from.w, now.x + now.w) - left,
+    h: Math.max(from.y + from.h, now.y + now.h) - top,
+  };
   thumb.animate(
     [
-      { transform: at(from), width: `${from.w}px` },
-      { transform: at(stretch), width: `${stretch.w}px`, offset: 0.42 },
-      { transform: at(now), width: `${now.w}px` },
+      { transform: at(from), width: `${from.w}px`, height: `${from.h}px` },
+      { transform: at(stretch), width: `${stretch.w}px`, height: `${stretch.h}px`, offset: 0.42 },
+      { transform: at(now), width: `${now.w}px`, height: `${now.h}px` },
     ],
     { duration: animate ? MS : 240, easing: EASE }
   );

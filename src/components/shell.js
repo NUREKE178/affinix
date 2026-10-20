@@ -190,6 +190,10 @@ function SidebarContent({ currentPath, onNavigate, collapsed = false, sidebarMod
   const { incoming } = useFriends();
   const { unreadTotal } = useConversations();
   const arena = useArenaLocal();
+  const navHost = useRef(null);
+  const navThumb = useRef(null);
+  const activeNavId = [...NAV, ...COMMUNITY_NAV, ...workspaceNav].find((item) => [item.path, ...(item.also ?? [])].some((p) => currentPath === p || currentPath.startsWith(p + "/")))?.id ?? "";
+  useThumb(navHost, navThumb, activeNavId, collapsed ? "rail" : "open");
   const navBadge = (id) => (id === "friends" ? incoming.length : id === "messages" ? unreadTotal : id === "arena" ? arenaAttention(arena.view) : 0);
   return html`
     <div class="sk-rail flex h-full flex-col" data-collapsed=${collapsed}>
@@ -201,7 +205,8 @@ function SidebarContent({ currentPath, onNavigate, collapsed = false, sidebarMod
         </div>
       </button>
 
-      <nav class="sk-rail-gutter flex-1 overflow-y-auto overflow-x-hidden py-1 space-y-0.5">
+      <nav class="sk-rail-gutter sk-thumbhost flex-1 overflow-y-auto overflow-x-hidden py-1 space-y-0.5" ref=${navHost}>
+        <span class="sk-thumb sk-nav-thumb" ref=${navThumb} aria-hidden="true"></span>
         ${NAV.map((item) => html`<${NavItem} key=${item.id} item=${item} currentPath=${currentPath} onNavigate=${onNavigate} t=${t} collapsed=${collapsed} badgeCount=${navBadge(item.id)} />`)}
 
         <div class="sk-rail-caption"><span class="sk-caption sk-fade">${t("shell.communityLabel")}</span></div>

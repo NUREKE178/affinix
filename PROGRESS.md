@@ -3864,3 +3864,10 @@ change by themselves (font load, resize, a new language) re-place the key withou
 it; reduced motion jumps. No markup contract changed: buttons keep `data-active`. Test: `test_tab_thumb.mjs` (26 checks: geometry at rest, stretched while
 travelling, rapid switching, language switch, resize, reduced motion, Arena, builder). Left as they were: the sidebar items (their icon alignment is pinned by
 other tests) and the landing language pill (it already slides).
+
+## Sidebar: the same sliding key (no migration)
+
+`SidebarContent` (shell.js) uses `useThumb` on the `<nav>` (`sk-thumbhost`) with the id of the active item, so the held-down well and its lit edge are one
+`.sk-thumb.sk-nav-thumb` element that glides vertically between rows, stretched over both while it travels (`lib/thumb.js` now stretches in both axes). The active
+row is flat and its own lit edge (`::before`) is hidden while the key is placed. Collapsing / expanding the rail, a language change and the phone drawer re-place the
+key without animating (ResizeObserver + `layoutKey`). Icons and labels did not move; the sidebar tests pass unchanged. Test: `test_nav_thumb.mjs` (11 checks).
