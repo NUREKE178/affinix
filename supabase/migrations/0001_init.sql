@@ -1,5 +1,5 @@
 -- ============================================================================
--- DecisionOS — initial schema
+-- Affinix — initial schema
 -- Users/orgs/experiments/variants/questions/sessions/responses/insights/reports
 -- ============================================================================
 

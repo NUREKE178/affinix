@@ -1,4 +1,4 @@
-# DecisionOS
+# Affinix
 
 AI-powered Consumer Decision Intelligence platform. Companies run controlled
 consumer experiments (packaging, ads, logos, pricing, UX), collect real

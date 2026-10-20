@@ -1,5 +1,5 @@
 -- ============================================================================
--- DecisionOS — team visibility + adding an existing user as a member
+-- Affinix — team visibility + adding an existing user as a member
 -- ============================================================================
 
 alter table profiles add column email text;

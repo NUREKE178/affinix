@@ -1,5 +1,5 @@
 -- ============================================================================
--- DecisionOS — image attachments and reply-to for 1:1 messaging
+-- Affinix — image attachments and reply-to for 1:1 messaging
 --
 -- Extends messages (0018_realtime_and_messaging.sql) with the two
 -- WhatsApp/Telegram-style features that weren't there yet: sharing an image

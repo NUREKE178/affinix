@@ -1,4 +1,4 @@
-/* DecisionOS landing page -- the "Instrument" look: graphite, one signal colour, tactile keys, quiet plates.
+/* Affinix landing page -- the "Instrument" look: graphite, one signal colour, tactile keys, quiet plates.
  *
  * Every class is lp- prefixed and every element selector is scoped under .lp-root, so nothing here can leak into the
  * app (the app's own look lives in styles.css + vendor/tailwind.css, which is prebuilt -- new Tailwind utilities would

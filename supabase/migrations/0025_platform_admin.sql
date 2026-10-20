@@ -1,10 +1,10 @@
 -- ============================================================================
--- DecisionOS: platform owner, platform admins, the admin panel (migration 0025)
+-- Affinix: platform owner, platform admins, the admin panel (migration 0025)
 --
 -- Two different things were both called "owner":
 --   * the ROLE IN A COMPANY (organization_members.role = owner / admin / researcher / viewer): every person who
 --     signs up founds their own company and is its owner; this stays as it is and now reads "founder" in the app;
---   * the role on the PLATFORM: one owner (the person who runs DecisionOS) and any number of platform admins
+--   * the role on the PLATFORM: one owner (the person who runs Affinix) and any number of platform admins
 --     (moderators). That is what profiles.is_owner / is_admin mean.
 --
 -- A hole that is closed here: "profiles: update own" (0002) lets a signed-in user update ANY column of their own

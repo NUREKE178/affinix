@@ -1,4 +1,4 @@
-// The platform role of a person: "owner" (the one person who runs DecisionOS), "admin" (a moderator) or none.
+// The platform role of a person: "owner" (the one person who runs Affinix), "admin" (a moderator) or none.
 // It is NOT the role in a company (owner / admin / researcher / viewer): every person who signs up founds their own
 // company, so that "owner" is everywhere; this one is rare and is shown as a badge (components/platformBadge.js).
 //

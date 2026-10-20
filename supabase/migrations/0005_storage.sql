@@ -1,5 +1,5 @@
 -- ============================================================================
--- DecisionOS — Storage bucket for variant assets (images/video)
+-- Affinix — Storage bucket for variant assets (images/video)
 --
 -- Public read (stimuli must be viewable by anonymous participants on the
 -- public link), writes restricted to org members who can manage the org

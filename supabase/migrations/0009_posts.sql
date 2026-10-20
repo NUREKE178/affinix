@@ -1,5 +1,5 @@
 -- ============================================================================
--- DecisionOS — marketing social layer, slice 1: posts + feed
+-- Affinix — marketing social layer, slice 1: posts + feed
 --
 -- Posts are platform-wide (reference profiles directly, no organization_id)
 -- -- this is deliberately a cross-org "social feed for marketing

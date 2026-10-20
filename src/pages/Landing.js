@@ -43,8 +43,8 @@ function Header({ t }) {
   return html`
     <header class="lp-hd">
       <div class="lp-hd-in">
-        <a class="lp-logo" href="#/" aria-label="DecisionOS" onClick=${(e) => { e.preventDefault(); window.scrollTo({ top: 0, behavior: "smooth" }); }}>
-          <img class="lp-logo-full" src=${`${LOGO}logo-lockup-dark.png`} alt="DecisionOS" width="142" height="30" />
+        <a class="lp-logo" href="#/" aria-label="Affinix" onClick=${(e) => { e.preventDefault(); window.scrollTo({ top: 0, behavior: "smooth" }); }}>
+          <img class="lp-logo-full" src=${`${LOGO}logo-lockup-dark.png`} alt="Affinix" width="98" height="30" />
           <img class="lp-logo-mark" src=${`${LOGO}logo-mark-256.png`} alt="" width="32" height="32" loading="lazy" decoding="async" />
         </a>
         <div class="lp-hd-r">
@@ -363,8 +363,8 @@ function Footer({ t }) {
     <footer class="lp-ft">
       <div class="lp-wrap">
         <div class="lp-ft-top">
-          <a class="lp-logo" href="#/" aria-label="DecisionOS" onClick=${(e) => { e.preventDefault(); window.scrollTo({ top: 0, behavior: "smooth" }); }}>
-            <img class="lp-ft-logo" src=${`${LOGO}logo-lockup-dark.png`} alt="DecisionOS" width="151" height="32" loading="lazy" decoding="async" />
+          <a class="lp-logo" href="#/" aria-label="Affinix" onClick=${(e) => { e.preventDefault(); window.scrollTo({ top: 0, behavior: "smooth" }); }}>
+            <img class="lp-ft-logo" src=${`${LOGO}logo-lockup-dark.png`} alt="Affinix" width="105" height="32" loading="lazy" decoding="async" />
           </a>
           <p class="lp-ft-tag">${t("landing.footer")}</p>
         </div>

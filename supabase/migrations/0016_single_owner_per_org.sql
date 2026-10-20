@@ -1,5 +1,5 @@
 -- ============================================================================
--- DecisionOS — owner can only ever be the org's own creator
+-- Affinix — owner can only ever be the org's own creator
 --
 -- Team.js's UI already does the right thing: its role dropdown excludes
 -- "owner" everywhere (invite modal and the per-member change-role select),

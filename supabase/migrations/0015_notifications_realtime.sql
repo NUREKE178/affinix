@@ -1,5 +1,5 @@
 -- ============================================================================
--- DecisionOS — live delivery for notifications
+-- Affinix — live delivery for notifications
 --
 -- Without this, the bell only ever reflects notifications as of the last
 -- page load/mount -- someone has to refresh to see a new one arrive. Adding

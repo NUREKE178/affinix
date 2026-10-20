@@ -1,5 +1,5 @@
 -- ============================================================================
--- DecisionOS -- the Arena marathon: Stage 3 of the Daily Challenge (migration 0023)
+-- Affinix -- the Arena marathon: Stage 3 of the Daily Challenge (migration 0023)
 --
 --   * extra shared sets: after the day's ten duels there are five more sets of ten (set 2 .. 6). Every vote of an extra
 --     set carries its number; ten answered duels make the set claimable once for +40 XP (claim id set_2 .. set_6)

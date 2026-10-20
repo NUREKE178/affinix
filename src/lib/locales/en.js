@@ -109,7 +109,7 @@ export default {
       interfaces: "Interfaces",
     },
     mock: {
-      aria: "DecisionOS dashboard preview with sample data",
+      aria: "Affinix dashboard preview with sample data",
       crumb: "Experiments / Coffee pouch",
       title: "Coffee pouch — 4 variants",
       live: "Live",
@@ -186,7 +186,7 @@ export default {
     trust: {
       eyebrow: "Trust",
       title: "Honest by design",
-      subtitle: "DecisionOS never claims to read minds. Every result arrives with its sample size, its uncertainty and its limitations.",
+      subtitle: "Affinix never claims to read minds. Every result arrives with its sample size, its uncertainty and its limitations.",
       items: {
         i1: {
           n: "30",
@@ -223,12 +223,12 @@ export default {
     },
     cta: {
       title: "Run your first experiment today",
-      subtitle: "Upload your variants and share one link with participants — DecisionOS collects and analyzes the rest.",
+      subtitle: "Upload your variants and share one link with participants — Affinix collects and analyzes the rest.",
       haveAccount: "Already have an account?",
     },
-    disclaimerTitle: "What DecisionOS can do — and what it can't",
-    disclaimerBody: "DecisionOS analyzes the behavior people actually show in a controlled task — choices, ratings, response time, recall — and turns it into statistical estimates and research-based predictions. The platform does not read minds, does not determine emotions with full certainty, and never claims to precisely predict real-world behavior. Every AI-generated insight is labeled as a prediction, and small samples are always flagged as insufficient for a reliable conclusion.",
-    footer: "DecisionOS — a consumer decision research platform.",
+    disclaimerTitle: "What Affinix can do — and what it can't",
+    disclaimerBody: "Affinix analyzes the behavior people actually show in a controlled task — choices, ratings, response time, recall — and turns it into statistical estimates and research-based predictions. The platform does not read minds, does not determine emotions with full certainty, and never claims to precisely predict real-world behavior. Every AI-generated insight is labeled as a prediction, and small samples are always flagged as insufficient for a reliable conclusion.",
+    footer: "Affinix — a consumer decision research platform.",
   },
 
   auth: {
@@ -240,7 +240,7 @@ export default {
       repeatPassword: "Repeat password",
     },
     login: {
-      title: "Sign in to DecisionOS",
+      title: "Sign in to Affinix",
       subtitle: "A consumer decision research platform.",
       noAccount: "No account?",
       register: "Sign up",
@@ -279,7 +279,7 @@ export default {
       success: "Your password was changed successfully.",
       successTitle: "Password updated",
       successSubtitle: "You can now sign in with your new password.",
-      successCta: "Go to DecisionOS",
+      successCta: "Go to Affinix",
       invalidTitle: "This link is no longer valid",
       invalidSubtitle: "Follow a fresh link from a password-reset email.",
       requestNew: "Request a new link",
@@ -295,7 +295,7 @@ export default {
       saving: "Saving…",
       steps: {
         welcome: {
-          title: "Welcome to DecisionOS",
+          title: "Welcome to Affinix",
           body: "A few quick steps and your workspace is ready. Most of these can be skipped and filled in later.",
           cta: "Get started",
         },
@@ -689,7 +689,7 @@ export default {
       dreamer: { name: "Soft Dreamer", body: "Gentle curves, airy layouts and a muted palette: calm over loud." },
       maximalist: { name: "Maximalist", body: "The more going on, the better: dense, saturated and rich in detail." },
     },
-    share: { cta: "Share to Feed", done: "Posted to the Feed", text: "My Taste DNA in the Arena: {type} ({traits}). Level {level}, {streak}-day streak. What is yours? #DecisionOSArena" },
+    share: { cta: "Share to Feed", done: "Posted to the Feed", text: "My Taste DNA in the Arena: {type} ({traits}). Level {level}, {streak}-day streak. What is yours? #AffinixArena" },
     badgeGroup: { volume: "Volume", streak: "Streaks", skill: "Skill", level: "Levels", time: "Time" },
     badgeName: { votes: "{n} picks", streak: "{n}-day streak", daily: "{n} daily challenges", level: "Level {n}" },
     badgeDesc: { votes: "Answer {n} duels", streak: "Play {n} days in a row", daily: "Finish {n} daily challenges", level: "Reach level {n}" },
@@ -1398,7 +1398,7 @@ export default {
   team: {
     addMember: "Add member",
     modalTitle: "Add a team member",
-    inviteHint: "If they already have a DecisionOS account, they're added immediately. Otherwise, we'll email them an invite.",
+    inviteHint: "If they already have a Affinix account, they're added immediately. Otherwise, we'll email them an invite.",
     emailLabel: "Email",
     roleLabel: "Role",
     memberAdded: "Member added",
@@ -1450,8 +1450,8 @@ export default {
   platform: {
     owner: "Platform owner",
     admin: "Platform admin",
-    ownerHint: "Creator and sole owner of DecisionOS",
-    adminHint: "DecisionOS platform admin: moderation and support",
+    ownerHint: "Creator and sole owner of Affinix",
+    adminHint: "Affinix platform admin: moderation and support",
   },
 
   admin: {
@@ -1567,11 +1567,11 @@ export default {
     confidenceValue: "95% (Wilson score)",
     thresholdsNote: "These thresholds drive the “not enough data” warnings in Results and Insights.",
     privacyTitle: "Data & privacy",
-    privacy1: "DecisionOS only collects what a participant explicitly submits: choices, ratings, rankings, recall, and the minimal demographic fields a researcher enables.",
+    privacy1: "Affinix only collects what a participant explicitly submits: choices, ratings, rankings, recall, and the minimal demographic fields a researcher enables.",
     privacy2: "Camera, microphone and biometric data are never collected without separate explicit consent — and aren't collected at all in this version.",
     privacy3: "All data is stored in a real database (Supabase), protected by row-level security policies — one organization can never see another's data.",
     ethicsTitle: "Ethics statement",
-    ethicsBody: "DecisionOS does not read minds, does not determine emotions with full certainty, and does not guarantee future consumer behavior. All AI-generated content is a statistical estimate or prediction based on observed responses, and is labeled as such throughout the product. Any future eye-tracking or webcam tracking will require separate explicit participant consent and will be clearly distinguished from validated lab measurements.",
+    ethicsBody: "Affinix does not read minds, does not determine emotions with full certainty, and does not guarantee future consumer behavior. All AI-generated content is a statistical estimate or prediction based on observed responses, and is labeled as such throughout the product. Any future eye-tracking or webcam tracking will require separate explicit participant consent and will be clearly distinguished from validated lab measurements.",
   },
 
   profile: {
@@ -1635,7 +1635,7 @@ export default {
     sessions: {
       currentSession: "Current session",
       active: "active",
-      sessionNote: "DecisionOS uses secure Supabase Auth sessions. Managing multiple devices individually is coming later.",
+      sessionNote: "Affinix uses secure Supabase Auth sessions. Managing multiple devices individually is coming later.",
       accountCreated: "Account created",
       experimentsCreated: "Experiments created",
       completedParticipants: "Completed participants",
@@ -1648,7 +1648,7 @@ export default {
     notFoundBody: "This public profile doesn't exist, or its owner has kept it private.",
     errorTitle: "Couldn't load this profile",
     errorBody: "Check your connection and try again.",
-    footerNote: "A researcher on DecisionOS — Consumer Decision Intelligence.",
+    footerNote: "A researcher on Affinix — Consumer Decision Intelligence.",
   },
 
   billing: {
@@ -1658,7 +1658,7 @@ export default {
     planName: "Free access (early stage)",
     planActive: "Active",
     emptyTitle: "No paid plan connected yet",
-    emptyBody: "DecisionOS doesn't currently charge or store real payment data. When a paid plan launches, payment will go through a licensed payment provider — nothing here will ever show a fabricated amount or balance.",
+    emptyBody: "Affinix doesn't currently charge or store real payment data. When a paid plan launches, payment will go through a licensed payment provider — nothing here will ever show a fabricated amount or balance.",
   },
 
   participantRunner: {
@@ -1727,7 +1727,7 @@ export default {
   },
 
   insightsGen: {
-    disclaimer: "These are statistical estimates based on observed participant behavior in this sample, not established facts. DecisionOS does not read minds, does not determine emotions, and does not guarantee future consumer behavior. Use these insights as one input alongside your own judgment and further research.",
+    disclaimer: "These are statistical estimates based on observed participant behavior in this sample, not established facts. Affinix does not read minds, does not determine emotions, and does not guarantee future consumer behavior. Use these insights as one input alongside your own judgment and further research.",
     variantName: "Variant {label} ({name})",
     noDataYet: "No completed responses yet. Publish the experiment and collect participant responses to generate insights.",
     noDataRecommendation: "Not enough data yet to recommend a direction.",

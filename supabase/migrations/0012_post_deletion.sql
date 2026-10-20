@@ -1,5 +1,5 @@
 -- ============================================================================
--- DecisionOS — platform admin flag + post deletion
+-- Affinix — platform admin flag + post deletion
 --
 -- Authors deleting their own posts already works: posts_delete_own
 -- (0009_posts.sql) covers that with no change needed here.

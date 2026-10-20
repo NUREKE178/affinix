@@ -107,7 +107,7 @@ async function readJsonSafely(response) {
   }
 }
 
-/** Adds a member by email. An EXISTING DecisionOS user is added directly via
+/** Adds a member by email. An EXISTING Affinix user is added directly via
  * add_member_by_email() (0016_single_owner_per_org.sql, SECURITY DEFINER,
  * enforces owner/admin-only server-side). When that RPC reports no account
  * exists yet, falls back to the invite-member Edge Function, which sends a

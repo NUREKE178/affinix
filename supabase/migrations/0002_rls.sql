@@ -1,5 +1,5 @@
 -- ============================================================================
--- DecisionOS — Row Level Security
+-- Affinix — Row Level Security
 --
 -- Model:
 --   * Every org-owned table is readable by any member of that org, writable

@@ -1,5 +1,5 @@
 -- ============================================================================
--- DecisionOS — live updates everywhere + 1:1 messaging between friends
+-- Affinix — live updates everywhere + 1:1 messaging between friends
 --
 -- Two things in one migration, because they share one mechanism (Supabase
 -- Realtime's postgres_changes stream, which only carries tables that belong

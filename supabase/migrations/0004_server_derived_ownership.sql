@@ -1,5 +1,5 @@
 -- ============================================================================
--- DecisionOS — derive ownership columns server-side, never trust the client
+-- Affinix — derive ownership columns server-side, never trust the client
 --
 -- `organizations.created_by` was being sent by the client (from
 -- supabase.auth.getUser() in src/lib/org.js) and checked against auth.uid()

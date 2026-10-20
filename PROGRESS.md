@@ -3829,3 +3829,11 @@ imagery, new styles every day, nothing repetitive or boring.
 The public profile URL shown in the UI is now `affinix.space/u/{username}` (3 locales). Auth redirects, reset-password and share links already use
 `location.origin`, so nothing else in the code depends on the host. Connecting the domain itself is dashboard work (Vercel domain + DNS record,
 Supabase Auth Site URL / Redirect URLs, Google OAuth origins). The brand name in the UI and the logo PNG are still "DecisionOS".
+
+## Rebrand: DecisionOS -> Affinix (no migration)
+
+All user-visible "DecisionOS" strings are now "Affinix" (3 locales, shell, auth/onboarding headers, landing, public profile, `index.html` title and
+description, README, CLAUDE.md, UX_ARCHITECTURE.md, jury script, migration/CSS comments, the `generate-insights` system prompt). The Kazakh suffix
+form is "Affinix-ке". New `assets/logo/logo-lockup-{dark,light}.png` (same mark, new wordmark set in Inter Bold; 839x256, so the landing `<img>` widths
+became 98 / 105 px). Deliberately NOT renamed: lower-case storage keys (`decisionos_*`, so nobody loses local state), the GitHub repo, the Vercel
+project name. The Edge Function prompt changed: redeploy with `supabase functions deploy generate-insights`.

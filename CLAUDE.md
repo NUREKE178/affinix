@@ -1,4 +1,4 @@
-# DecisionOS: notes for Claude
+# Affinix: notes for Claude
 
 ## `ғылыми_жоба.txt` (the jury script): keep it in sync with every change
 

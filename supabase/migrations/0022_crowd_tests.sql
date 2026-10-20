@@ -1,5 +1,5 @@
 -- ============================================================================
--- DecisionOS -- crowd tests: ask the Arena crowd
+-- Affinix -- crowd tests: ask the Arena crowd
 --
 -- A person puts 2-4 options in front of the community (logo drafts, a poster, a
 -- product name, a slogan ...), picks one question ("Which would you trust more?")

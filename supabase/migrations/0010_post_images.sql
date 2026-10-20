@@ -1,5 +1,5 @@
 -- ============================================================================
--- DecisionOS — optional photo attachment for posts
+-- Affinix — optional photo attachment for posts
 --
 -- One optional image per post. Storage path convention:
 --   <author_id>/<random-filename>.<ext>

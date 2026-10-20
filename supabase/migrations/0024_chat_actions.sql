@@ -1,5 +1,5 @@
 -- ============================================================================
--- DecisionOS: chat actions (Messages v2)
+-- Affinix: chat actions (Messages v2)
 --
 -- Builds on 0018 (conversations, messages) and 0020 (image attachments, replies):
 --   * edit a message (own, within 48 hours)      -> messages.edited_at, edit_message()

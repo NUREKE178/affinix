@@ -86,7 +86,7 @@ export function Icon({ name, size = 18, className = "", strokeWidth, filled = fa
   `;
 }
 
-/** The DecisionOS mark -- three paths of different weight and reach (what you're comparing) converging on one point
+/** The Affinix mark -- three paths of different weight and reach (what you're comparing) converging on one point
  * (the decision) -- as a PNG with its tile included, for every placement: sidebar, auth pages, public profile,
  * landing. (The boot screen and page loaders use the same file, see components/ui.js.) `size` is the rendered edge in
  * px; the 256px source stays sharp up to ~128px at 2x. */

@@ -1,5 +1,5 @@
 -- ============================================================================
--- DecisionOS — feed interactions: likes, comments, saves, notifications
+-- Affinix — feed interactions: likes, comments, saves, notifications
 --
 -- Four additive tables, same platform-wide (non-org-scoped) shape as posts
 -- (0009_posts.sql) -- they hang off posts/profiles, not organizations.

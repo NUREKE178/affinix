@@ -1,5 +1,5 @@
 -- ============================================================================
--- DecisionOS — bio/role on the feed's author-info popover
+-- Affinix — bio/role on the feed's author-info popover
 --
 -- The feed lets you click a post's author to see who they are, but
 -- get_public_profile() (0008) is the wrong tool for that: it's gated on

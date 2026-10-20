@@ -1,5 +1,5 @@
 -- ============================================================================
--- DecisionOS — profile system (avatar, username, bio, preferences) +
+-- Affinix — profile system (avatar, username, bio, preferences) +
 -- optional public researcher profile + avatar storage bucket.
 --
 -- Public profiles are opt-in (public_profile_enabled defaults to false) and

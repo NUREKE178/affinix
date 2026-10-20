@@ -131,7 +131,7 @@ export function LoadingLabel({ label }) {
  * Default: the logo mark inside a turning ring, label underneath. `compact`:
  * just a small spinner beside the label, for a thin strip inside a card (its
  * `className` replaces the default py-6 padding). `mark={false}`: a plain
- * glowing core instead of the logo (public pages that are not DecisionOS's
+ * glowing core instead of the logo (public pages that are not Affinix's
  * own UI). */
 export function LoadingState({ label, className = "", compact = false, mark = true }) {
   useLoadingHold();

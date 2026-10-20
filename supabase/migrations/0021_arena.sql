@@ -1,5 +1,5 @@
 -- ============================================================================
--- DecisionOS -- the Arena: design duels with XP, streaks, quests and rankings
+-- Affinix -- the Arena: design duels with XP, streaks, quests and rankings
 --
 -- The Arena shows a person two design specimens (a logo, a palette, a button,
 -- a pack, a poster ...) and asks one question about them ("Which looks more

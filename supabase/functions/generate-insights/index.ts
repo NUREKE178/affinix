@@ -22,7 +22,7 @@ import { jsonResponse, handleOptions } from "../_shared/cors.ts";
 const MIN_RELIABLE_SAMPLE = 30; // kept in sync with src/lib/stats.js's own constant
 const MAX_OPEN_TEXT_SAMPLES_PER_QUESTION = 40;
 
-const INSIGHTS_SYSTEM_PROMPT = `You are a research analyst helping a marketer interpret a consumer decision experiment (an A/B/C/D variant test on a site called DecisionOS). You will be given, as JSON:
+const INSIGHTS_SYSTEM_PROMPT = `You are a research analyst helping a marketer interpret a consumer decision experiment (an A/B/C/D variant test on a site called Affinix). You will be given, as JSON:
 - the experiment's name and the researcher's own stated objective for running it
 - a verified sample size and verified per-variant counts/percentages for the primary selection question (computed directly from the database -- always correct; never recompute, round differently, or contradict these numbers)
 - up to ${MAX_OPEN_TEXT_SAMPLES_PER_QUESTION} raw open-ended text responses per open-text question in the experiment, if any exist (a sample, not necessarily the full set -- totalResponses tells you the real count)

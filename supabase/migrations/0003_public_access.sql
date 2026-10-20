@@ -1,5 +1,5 @@
 -- ============================================================================
--- DecisionOS — defense-in-depth for the anonymous participant surface
+-- Affinix — defense-in-depth for the anonymous participant surface
 --
 -- RLS with no matching anon policy already denies anon everything on these
 -- tables. This migration additionally revokes the table-level grants a

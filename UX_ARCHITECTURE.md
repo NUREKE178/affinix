@@ -1,4 +1,4 @@
-# DecisionOS — UX Architecture
+# Affinix — UX Architecture
 
 Written before touching any UI, per the brief's own instruction. Everything
 here is designed against the real schema (`supabase/migrations/0001_init.sql`)

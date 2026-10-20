@@ -1,5 +1,5 @@
 -- ============================================================================
--- DecisionOS — friendships (requests, accept/decline/cancel/remove) +
+-- Affinix — friendships (requests, accept/decline/cancel/remove) +
 -- notifications generalized beyond comments
 --
 -- friendships is one row per PAIR of users, regardless of who requested

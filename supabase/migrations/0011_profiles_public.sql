@@ -1,5 +1,5 @@
 -- ============================================================================
--- DecisionOS — public identity view for platform-wide features (the feed)
+-- Affinix — public identity view for platform-wide features (the feed)
 --
 -- profiles' own RLS ("profiles: read own", id = auth.uid()) is deliberately
 -- restrictive -- the table holds private data (email, bio, notification
