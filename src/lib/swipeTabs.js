@@ -9,6 +9,8 @@ const entries = new Set(); // { root: () => Element|null, get: () => ({ tabs, ac
 let installed = false;
 let pending = null;        // direction of the tab change that is just about to render: 1 = next, -1 = previous
 let held = [];             // elements left transparent after the slide-out; cleared once the new tab slides in
+let heldAnims = [];        // the slide-out animations (they hold their last frame until cancelled)
+let heldTimer = 0;
 let g = null;              // the gesture in progress
 
 const EDGE = 24;           // px at the screen edges that belong to the browser's own back / forward gestures
@@ -41,6 +43,9 @@ export function contentAfter(root) {
 }
 
 function clearHeld() {
+  clearTimeout(heldTimer);
+  for (const a of heldAnims) { try { a.cancel(); } catch { /* already gone */ } }
+  heldAnims = [];
   for (const el of held) { el.style.opacity = ""; el.style.transform = ""; el.style.willChange = ""; el.style.transition = ""; }
   held = [];
 }
@@ -56,7 +61,7 @@ export function slideIn(root, dir) {
       { duration: 280, easing: EASE }
     );
   }
-  clearHeld();
+  clearHeld(); // the slide-out animations hold their last frame (transparent) until they are cancelled -- cancel them now
 }
 
 /** Keeps the active tab in view in a tab strip that scrolls sideways. */
@@ -185,19 +190,16 @@ function onEnd() {
   // slide the old content out, then change tab; the new content slides in (Tabs does that when it sees the change)
   const { go } = entry.get();
   if (prefersReducedMotion() || typeof els[0]?.animate !== "function") { reset(els, false); go(next.id); return; }
+  clearHeld();
   held = els;
-  const run = els.map((el) => {
-    const a = el.animate(
-      [{ transform: el.style.transform || "translate3d(0,0,0)", opacity: Number(el.style.opacity || 1) }, { transform: `translate3d(${-dir * 44}px,0,0)`, opacity: 0 }],
-      { duration: 130, easing: "ease-in", fill: "forwards" }
-    );
-    return a.finished.catch(() => {});
-  });
+  heldAnims = els.map((el) => el.animate(
+    [{ transform: el.style.transform || "translate3d(0,0,0)", opacity: Number(el.style.opacity || 1) }, { transform: `translate3d(${-dir * 44}px,0,0)`, opacity: 0 }],
+    { duration: 130, easing: "ease-in", fill: "forwards" }
+  ));
   for (const el of els) { el.style.transition = ""; el.style.transform = ""; el.style.opacity = "0"; }
-  Promise.all(run).then(() => {
-    go(next.id);
-    setTimeout(clearHeld, 700); // safety: if the new tab did not slide in, do not leave the old content transparent
-  });
+  // never leave the page transparent: whatever happens, everything is released shortly after the change
+  heldTimer = setTimeout(clearHeld, 900);
+  setTimeout(() => go(next.id), 130);
 }
 
 function onCancel() {

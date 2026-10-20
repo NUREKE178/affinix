@@ -3848,3 +3848,8 @@ view in the strip. Not taken: a swipe that starts at a screen edge (browser back
 sideways-scrolling strip or table; vertical scrolls are left alone; first / last tab springs back. `swipe=${false}` opts a filter out (the Arena rankings
 filters). Reduced motion: switching works, nothing animates. `[data-swipe-tabs] #app { touch-action: pan-y pinch-zoom }` is set while a page has tabs.
 Test: `test_swipe_tabs.mjs` (26 checks, real touch events through CDP). Limit: touch only; there is no mouse drag on desktop.
+
+Fix (swipe): the slide-out animation was created with `fill: "forwards"` and never cancelled, so after the new tab slid in the old animation took
+over again and the content became invisible (seen on a phone: the tab bar and heading, an empty page below). The slide-out animations are now kept and
+cancelled when the slide-in starts, and a 900ms timer releases everything whatever happens. `test_swipe_tabs.mjs` now checks the real picture after
+every swipe (no finished animation left on an element, computed opacity 1), and it fails on the old code.
