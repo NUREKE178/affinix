@@ -1,5 +1,6 @@
 // Profile tab: Taste DNA, archetype, stats, activity, badges.
-import { html, useState, useEffect, useMemo } from "../../lib/preact.js";
+import { html, useState, useEffect, useMemo, useRef } from "../../lib/preact.js";
+import { useThumb } from "../../lib/thumb.js";
 import { StatTile, Skeleton, Badge, ProgressBar, Button, toast } from "../../components/ui.js";
 import { createPost } from "../../lib/postsStore.js";
 import { Icon } from "../../components/icons.js";
@@ -138,6 +139,9 @@ export function ProfileTab({ arena }) {
   const seconds = useArenaClock();
   const [dna, setDna] = useState(null);
   const [dim, setDim] = useState("all");
+  const dimHost = useRef(null);
+  const dimThumb = useRef(null);
+  useThumb(dimHost, dimThumb, dim);
 
   // building the specimens behind a long history takes a moment: let the tab paint first
   useEffect(() => {
@@ -174,7 +178,8 @@ export function ProfileTab({ arena }) {
             <span class="sk-caption">${t("arena.dna.title")}</span>
             ${cur && html`<span class="sk-num ar-section-count">${cur.n}<span class="sk-unit">${t("arena.dna.votesUnit")}</span></span>`}
           </div>
-          <div class="ar-dim-tabs" role="tablist">
+          <div class="ar-dim-tabs sk-thumbhost" role="tablist" ref=${dimHost}>
+            <span class="sk-thumb" ref=${dimThumb} aria-hidden="true"></span>
             ${dimTabs.map((d) => html`<button key=${d.id} type="button" role="tab" aria-selected=${dim === d.id} data-active=${dim === d.id} onClick=${() => setDim(d.id)}>${d.label}</button>`)}
           </div>
           ${!dna

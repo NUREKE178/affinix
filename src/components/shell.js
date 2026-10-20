@@ -4,6 +4,7 @@ import { Icon, LogoMark } from "./icons.js";
 import { useCurrentOrg } from "../lib/currentOrg.js";
 import { useSession, signOut } from "../lib/auth.js";
 import { useMyProfile, updateMyProfile } from "../lib/profile.js";
+import { useThumb } from "../lib/thumb.js";
 import { useT, useLocale, setLocale, LOCALES, useLocaleFadeClass } from "../lib/i18n.js";
 import { useNotifications, markAllNotificationsRead, notificationCopyKey, notificationTargetPath } from "../lib/notificationsStore.js";
 import { useFriends } from "../lib/friendsStore.js";
@@ -313,6 +314,9 @@ export function LanguageSwitch({ variant = "tabs" }) {
   const locale = useLocale();
   const { profile } = useMyProfile();
   const [pending, setPending] = useState(false);
+  const host = useRef(null);
+  const thumb = useRef(null);
+  useThumb(host, thumb, locale);
 
   async function choose(id) {
     if (id === locale || pending) return;
@@ -341,7 +345,8 @@ export function LanguageSwitch({ variant = "tabs" }) {
     `;
   }
   return html`
-    <div class="sk-tabs flex items-center rounded-lg p-0.5 text-sm font-medium" data-compact="true" role="group" aria-label=${t("landing.langLabel")}>
+    <div class="sk-tabs flex items-center rounded-lg p-0.5 text-sm font-medium" data-compact="true" role="group" aria-label=${t("landing.langLabel")} ref=${host}>
+      <span class="sk-thumb" ref=${thumb} aria-hidden="true"></span>
       ${LOCALES.map((l) => html`
         <button key=${l.id} disabled=${pending} data-active=${locale === l.id} aria-pressed=${locale === l.id} onClick=${() => choose(l.id)}
           class=${`sk-tab px-2.5 py-1.5 rounded-md disabled:opacity-50 ${locale === l.id ? "text-white" : "text-graphite-500 hover:text-graphite-300"}`}>${l.label}</button>

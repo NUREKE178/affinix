@@ -795,6 +795,21 @@ select.sk-input option:checked {
   box-shadow: 0 0 6px 1px rgba(255,106,31,.7);
 }
 .sk-tab[data-active="false"]:hover { color: var(--g-100); background: rgba(255,255,255,.04); }
+
+/* The sliding key (lib/thumb.js): one raised key glides under the labels; the active label itself is flat while the key is placed. */
+.sk-tabs, .sk-thumbhost { position: relative; }
+.sk-tabs > button, .sk-thumbhost button { position: relative; z-index: 1; }
+.sk-thumb {
+  position: absolute; left: 0; top: 0; width: 0; height: 0; z-index: 0; pointer-events: none;
+  border-radius: 8px;
+  background: var(--key);
+  box-shadow: var(--sh-key), 0 0 0 1px var(--edge);
+  opacity: 0; will-change: transform, width;
+}
+[data-thumb="on"] > .sk-thumb { opacity: 1; }
+[data-thumb="on"] .sk-tab[data-active="true"] { background: transparent; box-shadow: none; }
+[data-thumb="on"] .sk-tab[data-active="false"]:hover { background: rgba(255,255,255,.04); }
+@media (prefers-reduced-motion: reduce) { .sk-thumb { will-change: auto; } }
 /* a short toggle (the language switch) is just the raised key -- no LED on it */
 [data-compact="true"] .sk-tab[data-active="true"]::before { display: none; }
 

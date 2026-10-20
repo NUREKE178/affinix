@@ -290,6 +290,8 @@
 }
 .ar-dim-tabs button:hover { color: var(--g-100); background: rgba(255,255,255,.05); }
 .ar-dim-tabs button[data-active="true"] { color: var(--g-50); background: var(--key); border-color: var(--edge); box-shadow: var(--sh-key); }
+.ar-dim-tabs[data-thumb="on"] button[data-active="true"] { background: transparent; border-color: transparent; box-shadow: none; }
+.ar-dim-tabs > .sk-thumb { border: 1px solid var(--edge); box-sizing: border-box; }
 .ar-faders { display: flex; flex-direction: column; gap: 16px; }
 .ar-dna-empty { padding: 18px 0; }
 .ar-fader { display: flex; flex-direction: column; gap: 7px; }

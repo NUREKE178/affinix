@@ -3853,3 +3853,14 @@ Fix (swipe): the slide-out animation was created with `fill: "forwards"` and nev
 over again and the content became invisible (seen on a phone: the tab bar and heading, an empty page below). The slide-out animations are now kept and
 cancelled when the slide-in starts, and a 900ms timer releases everything whatever happens. `test_swipe_tabs.mjs` now checks the real picture after
 every swipe (no finished animation left on an element, computed opacity 1), and it fails on the old code.
+
+## One sliding key for every segmented control (no migration)
+
+`lib/thumb.js` (`useThumb(host, thumb, activeKey, layoutKey)`) + `.sk-thumb` / `.sk-thumbhost` in `styles.css`. The raised key of a tab bar is one element
+that glides (WAAPI, 400ms, `cubic-bezier(.3,.9,.3,1)` -- the same curve as the landing language pill) from the old choice to the new one and stretches over both
+while it travels; the active button itself is flat while `data-thumb="on"` is set on the host. Used by: `Tabs` (so Profile, Research, Settings, Arena, Admin,
+Feed, Experiments filter, Rankings), the header language switch, the Feed sort toggle, the Arena DNA dimension tabs, the experiment builder steps. Sizes that
+change by themselves (font load, resize, a new language) re-place the key without animating (ResizeObserver); a change that lands in the middle of a glide re-aims
+it; reduced motion jumps. No markup contract changed: buttons keep `data-active`. Test: `test_tab_thumb.mjs` (26 checks: geometry at rest, stretched while
+travelling, rapid switching, language switch, resize, reduced motion, Arena, builder). Left as they were: the sidebar items (their icon alignment is pinned by
+other tests) and the landing language pill (it already slides).

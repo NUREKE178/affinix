@@ -5,6 +5,8 @@
 .feed-sort-btn { padding: 6px 11px; border: 0; border-radius: 9px; background: transparent; color: var(--g-500); font-size: 13px; font-weight: 500; cursor: pointer; transition: color var(--sk-dur-fast), background var(--sk-dur-fast); }
 .feed-sort-btn:hover { color: var(--g-200); }
 .feed-sort-btn[data-active="true"] { color: var(--g-50); background: rgba(255,255,255,.07); }
+.feed-sort[data-thumb="on"] .feed-sort-btn[data-active="true"] { background: transparent; }
+.feed-sort > .sk-thumb { background: rgba(255,255,255,.07); box-shadow: none; }
 
 .feed-tags { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin-top: 12px; }
 .feed-tags-label { margin-right: 4px; font-size: 11px; font-weight: 600; letter-spacing: .08em; text-transform: uppercase; color: var(--g-500); }

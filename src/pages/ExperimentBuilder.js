@@ -1,4 +1,5 @@
-import { html, useState, useEffect, useMemo } from "../lib/preact.js";
+import { html, useState, useEffect, useMemo, useRef } from "../lib/preact.js";
+import { useThumb } from "../lib/thumb.js";
 import { navigate } from "../router.js";
 import { fetchExperiment, saveExperimentDraft, publishExperiment } from "../lib/experiments.js";
 import { withTimeout } from "../lib/async.js";
@@ -95,6 +96,9 @@ export function ExperimentBuilder({ params }) {
   const [loadError, setLoadError] = useState(null); // null | "not_found" | <error message>
   const [retryTick, setRetryTick] = useState(0);
   const [step, setStep] = useState(1);
+  const stepsHost = useRef(null);
+  const stepsThumb = useRef(null);
+  useThumb(stepsHost, stepsThumb, step);
   const [saved, setSaved] = useState(false);
   const [saving, setSaving] = useState(false);
 
@@ -205,7 +209,8 @@ export function ExperimentBuilder({ params }) {
         `}
       />
 
-      <div class="sk-display flex items-center gap-0.5 overflow-x-auto p-1.5 mb-6 rounded-xl" data-compact="true">
+      <div class="sk-display sk-thumbhost flex items-center gap-0.5 overflow-x-auto p-1.5 mb-6 rounded-xl" data-compact="true" ref=${stepsHost}>
+        <span class="sk-thumb" ref=${stepsThumb} aria-hidden="true"></span>
         ${STEP_IDS.map(
           (id, i) => html`
             <div key=${id} class="flex items-center">

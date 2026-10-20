@@ -3,6 +3,7 @@ import { Icon } from "./icons.js";
 import { useMountTransition, prefersReducedMotion } from "../lib/motion.js";
 import { useLoadingHold, useIsLoading } from "../lib/loadingBar.js";
 import { noteTabChange, takeTabChange, slideIn, revealActive, registerSwipe } from "../lib/swipeTabs.js";
+import { useThumb } from "../lib/thumb.js";
 
 export function Card({ className = "", children, ...rest }) {
   return html`<div class=${`sk-panel rounded-xl ${className}`} ...${rest}>${children}</div>`;
@@ -241,7 +242,9 @@ export function Modal({ open, onClose, title, children, footer, wide = false }) 
  *  pass swipe=${false} for a filter that should not take the swipe. Tapping a tab plays the same slide-in. */
 export function Tabs({ tabs, active, onChange, swipe = true, swipeRank = 0 }) {
   const strip = useRef(null);
+  const thumb = useRef(null);
   const live = useRef(null);
+  useThumb(strip, thumb, active, tabs.map((x) => x.label).join("|"));
   const go = (id) => {
     const from = tabs.findIndex((x) => x.id === active);
     const to = tabs.findIndex((x) => x.id === id);
@@ -264,6 +267,7 @@ export function Tabs({ tabs, active, onChange, swipe = true, swipeRank = 0 }) {
 
   return html`
     <div class="sk-tabs flex gap-1 rounded-lg p-1 w-fit max-w-full overflow-x-auto" ref=${strip}>
+      <span class="sk-thumb" ref=${thumb} aria-hidden="true"></span>
       ${tabs.map(
         (t) => html`
           <button
