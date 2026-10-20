@@ -3837,3 +3837,14 @@ description, README, CLAUDE.md, UX_ARCHITECTURE.md, jury script, migration/CSS c
 form is "Affinix-ке". New `assets/logo/logo-lockup-{dark,light}.png` (same mark, new wordmark set in Inter Bold; 839x256, so the landing `<img>` widths
 became 98 / 105 px). Deliberately NOT renamed: lower-case storage keys (`decisionos_*`, so nobody loses local state), the GitHub repo, the Vercel
 project name. The Edge Function prompt changed: redeploy with `supabase functions deploy generate-insights`.
+
+## Swipe between tabs on a phone (no migration)
+
+`lib/swipeTabs.js` + `components/ui.js` `Tabs`. Every `<Tabs>` registers with one document-level touch listener; a horizontal swipe on the page moves to the
+next / previous tab (state-based tabs: Profile, Admin, Feed, Experiments filter; route-based: Research, Settings, Arena). The content after the tab bar
+(`contentAfter`: everything after the bar at the highest level of the page that has anything after it) follows the finger with resistance, slides out,
+and the new tab's content slides in from the side (Web Animations API, 280ms); a tap on a tab plays the same slide-in. The active tab is scrolled into
+view in the strip. Not taken: a swipe that starts at a screen edge (browser back gesture), in a focused field, in a dialog / sidebar / top bar, or over a
+sideways-scrolling strip or table; vertical scrolls are left alone; first / last tab springs back. `swipe=${false}` opts a filter out (the Arena rankings
+filters). Reduced motion: switching works, nothing animates. `[data-swipe-tabs] #app { touch-action: pan-y pinch-zoom }` is set while a page has tabs.
+Test: `test_swipe_tabs.mjs` (26 checks, real touch events through CDP). Limit: touch only; there is no mouse drag on desktop.

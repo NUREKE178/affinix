@@ -2,6 +2,7 @@ import { html, useState, useEffect, useRef } from "../lib/preact.js";
 import { Icon } from "./icons.js";
 import { useMountTransition, prefersReducedMotion } from "../lib/motion.js";
 import { useLoadingHold, useIsLoading } from "../lib/loadingBar.js";
+import { noteTabChange, takeTabChange, slideIn, revealActive, registerSwipe } from "../lib/swipeTabs.js";
 
 export function Card({ className = "", children, ...rest }) {
   return html`<div class=${`sk-panel rounded-xl ${className}`} ...${rest}>${children}</div>`;
@@ -236,14 +237,38 @@ export function Modal({ open, onClose, title, children, footer, wide = false }) 
   `;
 }
 
-export function Tabs({ tabs, active, onChange }) {
+/** `swipe` (default on): on a phone a horizontal swipe on the page content moves to the next / previous tab (lib/swipeTabs.js);
+ *  pass swipe=${false} for a filter that should not take the swipe. Tapping a tab plays the same slide-in. */
+export function Tabs({ tabs, active, onChange, swipe = true, swipeRank = 0 }) {
+  const strip = useRef(null);
+  const live = useRef(null);
+  const go = (id) => {
+    const from = tabs.findIndex((x) => x.id === active);
+    const to = tabs.findIndex((x) => x.id === id);
+    if (to !== from && from >= 0 && to >= 0) noteTabChange(to > from ? 1 : -1);
+    onChange(id);
+  };
+  live.current = { tabs, active, go };
+
+  useEffect(() => {
+    if (!swipe) return undefined;
+    return registerSwipe({ root: () => strip.current, get: () => live.current, rank: swipeRank });
+  }, [swipe, swipeRank]);
+
+  // when the tab changes (tap, swipe, or the page itself re-opened on another tab): bring it into view in the strip
+  // and slide the new content in from the side the change came from
+  useEffect(() => {
+    revealActive(strip.current);
+    if (swipe) slideIn(strip.current, takeTabChange());
+  }, [active]);
+
   return html`
-    <div class="sk-tabs flex gap-1 rounded-lg p-1 w-fit max-w-full overflow-x-auto">
+    <div class="sk-tabs flex gap-1 rounded-lg p-1 w-fit max-w-full overflow-x-auto" ref=${strip}>
       ${tabs.map(
         (t) => html`
           <button
             key=${t.id}
-            onClick=${() => onChange(t.id)}
+            onClick=${() => go(t.id)}
             data-active=${active === t.id}
             class=${`sk-tab rounded-md px-3 py-1.5 text-sm font-medium whitespace-nowrap ${
               active === t.id ? "text-white" : "text-graphite-400 hover:text-graphite-200"

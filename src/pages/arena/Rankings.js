@@ -64,8 +64,8 @@ export function RankingsTab({ arena }) {
   return html`
     <div class="ar-rankings">
       <div class="ar-rank-bar">
-        <${Tabs} tabs=${[{ id: "week", label: t("arena.rankings.week") }, { id: "all", label: t("arena.rankings.all") }]} active=${scope} onChange=${setScope} />
-        <${Tabs} tabs=${[{ id: "everyone", label: t("arena.rankings.everyone") }, { id: "friends", label: t("arena.rankings.friends") }]} active=${friends ? "friends" : "everyone"} onChange=${(id) => setFriends(id === "friends")} />
+        <${Tabs} swipe=${false} tabs=${[{ id: "week", label: t("arena.rankings.week") }, { id: "all", label: t("arena.rankings.all") }]} active=${scope} onChange=${setScope} />
+        <${Tabs} swipe=${false} tabs=${[{ id: "everyone", label: t("arena.rankings.everyone") }, { id: "friends", label: t("arena.rankings.friends") }]} active=${friends ? "friends" : "everyone"} onChange=${(id) => setFriends(id === "friends")} />
       </div>
 
       <section class="sk-panel ar-rank-list" data-testid="arena-rankings">
