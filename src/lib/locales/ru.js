@@ -1583,7 +1583,7 @@ export default {
     errorNotFound: "Профиль не найден.",
     reloadPage: "Обновить страницу",
     noName: "Без имени",
-    publicProfileUrl: "decisionos.app/u/{username}",
+    publicProfileUrl: "affinix.space/u/{username}",
     personal: {
       fullNameLabel: "Полное имя",
       usernameLabel: "Имя пользователя",
@@ -1600,7 +1600,7 @@ export default {
       interestsHint: "Через запятую.",
       interestsPlaceholder: "UX, ценообразование, упаковка",
       publicToggle: "Публичный профиль-исследователя",
-      publicHint: "Если включено, имя, должность, организация и биография будут видны всем по ссылке decisionos.app/u/{username}. Email и приватные исследования никогда не публикуются.",
+      publicHint: "Если включено, имя, должность, организация и биография будут видны всем по ссылке affinix.space/u/{username}. Email и приватные исследования никогда не публикуются.",
       saveButton: "Сохранить изменения",
       profileSaved: "Профиль сохранён",
       emailTitle: "Email",

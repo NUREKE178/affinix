@@ -1583,7 +1583,7 @@ export default {
     errorNotFound: "Profile not found.",
     reloadPage: "Reload page",
     noName: "No name set",
-    publicProfileUrl: "decisionos.app/u/{username}",
+    publicProfileUrl: "affinix.space/u/{username}",
     personal: {
       fullNameLabel: "Full name",
       usernameLabel: "Username",
@@ -1600,7 +1600,7 @@ export default {
       interestsHint: "Comma-separated.",
       interestsPlaceholder: "UX, pricing, packaging",
       publicToggle: "Public researcher profile",
-      publicHint: "When enabled, your name, title, organization and bio are visible to anyone at decisionos.app/u/{username}. Your email and private research are never published.",
+      publicHint: "When enabled, your name, title, organization and bio are visible to anyone at affinix.space/u/{username}. Your email and private research are never published.",
       saveButton: "Save changes",
       profileSaved: "Profile saved",
       emailTitle: "Email",

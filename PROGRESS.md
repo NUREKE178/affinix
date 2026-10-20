@@ -3823,3 +3823,9 @@ imagery, new styles every day, nothing repetitive or boring.
   9 families / wider pairs. Both new files added to the regression list. Locale parity: 1,537 keys per language.
 - Honest limits: question format is still pairwise; imagery is generated vector art; live Supabase and the Vercel deploy were not verifiable
   from the sandbox.
+
+## Own domain: affinix.space (no migration)
+
+The public profile URL shown in the UI is now `affinix.space/u/{username}` (3 locales). Auth redirects, reset-password and share links already use
+`location.origin`, so nothing else in the code depends on the host. Connecting the domain itself is dashboard work (Vercel domain + DNS record,
+Supabase Auth Site URL / Redirect URLs, Google OAuth origins). The brand name in the UI and the logo PNG are still "DecisionOS".

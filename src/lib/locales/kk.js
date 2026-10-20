@@ -1583,7 +1583,7 @@ export default {
     errorNotFound: "Профиль табылмады.",
     reloadPage: "Бетті жаңарту",
     noName: "Аты жоқ",
-    publicProfileUrl: "decisionos.app/u/{username}",
+    publicProfileUrl: "affinix.space/u/{username}",
     personal: {
       fullNameLabel: "Толық аты-жөні",
       usernameLabel: "Пайдаланушы аты",
@@ -1600,7 +1600,7 @@ export default {
       interestsHint: "Үтірмен бөліп.",
       interestsPlaceholder: "UX, баға белгілеу, қаптама",
       publicToggle: "Зерттеушінің жария профилі",
-      publicHint: "Қосылған болса, атыңыз, лауазымыңыз, ұйымыңыз және өмірбаяныңыз decisionos.app/u/{username} сілтемесі арқылы барлығына көрінеді. Email және жеке зерттеулер ешқашан жарияланбайды.",
+      publicHint: "Қосылған болса, атыңыз, лауазымыңыз, ұйымыңыз және өмірбаяныңыз affinix.space/u/{username} сілтемесі арқылы барлығына көрінеді. Email және жеке зерттеулер ешқашан жарияланбайды.",
       saveButton: "Өзгерістерді сақтау",
       profileSaved: "Профиль сақталды",
       emailTitle: "Email",
