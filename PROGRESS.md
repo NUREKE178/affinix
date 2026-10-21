@@ -3871,3 +3871,13 @@ other tests) and the landing language pill (it already slides).
 `.sk-thumb.sk-nav-thumb` element that glides vertically between rows, stretched over both while it travels (`lib/thumb.js` now stretches in both axes). The active
 row is flat and its own lit edge (`::before`) is hidden while the key is placed. Collapsing / expanding the rail, a language change and the phone drawer re-place the
 key without animating (ResizeObserver + `layoutKey`). Icons and labels did not move; the sidebar tests pass unchanged. Test: `test_nav_thumb.mjs` (11 checks).
+
+## Motion, second pass (no migration)
+
+A small shared vocabulary at the end of `styles.css`, all of it off under `prefers-reduced-motion`: `skGrowW` (a bar grows from empty to its inline width; applied by
+selector to `.sk-progress-fill`, `.ar-spec-bar > i`, `.ar-split > i`, `.ar-badge-prog > i`, `.sty-bar`, `.cr-res-bar > i`, `.ar-fader-fill` and by the `sk-grow` class on the Overview
+and Results bars), `skRise` + `.sk-stagger` (rows rise in one after another, the first twelve staggered; used on the experiments list, Arena quests, rankings, admin
+people, incoming friend requests), `skFloat` (`.sk-empty-ico`, the empty-state icon), and in the Arena `arSpecInL/R` (the two specimens arrive from their sides), `arVsPop`,
+`arPickPop` + `skRing` (the chosen specimen pops with a ring; the other steps back to .985), a rising result block and a popping "your pick" chip. No markup contracts changed.
+Test: `test_motion2.mjs` (10 checks incl. reduced motion). Not done on purpose: counting numbers up (the text would change under tests and screen readers) and chart intros
+(Chart.js already animates them).

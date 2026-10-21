@@ -68,7 +68,7 @@ export function RankingsTab({ arena }) {
         <${Tabs} swipe=${false} tabs=${[{ id: "everyone", label: t("arena.rankings.everyone") }, { id: "friends", label: t("arena.rankings.friends") }]} active=${friends ? "friends" : "everyone"} onChange=${(id) => setFriends(id === "friends")} />
       </div>
 
-      <section class="sk-panel ar-rank-list" data-testid="arena-rankings">
+      <section class="sk-panel ar-rank-list" data-testid="arena-rankings" data-stagger-host="true">
         ${state.loading
           ? [0, 1, 2, 3].map((i) => html`<div class="ar-row" key=${i}><${Skeleton} className="h-4 w-full" /></div>`)
           : unavailable

@@ -31,7 +31,7 @@ function ArenaCard({ t }) {
       <p class="mt-3 text-sm leading-relaxed text-graphite-300">${t("arena.promo")}</p>
       ${view && html`
         <div class="mt-4 flex items-center gap-3">
-          <div class="sk-display h-2 flex-1 overflow-hidden rounded-full"><div class="h-full rounded-full" style=${{ width: `${(Math.min(done, size) / size) * 100}%`, background: "linear-gradient(180deg,#ff8f55,#ff6a1f)" }}></div></div>
+          <div class="sk-display h-2 flex-1 overflow-hidden rounded-full"><div class="h-full rounded-full sk-grow" style=${{ width: `${(Math.min(done, size) / size) * 100}%`, background: "linear-gradient(180deg,#ff8f55,#ff6a1f)" }}></div></div>
           <span class="sk-num text-xs text-graphite-300">${Math.min(done, size)}<span class="sk-unit">/ ${size}</span></span>
         </div>`}
       <div class="mt-4"><${Button} variant="secondary" onClick=${() => navigate("/app/arena")} data-testid="overview-arena-open">${t("arena.promoCta")}<//></div>

@@ -173,7 +173,7 @@ export function Friends() {
       ${incoming.length > 0 && html`
         <div class="mb-6">
           <h3 class="text-xs font-semibold uppercase tracking-wider text-graphite-500 mb-2">${t("friends.incomingTitle", { count: incoming.length })}</h3>
-          <${Card} className="divide-y divide-graphite-800">
+          <${Card} className="divide-y divide-graphite-800 sk-stagger">
             ${incoming.map((f) => html`
               <${PersonRow} key=${f.id} f=${f} t=${t}>
                 <${Button} size="sm" disabled=${busyId === f.id} onClick=${() => accept(f)}>

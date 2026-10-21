@@ -253,7 +253,7 @@ export function Results({ params }) {
                     <span class="text-graphite-500">n=${seg.n}${!seg.sufficient ? ` · ${t("results.smallSample")}` : ""}</span>
                   </div>
                   <div class="sk-display flex h-2.5 w-full overflow-hidden rounded-full">
-                    ${seg.rows.map((r) => html`<div key=${r.variantId} style=${{ width: `${r.rate * 100}%`, background: r.color }} title=${`${r.label}: ${pct(r.rate)}`}></div>`)}
+                    ${seg.rows.map((r) => html`<div key=${r.variantId} class="sk-grow" style=${{ width: `${r.rate * 100}%`, background: r.color }} title=${`${r.label}: ${pct(r.rate)}`}></div>`)}
                   </div>
                 </div>
               `

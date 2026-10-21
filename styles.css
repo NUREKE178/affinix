@@ -1258,3 +1258,55 @@ html { scroll-behavior: smooth; }
 /* Swipe between tabs (lib/swipeTabs.js): while a page has tabs, the browser leaves horizontal pans on the content to us and keeps
    vertical scrolling and pinch-zoom. Sideways-scrolling strips and tables are their own scroll containers and are not affected. */
 [data-swipe-tabs] #app { touch-action: pan-y pinch-zoom; }
+
+/* ============================================================================================================
+   Motion, second pass -- one small vocabulary used everywhere, all of it off under prefers-reduced-motion:
+   bars GROW to their value when they appear, lists RISE in one after another, empty states breathe,
+   and in the Arena the two specimens arrive from their sides and the chosen one answers with a pop.
+   ============================================================================================================ */
+@keyframes skGrowW { from { width: 0; } }
+@keyframes skRise { from { opacity: 0; transform: translate3d(0, 10px, 0); } }
+@keyframes skFloat { 0%, 100% { transform: translate3d(0, 0, 0); } 50% { transform: translate3d(0, -4px, 0); } }
+@keyframes skRing { 0% { box-shadow: 0 0 0 0 rgba(255,106,31,.0); } 40% { box-shadow: 0 0 0 6px rgba(255,106,31,.14); } 100% { box-shadow: 0 0 0 0 rgba(255,106,31,0); } }
+
+/* a bar that fills from empty to its value (width is set inline, the animation only supplies the start) */
+.sk-grow, .sk-progress-fill, .ar-spec-bar > i, .ar-split > i, .ar-badge-prog > i, .sty-bar, .cr-res-bar > i, .ar-fader-fill {
+  animation: skGrowW .9s var(--sk-ease-out) .1s backwards;
+}
+
+/* a list whose rows come in one after another (the first twelve; the rest arrive together) */
+.sk-stagger > *, [data-stagger-host="true"] > * { animation: skRise .42s var(--sk-ease-out) backwards; }
+.sk-stagger > :nth-child(2), [data-stagger-host="true"] > :nth-child(2) { animation-delay: 45ms; }
+.sk-stagger > :nth-child(3), [data-stagger-host="true"] > :nth-child(3) { animation-delay: 90ms; }
+.sk-stagger > :nth-child(4), [data-stagger-host="true"] > :nth-child(4) { animation-delay: 135ms; }
+.sk-stagger > :nth-child(5), [data-stagger-host="true"] > :nth-child(5) { animation-delay: 180ms; }
+.sk-stagger > :nth-child(6), [data-stagger-host="true"] > :nth-child(6) { animation-delay: 225ms; }
+.sk-stagger > :nth-child(7), [data-stagger-host="true"] > :nth-child(7) { animation-delay: 270ms; }
+.sk-stagger > :nth-child(8), [data-stagger-host="true"] > :nth-child(8) { animation-delay: 315ms; }
+.sk-stagger > :nth-child(9), [data-stagger-host="true"] > :nth-child(9) { animation-delay: 360ms; }
+.sk-stagger > :nth-child(10), [data-stagger-host="true"] > :nth-child(10) { animation-delay: 405ms; }
+.sk-stagger > :nth-child(11), [data-stagger-host="true"] > :nth-child(11) { animation-delay: 450ms; }
+.sk-stagger > :nth-child(n+12), [data-stagger-host="true"] > :nth-child(n+12) { animation-delay: 495ms; }
+
+/* an empty state is calm but alive */
+.sk-empty-ico { animation: skFloat 4s ease-in-out infinite; }
+
+/* Arena: the two specimens come in from their own sides, the VS key pops, the chosen one answers */
+@keyframes arSpecInL { from { opacity: 0; transform: translate3d(-22px, 0, 0) scale(.985); } }
+@keyframes arSpecInR { from { opacity: 0; transform: translate3d(22px, 0, 0) scale(.985); } }
+@keyframes arVsPop { 0% { opacity: 0; transform: translate(-50%, -50%) scale(.4); } 70% { transform: translate(-50%, -50%) scale(1.12); } 100% { opacity: 1; transform: translate(-50%, -50%) scale(1); } }
+@keyframes arPickPop { 0% { transform: scale(1); } 35% { transform: scale(1.018); } 100% { transform: scale(1); } }
+.ar-stage > .ar-spec:nth-child(1) { animation: arSpecInL .5s var(--sk-ease-out) backwards; }
+.ar-stage > .ar-spec:nth-child(2) { animation: arSpecInR .5s var(--sk-ease-out) .06s backwards; }
+.ar-stage > .ar-vs { animation: arVsPop .5s var(--sk-ease-spring, cubic-bezier(.3,1.4,.5,1)) .22s backwards; }
+.ar-stage > .ar-spec[data-state="picked"]:nth-child(n) { animation: arPickPop .5s var(--sk-ease-out), skRing .9s ease-out; }
+.ar-spec[data-state="other"] { transform: scale(.985); }
+.ar-spec-foot { animation: skRise .4s var(--sk-ease-out) .12s backwards; }
+.ar-spec-chip { animation: arVsPop .4s cubic-bezier(.3,1.4,.5,1) .2s backwards; }
+
+@media (prefers-reduced-motion: reduce) {
+  .sk-grow, .sk-progress-fill, .ar-spec-bar > i, .ar-split > i, .ar-badge-prog > i, .sty-bar, .cr-res-bar > i, .ar-fader-fill,
+  .sk-stagger > *, [data-stagger-host="true"] > *, .sk-empty-ico,
+  .ar-stage > .ar-spec, .ar-stage > .ar-vs, .ar-stage > .ar-spec[data-state="picked"]:nth-child(n), .ar-spec-foot, .ar-spec-chip { animation: none !important; }
+  .ar-spec[data-state="other"] { transform: none; }
+}

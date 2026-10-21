@@ -113,7 +113,7 @@ export function ExperimentsList({ query }) {
         ? html`<${EmptyState} title=${t("experiments.emptyTitle")} body=${t("experiments.emptyBody")} icon="experiments"
             action=${html`<${Button} onClick=${() => navigate("/app/experiments/new")}>${t("experiments.emptyCta")}<//>`} />`
         : html`
-          <div class="space-y-3">
+          <div class="space-y-3 sk-stagger">
             ${sorted.map((e) => html`
               <${Card} key=${e.id} className="p-4 sm:p-5">
                 <div class="flex flex-wrap items-start justify-between gap-4">

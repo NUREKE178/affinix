@@ -61,7 +61,7 @@ export function QuestsTab({ arena }) {
   if (!ready || !view) return html`<div class="ar-quests"></div>`;
   return html`
     <div class="ar-quests-grid">
-      <div class="ar-quests">
+      <div class="ar-quests sk-stagger">
         <div class="ar-quests-head">
           <span class="sk-caption">${t("arena.quests.today")}</span>
           <span class="ar-muted">${t("arena.quests.resetNote")}</span>

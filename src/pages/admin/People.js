@@ -82,7 +82,7 @@ export function AdminPeople({ isOwner, meId }) {
         : state.rows.length === 0
           ? html`<${EmptyState} title=${t("admin.people.emptyTitle")} body=${t("admin.people.emptyBody")} icon="search" />`
           : html`
-            <div class="adm-list sk-panel" data-testid="admin-people-list">
+            <div class="adm-list sk-panel sk-stagger" data-testid="admin-people-list">
               ${state.rows.map((r) => html`
                 <div class="adm-person" key=${r.id} data-testid="admin-person" data-username=${r.username ?? ""} data-admin=${r.isAdmin} data-owner=${r.isOwner}>
                   <${PersonLink} who=${{ id: r.id, name: r.name, username: r.username, avatarUrl: r.avatarUrl }} className="adm-person-who">
