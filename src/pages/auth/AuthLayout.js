@@ -12,7 +12,7 @@ export function AuthLayout({ title, subtitle, children, footer }) {
         <div class="flex items-center justify-between mb-8">
           <button onClick=${() => navigate("/")} class="flex items-center gap-2.5">
             <${LogoMark} size=${36} />
-            <span class="font-semibold text-lg tracking-tight">Affinix</span>
+            <span class="font-semibold text-lg tracking-tight">affinix<span class="text-graphite-500">.space</span></span>
           </button>
           <${LanguageSwitch} />
         </div>

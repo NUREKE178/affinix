@@ -36,7 +36,7 @@ export function PublicProfile({ params }) {
       <header class="px-6 py-4 border-b border-graphite-800/80">
         <button onClick=${() => navigate("/")} class="flex items-center gap-2 text-sm font-semibold text-graphite-200">
           <${LogoMark} size=${28} />
-          Affinix
+          affinix<span class="text-graphite-500">.space</span>
         </button>
       </header>
 

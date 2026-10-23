@@ -183,7 +183,7 @@ export function BootScreen({ label }) {
       <div class="sk-boot-stage" aria-hidden="true">
         <span class="sk-boot-tile"><img src="./assets/logo/logo-mark-256.png" width="88" height="88" alt="" /></span>
       </div>
-      <div class="sk-boot-word">Affin<b>ix</b></div>
+      <div class="sk-boot-word">affinix<b>.space</b></div>
       <div class="sk-boot-track" aria-hidden="true"><span></span></div>
       <div class="sk-boot-label"><span key=${text} class="sk-boot-phase">${text}</span>${dots && html`<${Dots} />`}</div>
     </div>

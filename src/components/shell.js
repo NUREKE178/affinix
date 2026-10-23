@@ -200,7 +200,7 @@ function SidebarContent({ currentPath, onNavigate, collapsed = false, sidebarMod
       <button type="button" onClick=${() => onNavigate(HOME_PATH)} class="sk-brand">
         <${LogoMark} size=${34} />
         <div class="sk-fade min-w-0">
-          <div class="font-semibold text-graphite-50 leading-tight tracking-tight whitespace-nowrap">Affinix</div>
+          <div class="font-semibold text-graphite-50 leading-tight tracking-tight whitespace-nowrap">affinix<span class="text-graphite-500">.space</span></div>
           <div class="text-[11px] text-graphite-500 leading-tight truncate max-w-[9rem]">${org?.name ?? html`<${Skeleton} className="mt-1 h-3 w-20" />`}</div>
         </div>
       </button>

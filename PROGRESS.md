@@ -3881,3 +3881,15 @@ people, incoming friend requests), `skFloat` (`.sk-empty-ico`, the empty-state i
 `arPickPop` + `skRing` (the chosen specimen pops with a ring; the other steps back to .985), a rising result block and a popping "your pick" chip. No markup contracts changed.
 Test: `test_motion2.mjs` (10 checks incl. reduced motion). Not done on purpose: counting numbers up (the text would change under tests and screen readers) and chart intros
 (Chart.js already animates them).
+
+## New brand identity + "affinix.space" wordmark (no migration)
+
+- **Symbol** (`assets/brand/affinix-symbol.svg`): a bold A that leans forward (apex pushed right, flat top cut as a "blade"), no crossbar; one orange node sits in the counter,
+  placed by construction (tangent distance 12 from both inner edges, on the bisector of the counter's angle). Silhouette reads at 16px.
+- **Wordmark**: Inter Display SemiBold outlines (no live text, so the SVGs are self-contained) with three custom touches: the A's apex is cut like the symbol's, the two f's share
+  one continuous crossbar, and only the last i carries the orange dot. "Nurlan Company" in Inter Medium, tracked, #92949E. Generator: scratchpad `brand2/compose.py` (sym3.py
+  builds the symbol geometry); not part of the repo, the outputs are.
+- **Files**: `assets/brand/` (primary on charcoal #101114, monochrome white / black, transparent dark + light, app icon 1024, symbol 1024, SVG masters) and the site's
+  `assets/logo/` (lockups for the landing, the tile mark at 256 / 1024, favicon 32, icon 192, apple-touch 180). Landing `<img>` sizes changed to 128x30 / 136x32 (new aspect).
+- **Text**: the sidebar, auth layout, onboarding header, public profile header and the boot screens now read `affinix.space` (".space" muted); the landing keeps the lockup image.
+- Honest limits: the typeface is Inter (not a bespoke font); the symbol was drawn in code, not hand-refined by a designer; no trademark search was done.
