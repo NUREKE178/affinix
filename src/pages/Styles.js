@@ -4,12 +4,12 @@
 import { html, useState, useEffect, useMemo, useRef } from "../lib/preact.js";
 import { SectionHeading, Badge, Button, Skeleton, EmptyState, toast } from "../components/ui.js";
 import { Icon } from "../components/icons.js";
-import { ResearchTabs } from "../components/subNav.js";
+import { navigate } from "../router.js";
 import { Thumb } from "./arena/parts.js";
 import { useT } from "../lib/i18n.js";
 import { getLocale } from "../lib/i18n.js";
-import { seasonOf } from "../lib/arena/rules.js";
-import { FAMILY_IDS, DIMENSION_IDS } from "../lib/arena/catalog.js";
+import { seasonOf, localDay } from "../lib/arena/rules.js";
+import { FAMILY_IDS, DIMENSION_IDS, POOL_SIZE, CLASSIC_POOL, dropPoolForDay } from "../lib/arena/catalog.js";
 import { TRAIT_IDS } from "../lib/arena/traits.js";
 import { fetchStyleReport, fetchStyleSegments, withTraits, traitLifts, recipeOf, rankSpecimens, toCsv, MIN_GROUP } from "../lib/styleInsights.js";
 
@@ -61,6 +61,7 @@ export function Styles() {
   const [dim, setDim] = useState("preference");
   const [family, setFamily] = useState("all");
   const [country, setCountry] = useState("all");
+  const [scope, setScope] = useState("all"); // which designs: all | today's drop | the classics
   const [state, setState] = useState({ status: "loading", data: null, error: null, progress: null });
   const [tick, setTick] = useState(0);
   const token = useRef(0);
@@ -107,17 +108,20 @@ export function Styles() {
     if (!d) return null;
     const overall = traitLifts(d.entries);
     const picked = country !== "all" && d.byCountry[country] ? d.byCountry[country] : null;
-    const lifts = picked ? traitLifts(picked) : overall;
-    const ranked = rankSpecimens(picked ?? d.entries);
-    const duels = (picked ?? d.entries).reduce((s, e) => s + e.wins, 0);
-    return { overall, lifts, ranked, recipe: recipeOf(lifts), duels, specimens: new Set((picked ?? d.entries).map((e) => e.stim)).size, picked: !!picked };
-  }, [state.data, country]);
+    const todayPool = dropPoolForDay(localDay());
+    const inScope = (e) => scope === "all" || (scope === "today" ? Math.floor(e.index / POOL_SIZE) === todayPool : Math.floor(e.index / POOL_SIZE) === CLASSIC_POOL);
+    const base = (picked ?? d.entries).filter(inScope);
+    const lifts = traitLifts(base);
+    const ranked = rankSpecimens(base, { top: 12, bottom: 4, minAnswers: scope === "today" ? 3 : 6 });
+    const duels = base.reduce((s, e) => s + e.wins, 0);
+    return { overall: picked ? overall : lifts, lifts, ranked, recipe: recipeOf(lifts), duels, specimens: new Set(base.map((e) => e.stim)).size, picked: !!picked, scoped: scope !== "all" };
+  }, [state.data, country, scope]);
 
   const dimItems = DIMENSION_IDS.map((id) => [id, t(`builder.dimensions.${id}.label`)]);
   const famItems = [["all", t("styles.all")], ...FAMILY_IDS.map((f) => [f, t(`arena.family.${f}`)])];
   const seasonItems = [[seasonOf(), t("styles.thisMonth")], [prevSeason(), t("styles.lastMonth")]];
   const d = state.data;
-  const enough = view && view.duels >= 60;
+  const enough = view && view.duels >= (scope === "today" ? 20 : 60);
   const reliability = !view ? "none" : view.duels >= 600 ? "high" : view.duels >= 150 ? "mid" : "low";
 
   function download() {
@@ -135,12 +139,12 @@ export function Styles() {
 
   return html`
     <div class="fade-in sty" data-testid="styles-page">
-      <${ResearchTabs} current="styles" />
       <${SectionHeading} title=${t("styles.title")} subtitle=${t("styles.subtitle")} action=${html`<${Badge} tone="signal">${t("styles.pro")}<//>`} />
 
       <div class="sty-filters sk-panel">
         <div class="sty-filter"><span class="sk-caption">${t("styles.question")}</span><${Chips} items=${dimItems} value=${dim} onChange=${setDim} testid="styles-dims" /></div>
         <div class="sty-filter"><span class="sk-caption">${t("styles.family")}</span><${Chips} items=${famItems} value=${family} onChange=${setFamily} testid="styles-families" /></div>
+        <div class="sty-filter"><span class="sk-caption">${t("styles.scope.label")}</span><${Chips} items=${[["all", t("styles.scope.all")], ["today", t("styles.scope.today")], ["classic", t("styles.scope.classic")]]} value=${scope} onChange=${setScope} testid="styles-scope" /></div>
         <div class="sty-filter sty-filter-row">
           <div><span class="sk-caption">${t("styles.period")}</span><${Chips} items=${seasonItems} value=${season} onChange=${setSeason} testid="styles-season" /></div>
           <div>
@@ -175,11 +179,6 @@ export function Styles() {
             <div class="sk-stat"><div class="sk-stat-label">${t("styles.sum.reliability")}</div><div class="sk-stat-value sty-rel" data-level=${reliability}>${t(`styles.reliability.${reliability}`)}</div></div>
           </div>
 
-          <section class="sty-card sk-panel">
-            <div class="sty-card-head"><span class="sk-caption">${t("styles.fingerprint.title")}</span><span class="sty-hint">${t("styles.fingerprint.hint", { dim: t(`builder.dimensions.${dim}.label`).toLowerCase() })}</span></div>
-            <${Fingerprint} lifts=${view.lifts} overall=${view.picked ? view.overall : null} country=${view.picked} t=${t} />
-          </section>
-
           <section class="sty-card sk-panel sty-recipe" data-testid="styles-recipe">
             <div class="sty-card-head"><span class="sk-caption">${t("styles.recipe.title")}</span></div>
             <p>${recipeText ? t("styles.recipe.lead", { dim: t(`builder.dimensions.${dim}.label`).toLowerCase(), traits: recipeText }) : t("styles.recipe.none")}</p>
@@ -187,11 +186,11 @@ export function Styles() {
 
           ${view.ranked.best.length > 0 && html`
             <section class="sty-card sk-panel" data-testid="styles-winners">
-              <div class="sty-card-head"><span class="sk-caption">${t("styles.winners.title")}</span></div>
+              <div class="sty-card-head"><span class="sk-caption">${t("styles.loved")}</span></div>
               <div class="sty-grid">
                 ${view.ranked.best.map((m) => html`
                   <figure class="sty-spec" key=${m.stim} data-stim=${m.stim}>
-                    <${Thumb} season=${season} family=${m.family} index=${m.index} size=132 />
+                    <${Thumb} season=${season} family=${m.family} index=${m.index} size=168 />
                     <figcaption><b class="sk-num">${Math.round(m.rate * 100)}%</b><span>${t(`arena.family.${m.family}`)} · ${t("styles.winners.answers", { n: nf(m.n) })}</span></figcaption>
                   </figure>`)}
               </div>
@@ -206,9 +205,15 @@ export function Styles() {
                 </div>`}
             </section>`}
 
+          <section class="sty-card sk-panel">
+            <div class="sty-card-head"><span class="sk-caption">${t("styles.fingerprint.title")}</span><span class="sty-hint">${t("styles.fingerprint.hint", { dim: t(`builder.dimensions.${dim}.label`).toLowerCase() })}</span></div>
+            <${Fingerprint} lifts=${view.lifts} overall=${view.picked ? view.overall : null} country=${view.picked} t=${t} />
+          </section>
+
           <div class="sty-actions">
             <${Button} variant="secondary" onClick=${download} data-testid="styles-export"><${Icon} name="arrowDown" size=${16} /> ${t("styles.export")}<//>
           </div>
+          <button type="button" class="sty-advanced" onClick=${() => navigate("/app/overview")} data-testid="styles-advanced">${t("styles.advanced")}</button>
           <p class="sty-note" data-testid="styles-note">${t("styles.note", { n: MIN_GROUP })}</p>
         </div>`}
     </div>`;

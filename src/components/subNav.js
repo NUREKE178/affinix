@@ -16,10 +16,10 @@ function SubNav({ tabs, current, testid }) {
 export function ResearchTabs({ current }) {
   const t = useT();
   const tabs = [
+    { id: "styles", label: t("shell.nav.styles"), path: "/app/styles" },
     { id: "overview", label: t("shell.subnav.overview"), path: "/app/overview" },
     { id: "participants", label: t("shell.nav.participants"), path: "/app/participants" },
     { id: "reports", label: t("shell.nav.reports"), path: "/app/reports" },
-    { id: "styles", label: t("shell.nav.styles"), path: "/app/styles" },
   ];
   return html`<${SubNav} tabs=${tabs} current=${current} testid="subnav-research" />`;
 }

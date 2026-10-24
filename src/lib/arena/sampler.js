@@ -56,7 +56,7 @@ function dimsFor(season, family, pool = CLASSIC_POOL, legacy = false) {
 const familiesFor = (legacy) => (legacy ? FAMILY_IDS.slice(0, LEGACY_FAMILY_COUNT) : FAMILY_IDS);
 
 /** The best of a few random candidate pairs of one pool. `seen` holds duel codes already answered. Returns absolute indexes. */
-function pickPair(rand, { season, family, dim, seen, avoid, pool = CLASSIC_POOL, exposure = null }) {
+function pickPair(rand, { season, family, dim, seen, avoid, pool = CLASSIC_POOL, exposure = null, exclude = null }) {
   const base = indexOf(pool, 0);
   const objective = isObjective(dim);
   const truth = objective ? truthMatrix(season, family, pool) : null;
@@ -69,8 +69,10 @@ function pickPair(rand, { season, family, dim, seen, avoid, pool = CLASSIC_POOL,
     if (a > b) [a, b] = [b, a];
     if (truth && !truth.has(a * POOL_SIZE + b)) continue;
     if (seen && seen.has(duelCode(family, base + a, base + b, dim))) continue;
+    if (exclude && (exclude.has(`${family}:${base + a}`) || exclude.has(`${family}:${base + b}`))) continue; // a specimen already used in this set
     found.push([a, b]);
   }
+  if (!found.length && exclude) return pickPair(rand, { season, family, dim, seen, avoid, pool, exposure, exclude: null }); // nothing fresh left: allow a reuse
   if (!found.length) {
     // Everything of this kind has been answered: deal a repeat (it earns nothing, and says so).
     relaxed = true;
@@ -183,6 +185,7 @@ export function planDaily(day, season, size = DAILY_SET_SIZE, { drops = true } =
   const others = families.filter((f) => !eyeFamilies.includes(f));
   const cycle = [...others, ...eyeFamilies, others[0]];
   const duels = [];
+  const used = new Set(); // no specimen twice in one daily set
   let cursor = 0;
   for (let k = 0; k < size; k++) {
     const eyeFamily = eyeSlots.get(k);
@@ -190,7 +193,8 @@ export function planDaily(day, season, size = DAILY_SET_SIZE, { drops = true } =
     const dims = dimsFor(season, family, pool, legacy);
     const candidates = eyeFamily ? dims.filter(isObjective) : dims.filter((d) => !isObjective(d));
     const dim = candidates[Math.floor(rand() * candidates.length)] ?? dims[0];
-    const pair = pickPair(rand, { season, family, dim, seen: null, avoid: null, pool });
+    const pair = pickPair(rand, { season, family, dim, seen: null, avoid: null, pool, exclude: used });
+    for (const i of [pair.a, pair.b]) used.add(`${family}:${i}`);
     duels.push(buildDuel(rand, { season, family, dim, a: pair.a, b: pair.b, daily: true, pool }));
   }
   return duels;
@@ -210,11 +214,13 @@ export const SET_CANDIDATES = SET_SIZE + 4;
  * Slots 2, 5 and 8 are other families, slot 6 is an eye test when the family offers one. */
 export function planSet(day, season, n, size = SET_CANDIDATES, { drops = true } = {}) {
   const legacy = !drops;
-  const pool = legacy ? CLASSIC_POOL : dropPoolForDay(day);
+  // every extra set has a pool of its own (6 distinct drop pools over a day: 7 is coprime with 31), so a day's sets never share a specimen
+  const pool = legacy ? CLASSIC_POOL : ((dropPoolForDay(day) - 1 + (n - 1) * 7) % 31) + 1;
   const rand = mulberry32(hashStringToSeed(legacy ? `set/${day}/${season}/${n}` : `set2/${day}/${season}/${n}`));
   const theme = themeFamilyFor(day, { drops });
   const others = shuffle(rand, familiesFor(legacy).filter((f) => f !== theme && dimsFor(season, f, pool, legacy).length > 0));
   const taken = new Set();
+  const used = new Set(); // no specimen twice in one set
   const duels = [];
   let cursor = 0;
   for (let k = 0; k < size; k++) {
@@ -225,7 +231,8 @@ export function planSet(day, season, n, size = SET_CANDIDATES, { drops = true } 
     const candidates = wantEye ? dims.filter(isObjective) : dims.filter((d) => !isObjective(d));
     const dim = candidates[Math.floor(rand() * candidates.length)] ?? dims[0];
     const avoid = new Set(duels.slice(-6).flatMap((d) => [`${d.family}:${d.a}`, `${d.family}:${d.b}`]));
-    const pair = pickPair(rand, { season, family, dim, seen: taken, avoid, pool });
+    const pair = pickPair(rand, { season, family, dim, seen: taken, avoid, pool, exclude: used });
+    for (const i of [pair.a, pair.b]) used.add(`${family}:${i}`);
     taken.add(duelCode(family, pair.a, pair.b, dim));
     duels.push(buildDuel(rand, { season, family, dim, a: pair.a, b: pair.b, set: n, pool }));
   }

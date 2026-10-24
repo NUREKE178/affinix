@@ -22,8 +22,8 @@ import { GlobalSearch, SearchSheetButton } from "./globalSearch.js";
 // sidebar item lit on them). Insights were removed; the rule-based interpretation lives inside the report.
 const NAV = [
   { id: "arena", key: "shell.community.arena", icon: "arena", path: "/app/arena" },
-  { id: "overview", key: "shell.nav.overview", icon: "overview", path: "/app/overview",
-    also: ["/app/experiments", "/app/results", "/app/participants", "/app/reports", "/app/styles"] },
+  { id: "marketers", key: "shell.nav.marketers", icon: "overview", path: "/app/styles",
+    also: ["/app/overview", "/app/experiments", "/app/results", "/app/participants", "/app/reports"] },
 ];
 
 const COMMUNITY_NAV = [

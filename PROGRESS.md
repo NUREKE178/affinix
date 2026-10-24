@@ -3903,3 +3903,13 @@ term 1.1; 24 candidates instead of 10. Without drops (old server) free play now 
 distinct specimens 285 -> 363 (drops), 179 -> 359 (old server); the most-shown specimen 5-6 times -> 2-3. Lobby: a quiet link to the Styles page for designers and marketers,
 and an admin-only note when the probe found the server without migration 0026 (`arena.dropsOff`). Tests: engine F4 / F4b. The daily-drop generator itself (migration 0026)
 is unchanged and still needs `supabase db push`.
+
+## "For marketers" home + no specimen twice in a set (no migration)
+
+- Sidebar: the research item is now **For marketers** (`shell.nav.marketers`, path `/app/styles`; the old experiment / participants / reports / results paths still light it). The Styles
+  page lost its tab bar, got the title "What people love", a `scope` filter (all / today's drop / classics, filtered client-side by pool = index div 32), the gallery of the **12** best
+  designs first (168px thumbs), then the recipe, then the style portrait, and a quiet link "My own experiments (advanced)" to `/app/overview`. The experiments, participants and reports pages
+  are NOT deleted (routes, data, builder, public participant flow all work); only their navigation entry is gone. The old research tab bar now starts with Styles (the way back).
+- Dealing: `planDaily` / `planSet` use a `used` set -> no specimen twice inside one set (`pickPair(exclude)` falls back to a reuse only when the pool has nothing fresh), and extra set
+  `n` has its own drop pool (`((dayPool-1)+(n-1)*7) % 31 + 1`, distinct for the six sets of a day). Measured over 28 days: duplicates per extra set 2.4 -> 0, per daily set 0.2-0.4 -> 0.
+- Tests adjusted: nav / tabs / styles expectations; engine D12 + D12b. Locale parity 1,547 keys.

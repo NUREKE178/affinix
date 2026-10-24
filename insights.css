@@ -64,3 +64,7 @@
 .sty-grid-dim .sty-spec { opacity: .8; }
 .sty-actions { display: flex; justify-content: flex-end; }
 .sty-note { margin: 0; font-size: 12px; line-height: 1.55; color: var(--g-500); }
+
+/* a quiet door to the old experiments, for those who still use them */
+.sty-advanced { align-self: flex-start; padding: 0; border: 0; background: none; color: var(--g-500); font-size: 12.5px; cursor: pointer; transition: color var(--sk-dur-fast); }
+.sty-advanced:hover { color: var(--g-200); }

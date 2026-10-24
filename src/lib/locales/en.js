@@ -37,6 +37,7 @@ export default {
 
   shell: {
     nav: {
+      marketers: "For marketers",
       overview: "Research",
       experiments: "Experiments",
       participants: "Participants",
@@ -1326,7 +1327,7 @@ export default {
   },
 
   styles: {
-    title: "Styles",
+    title: "What people love",
     pro: "Pro",
     subtitle: "Which style wins when people are asked what looks more premium, friendlier, more natural… Built from Arena duels.",
     question: "Question",
@@ -1375,6 +1376,9 @@ export default {
       lead: "When people are asked “{dim}”, the specimens that win more often are: {traits}.",
       none: "No quality wins clearly yet: not enough data, or tastes are split.",
     },
+    loved: "The most loved designs right now",
+    scope: { label: "Which designs", all: "All", today: "Today's drop", classic: "Classics", none: "No answers for this selection yet." },
+    advanced: "My own experiments (advanced) →",
     winners: {
       title: "Win most often",
       least: "Chosen least often",
