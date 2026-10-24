@@ -14,7 +14,7 @@ import { useSession } from "./auth.js";
 import { mulberry32, hashStringToSeed } from "./prng.js";
 import { t as translate, getLocale } from "./i18n.js";
 import { FAMILY_IDS, DIMENSION_IDS } from "./arena/catalog.js";
-import { duelCode, encodeEntry, entryFromRow, convertLedgerEntryV1 } from "./arena/ledger.js";
+import { duelCode, encodeEntry, entryFromRow, convertLedgerEntryV1, decodeEntry } from "./arena/ledger.js";
 import {
   ROUND_SIZE, CROWD_MIN_VOTES, IDLE_CUTOFF_S, localDay, seasonOf, addDays, flowBonus, isFlowMs, voteXp, pickSlate,
   DAILY_SET_SIZE, QUEST_BY_ID, EXTRA_SETS, SET_SIZE, THEME_QUEST,
@@ -195,6 +195,16 @@ export async function ensureDrops() {
 
 /** Synchronous answer for screens that only render what was already decided. */
 export const dropsEnabled = () => S?.drops === "yes";
+
+/** How many times this player has already met each specimen this season (family:index -> n), from the ledger. */
+function exposureFor(season) {
+  const map = new Map();
+  for (const code of S.ledger[season] ?? []) {
+    const e = decodeEntry(code);
+    for (const i of [e.a, e.b]) map.set(`${e.family}:${i}`, (map.get(`${e.family}:${i}`) ?? 0) + 1);
+  }
+  return map;
+}
 
 function addToLedger(season, code) {
   (S.ledger[season] ??= []).push(code);
@@ -484,7 +494,7 @@ export async function startRound(mode = "free") {
   } else {
     const rand = mulberry32(hashStringToSeed(`${S.userId}/${day}/${Date.now()}/${Math.random()}`));
     const taken = new Set([...seen, ...dailyCodes(day, season, planDaily, drops)]);
-    duels = planRound({ season, rand, size: ROUND_SIZE, seen: taken, recent: S.recent, focus: focusFromView(getView()), day, drops });
+    duels = planRound({ season, rand, size: ROUND_SIZE, seen: taken, recent: S.recent, focus: focusFromView(getView()), day, drops, exposure: exposureFor(season) });
   }
   const now = Date.now();
   S.round = { id: uuid(), mode, day, season, duels, idx: 0, phase: "choose", results: [], combo: 0, startedAt: now, shownAt: now, tallies: {}, last: null };
@@ -960,6 +970,7 @@ export function useArena() {
     remote: ready ? S.remote : "unknown",
     setsApi: ready ? S.setsApi : "unknown",
     drops: ready ? S.drops === "yes" : false,
+    dropsOff: ready ? S.drops === "no" : false, // the probe ran and the server refused: migration 0026 is not applied
     pendingCount: ready ? S.pending.votes.length : 0,
     notices,
     actions,

@@ -56,13 +56,13 @@ function dimsFor(season, family, pool = CLASSIC_POOL, legacy = false) {
 const familiesFor = (legacy) => (legacy ? FAMILY_IDS.slice(0, LEGACY_FAMILY_COUNT) : FAMILY_IDS);
 
 /** The best of a few random candidate pairs of one pool. `seen` holds duel codes already answered. Returns absolute indexes. */
-function pickPair(rand, { season, family, dim, seen, avoid, pool = CLASSIC_POOL }) {
+function pickPair(rand, { season, family, dim, seen, avoid, pool = CLASSIC_POOL, exposure = null }) {
   const base = indexOf(pool, 0);
   const objective = isObjective(dim);
   const truth = objective ? truthMatrix(season, family, pool) : null;
   const found = [];
   let relaxed = false;
-  for (let attempt = 0; attempt < 90 && found.length < 10; attempt++) {
+  for (let attempt = 0; attempt < 160 && found.length < 24; attempt++) {
     let a = Math.floor(rand() * POOL_SIZE);
     let b = Math.floor(rand() * (POOL_SIZE - 1));
     if (b >= a) b++;
@@ -89,9 +89,12 @@ function pickPair(rand, { season, family, dim, seen, avoid, pool = CLASSIC_POOL 
     const sa = getStimulus(season, family, base + a), sb = getStimulus(season, family, base + b);
     const dist = traitDistance(sa.traits, sb.traits);
     // A real choice: different enough to decide, not so different it is a caricature.
-    let score = -Math.abs(dist - 1.7) + rand() * 0.6;
+    // (the distance preference alone kept choosing the same "ideal" specimens: a specimen this player has already met many times is
+    // penalised, and a wider random term lets fresh ones win)
+    let score = -Math.abs(dist - 1.7) * 0.7 + rand() * 1.1;
     if (avoid?.has(`${family}:${base + a}`)) score -= 1.2;
     if (avoid?.has(`${family}:${base + b}`)) score -= 1.2;
+    if (exposure) score -= 0.55 * (Math.min(exposure.get(`${family}:${base + a}`) ?? 0, 5) + Math.min(exposure.get(`${family}:${base + b}`) ?? 0, 5));
     if (score > bestScore) { bestScore = score; best = [a, b]; }
   }
   return { a: base + best[0], b: base + best[1], repeat: relaxed };
@@ -129,12 +132,13 @@ function buildDuel(rand, { season, family, dim, a, b, repeat = false, daily = fa
  * @param day        the player's local day "YYYY-MM-DD" (picks today's and yesterday's drop); omitted = classics only
  * @param drops      false when the server cannot take drop indexes yet: deal from the classics
  */
-export function planRound({ season, rand, size = ROUND_SIZE, seen, recent = [], focus = {}, day = null, drops = true }) {
+export function planRound({ season, rand, size = ROUND_SIZE, seen, recent = [], focus = {}, day = null, drops = true, exposure = null }) {
   const duels = [];
   // the pools this round may draw from, and how often: today's drop most, the classics and yesterday's drop sometimes
   const legacy = !drops;
   const today = day && drops ? dropPoolForDay(day) : null;
-  const pools = today === null ? [[CLASSIC_POOL, 1]] : [[today, 0.7], [CLASSIC_POOL, 0.18], ...(today > 1 ? [[today - 1, 0.12]] : [])];
+  // a server that cannot take drops still accepts indexes below 64: the second pool doubles what free play can show
+  const pools = today === null ? (legacy ? [[CLASSIC_POOL, 1], [1, 1]] : [[CLASSIC_POOL, 1]]) : [[today, 0.7], [CLASSIC_POOL, 0.18], ...(today > 1 ? [[today - 1, 0.12]] : [])];
   const history = recent.slice(-8);
   const taken = new Set(seen ?? []);
   for (let k = 0; k < size; k++) {
@@ -158,8 +162,9 @@ export function planRound({ season, rand, size = ROUND_SIZE, seen, recent = [], 
       return w;
     });
     const avoid = new Set([...history, ...duels].slice(-8).flatMap((d) => [`${d.family}:${d.a}`, `${d.family}:${d.b}`]));
-    const pair = pickPair(rand, { season, family, dim, seen: taken, avoid, pool });
+    const pair = pickPair(rand, { season, family, dim, seen: taken, avoid, pool, exposure });
     if (!pair.repeat) taken.add(duelCode(family, pair.a, pair.b, dim)); // never deal the same duel twice in one go
+    if (exposure) for (const i of [pair.a, pair.b]) exposure.set(`${family}:${i}`, (exposure.get(`${family}:${i}`) ?? 0) + 1); // and within this round too
     duels.push(buildDuel(rand, { season, family, dim, pool, ...pair }));
   }
   return duels;

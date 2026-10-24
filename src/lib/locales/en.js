@@ -431,6 +431,8 @@ export default {
       creativeDirector: "Creative Director",
       maestro: "Maestro",
     },
+    stylesLink: "Designers and marketers: see which styles people love →",
+    dropsOff: "Daily drops are off: the server has not got migration 0026 yet (supabase db push). Only admins see this note.",
     drop: { title: "Today's drop · {date}", sub: "{n} new designs in {kinds} kinds — a different set tomorrow" },
     family: { mark: "Logo", palette: "Palette", button: "Button", card: "Card", pack: "Packaging", poster: "Poster", appicon: "App icon", scene: "Scene photo", shot: "Product shot" },
     q: {

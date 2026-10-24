@@ -435,3 +435,7 @@
 .ar-drop-spec { flex: 0 0 auto; display: block; border-radius: 10px; box-shadow: var(--sh-plate-sm), 0 0 0 1px var(--hair-2); overflow: hidden; }
 .ar-drop-spec .ar-thumb { border-radius: 10px; }
 .ar-q-tag[data-tag="new"] { color: var(--signal-hi); }
+
+/* a quiet door from the Arena to what its answers mean for designers and marketers */
+.ar-styles-link { align-self: flex-start; padding: 0; border: 0; background: none; color: var(--g-400); font-size: 12.5px; cursor: pointer; transition: color var(--sk-dur-fast); }
+.ar-styles-link:hover { color: var(--signal-hi, #ff8f55); }

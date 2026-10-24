@@ -3893,3 +3893,13 @@ Test: `test_motion2.mjs` (10 checks incl. reduced motion). Not done on purpose: 
   `assets/logo/` (lockups for the landing, the tile mark at 256 / 1024, favicon 32, icon 192, apple-touch 180). Landing `<img>` sizes changed to 128x30 / 136x32 (new aspect).
 - **Text**: the sidebar, auth layout, onboarding header, public profile header and the boot screens now read `affinix.space` (".space" muted); the landing keeps the lockup image.
 - Honest limits: the typeface is Inter (not a bespoke font); the symbol was drawn in code, not hand-refined by a designer; no trademark search was done.
+
+## Arena: no more repeating images (no migration)
+
+Cause found by simulation: `pickPair` preferred pairs at a "good" trait distance (|dist-1.7|), which kept picking the same specimens; on a server without migration 0026
+the pool is also only 32 specimens per family. Fix: `exposure` (how many times this player already met each specimen this season, from the ledger via `exposureFor`) is
+passed to `planRound`/`pickPair` and costs 0.55 per earlier meeting (capped at 5) -- also counted within the round being dealt; the distance term weighs 0.7, the random
+term 1.1; 24 candidates instead of 10. Without drops (old server) free play now uses two pools (indexes 0-63, which the old server accepts). Measured over 20 rounds / 200 duels:
+distinct specimens 285 -> 363 (drops), 179 -> 359 (old server); the most-shown specimen 5-6 times -> 2-3. Lobby: a quiet link to the Styles page for designers and marketers,
+and an admin-only note when the probe found the server without migration 0026 (`arena.dropsOff`). Tests: engine F4 / F4b. The daily-drop generator itself (migration 0026)
+is unchanged and still needs `supabase db push`.

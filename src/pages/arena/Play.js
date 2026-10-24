@@ -9,6 +9,7 @@ import { flowBonus, DAILY_SET_BONUS, DAILY_SET_SIZE, MAX_FLOW_BONUS, XP_BASE, PI
 import { summarize, useArenaClock, roundPhase, roundMode, roundSet, getView, fetchLeaderboard, ensureDrops } from "../../lib/arenaStore.js";
 import { FAMILY_IDS, dropPoolForDay, indexOf } from "../../lib/arena/catalog.js";
 import { Avatar } from "../../components/avatar.js";
+import { useMyProfile } from "../../lib/profile.js";
 import { PersonLink } from "../../components/profileViewer.js";
 import { isProfileOpen } from "../../lib/profileViewer.js";
 import { navigate } from "../../router.js";
@@ -171,6 +172,7 @@ function DropStrip({ day, season }) {
 }
 
 function Lobby({ arena, onStart }) {
+  const { profile } = useMyProfile();
   const t = useT();
   const { view, remote, pendingCount, prefs, actions } = arena;
   const seconds = useArenaClock();
@@ -236,6 +238,8 @@ function Lobby({ arena, onStart }) {
       </div>
 
       ${arena.drops && html`<${DropStrip} day=${view.today.day} season=${seasonOf()} />`}
+      <button type="button" class="ar-styles-link" onClick=${() => navigate("/app/styles")} data-testid="arena-styles-link">${t("arena.stylesLink")}</button>
+      ${arena.dropsOff && profile?.is_admin && html`<p class="ar-muted" data-testid="arena-drops-off">${t("arena.dropsOff")}</p>`}
       <${MissionBlock} arena=${arena} unlocked=${daily.done} />
       <${MarathonBlock} arena=${arena} unlocked=${daily.done} />
 
