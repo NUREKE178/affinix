@@ -1247,8 +1247,8 @@ select.sk-input option:checked {
 .sk-profile-close:hover { color: var(--g-200); background: rgba(255,255,255,.06); }
 .sk-profile-chips { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 12px; }
 .sk-pchip {
-  display: inline-flex; align-items: center; gap: 5px; padding: 4px 10px; border-radius: 999px;
-  font-size: 12px; font-weight: 500; color: var(--g-300); background: rgba(0,0,0,.28); border: 1px solid var(--hair);
+  display: inline-flex; align-items: center; gap: 7px; padding: 3px 11px 3px 4px; border-radius: 999px;
+  font-size: 12px; font-weight: 600; color: var(--g-300); background: rgba(0,0,0,.28); border: 1px solid var(--hair);
 }
 .sk-profile-bio { margin: 14px 0 0; font-size: 14px; line-height: 1.55; color: var(--g-300); white-space: pre-wrap; overflow-wrap: anywhere; }
 .sk-profile-bio-empty { color: var(--g-500); font-style: italic; }

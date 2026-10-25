@@ -286,7 +286,7 @@ function Workflow({ t, locale }) {
                   <img class="lp-th lp-th3" src=${`${ASSETS}pack-c.jpg`} alt="" width="84" height="84" loading="lazy" decoding="async" />
                   <span class="lp-dz-c">${t("landing.workflow.preview.dropHint")}</span>
                 </div>
-                <div class="lp-dz-m"><span class="lp-chipm"><${Icon} name="arena" size=${13} className="lp-ic" />${t("landing.workflow.preview.files")}</span><span>${t("landing.workflow.preview.fileTypes")}</span></div>
+                <div class="lp-dz-m"><span class="lp-chipm"><span class="lp-gl" aria-hidden="true"><${Icon} name="arena" size=${11} strokeWidth=${3} /></span>${t("landing.workflow.preview.files")}</span><span>${t("landing.workflow.preview.fileTypes")}</span></div>
               </div>
             </article>
 

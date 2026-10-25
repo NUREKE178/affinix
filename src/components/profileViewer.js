@@ -1,6 +1,6 @@
 import { html, useState, useEffect, useRef } from "../lib/preact.js";
 import { Icon } from "./icons.js";
-import { Card, Badge, Button, Skeleton } from "./ui.js";
+import { Card, Badge, Button, Skeleton, Glyph } from "./ui.js";
 import { Avatar } from "./avatar.js";
 import { FriendButton } from "./friendButton.js";
 import { useT, getLocale } from "../lib/i18n.js";
@@ -131,8 +131,8 @@ function ProfileCard({ view, mounted, phase, t }) {
         ${arena && html`<${ArenaStrip} arena=${arena} t=${t} />`}
         ${(showFriends || showStreak) && html`
           <div class="sk-profile-chips">
-            ${showStreak && html`<span class="sk-pchip" title=${t("arena.quests.streakTitle")}><${Icon} name="flame" size=${13} /> ${arena.streak} ${t(arena.streak === 1 ? "arena.quests.dayOne" : "arena.quests.days")}</span>`}
-            ${showFriends && html`<span class="sk-pchip" data-testid="profile-friends"><${Icon} name="friends" size=${13} /> ${t("friends.countLabel", { count: friendsCount })}</span>`}
+            ${showStreak && html`<span class="sk-pchip" title=${t("arena.quests.streakTitle")}><${Glyph} name="flame" tone="signal" size=${18} />${arena.streak} ${t(arena.streak === 1 ? "arena.quests.dayOne" : "arena.quests.days")}</span>`}
+            ${showFriends && html`<span class="sk-pchip" data-testid="profile-friends"><${Glyph} name="friends" tone="steel" size=${18} />${t("friends.countLabel", { count: friendsCount })}</span>`}
           </div>
         `}
 
