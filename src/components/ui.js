@@ -46,10 +46,14 @@ export function Button({ variant = "primary", size = "md", className = "", child
   `;
 }
 
-/** A status LED with its label. `tone` picks the LED colour (see .sk-badge in styles.css);
- * `led={false}` leaves the dot out. */
+// Every tone has its own glyph in a tinted chip, so a status reads by shape as well as by colour (a plain dot said nothing). "neutral" stays a quiet label.
+const BADGE_ICON = { emerald: "check", amber: "sparkle", rose: "close", teal: "target", steel: "shield", signal: "bolt" };
+
+/** A status badge: glyph chip + label. `tone` picks the colour and the glyph (see .sk-badge in styles.css);
+ * `led={false}` leaves the glyph out. */
 export function Badge({ tone = "neutral", led = true, className = "", children }) {
-  return html`<span class=${`sk-badge ${className}`} data-tone=${tone}>${led && html`<i class="sk-led" aria-hidden="true"></i>`}${children}</span>`;
+  const icon = led ? BADGE_ICON[tone] : null;
+  return html`<span class=${`sk-badge ${className}`} data-tone=${tone} data-icon=${icon ? "true" : undefined}>${icon && html`<span class="sk-badge-ic" aria-hidden="true"><${Icon} name=${icon} size=${11} strokeWidth=${3} /></span>`}${children}</span>`;
 }
 
 export function DemoTag({ className = "" }) {

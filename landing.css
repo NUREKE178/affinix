@@ -95,8 +95,18 @@
 /* one soft overhead light on the matte surface -- the only "effect" on the page */
 .lp-hero::before { content: ""; position: absolute; left: 50%; top: 0; width: 1200px; max-width: 100%; height: 620px; transform: translateX(-50%); z-index: -1; background: radial-gradient(ellipse 50% 60% at 50% 0%, rgba(255,255,255,.055), rgba(255,255,255,0) 100%); }
 .lp-hero-in { text-align: center; }
-.lp-pill { display: inline-flex; align-items: center; gap: 9px; padding: 6px 14px 6px 11px; border-radius: 999px; color: var(--g-300); font-size: 12.5px; font-weight: 500; background: rgba(0,0,0,.32); border: 1px solid var(--hair); box-shadow: inset 0 1px 2px rgba(0,0,0,.45); }
-.lp-led { display: block; width: 6px; height: 6px; flex: none; border-radius: 50%; background: var(--signal); box-shadow: 0 0 7px 0 rgba(255,106,31,.7); }
+.lp-pill { display: inline-flex; align-items: center; gap: 10px; padding: 5px 17px 5px 5px; border-radius: 999px; color: #ffd9c4; font-size: 13px; font-weight: 700; letter-spacing: .01em;
+  background: linear-gradient(180deg, rgba(255,106,31,.2), rgba(255,106,31,.08)); border: 1px solid rgba(255,106,31,.45);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.1), 0 0 26px -8px rgba(255,106,31,.7); }
+.lp-pill-ic { display: grid; place-items: center; width: 26px; height: 26px; flex: none; border-radius: 50%; color: #1a0c04;
+  background: linear-gradient(180deg, #ff8f55, var(--signal)); box-shadow: inset 0 1px 0 rgba(255,255,255,.45), 0 0 12px rgba(255,106,31,.6); }
+.lp-pill-ic .ic { display: block; }
+.lp-pill-ic .ic .b { fill: rgba(26,12,4,.22); }
+.lp-pill-ic .ic .f { fill: currentColor; }
+/* the two cards of the icon clash once when the page opens (the same gesture the icon plays on hover elsewhere) */
+.lp-pill-ic .ic .ia-l { animation: icm-clash-l .62s cubic-bezier(.3,1.4,.5,1) .5s; }
+.lp-pill-ic .ic .ia-r { animation: icm-clash-r .62s cubic-bezier(.3,1.4,.5,1) .5s; }
+.lp-pill-ic .ic .ia-b { animation: icm-bolt .62s ease-out .5s; }
 .lp-h1 { margin: 28px auto 0; max-width: 14em; font-size: clamp(40px, 6.4vw, 80px); line-height: 1.04; letter-spacing: -.035em; font-weight: 800; text-wrap: balance; color: var(--g-400); }
 .lp-h1 .lp-g { color: var(--ink); }
 .lp-lead { margin: 24px auto 0; max-width: 660px; font-size: clamp(16px, 1.5vw, 19px); line-height: 1.65; font-weight: 500; color: var(--mut); text-wrap: pretty; }
@@ -374,6 +384,7 @@
   [data-par] { animation: lp-par linear both; animation-timeline: view(); }
 }
 @media (prefers-reduced-motion: reduce) { [data-par] { will-change: auto; animation: none; } }
+@media (prefers-reduced-motion: reduce) { .lp-pill-ic .ic .ia-l, .lp-pill-ic .ic .ia-r, .lp-pill-ic .ic .ia-b { animation: none; } }
 
 /* ---- "Try a duel": two designs, tap one, see how many players chose the same (sample numbers) ------------------------------------------------ */
 .lp-root .lp-duel { min-height: 0; max-width: 820px; margin: 38px auto 0; padding: 26px; align-items: stretch; }

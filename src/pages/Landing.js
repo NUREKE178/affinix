@@ -189,7 +189,7 @@ function Hero({ t }) {
   return html`
     <section class="lp-hero" id="lp-top">
       <div class="lp-wrap lp-hero-in slide-up">
-        <div class="lp-pill"><i class="lp-led" aria-hidden="true"></i><span>${t("landing.badge")}</span></div>
+        <div class="lp-pill"><span class="lp-pill-ic" aria-hidden="true"><${Icon} name="arena" size=${15} strokeWidth=${2.6} /></span><span>${t("landing.badge")}</span></div>
         <h1 class="lp-h1">${t("landing.heroTitleLead")} <span class="lp-g">${t("landing.heroTitleAccent")}</span></h1>
         <p class="lp-lead">${t("landing.heroSubtitle")}</p>
         <div class="lp-cta-row">
