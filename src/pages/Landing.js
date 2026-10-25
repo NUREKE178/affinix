@@ -43,24 +43,43 @@ function useChoreography() {
   useEffect(() => {
     const engine = startLandingScroll();
     const reduced = typeof matchMedia === "function" && matchMedia("(prefers-reduced-motion: reduce)").matches;
+    // Measure once (and again when the layout can have moved), never per frame: reading layout every frame while scrolling is what made the page stutter.
+    let tops = [], pars = [], vh = window.innerHeight;
+    const measure = () => {
+      vh = window.innerHeight;
+      const sy = window.scrollY;
+      tops = RAIL.map((id) => { const el = document.getElementById(id); return el ? el.getBoundingClientRect().top + sy : Infinity; });
+      pars = [...document.querySelectorAll("[data-par]")].map((el) => {
+        el.style.transform = ""; // measure without our own offset
+        const r = el.getBoundingClientRect();
+        return { el, centre: r.top + sy + r.height / 2, h: r.height, k: Number(el.dataset.par), last: NaN };
+      });
+    };
+    measure();
+    const timers = [setTimeout(measure, 800), setTimeout(measure, 2500)];
+    window.addEventListener("resize", measure);
+    window.addEventListener("load", measure);
     let activeNow = -1;
     const off = engine.subscribe(({ y, progress }) => {
-      if (bar.current) bar.current.style.transform = `scaleX(${progress})`;
-      const mid = window.innerHeight * 0.4;
+      if (bar.current) bar.current.style.transform = `scaleX(${progress.toFixed(4)})`;
+      const mid = y + vh * 0.4;
       let idx = 0;
-      RAIL.forEach((id, i) => { const el = document.getElementById(id); if (el && el.getBoundingClientRect().top <= mid) idx = i; });
+      for (let i = 0; i < tops.length; i++) if (tops[i] <= mid) idx = i;
       if (idx !== activeNow) { activeNow = idx; setActive(idx); }
       if (!reduced) {
-        const vh = window.innerHeight;
-        document.querySelectorAll("[data-par]").forEach((el) => {
-          const r = el.getBoundingClientRect();
-          if (r.bottom < -200 || r.top > vh + 200) return;
-          const off2 = (r.top + r.height / 2 - vh / 2) * -Number(el.dataset.par);
-          el.style.setProperty("--par", `${off2.toFixed(1)}px`);
-        });
+        for (const p of pars) {
+          const d = p.centre - (y + vh / 2);
+          if (Math.abs(d) > vh + p.h) continue;                 // far off screen: leave it
+          const off2 = Math.round(d * -p.k * 2) / 2;            // half-pixel steps: no restyle for sub-pixel changes
+          if (off2 !== p.last) { p.last = off2; p.el.style.transform = `translate3d(0, ${off2}px, 0)`; }
+        }
       }
     });
-    return () => { off(); engine.stop(); };
+    return () => {
+      off(); engine.stop(); timers.forEach(clearTimeout);
+      window.removeEventListener("resize", measure); window.removeEventListener("load", measure);
+      document.querySelectorAll("[data-par]").forEach((el) => { el.style.transform = ""; });
+    };
   }, []);
   return { active, bar };
 }

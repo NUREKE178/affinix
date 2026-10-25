@@ -3936,3 +3936,11 @@ target and the page eases toward it with a frame-rate-independent exponential gl
 {y, velocity, progress} (also on touch, where the wheel / keys stay native). `Landing`: `useChoreography()` + `Choreography` -> an orange progress line at the top (`.lp-progress`), a rail of five section
 dots on the right (>= 1180px, `.lp-rail`, active = section above 40% of the viewport, tooltips), and parallax (`data-par` on the dashboard preview and the phone fan; `--par` px each frame). Reduced motion: no glide,
 no parallax, keys native. Off inside the app. i18n `landing.sections.*`. Tests: `test_landing_scroll.mjs` (17 checks); the glide checks in `test_download.mjs` still pass.
+
+## Performance fix: the site stuttered (measured, no migration)
+
+Measured with CDP `Performance.getMetrics` (scratchpad `perf.mjs`): the landing recalculated style on every frame while scrolling (332 recalcs / 3 s, 0.36 s of style CPU on a fast desktop, 0.45 s over 40 phone scroll steps),
+because the parallax wrote a custom property (`--par`) on large subtrees each frame and the rail / parallax read `getBoundingClientRect()` each frame. Now: positions are measured once (and on resize / load / 0.8 s / 2.5 s), parallax writes
+`style.transform` directly in half-pixel steps and only when it changes -> style CPU 0.357 -> 0.022 s (desktop), 0.447 -> 0.015 s (phone); total task time roughly halved to a quarter. Also: the swipe-between-tabs
+`touchmove` listener is now passive (a blocking listener on `document` makes every phone scroll wait for script; `touch-action: pan-y` already keeps the browser from panning sideways), `useThumb` no longer measures on plain re-renders
+(only when the choice, labels or host change; the ResizeObserver covers real size changes), and the service worker only handles page navigations (scripts / styles / images / data go straight to the browser; cache name v2).

@@ -73,15 +73,18 @@ export function useThumb(hostRef, thumbRef, key, layoutKey = "") {
   const last = useRef(undefined);
   const lastLayout = useRef(layoutKey);
   const watching = useRef(null);
+  const placedFor = useRef(null);
   const ro = useRef(null);
 
   useLayoutEffect(() => {
     const host = hostRef.current;
     const thumb = thumbRef.current;
-    if (!host || !thumb) { last.current = undefined; return; }
+    if (!host || !thumb) { last.current = undefined; placedFor.current = null; return; }
     const changed = last.current !== undefined && last.current !== key && lastLayout.current === layoutKey;
+    if (placedFor.current === host && last.current === key && lastLayout.current === layoutKey) return; // nothing that moves the key: no layout reads on a plain re-render
     last.current = key;
     lastLayout.current = layoutKey;
+    placedFor.current = host;
     place(host, thumb, changed);
   });
 

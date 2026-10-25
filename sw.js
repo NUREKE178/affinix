@@ -1,8 +1,8 @@
 // Affinix service worker. It exists so the site can be installed as an app (Windows / Android / desktop browsers) and
-// keeps the last pages it saw for when the network is gone. NETWORK FIRST for everything: a new deploy is always picked up
+// keeps the last page it saw for when the network is gone. NETWORK FIRST, and only for navigations: a new deploy is always picked up
 // at once (the site has its own auto-update, see lib/useAutoUpdate.js), the cache is only a fallback. Nothing from the API
 // (Supabase, edge functions, /api) is ever cached.
-const CACHE = "affinix-shell-v1";
+const CACHE = "affinix-shell-v2";
 const SHELL = ["./", "./index.html", "./manifest.webmanifest", "./assets/pwa/icon-192.png", "./assets/pwa/icon-512.png"];
 
 self.addEventListener("install", (event) => {
@@ -17,19 +17,15 @@ self.addEventListener("activate", (event) => {
 
 self.addEventListener("fetch", (event) => {
   const req = event.request;
-  if (req.method !== "GET") return;
-  const url = new URL(req.url);
-  if (url.pathname.startsWith("/api/") || /supabase\.co$/.test(url.hostname)) return; // live data: straight to the network
-  if (url.origin !== location.origin && !/(cdn\.jsdelivr\.net|unpkg\.com|cdnjs\.cloudflare\.com|fonts\.(googleapis|gstatic)\.com)$/.test(url.hostname)) return;
+  // Only page navigations go through the worker (network first, the cached shell when offline). Scripts, styles, images and all data go straight
+  // to the browser: a worker in the middle of every request only adds delay.
+  if (req.method !== "GET" || req.mode !== "navigate") return;
   event.respondWith(
     fetch(req)
       .then((res) => {
-        if (res.ok && (res.type === "basic" || res.type === "cors")) {
-          const copy = res.clone();
-          caches.open(CACHE).then((c) => c.put(req, copy)).catch(() => {});
-        }
+        if (res.ok && res.type === "basic") { const copy = res.clone(); caches.open(CACHE).then((c) => c.put("./index.html", copy)).catch(() => {}); }
         return res;
       })
-      .catch(() => caches.match(req).then((hit) => hit ?? (req.mode === "navigate" ? caches.match("./index.html") : Response.error())))
+      .catch(() => caches.match("./index.html").then((hit) => hit ?? Response.error()))
   );
 });

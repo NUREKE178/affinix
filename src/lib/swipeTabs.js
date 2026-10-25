@@ -87,7 +87,7 @@ function install() {
   if (installed || typeof document === "undefined") return;
   installed = true;
   document.addEventListener("touchstart", onStart, { passive: true });
-  document.addEventListener("touchmove", onMove, { passive: false });
+  document.addEventListener("touchmove", onMove, { passive: true }); // passive: a blocking touchmove listener makes every scroll on a phone wait for this script
   document.addEventListener("touchend", onEnd, { passive: true });
   document.addEventListener("touchcancel", onCancel, { passive: true });
 }
@@ -162,7 +162,6 @@ function onMove(e) {
   }
   g.dx = dx;
   paint(dx, !!neighbour(g.entry, dx < 0 ? 1 : -1));
-  if (e.cancelable) e.preventDefault();
 }
 
 function reset(els, animate) {
