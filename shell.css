@@ -136,3 +136,8 @@ html[data-mtb-hide] .mtb, html[data-kb] .mtb, body:has(.sk-chat[data-pane="chat"
 html[data-kb] .mtb, body:has(.sk-chat[data-pane="chat"]) .mtb { opacity: 0; pointer-events: none; }
 @media (min-width: 768px) { .mtb { display: none; } }
 @media (prefers-reduced-motion: reduce) { .mtb, .mtb-pill, .mtb-label { transition: none; } .mtb-pill svg, .mtb-badge { animation: none !important; } }
+
+/* Content that slides sideways (tab swipes, tab slide-in, page enter) sticks out of the screen for a moment. On a phone that makes the browser enlarge the layout
+   viewport and zoom the page out for those frames, which drags every fixed element (the bottom dock) along with it. Clipping the overflow in the content area keeps the
+   viewport still. `clip`, not `hidden`: it does not make a scroll container, so `position: sticky` inside (the feed composer, sticky headers) keeps working. */
+@supports (overflow: clip) { .sk-shell-main { overflow-x: clip; } }

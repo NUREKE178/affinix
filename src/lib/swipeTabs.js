@@ -16,8 +16,16 @@ let g = null;              // the gesture in progress
 const EDGE = 24;           // px at the screen edges that belong to the browser's own back / forward gestures
 const EASE = "cubic-bezier(.22,.9,.3,1)";
 
+let changedAt = 0;         // when a tab last changed (by tap or swipe)
+
 export function noteTabChange(dir) {
   pending = { dir, at: Date.now() };
+  changedAt = Date.now();
+}
+
+/** True for a moment after any tab change: the page is swapping content, so its height and scroll position jump -- not something the person scrolled. */
+export function tabsJustChanged(ms = 1200) {
+  return Date.now() - changedAt < ms;
 }
 
 /** The direction of the change that was just announced (1 / -1), or 0. Consumed by the first caller. */

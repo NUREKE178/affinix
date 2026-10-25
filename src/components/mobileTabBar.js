@@ -14,6 +14,7 @@ import { useThumb } from "../lib/thumb.js";
 import { useFriends } from "../lib/friendsStore.js";
 import { useConversations } from "../lib/messagesStore.js";
 import { useArenaLocal, arenaAttention } from "../lib/arenaStore.js";
+import { tabsJustChanged } from "../lib/swipeTabs.js";
 
 const TABS = [
   { id: "arena", labelKey: "shell.community.arena", icon: "arena", path: "/app/arena" },
@@ -45,11 +46,13 @@ function useKeyboardFlag() {
 /** `data-mtb-hide` on <html> while the person is reading downwards. Passive listener, one rAF per burst, no layout reads while scrolling down. */
 function useHideOnScroll() {
   useEffect(() => {
-    let last = window.scrollY, raf = 0, hidden = false, acc = 0;
+    let last = window.scrollY, raf = 0, hidden = false, acc = 0, retry = 0;
     const apply = (h) => { if (h === hidden) return; hidden = h; if (h) document.documentElement.dataset.mtbHide = "1"; else delete document.documentElement.dataset.mtbHide; };
     const frame = () => {
       raf = 0;
       const y = Math.max(0, window.scrollY), d = y - last; last = y;
+      // switching a tab swaps the content under the dock: its height / scroll jump are not reading, so the dock stays put -- and is re-checked once the swap is over
+      if (tabsJustChanged()) { acc = 0; clearTimeout(retry); retry = setTimeout(onScroll, 1300); return; }
       if (y < 48) { acc = 0; apply(false); return; }
       acc = Math.sign(d) === Math.sign(acc) ? acc + d : d; // distance travelled in the current direction
       if (acc > 14) apply(true);
@@ -58,7 +61,7 @@ function useHideOnScroll() {
     };
     const onScroll = () => { if (!raf) raf = requestAnimationFrame(frame); };
     window.addEventListener("scroll", onScroll, { passive: true });
-    return () => { window.removeEventListener("scroll", onScroll); cancelAnimationFrame(raf); delete document.documentElement.dataset.mtbHide; };
+    return () => { window.removeEventListener("scroll", onScroll); cancelAnimationFrame(raf); clearTimeout(retry); delete document.documentElement.dataset.mtbHide; };
   }, []);
 }
 
@@ -77,7 +80,8 @@ export function MobileTabBar({ currentPath, onNavigate, onMore }) {
   const current = TABS.find((tab) => matches(tab, currentPath))?.id ?? "more";
   useThumb(host, thumb, current, locale);
   // a new page starts with the dock in view
-  useEffect(() => { delete document.documentElement.dataset.mtbHide; }, [currentPath]);
+  // (but a page's own tabs may be routes too: a tab change is not a new page, the dock keeps whatever state it has)
+  useEffect(() => { if (!tabsJustChanged()) delete document.documentElement.dataset.mtbHide; }, [currentPath]);
   const badge = (id) => (id === "messages" ? unreadTotal : id === "arena" ? arenaAttention(arena.view) : id === "more" ? incoming.length : 0);
 
   const activate = (id) => {
