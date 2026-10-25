@@ -77,8 +77,8 @@ function Header({ t }) {
           <img class="lp-logo-full" src=${`${LOGO}logo-lockup-dark.png`} alt="Affinix" width="128" height="30" />
           <img class="lp-logo-mark" src=${`${LOGO}logo-mark-256.png`} alt="" width="32" height="32" loading="lazy" decoding="async" />
         </a>
-        <${LanguageSwitch} variant="glass" />
         <div class="lp-hd-r">
+          <${LanguageSwitch} variant="glass" />
           <a class="lp-dl" href="#/download" data-testid="landing-download"><${Icon} name="arrowDown" size=${14} /> ${t("landing.download")}</a>
           <a class="lp-login" href="#/login">${t("landing.login")}</a>
           <a class="lp-btn lp-btn-sm" href="#/register">

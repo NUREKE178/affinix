@@ -56,8 +56,8 @@
 .lp-logo-full { display: block; height: 30px; width: auto; }
 .lp-logo-mark { display: none; height: 32px; width: 32px; }
 .lp-hd-r { display: flex; align-items: center; gap: 10px 18px; margin-left: auto; }
-/* The header must not move when the language changes: the language key sits on the left next to the logo, and the right-hand group has the same width in
-   ru / kk / en (its items get a fixed minimum so the longest wording of each fits). Phones use the compact wording instead. */
+/* The header must not move when the language changes: the right-hand group (language key included, as before) has the same width in ru / kk / en, so the
+   right-aligned key stays put (its items get a fixed minimum so the longest wording of each fits). Phones use the compact wording instead. */
 @media (min-width: 721px) {
   .lp-dl { min-width: 112px; justify-content: center; }
   .lp-login { min-width: 52px; text-align: center; }
