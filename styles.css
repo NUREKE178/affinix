@@ -812,12 +812,7 @@ select.sk-input option:checked {
   background: var(--key);
   box-shadow: var(--sh-key), 0 0 0 1px var(--edge);
 }
-/* the active key carries a lit bar along its lower edge (it used to carry a small dot): the key itself while it is still, the sliding key (.sk-thumb) once placed */
-.sk-tab[data-active="true"]::after, .sk-thumb:not(.sk-nav-thumb):not(.mtb-thumb)::after {
-  content: ""; position: absolute; left: 12px; right: 12px; bottom: 3px; height: 2px; border-radius: 2px; pointer-events: none;
-  background: linear-gradient(90deg, rgba(255,106,31,.55), var(--signal) 30%, var(--signal) 70%, rgba(255,106,31,.55)); box-shadow: 0 0 8px 0 rgba(255,106,31,.75);
-}
-[data-thumb="on"] .sk-tab[data-active="true"]::after { display: none; }
+/* the active key is just the raised key: no lit mark of any kind on it */
 .sk-tab[data-active="false"]:hover { color: var(--g-100); background: rgba(255,255,255,.04); }
 
 /* The sliding key (lib/thumb.js): one raised key glides under the labels; the active label itself is flat while the key is placed. */
@@ -834,8 +829,6 @@ select.sk-input option:checked {
 [data-thumb="on"] .sk-tab[data-active="true"] { background: transparent; box-shadow: none; }
 [data-thumb="on"] .sk-tab[data-active="false"]:hover { background: rgba(255,255,255,.04); }
 @media (prefers-reduced-motion: reduce) { .sk-thumb { will-change: auto; } }
-/* a short toggle (the language switch) is just the raised key -- no LED on it */
-[data-compact="true"] .sk-tab[data-active="true"]::after, [data-compact="true"] .sk-thumb::after { display: none; }
 
 /* ---- Switch ---------------------------------------------------------------------------- */
 
