@@ -56,6 +56,7 @@
 
 .lp-root *, .lp-root *::before, .lp-root *::after { box-sizing: border-box; }
 .lp-root [id] { scroll-margin-top: 84px; }
+.lp-root { --lp-hd-h: 66px; padding-top: var(--lp-hd-h); } /* room for the fixed header; Landing.js keeps the variable equal to its real height */
 /* zero specificity, so any class (.lp-btn, .lp-login, .lp-lk ...) can set its own colour */
 .lp-root :where(a) { color: inherit; }
 .lp-root a:focus-visible, .lp-root button:focus-visible { outline: 2px solid rgba(255,106,31,.75); outline-offset: 3px; border-radius: 10px; }
@@ -67,7 +68,9 @@
 /* ---- Header ------------------------------------------------------------------------------------ */
 
 .lp-hd {
-  position: sticky; top: 0; z-index: 60;
+  /* fixed, not sticky, and on its own layer: a sticky bar is placed from the scroll offset, which on a zoomed page (or a 125% screen) is a fractional pixel, so its whole
+     content flipped between two pixel rows while scrolling (seen in a screen recording). A fixed bar sits in viewport coordinates and does not shimmer. */
+  position: fixed; top: 0; left: 0; right: 0; z-index: 60; will-change: transform;
   background: rgba(14,14,16,.9);
   -webkit-backdrop-filter: blur(10px); backdrop-filter: blur(10px);
   border-bottom: 1px solid var(--hair);
@@ -354,6 +357,7 @@
   .lp-logo-full, .lp-login { display: none; }
   .lp-logo-mark { display: block; }
   .lp-hd-in { padding: 10px 16px; }
+  .lp-root { --lp-hd-h: 57px; }
   .lp-wrap { padding: 0 16px; }
   .lp-hero { padding-top: 52px; }
   .lp-sec { padding: 72px 0; }

@@ -44,12 +44,19 @@ function useParallax() {
         el.style.setProperty("--par-r", `${Math.round(Number(el.dataset.par) * (vh + r.height)) / 2}px`);
       });
     };
+    // the header is fixed: keep the space reserved for it equal to its real height (it can wrap on very narrow screens)
+    const hd = document.querySelector(".lp-hd");
+    const root = document.querySelector(".lp-root");
+    const syncHeader = () => { if (hd && root) root.style.setProperty("--lp-hd-h", `${hd.offsetHeight}px`); };
+    syncHeader();
+    const ro = typeof ResizeObserver === "function" && hd ? new ResizeObserver(syncHeader) : null;
+    ro?.observe(hd);
     measure();
     const timers = [setTimeout(measure, 800), setTimeout(measure, 2500)];
     window.addEventListener("resize", measure);
     window.addEventListener("load", measure);
     return () => {
-      timers.forEach(clearTimeout);
+      timers.forEach(clearTimeout); ro?.disconnect();
       window.removeEventListener("resize", measure); window.removeEventListener("load", measure);
       document.querySelectorAll("[data-par]").forEach((el) => el.style.removeProperty("--par-r"));
     };
