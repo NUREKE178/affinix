@@ -307,11 +307,11 @@
 .lp-bc.lp-tc h3 { margin-top: 14px; }
 
 /* phones */
-.lp-mobi { overflow: hidden; padding-bottom: 0; }
+.lp-mobi { overflow-x: clip; padding-bottom: 40px; } /* whole phones: nothing is cut off at the bottom or the top */
 .lp-mb-list { display: flex; flex-wrap: wrap; justify-content: center; gap: 10px 12px; margin: 32px 0 0; padding: 0; list-style: none; }
 .lp-fan-wrap { position: relative; margin-top: 48px; }
-.lp-fan { position: relative; display: flex; align-items: flex-start; justify-content: center; height: clamp(380px, 46vw, 600px); overflow: hidden; }
-.lp-f { flex: none; display: block; width: clamp(210px, 24vw, 320px); height: auto; filter: drop-shadow(0 40px 60px rgba(0,0,0,.65)); transition: transform .7s cubic-bezier(.2,.8,.2,1); }
+.lp-fan { --pw: clamp(210px, 24vw, 320px); position: relative; display: flex; align-items: flex-start; justify-content: center; height: calc(var(--pw) * 2.024 + 64px); padding-top: 12px; }
+.lp-f { flex: none; display: block; width: var(--pw); height: auto; filter: drop-shadow(0 40px 60px rgba(0,0,0,.65)); transition: transform .7s cubic-bezier(.2,.8,.2,1); }
 .lp-f1 { margin-right: -36px; transform: translateY(46px) rotate(-5deg); transform-origin: 50% 100%; }
 .lp-f2 { position: relative; z-index: 2; }
 .lp-f3 { margin-left: -36px; transform: translateY(46px) rotate(5deg); transform-origin: 50% 100%; }
@@ -358,7 +358,7 @@
   .lp-hero { padding-top: 52px; }
   .lp-sec { padding: 72px 0; }
   .lp-f1, .lp-f3 { display: none; }
-  .lp-f { width: clamp(230px, 68vw, 320px); }
+  .lp-fan { --pw: clamp(230px, 68vw, 320px); }
   .lp-cta-box { padding: 56px 20px; }
 }
 @media (max-width: 640px) {
