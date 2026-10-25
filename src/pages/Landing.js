@@ -1,7 +1,7 @@
 import { html, useState, useEffect } from "../lib/preact.js";
 import { Icon } from "../components/icons.js";
 import { LanguageSwitch } from "../components/languageSwitch.js";
-import { useT, useLocale, useLocaleFadeClass } from "../lib/i18n.js";
+import { useT, useLocale } from "../lib/i18n.js";
 import { useReveal } from "../lib/motion.js";
 import { scrollToTarget } from "../lib/scrollWatch.js";
 
@@ -77,8 +77,8 @@ function Header({ t }) {
           <img class="lp-logo-full" src=${`${LOGO}logo-lockup-dark.png`} alt="Affinix" width="128" height="30" />
           <img class="lp-logo-mark" src=${`${LOGO}logo-mark-256.png`} alt="" width="32" height="32" loading="lazy" decoding="async" />
         </a>
+        <${LanguageSwitch} variant="glass" />
         <div class="lp-hd-r">
-          <${LanguageSwitch} variant="glass" />
           <a class="lp-dl" href="#/download" data-testid="landing-download"><${Icon} name="arrowDown" size=${14} /> ${t("landing.download")}</a>
           <a class="lp-login" href="#/login">${t("landing.login")}</a>
           <a class="lp-btn lp-btn-sm" href="#/register">
@@ -452,9 +452,9 @@ export function Landing() {
   const t = useT();
   useParallax(); // landing page only, never inside the app
   const locale = useLocale();
-  const localeFadeClass = useLocaleFadeClass();
+  // No dip-and-recover on a language change here (the app shell has one): on the landing page the fixed header and the hero would flash with it.
   return html`
-    <div class=${`lp-root ${localeFadeClass}`}>
+    <div class="lp-root">
       <${Header} t=${t} />
       <main>
         <${Hero} t=${t} />
