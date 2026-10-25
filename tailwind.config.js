@@ -26,7 +26,7 @@ module.exports = {
     extend: {
       colors: { graphite, signal, steel },
       fontFamily: {
-        sans: ["Inter", "system-ui", "sans-serif"],
+        sans: ["Rubik", "Inter", "system-ui", "sans-serif"],
         mono: ['"JetBrains Mono"', "ui-monospace", "SFMono-Regular", "Menlo", "monospace"],
       },
       animation: { "fade-in": "fadeIn .25s ease-out", "slide-up": "slideUp .3s ease-out" },

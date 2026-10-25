@@ -6,7 +6,7 @@ export const SERIES_COLORS = ["#ff6a1f", "#86a5d9", "#d9cfb8", "#4fc3b0", "#c8a1
 const GRID_COLOR = "rgba(255,255,255,0.06)";
 const TICK_COLOR = "#868993";
 const MONO = '"JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, monospace';
-const SANS = 'Inter, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif';
+const SANS = 'Rubik, Inter, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif';
 
 const tooltip = {
   backgroundColor: "#1a1b1e",
