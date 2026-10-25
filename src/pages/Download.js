@@ -51,7 +51,7 @@ function Platform({ id, icon, name, note, children, first, testid }) {
   return html`
     <article class="dl-card sk-panel" data-first=${first} data-testid=${testid}>
       <div class="dl-card-head">
-        <span class="dl-ico"><${Icon} name=${icon} size=${22} /></span>
+        <span class="dl-ico"><${Icon} name=${icon} size=${26} /></span>
         <div><h3>${name}</h3><p>${note}</p></div>
       </div>
       <div class="dl-card-body">${children}</div>
@@ -80,28 +80,28 @@ export function DownloadPage({ standalone: standaloneLayout = false }) {
 
   const cards = {
     windows: html`
-      <${Platform} key="windows" icon="monitor" name=${t("download.win.name")} note=${t("download.win.note")} first=${order[0] === "windows"} testid="dl-windows">
+      <${Platform} key="windows" icon="windows" name=${t("download.win.name")} note=${t("download.win.note")} first=${order[0] === "windows"} testid="dl-windows">
         ${files.windows
           ? html`<a class="dl-btn" href=${files.windows.url} data-testid="dl-windows-link" download><${Icon} name="arrowDown" size=${16} /> ${t("download.win.cta")}</a><p class="dl-meta">${info("windows")}</p>`
           : html`<p class="dl-meta" data-testid="dl-windows-soon">${release === undefined ? "…" : t("download.pending")}</p>`}
         <p class="dl-warn">${t("download.warn.win")}</p>
       <//>`,
     android: html`
-      <${Platform} key="android" icon="phone" name=${t("download.android.name")} note=${t("download.android.note")} first=${order[0] === "android"} testid="dl-android">
+      <${Platform} key="android" icon="android" name=${t("download.android.name")} note=${t("download.android.note")} first=${order[0] === "android"} testid="dl-android">
         ${files.android
           ? html`<a class="dl-btn" href=${files.android.url} data-testid="dl-android-link" download><${Icon} name="arrowDown" size=${16} /> ${t("download.android.cta")}</a><p class="dl-meta">${info("android")}</p>`
           : html`<p class="dl-meta" data-testid="dl-android-soon">${release === undefined ? "…" : t("download.pending")}</p>`}
         <p class="dl-warn">${t("download.warn.android")}</p>
       <//>`,
     linux: html`
-      <${Platform} key="linux" icon="monitor" name=${t("download.linux.name")} note=${t("download.linux.note")} first=${order[0] === "linux"} testid="dl-linux">
+      <${Platform} key="linux" icon="linux" name=${t("download.linux.name")} note=${t("download.linux.note")} first=${order[0] === "linux"} testid="dl-linux">
         ${files.linux
           ? html`<a class="dl-btn" href=${files.linux.url} data-testid="dl-linux-link" download><${Icon} name="arrowDown" size=${16} /> ${t("download.linux.cta")}</a><p class="dl-meta">${info("linux")}</p>`
           : html`<p class="dl-meta" data-testid="dl-linux-soon">${release === undefined ? "…" : t("download.pending")}</p>`}
         <p class="dl-warn">${t("download.warn.linux")}</p>
       <//>`,
     apple: html`
-      <${Platform} key="apple" icon="phone" name=${t("download.apple.name")} note=${t("download.apple.note")} first=${order[0] === "apple"} testid="dl-apple">
+      <${Platform} key="apple" icon="apple" name=${t("download.apple.name")} note=${t("download.apple.note")} first=${order[0] === "apple"} testid="dl-apple">
         <p class="dl-steps">${t("download.apple_steps")}</p>
       <//>`,
   };

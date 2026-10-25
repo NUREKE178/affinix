@@ -3974,3 +3974,8 @@ Tests rewritten for native behaviour: test_landing_scroll 17/17, test_download 2
 
 On request. `Landing.js`: `useChoreography` / `Choreography` replaced by `useParallax` (the data-par blocks only); the `.lp-progress` / `.lp-rail*` CSS is gone from `landing.css`; the page no longer re-renders when the section changes.
 `landing.sections.*` locale keys are now unused (kept, parity unchanged). Tests: test_landing_scroll rewritten (11 checks: no line, no rail, native wheel / keys, parallax, buttons jump), test_download 29/29, test_motion_landing 8/8, test_landing_instrument 24/24.
+
+## Icons: settings gear redrawn, platform icons on the Download page (no migration)
+
+`components/icons.js`: `settings` is now a clean 8-tooth gear (generated geometry, centre hole) instead of the blobby cog; new `windows`, `linux`, `android`, `apple` glyphs in the same duotone style. `pages/Download.js` uses them on the four cards (tile icon 22 -> 26 px).
+Tests: test_download 29/29, test_nav_tabs 31/31, test_nav_thumb 11/11, test_dashboard_polish 13/13. The glyphs are simple originals, not the official brand marks.
