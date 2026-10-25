@@ -5,6 +5,7 @@ import { useCurrentOrg } from "../lib/currentOrg.js";
 import { useSession, signOut } from "../lib/auth.js";
 import { useMyProfile, updateMyProfile } from "../lib/profile.js";
 import { useThumb } from "../lib/thumb.js";
+import { tabsJustChanged } from "../lib/swipeTabs.js";
 import { LanguageSwitch } from "./languageSwitch.js";
 export { LanguageSwitch }; // (it used to live here: old imports keep working)
 import { useT, useLocale, setLocale, LOCALES, useLocaleFadeClass } from "../lib/i18n.js";
@@ -344,6 +345,11 @@ export function Shell({ currentPath, children }) {
   // actually changes, so every translated label on screen (sidebar, header,
   // page content) reads as transitioning together instead of flickering.
   const localeFadeClass = useLocaleFadeClass();
+  // The entrance (fade + rise) is for moving to another page; changing the tab of the page you are on (Arena: Game / Quests / Rating / Profile) must not move anything.
+  // Decided once per path, so the class does not flip on a later re-render and replay the animation.
+  const pageEnterRef = useRef({ path: null, cls: "sk-page-enter" });
+  if (pageEnterRef.current.path !== currentPath) pageEnterRef.current = { path: currentPath, cls: pageEnterRef.current.path !== null && tabsJustChanged(400) ? "" : "sk-page-enter" };
+  const pageEnter = pageEnterRef.current;
 
   const onNavigate = (path) => { setMobileOpen(false); navigate(path); };
 
@@ -426,7 +432,7 @@ export function Shell({ currentPath, children }) {
       </header>
       <div class="sk-shell-main" data-narrow=${reservedNarrow}>
         <main class="sk-main px-4 py-6 md:px-8 md:py-8 max-w-[1400px] mx-auto">
-          <div key=${currentPath} class="sk-page-enter">
+          <div key=${currentPath} class=${pageEnter.cls}>
             ${children}
           </div>
         </main>

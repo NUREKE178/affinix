@@ -58,18 +58,10 @@ function clearHeld() {
   held = [];
 }
 
-/** The slide-in of the new tab's content; `dir` 1 comes from the right (next tab), -1 from the left. */
+/** After a tab change the new content simply appears where it belongs: nothing slides in (a tap used to slide it 36px sideways, which read as the page moving).
+ * `dir` is still consumed by the caller; the only job left is to release the content a swipe had slid out. */
 export function slideIn(root, dir) {
-  const els = contentAfter(root);
-  if (!dir || prefersReducedMotion() || !els.length) { clearHeld(); return; }
-  for (const el of els) {
-    if (typeof el.animate !== "function") continue;
-    el.animate(
-      [{ opacity: 0, transform: `translate3d(${dir * 36}px,0,0)` }, { opacity: 1, transform: "translate3d(0,0,0)" }],
-      { duration: 280, easing: EASE }
-    );
-  }
-  clearHeld(); // the slide-out animations hold their last frame (transparent) until they are cancelled -- cancel them now
+  clearHeld(); // the slide-out animations hold their last frame (transparent) until they are cancelled
 }
 
 /** Keeps the active tab in view in a tab strip that scrolls sideways. */

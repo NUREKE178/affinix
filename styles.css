@@ -5,6 +5,11 @@
 
 * { scrollbar-color: #3a3c43 transparent; }
 
+/* The vertical scrollbar of the page is always there: with classic scrollbars (Windows, Linux) the page lost / gained 15px of width whenever a section was taller than the
+   screen and the next one was not (Rating -> Profile), and everything centred or on the right edge jumped sideways. (Phones and macOS use overlay bars: no change there.)
+   The panes whose content changes under the reader reserve their scrollbar's room the same way. */
+html { overflow-y: scroll; }
+.sk-chat-items, .sk-chat-scroll, .gs-panel, .gs-overlay, .fixed.overflow-y-auto { scrollbar-gutter: stable; }
 body { color-scheme: dark; font-weight: 450; } /* Rubik is a variable font: a hair above regular reads fuller on a dark ground; headings and keys set their own weights */
 
 .fade-in { animation: fadeIn .25s ease-out; }
