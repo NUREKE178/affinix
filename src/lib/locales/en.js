@@ -59,6 +59,7 @@ export default {
     },
     workspaceLabel: "Account",
     workspace: {
+      download: "Download the app",
       admin: "Admin panel",
       team: "Team",
       billing: "Billing",
@@ -89,7 +90,53 @@ export default {
     },
   },
 
+  download: {
+    title: "Affinix on your computer and phone",
+    sub: "One account everywhere: the Arena, what people love, messages. Install it like any other app.",
+    recommended: "For your device",
+    installed: "Affinix is installed on this device. Open it from your apps.",
+    win: {
+      name: "Windows",
+      note: "Windows 10 and 11. Installer (.exe)",
+      cta: "Download for Windows"
+    },
+    apple: {
+      name: "iPhone and Mac",
+      note: "No installer needed",
+      cta: "How to add it"
+    },
+    browser: {
+      title: "Install from the browser",
+      body: "Works today on Windows and Android in Chrome or Edge, and updates itself. No file to download.",
+      cta: "Install Affinix",
+      unavailable: "Open this page in Chrome or Edge to see the install button. If the button does not appear: browser menu → Install app / Add to Home screen.",
+      done: "Installed"
+    },
+    apple_steps: "Open affinix.space in Safari → Share → Add to Home Screen.",
+    pending: "The ready-made installers are being prepared. Until they appear here you can install Affinix from the browser, it is the same app.",
+    version: "Version {v} · {size} · {date}",
+    warn: {
+      linux: "After downloading: make the file executable (right-click → Properties → Allow executing, or chmod +x Affinix.AppImage) and run it.",
+      win: "Windows may show “Windows protected your PC”. The app is not signed with a paid certificate yet: choose More info → Run anyway.",
+      android: "Android will ask to allow installs from your browser. Allow it for this one install, then open the file."
+    },
+    why: {
+      t1: "Always in reach",
+      b1: "Its own window and icon, opens straight into the Arena.",
+      t2: "Same account",
+      b2: "Your streak, taste and messages are everywhere.",
+      t3: "Updates itself",
+      b3: "You always see today's new designs."
+    },
+    linux: { name: "Linux", note: "Any distribution. AppImage (x64)", cta: "Download for Linux" },
+    android: {
+      name: "Android",
+      note: "Android 7 and newer. Install file (.apk)",
+      cta: "Download for Android"
+    }
+  },
   landing: {
+    download: "Download",
     langLabel: "Language",
     login: "Log in",
     createResearch: "Create Research",

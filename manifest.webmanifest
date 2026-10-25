@@ -1,0 +1,24 @@
+{
+  "name": "Affinix",
+  "short_name": "Affinix",
+  "description": "affinix.space — see which designs people love.",
+  "id": "./",
+  "start_url": "./#/app/arena",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#101114",
+  "theme_color": "#101114",
+  "lang": "ru",
+  "categories": ["productivity", "business", "design"],
+  "icons": [
+    { "src": "./assets/pwa/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "./assets/pwa/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "./assets/pwa/maskable-192.png", "sizes": "192x192", "type": "image/png", "purpose": "maskable" },
+    { "src": "./assets/pwa/maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ],
+  "shortcuts": [
+    { "name": "Arena", "url": "./#/app/arena", "icons": [{ "src": "./assets/pwa/icon-192.png", "sizes": "192x192" }] },
+    { "name": "What people love", "url": "./#/app/styles", "icons": [{ "src": "./assets/pwa/icon-192.png", "sizes": "192x192" }] }
+  ]
+}

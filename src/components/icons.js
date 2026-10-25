@@ -37,6 +37,8 @@ const PATHS = {
   search: html`<circle class="b" cx="10.5" cy="10.5" r="6.6"/><path d="M20 20l-4.8-4.8" stroke-width="2.6"/>`,
   bell: html`<path class="b" d="M5.5 10a6.5 6.5 0 0 1 13 0v3.2l1.7 3.3H3.8l1.7-3.3z"/><path d="M9.5 19.5a2.6 2.6 0 0 0 5 0"/>`,
   copy: html`<path d="M15 9V6.5a2 2 0 0 0-2-2H6.5a2 2 0 0 0-2 2V13a2 2 0 0 0 2 2H9"/><rect class="b" x="9" y="9" width="11.5" height="11.5" rx="2.2"/>`,
+  monitor: html`<rect class="b" x="2.8" y="4" width="18.4" height="12.6" rx="2.2"/><path d="M8.5 20.5h7M12 16.6v3.9"/>`,
+  phone: html`<rect class="b" x="6.8" y="2.8" width="10.4" height="18.4" rx="2.6"/><path d="M10.6 18h2.8"/>`,
   arrowRight: html`<path d="M4 12h16M14 5.5l6.5 6.5-6.5 6.5" stroke-width="2.4"/>`,
   arrowLeft: html`<path d="M20 12H4M10 5.5L3.5 12l6.5 6.5" stroke-width="2.4"/>`,
   shield: html`<path class="b" d="M12 2.8l7.5 3v5.6c0 5.2-3.2 8.3-7.5 9.9-4.3-1.6-7.5-4.7-7.5-9.9V5.8z"/><path d="M8.6 12l2.5 2.5 4.4-4.9" stroke-width="2.3"/>`,

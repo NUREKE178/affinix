@@ -1,0 +1,15 @@
+{
+  "appId": "space.affinix.app",
+  "appName": "Affinix",
+  "webDir": "www",
+  "backgroundColor": "#101114",
+  "server": {
+    "url": "https://affinix.space/#/app/arena",
+    "cleartext": false,
+    "allowNavigation": ["affinix.space", "*.affinix.space", "*.supabase.co", "accounts.google.com", "*.google.com", "*.gstatic.com"]
+  },
+  "android": {
+    "backgroundColor": "#101114",
+    "allowMixedContent": false
+  }
+}

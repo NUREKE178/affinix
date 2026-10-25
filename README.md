@@ -106,3 +106,15 @@ creation, not just shuffled in the browser.
 ## License notices for vendored code
 
 See `vendor/NOTICE.md`.
+
+
+## Apps (Windows, Android, install from the browser)
+
+- **Install from the browser (works today):** `manifest.webmanifest` + `sw.js` make the site an installable app in Chrome / Edge on Windows and Android (and
+  "Add to Home Screen" on iPhone / Mac). The service worker is network-first, so a new deploy is always picked up; it never caches the API.
+- **Windows installer (`Affinix-Setup.exe`) and Linux (`Affinix.AppImage`)** — `apps/desktop` (Electron: a window around affinix.space). **Android (`Affinix.apk`)** — `apps/android` (Capacitor shell).
+  Both are built by `.github/workflows/release-apps.yml`: GitHub -> Actions -> *Release apps* -> *Run workflow* (type a version, e.g. `1.0.0`) — or push a tag `v1.0.0`.
+  The workflow publishes a GitHub release; the **Download** page (`/#/download`, in the app `/#/app/download`) reads the latest release and shows the links.
+  Until a release exists the page says "being prepared" and offers the browser install.
+- Known limits: the installer is not signed (Windows SmartScreen shows "More info -> Run anyway"); the APK is debug-signed (Android asks to allow installs from the browser);
+  Google sign-in may be refused inside an embedded window (use email there, or the browser install, where Google sign-in works).

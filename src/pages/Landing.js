@@ -1,8 +1,9 @@
-import { html, useState } from "../lib/preact.js";
+import { html, useState, useEffect } from "../lib/preact.js";
 import { Icon } from "../components/icons.js";
 import { LanguageSwitch } from "../components/shell.js";
 import { useT, useLocale, useLocaleFadeClass } from "../lib/i18n.js";
 import { useReveal } from "../lib/motion.js";
+import { enableSmoothScroll } from "../lib/smoothScroll.js";
 
 // The landing in the product's own "Instrument" look (graphite, one orange signal, tactile keys, quiet plates). All
 // styling lives in landing.css (every class is lp- prefixed and scoped under .lp-root, because vendor/tailwind.css is
@@ -49,6 +50,7 @@ function Header({ t }) {
         </a>
         <div class="lp-hd-r">
           <${LanguageSwitch} variant="glass" />
+          <a class="lp-dl" href="#/download" data-testid="landing-download"><${Icon} name="arrowDown" size=${14} /> ${t("landing.download")}</a>
           <a class="lp-login" href="#/login">${t("landing.login")}</a>
           <a class="lp-btn lp-btn-sm" href="#/register">
             <span class="lp-long">${t("landing.createResearch")}</span><span class="lp-short">${t("landing.createShort")}</span>
@@ -366,6 +368,7 @@ function Footer({ t }) {
           <a class="lp-logo" href="#/" aria-label="Affinix" onClick=${(e) => { e.preventDefault(); window.scrollTo({ top: 0, behavior: "smooth" }); }}>
             <img class="lp-ft-logo" src=${`${LOGO}logo-lockup-dark.png`} alt="Affinix" width="136" height="32" loading="lazy" decoding="async" />
           </a>
+          <a class="lp-dl lp-dl-ft" href="#/download" data-testid="landing-download-footer"><${Icon} name="arrowDown" size=${14} /> ${t("landing.download")}</a>
           <p class="lp-ft-tag">${t("landing.footer")}</p>
         </div>
         <div class="lp-disc">
@@ -379,6 +382,7 @@ function Footer({ t }) {
 
 export function Landing() {
   const t = useT();
+  useEffect(() => enableSmoothScroll(), []); // glides on the landing page only, never inside the app
   const locale = useLocale();
   const localeFadeClass = useLocaleFadeClass();
   return html`

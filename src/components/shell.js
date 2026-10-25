@@ -40,6 +40,7 @@ const ADMIN_NAV_ITEM = { id: "admin", key: "shell.workspace.admin", icon: "shiel
 const WORKSPACE_NAV = [
   { id: "profile", key: "shell.workspace.profile", icon: "user", path: "/profile" },
   { id: "settings", key: "shell.workspace.settings", icon: "settings", path: "/app/settings", also: ["/app/team", "/app/billing"] },
+  { id: "download", key: "shell.workspace.download", icon: "arrowDown", path: "/app/download" },
 ];
 
 function initialsFor(nameOrEmail) {

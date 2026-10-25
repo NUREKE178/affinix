@@ -1,0 +1,36 @@
+{
+  "name": "affinix-desktop",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Affinix for Windows: a window around affinix.space.",
+  "author": "Nurlan Company",
+  "main": "main.js",
+  "scripts": {
+    "start": "electron .",
+    "dist": "electron-builder --win nsis --publish never",
+    "dist-linux": "electron-builder --linux AppImage --publish never"
+  },
+  "devDependencies": {
+    "electron": "^33.2.0",
+    "electron-builder": "^25.1.8"
+  },
+  "build": {
+    "appId": "space.affinix.app",
+    "productName": "Affinix",
+    "copyright": "Nurlan Company",
+    "directories": { "buildResources": "build", "output": "dist" },
+    "files": ["main.js", "offline.html", "build/icon.png"],
+    "win": { "target": [{ "target": "nsis", "arch": ["x64"] }], "icon": "build/icon.ico" },
+    "linux": { "target": [{ "target": "AppImage", "arch": ["x64"] }], "icon": "build/icon.png", "category": "Office", "synopsis": "Affinix" },
+    "appImage": { "artifactName": "Affinix.AppImage" },
+    "nsis": {
+      "oneClick": false,
+      "perMachine": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "shortcutName": "Affinix",
+      "artifactName": "Affinix-Setup.exe"
+    }
+  }
+}

@@ -1,3 +1,7 @@
 # Supabase CLI local cache (created by `npx supabase ...`, machine-local, not project content)
 supabase/.temp/
 supabase/.branches/
+node_modules/
+dist/
+apps/android/android/
+apps/android/package-lock.json

@@ -3913,3 +3913,18 @@ is unchanged and still needs `supabase db push`.
 - Dealing: `planDaily` / `planSet` use a `used` set -> no specimen twice inside one set (`pickPair(exclude)` falls back to a reuse only when the pool has nothing fresh), and extra set
   `n` has its own drop pool (`((dayPool-1)+(n-1)*7) % 31 + 1`, distinct for the six sets of a day). Measured over 28 days: duplicates per extra set 2.4 -> 0, per daily set 0.2-0.4 -> 0.
 - Tests adjusted: nav / tabs / styles expectations; engine D12 + D12b. Locale parity 1,547 keys.
+
+## Download page, installable app (PWA), Windows / Android packages, smooth landing scroll (no migration)
+
+- **PWA:** `manifest.webmanifest` (standalone, start `#/app/arena`, icons 192 / 512 any + maskable in `assets/pwa/`), `sw.js` (network-first, API never cached, offline falls back to the cached shell),
+  `lib/pwaInstall.js` (keeps `beforeinstallprompt`, `promptInstall()`, `isStandalone()`, `detectPlatform()`; registers the worker on https / localhost; imported by `main.js`).
+- **Download page** (`pages/Download.js`, `download.css`): public `/download` (own header) and in-app `/app/download` (inside the shell, sidebar item "Download the app" under Account). Platform order follows the device;
+  reads `https://api.github.com/repos/NUREKE178/affinix/releases/latest` (cached 10 min) for `Affinix-Setup.exe` / `Affinix.apk`, with version / size / date; no release -> "being prepared", no dead links;
+  an "Install from the browser" block with the real install button when the browser offers it. Landing: link in the header (hidden under 640px) and in the footer.
+- **Packages:** `apps/desktop` (Electron 33 + electron-builder NSIS, appId `space.affinix.app`, icon.ico generated from the brand mark, Chromium user agent so Google sign-in is not refused, offline page),
+  `apps/android` (Capacitor 6, `server.url` = affinix.space, launcher icons generated from the brand mark), workflow `.github/workflows/release-apps.yml` (windows, android, release jobs; manual or tag).
+  NOT built or run here (no Android SDK / Windows in this sandbox): the workflow YAML, both package.json files and the Electron main.js are only syntax-checked. The first run on GitHub may need a fix.
+- **Smooth scroll:** `lib/smoothScroll.js` eases the mouse wheel toward a target (11% per frame), enabled by `Landing` only; off for touch, reduced motion, ctrl+wheel, scrollable inner panels; inside the app the wheel stays native.
+- Tests: `test_download.mjs` (25 checks). Locale parity 1,578 keys.
+
+Linux: `Affinix.AppImage` (electron-builder `--linux AppImage`, new `linux` job in the release workflow, `dist-linux` script); `detectPlatform()` returns `linux` (Linux without Android / ChromeOS); the Download page puts the visitor's own system first (linux -> linux, windows, android, apple) but all cards and buttons stay usable for everyone. Cards now `auto-fit`. Test download: 29 checks. Nav tests expect 9 sidebar items.

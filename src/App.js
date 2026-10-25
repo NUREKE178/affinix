@@ -39,6 +39,7 @@ const CrowdCreate = lazyPage(() => import("./pages/crowd/Create.js"), "CrowdCrea
 const CrowdResults = lazyPage(() => import("./pages/crowd/Results.js"), "CrowdResults");
 const Admin = lazyPage(() => import("./pages/Admin.js"), "Admin");
 const Styles = lazyPage(() => import("./pages/Styles.js"), "Styles");
+const DownloadPage = lazyPage(() => import("./pages/Download.js"), "DownloadPage");
 
 const DASHBOARD_ROUTES = [
   { pattern: "/app/overview", Page: Overview },
@@ -62,6 +63,7 @@ const DASHBOARD_ROUTES = [
   { pattern: "/app/settings", Page: Settings },
   { pattern: "/app/admin", Page: Admin },
   { pattern: "/app/styles", Page: Styles },
+  { pattern: "/app/download", Page: DownloadPage },
   { pattern: "/profile", Page: Profile },
 ];
 
@@ -209,6 +211,8 @@ export function App() {
   if (authCallback && path === originalPathRef.current) return html`<${FullScreenLoading} phase="session" />`;
 
   if (path === "/" || path === "") return html`<${Landing} />`;
+
+  if (path === "/download") return html`<${DownloadPage} standalone=${true} />`;
 
   if (path.startsWith("/research/")) {
     const params = matchRoute("/research/:slug", path);

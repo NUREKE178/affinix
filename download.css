@@ -1,0 +1,50 @@
+/* Download page (public /download and in-app /app/download) and the landing-page links to it. Instrument tokens. */
+.dl-page { min-height: 100vh; background: var(--canvas); padding: 0 16px 56px; }
+.dl-top { display: flex; align-items: center; justify-content: space-between; gap: 12px; max-width: 980px; margin: 0 auto; padding: 18px 0; }
+.dl-back { display: inline-flex; align-items: center; gap: 10px; color: var(--g-50); font-weight: 600; font-size: 16px; text-decoration: none; }
+.dl-back i { font-style: normal; color: var(--g-500); }
+.dl { max-width: 980px; margin: 0 auto; display: grid; gap: 16px; }
+.dl-hero { display: flex; flex-direction: column; align-items: center; text-align: center; gap: 10px; padding: 28px 8px 8px; }
+.dl-mark { filter: drop-shadow(0 10px 30px rgba(255,106,31,.18)); }
+.dl-hero h1 { margin: 6px 0 0; font-size: clamp(26px, 5vw, 38px); line-height: 1.12; letter-spacing: -.02em; color: var(--g-50); font-weight: 650; }
+.dl-hero p { margin: 0; max-width: 560px; color: var(--g-400); font-size: 15.5px; line-height: 1.55; }
+.dl-installed { display: inline-flex; align-items: center; gap: 6px; color: var(--signal-hi, #ff8f55) !important; font-size: 13.5px !important; }
+
+.dl-browser { display: flex; align-items: center; justify-content: space-between; gap: 18px; padding: 18px 20px; border-radius: 16px; }
+.dl-browser h3 { margin: 0 0 4px; font-size: 15px; color: var(--g-100); }
+.dl-browser p { margin: 0; font-size: 13.5px; line-height: 1.5; color: var(--g-400); max-width: 620px; }
+
+.dl-cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 14px; }
+.dl-card { display: flex; flex-direction: column; gap: 14px; padding: 18px; border-radius: 16px; }
+.dl-card[data-first="true"] { box-shadow: var(--sh-well), 0 0 0 1px rgba(255,106,31,.35); }
+.dl-card-head { display: flex; align-items: center; gap: 12px; }
+.dl-card-head h3 { margin: 0; font-size: 16px; color: var(--g-50); }
+.dl-card-head p { margin: 2px 0 0; font-size: 12.5px; color: var(--g-500); }
+.dl-ico { display: grid; place-items: center; width: 44px; height: 44px; border-radius: 12px; color: var(--g-300); background: var(--well); box-shadow: var(--sh-well); flex: none; }
+.dl-card[data-first="true"] .dl-ico { color: var(--signal-hi, #ff8f55); }
+.dl-card-body { display: grid; gap: 10px; align-content: start; }
+.dl-btn {
+  display: inline-flex; align-items: center; justify-content: center; gap: 8px; height: 42px; padding: 0 16px; border-radius: 11px; text-decoration: none;
+  font-weight: 600; font-size: 14px; color: #fff; background: linear-gradient(180deg, #ff8f55, #ff6a1f); box-shadow: 0 0 0 1px rgba(0,0,0,.4), inset 0 1px 0 rgba(255,255,255,.35), 0 6px 18px -6px rgba(255,106,31,.55);
+  transition: transform var(--sk-dur-fast), box-shadow var(--sk-dur-fast);
+}
+.dl-btn:hover { transform: translateY(-1px); }
+.dl-btn:active { transform: translateY(1px); }
+.dl-meta { margin: 0; font-size: 12.5px; color: var(--g-400); line-height: 1.5; }
+.dl-warn { margin: 0; font-size: 12px; line-height: 1.5; color: var(--g-500); }
+.dl-steps { margin: 0; font-size: 13.5px; line-height: 1.55; color: var(--g-300); }
+.dl-why { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px; padding: 6px 4px 0; }
+.dl-why div { display: grid; gap: 4px; }
+.dl-why b { font-size: 13.5px; color: var(--g-100); }
+.dl-why span { font-size: 13px; line-height: 1.5; color: var(--g-500); }
+@media (max-width: 800px) {
+  .dl-cards, .dl-why { grid-template-columns: 1fr; }
+  .dl-browser { flex-direction: column; align-items: stretch; }
+  .dl-card[data-first="true"] { order: -1; }
+}
+
+/* landing: the link in the header and the footer */
+.lp-dl { display: inline-flex; align-items: center; gap: 6px; padding: 0 12px; height: 34px; border-radius: 10px; color: var(--g-300, #c3c5cb); font-size: 14px; font-weight: 500; text-decoration: none; transition: color .2s, background .2s; }
+.lp-dl:hover { color: #fff; background: rgba(255,255,255,.07); }
+.lp-dl-ft { margin-top: 10px; padding-left: 0; }
+@media (max-width: 640px) { .lp-hd .lp-dl { display: none; } }
