@@ -3978,4 +3978,9 @@ On request. `Landing.js`: `useChoreography` / `Choreography` replaced by `usePar
 ## Icons: settings gear redrawn, platform icons on the Download page (no migration)
 
 `components/icons.js`: `settings` is now a clean 8-tooth gear (generated geometry, centre hole) instead of the blobby cog; new `windows`, `linux`, `android`, `apple` glyphs in the same duotone style. `pages/Download.js` uses them on the four cards (tile icon 22 -> 26 px).
-Tests: test_download 29/29, test_nav_tabs 31/31, test_nav_thumb 11/11, test_dashboard_polish 13/13. The glyphs are simple originals, not the official brand marks.
+Tests: test_download 29/29, test_nav_tabs 31/31, test_nav_thumb 11/11, test_dashboard_polish 13/13. (Superseded below: the platform glyphs are now the official marks.)
+
+## Download page: the platforms' own logos (no migration)
+
+On request ("put their own icons, don't draw them yourself"): `windows`, `linux` (Tux), `android`, `apple` in `components/icons.js` are now the brands' real marks from the Simple Icons set (CC0 data; the Windows mark from Simple Icons 5.23.0 because later releases dropped it),
+drawn solid in `currentColor` (no outline / tint). Trademarks stay with their owners; used only to label the matching download. Test download 29/29, nav tabs 31/31.
