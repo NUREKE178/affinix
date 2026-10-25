@@ -1,6 +1,6 @@
 import { html, useState, useEffect, useRef } from "../lib/preact.js";
 import { Icon } from "../components/icons.js";
-import { LanguageSwitch } from "../components/shell.js";
+import { LanguageSwitch } from "../components/languageSwitch.js";
 import { useT, useLocale, useLocaleFadeClass } from "../lib/i18n.js";
 import { useReveal } from "../lib/motion.js";
 import { startLandingScroll, scrollToTarget } from "../lib/smoothScroll.js";

@@ -1,7 +1,7 @@
 import { html } from "../../lib/preact.js";
 import { navigate } from "../../router.js";
 import { LogoMark } from "../../components/icons.js";
-import { LanguageSwitch } from "../../components/shell.js";
+import { LanguageSwitch } from "../../components/languageSwitch.js";
 import { useLocaleFadeClass } from "../../lib/i18n.js";
 
 export function AuthLayout({ title, subtitle, children, footer }) {

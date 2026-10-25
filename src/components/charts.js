@@ -26,6 +26,21 @@ function withAlpha(hex, alpha) {
   return `rgba(${(n >> 16) & 255}, ${(n >> 8) & 255}, ${n & 255}, ${alpha})`;
 }
 
+// Chart.js (205 KB) is only needed on the pages that draw a chart, so it is fetched the first time one of them mounts instead of
+// blocking every page's first paint from index.html.
+let chartLoad = null;
+function ensureChart() {
+  if (typeof window.Chart !== "undefined") return Promise.resolve(window.Chart);
+  chartLoad ||= new Promise((resolve, reject) => {
+    const el = document.createElement("script");
+    el.src = new URL("../../vendor/chart.umd.js", import.meta.url).href;
+    el.onload = () => resolve(window.Chart);
+    el.onerror = () => { chartLoad = null; el.remove(); reject(new Error("chart.js failed to load")); };
+    document.head.appendChild(el);
+  });
+  return chartLoad;
+}
+
 function useChart(buildConfig, deps) {
   const canvasRef = useRef(null);
   const chartRef = useRef(null);
@@ -33,20 +48,27 @@ function useChart(buildConfig, deps) {
   // rebuilding on every live refresh would replay the intro animation and
   // flash the chart each time a new participant answers.
   useEffect(() => {
-    if (!canvasRef.current || typeof window.Chart === "undefined") return;
-    const cfg = buildConfig();
-    const chart = chartRef.current;
-    if (chart && chart.config.type === cfg.type) {
-      chart.data.labels = cfg.data.labels;
-      cfg.data.datasets.forEach((ds, i) => {
-        if (chart.data.datasets[i]) Object.assign(chart.data.datasets[i], ds);
-        else chart.data.datasets[i] = ds;
-      });
-      chart.data.datasets.length = cfg.data.datasets.length;
-      chart.update();
-      return;
-    }
-    chartRef.current = new window.Chart(canvasRef.current, cfg);
+    if (!canvasRef.current) return undefined;
+    let off = false;
+    const draw = () => {
+      if (off || !canvasRef.current) return;
+      const cfg = buildConfig();
+      const chart = chartRef.current;
+      if (chart && chart.config.type === cfg.type) {
+        chart.data.labels = cfg.data.labels;
+        cfg.data.datasets.forEach((ds, i) => {
+          if (chart.data.datasets[i]) Object.assign(chart.data.datasets[i], ds);
+          else chart.data.datasets[i] = ds;
+        });
+        chart.data.datasets.length = cfg.data.datasets.length;
+        chart.update();
+        return;
+      }
+      chartRef.current = new window.Chart(canvasRef.current, cfg);
+    };
+    if (typeof window.Chart !== "undefined") draw();
+    else ensureChart().then(draw).catch(() => { /* no chart: the numbers next to it still show */ });
+    return () => { off = true; };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, deps);
   useEffect(() => () => { chartRef.current?.destroy(); chartRef.current = null; }, []);

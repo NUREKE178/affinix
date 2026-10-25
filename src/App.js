@@ -1,28 +1,6 @@
 import { html, useState, useEffect, useRef } from "./lib/preact.js";
 import { useRoute, matchRoute, navigate, HOME_PATH } from "./router.js";
-import { Shell } from "./components/shell.js";
 import { Landing } from "./pages/Landing.js";
-import { Feed } from "./pages/Feed.js";
-import { Favorites } from "./pages/Favorites.js";
-import { Friends } from "./pages/Friends.js";
-import { Messages } from "./pages/Messages.js";
-import { Overview } from "./pages/Overview.js";
-import { ExperimentsList } from "./pages/ExperimentsList.js";
-import { ExperimentBuilder } from "./pages/ExperimentBuilder.js";
-import { Results } from "./pages/Results.js";
-import { Participants } from "./pages/Participants.js";
-import { Reports } from "./pages/Reports.js";
-import { Team } from "./pages/Team.js";
-import { Settings } from "./pages/Settings.js";
-import { Profile } from "./pages/Profile.js";
-import { PublicProfile } from "./pages/PublicProfile.js";
-import { Billing } from "./pages/Billing.js";
-import { ParticipantRunner } from "./pages/ParticipantRunner.js";
-import { Login } from "./pages/auth/Login.js";
-import { Register } from "./pages/auth/Register.js";
-import { ForgotPassword } from "./pages/auth/ForgotPassword.js";
-import { ResetPassword } from "./pages/auth/ResetPassword.js";
-import { Onboarding } from "./pages/auth/Onboarding.js";
 import { useSession } from "./lib/auth.js";
 import { fetchMyOrganizations } from "./lib/org.js";
 import { IS_CONFIGURED } from "./lib/env.js";
@@ -32,6 +10,30 @@ import { withTimeout } from "./lib/async.js";
 import { useAutoUpdate } from "./lib/useAutoUpdate.js";
 import { lazyPage } from "./lib/lazyPage.js";
 
+// Everything except the landing page is fetched the first time it is opened (and warmed up in the background right after the landing page
+// is on screen, see lib/idlePreload.js): a visitor who only reads the landing page no longer downloads the whole app first.
+const Shell = lazyPage(() => import("./components/shell.js"), "Shell");
+const Feed = lazyPage(() => import("./pages/Feed.js"), "Feed");
+const Favorites = lazyPage(() => import("./pages/Favorites.js"), "Favorites");
+const Friends = lazyPage(() => import("./pages/Friends.js"), "Friends");
+const Messages = lazyPage(() => import("./pages/Messages.js"), "Messages");
+const Overview = lazyPage(() => import("./pages/Overview.js"), "Overview");
+const ExperimentsList = lazyPage(() => import("./pages/ExperimentsList.js"), "ExperimentsList");
+const ExperimentBuilder = lazyPage(() => import("./pages/ExperimentBuilder.js"), "ExperimentBuilder");
+const Results = lazyPage(() => import("./pages/Results.js"), "Results");
+const Participants = lazyPage(() => import("./pages/Participants.js"), "Participants");
+const Reports = lazyPage(() => import("./pages/Reports.js"), "Reports");
+const Team = lazyPage(() => import("./pages/Team.js"), "Team");
+const Settings = lazyPage(() => import("./pages/Settings.js"), "Settings");
+const Profile = lazyPage(() => import("./pages/Profile.js"), "Profile");
+const PublicProfile = lazyPage(() => import("./pages/PublicProfile.js"), "PublicProfile");
+const Billing = lazyPage(() => import("./pages/Billing.js"), "Billing");
+const ParticipantRunner = lazyPage(() => import("./pages/ParticipantRunner.js"), "ParticipantRunner");
+const Login = lazyPage(() => import("./pages/auth/Login.js"), "Login");
+const Register = lazyPage(() => import("./pages/auth/Register.js"), "Register");
+const ForgotPassword = lazyPage(() => import("./pages/auth/ForgotPassword.js"), "ForgotPassword");
+const ResetPassword = lazyPage(() => import("./pages/auth/ResetPassword.js"), "ResetPassword");
+const Onboarding = lazyPage(() => import("./pages/auth/Onboarding.js"), "Onboarding");
 // The Arena (and the specimen generators behind it) loads the first time it is opened.
 const Arena = lazyPage(() => import("./pages/Arena.js"), "Arena");
 // Crowd tests: the page that makes one and the page that reads one (the list lives on the Research page).
