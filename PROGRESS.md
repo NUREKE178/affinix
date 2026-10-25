@@ -3928,3 +3928,11 @@ is unchanged and still needs `supabase db push`.
 - Tests: `test_download.mjs` (25 checks). Locale parity 1,578 keys.
 
 Linux: `Affinix.AppImage` (electron-builder `--linux AppImage`, new `linux` job in the release workflow, `dist-linux` script); `detectPlatform()` returns `linux` (Linux without Android / ChromeOS); the Download page puts the visitor's own system first (linux -> linux, windows, android, apple) but all cards and buttons stay usable for everyone. Cards now `auto-fit`. Test download: 29 checks. Nav tests expect 9 sidebar items.
+
+## Landing scroll choreography (no migration)
+
+`lib/smoothScroll.js` rewritten as an engine (`startLandingScroll`, `scrollToTarget`): wheel + keyboard (arrows, Space, PageUp/Down, Home/End; skipped when focus is on an input / button / link) move a
+target and the page eases toward it with a frame-rate-independent exponential glide (tau 0.15s); anchors / buttons / the rail use an ease-in-out-expo tween (1.1s); every frame it emits
+{y, velocity, progress} (also on touch, where the wheel / keys stay native). `Landing`: `useChoreography()` + `Choreography` -> an orange progress line at the top (`.lp-progress`), a rail of five section
+dots on the right (>= 1180px, `.lp-rail`, active = section above 40% of the viewport, tooltips), and parallax (`data-par` on the dashboard preview and the phone fan; `--par` px each frame). Reduced motion: no glide,
+no parallax, keys native. Off inside the app. i18n `landing.sections.*`. Tests: `test_landing_scroll.mjs` (17 checks); the glide checks in `test_download.mjs` still pass.

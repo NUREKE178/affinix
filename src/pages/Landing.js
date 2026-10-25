@@ -1,9 +1,9 @@
-import { html, useState, useEffect } from "../lib/preact.js";
+import { html, useState, useEffect, useRef } from "../lib/preact.js";
 import { Icon } from "../components/icons.js";
 import { LanguageSwitch } from "../components/shell.js";
 import { useT, useLocale, useLocaleFadeClass } from "../lib/i18n.js";
 import { useReveal } from "../lib/motion.js";
-import { enableSmoothScroll } from "../lib/smoothScroll.js";
+import { startLandingScroll, scrollToTarget } from "../lib/smoothScroll.js";
 
 // The landing in the product's own "Instrument" look (graphite, one orange signal, tactile keys, quiet plates). All
 // styling lives in landing.css (every class is lp- prefixed and scoped under .lp-root, because vendor/tailwind.css is
@@ -30,8 +30,51 @@ const RUNNER_UP = Math.max(...VARIANTS.filter((_, i) => i !== LEAD).map((v) => v
 const barWidth = (share) => Math.round((share / 50) * 100);
 
 function scrollToId(id) {
-  const el = document.getElementById(id);
-  if (el) el.scrollIntoView({ behavior: "smooth", block: "start" });
+  scrollToTarget(id, { offset: -64 });
+}
+
+const RAIL = ["lp-top", "lp-workflow", "lp-trust", "lp-mobile", "lp-start"];
+
+/** The page's choreography: a progress line at the top, a rail of section dots on the right, and a gentle parallax on the
+ *  blocks marked data-par (they move a little slower than the page). All of it is driven by the scroll engine's frames. */
+function useChoreography() {
+  const [active, setActive] = useState(0);
+  const bar = useRef(null);
+  useEffect(() => {
+    const engine = startLandingScroll();
+    const reduced = typeof matchMedia === "function" && matchMedia("(prefers-reduced-motion: reduce)").matches;
+    let activeNow = -1;
+    const off = engine.subscribe(({ y, progress }) => {
+      if (bar.current) bar.current.style.transform = `scaleX(${progress})`;
+      const mid = window.innerHeight * 0.4;
+      let idx = 0;
+      RAIL.forEach((id, i) => { const el = document.getElementById(id); if (el && el.getBoundingClientRect().top <= mid) idx = i; });
+      if (idx !== activeNow) { activeNow = idx; setActive(idx); }
+      if (!reduced) {
+        const vh = window.innerHeight;
+        document.querySelectorAll("[data-par]").forEach((el) => {
+          const r = el.getBoundingClientRect();
+          if (r.bottom < -200 || r.top > vh + 200) return;
+          const off2 = (r.top + r.height / 2 - vh / 2) * -Number(el.dataset.par);
+          el.style.setProperty("--par", `${off2.toFixed(1)}px`);
+        });
+      }
+    });
+    return () => { off(); engine.stop(); };
+  }, []);
+  return { active, bar };
+}
+
+function Choreography({ t, active, bar }) {
+  return html`
+    <div class="lp-progress" aria-hidden="true"><i ref=${bar}></i></div>
+    <nav class="lp-rail" aria-label=${t("landing.sections.label")}>
+      ${RAIL.map((id, i) => html`
+        <button type="button" key=${id} class="lp-rail-dot" data-on=${active === i} aria-label=${t(`landing.sections.${id.slice(3)}`)} aria-current=${active === i ? "true" : undefined} onClick=${() => scrollToId(id)}>
+          <span>${t(`landing.sections.${id.slice(3)}`)}</span>
+        </button>`)}
+    </nav>
+  `;
 }
 
 /** Fades/slides a block in once when it first scrolls into view (the app's existing .sk-reveal). */
@@ -44,7 +87,7 @@ function Header({ t }) {
   return html`
     <header class="lp-hd">
       <div class="lp-hd-in">
-        <a class="lp-logo" href="#/" aria-label="Affinix" onClick=${(e) => { e.preventDefault(); window.scrollTo({ top: 0, behavior: "smooth" }); }}>
+        <a class="lp-logo" href="#/" aria-label="Affinix" onClick=${(e) => { e.preventDefault(); scrollToTarget(0); }}>
           <img class="lp-logo-full" src=${`${LOGO}logo-lockup-dark.png`} alt="Affinix" width="128" height="30" />
           <img class="lp-logo-mark" src=${`${LOGO}logo-mark-256.png`} alt="" width="32" height="32" loading="lazy" decoding="async" />
         </a>
@@ -78,7 +121,7 @@ function DashboardMock({ t }) {
   const sideIcons = ["overview", "experiments", "participants", "results", "reports"];
 
   return html`
-    <div class="lp-stage" id="lp-sample">
+    <div class="lp-stage" id="lp-sample" data-par="0.07">
       <div class="lp-fc lp-fc1" aria-hidden="true">
         <span class="lp-fc-l">${t("landing.mock.winner")}</span>
         <span class="lp-fc-v"><b>${t("landing.mock.winnerName")}</b><em>${VARIANTS[LEAD].share}%</em></span>
@@ -332,7 +375,7 @@ function Mobile({ t, locale }) {
         <//>
       </div>
       <div class="lp-fan-wrap">
-        <div class="lp-fan">
+        <div class="lp-fan" data-par="0.06">
           <img class="lp-f lp-f1" src=${phoneSrc("builder", locale)} alt=${t("landing.mobile.altBuilder")} width="864" height="1748" loading="lazy" decoding="async" />
           <img class="lp-f lp-f2" src=${phoneSrc("report", locale)} alt=${t("landing.mobile.altReport")} width="864" height="1748" loading="lazy" decoding="async" />
           <img class="lp-f lp-f3" src=${phoneSrc("chat", locale)} alt=${t("landing.mobile.altChat")} width="864" height="1748" loading="lazy" decoding="async" />
@@ -365,7 +408,7 @@ function Footer({ t }) {
     <footer class="lp-ft">
       <div class="lp-wrap">
         <div class="lp-ft-top">
-          <a class="lp-logo" href="#/" aria-label="Affinix" onClick=${(e) => { e.preventDefault(); window.scrollTo({ top: 0, behavior: "smooth" }); }}>
+          <a class="lp-logo" href="#/" aria-label="Affinix" onClick=${(e) => { e.preventDefault(); scrollToTarget(0); }}>
             <img class="lp-ft-logo" src=${`${LOGO}logo-lockup-dark.png`} alt="Affinix" width="136" height="32" loading="lazy" decoding="async" />
           </a>
           <a class="lp-dl lp-dl-ft" href="#/download" data-testid="landing-download-footer"><${Icon} name="arrowDown" size=${14} /> ${t("landing.download")}</a>
@@ -382,12 +425,13 @@ function Footer({ t }) {
 
 export function Landing() {
   const t = useT();
-  useEffect(() => enableSmoothScroll(), []); // glides on the landing page only, never inside the app
+  const choreo = useChoreography(); // the smooth engine, progress line, section rail and parallax: landing page only, never inside the app
   const locale = useLocale();
   const localeFadeClass = useLocaleFadeClass();
   return html`
     <div class=${`lp-root ${localeFadeClass}`}>
       <${Header} t=${t} />
+      <${Choreography} t=${t} active=${choreo.active} bar=${choreo.bar} />
       <main>
         <${Hero} t=${t} />
         <${CanTest} t=${t} />

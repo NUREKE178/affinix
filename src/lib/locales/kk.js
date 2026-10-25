@@ -136,6 +136,7 @@ export default {
     }
   },
   landing: {
+    sections: { label: "Бөлімдер", top: "Басы", workflow: "Қалай жұмыс істейді", trust: "Сенім", mobile: "Телефонда", start: "Бастау" },
     download: "Жүктеу",
     langLabel: "Тіл",
     login: "Кіру",

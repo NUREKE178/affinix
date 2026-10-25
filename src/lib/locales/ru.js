@@ -136,6 +136,7 @@ export default {
     }
   },
   landing: {
+    sections: { label: "Разделы", top: "Начало", workflow: "Как это работает", trust: "Доверие", mobile: "На телефоне", start: "Попробовать" },
     download: "Скачать",
     langLabel: "Язык",
     login: "Войти",
