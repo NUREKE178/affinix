@@ -68,11 +68,10 @@
 
 .lp-hd {
   position: sticky; top: 0; z-index: 60;
-  /* fully opaque, no blur: with a see-through blurred bar the hero glow and the text sliding underneath showed up inside the header as moving smudges */
-  background: var(--g-950, #0e0e10);
+  background: rgba(14,14,16,.9);
+  -webkit-backdrop-filter: blur(10px); backdrop-filter: blur(10px);
   border-bottom: 1px solid var(--hair);
   box-shadow: 0 1px 0 rgba(0,0,0,.6);
-  transform: translateZ(0); /* its own layer: the header is painted once and only moved by the compositor while the page scrolls */
 }
 .lp-hd-in { display: flex; align-items: center; gap: 14px; max-width: 1200px; margin: 0 auto; padding: 12px 24px; }
 .lp-logo { display: block; line-height: 0; flex: none; }
@@ -107,7 +106,7 @@
 
 /* ---- Hero -------------------------------------------------------------------------------------- */
 
-.lp-hero { position: relative; overflow: hidden; isolation: isolate; padding: 88px 0 0; }
+.lp-hero { position: relative; overflow: clip; isolation: isolate; padding: 88px 0 0; } /* clip, not hidden: hidden makes it a scroll container, and the parallax scroll timeline would attach to it instead of the page */
 /* one soft overhead light on the matte surface -- the only "effect" on the page */
 .lp-hero::before { content: ""; position: absolute; left: 50%; top: 0; width: 1200px; max-width: 100%; height: 620px; transform: translateX(-50%); z-index: -1; background: radial-gradient(ellipse 50% 60% at 50% 0%, rgba(255,255,255,.055), rgba(255,255,255,0) 100%); }
 .lp-hero-in { text-align: center; }
@@ -379,8 +378,15 @@
 }
 
 /* ---- the gentle parallax of the dashboard preview and the phone fan (lib/scrollWatch.js + Landing's useParallax) ---- */
+/* The parallax is a scroll-driven animation: the browser's compositor moves the block together with the scroll itself, so it can never lag a frame behind the page
+   (a script reacting to scroll events always did, and that showed as a flicker, most of all through the blurred header). --par-r is the travel in px, set once by
+   Landing.js. Browsers without scroll timelines simply keep the blocks still. */
 [data-par] { will-change: transform; }
-@media (prefers-reduced-motion: reduce) { [data-par] { will-change: auto; } }
+@keyframes lp-par { from { transform: translate3d(0, calc(var(--par-r, 0px) * -1), 0); } to { transform: translate3d(0, var(--par-r, 0px), 0); } }
+@supports (animation-timeline: view()) {
+  [data-par] { animation: lp-par linear both; animation-timeline: view(); }
+}
+@media (prefers-reduced-motion: reduce) { [data-par] { will-change: auto; animation: none; } }
 
 /* ---- "Try a duel": two designs, tap one, see how many players chose the same (sample numbers) ------------------------------------------------ */
 .lp-root .lp-duel { min-height: 0; max-width: 820px; margin: 38px auto 0; padding: 26px; align-items: stretch; }

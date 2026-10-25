@@ -3,7 +3,7 @@ import { Icon } from "../components/icons.js";
 import { LanguageSwitch } from "../components/languageSwitch.js";
 import { useT, useLocale, useLocaleFadeClass } from "../lib/i18n.js";
 import { useReveal } from "../lib/motion.js";
-import { startLandingScroll, scrollToTarget } from "../lib/scrollWatch.js";
+import { scrollToTarget } from "../lib/scrollWatch.js";
 
 // The landing in the product's own "Instrument" look (graphite, one orange signal, tactile keys, quiet plates). All
 // styling lives in landing.css (every class is lp- prefixed and scoped under .lp-root, because vendor/tailwind.css is
@@ -33,40 +33,25 @@ function scrollToId(id) {
   scrollToTarget(id, { offset: -64 });
 }
 
-/** A gentle parallax on the blocks marked data-par (they move a little slower than the page), driven by the scroll watcher. */
+/** A gentle parallax on the blocks marked data-par (they move a little slower than the page). The motion itself is a CSS scroll-driven animation (landing.css);
+ *  all this does is tell each block how far it may travel: k x (screen height + its own height) / 2, in px. Measured on load and resize, never while scrolling. */
 function useParallax() {
   useEffect(() => {
-    const engine = startLandingScroll();
-    const reduced = typeof matchMedia === "function" && matchMedia("(prefers-reduced-motion: reduce)").matches;
-    // Measure once (and again when the layout can have moved), never per frame: reading layout every frame while scrolling is what made the page stutter.
-    let pars = [], vh = window.innerHeight;
     const measure = () => {
-      vh = window.innerHeight;
-      const sy = window.scrollY;
-      pars = [...document.querySelectorAll("[data-par]")].map((el) => {
-        el.style.transform = ""; // measure without our own offset
+      const vh = window.innerHeight;
+      document.querySelectorAll("[data-par]").forEach((el) => {
         const r = el.getBoundingClientRect();
-        return { el, centre: r.top + sy + r.height / 2, h: r.height, k: Number(el.dataset.par), last: NaN };
+        el.style.setProperty("--par-r", `${Math.round(Number(el.dataset.par) * (vh + r.height)) / 2}px`);
       });
     };
     measure();
     const timers = [setTimeout(measure, 800), setTimeout(measure, 2500)];
     window.addEventListener("resize", measure);
     window.addEventListener("load", measure);
-    const off = engine.subscribe(({ y }) => {
-      if (!reduced) {
-        for (const p of pars) {
-          const d = p.centre - (y + vh / 2);
-          if (Math.abs(d) > vh + p.h) continue;                 // far off screen: leave it
-          const off2 = Math.round(d * -p.k * 2) / 2;            // half-pixel steps: no restyle for sub-pixel changes
-          if (off2 !== p.last) { p.last = off2; p.el.style.transform = `translate3d(0, ${off2}px, 0)`; }
-        }
-      }
-    });
     return () => {
-      off(); engine.stop(); timers.forEach(clearTimeout);
+      timers.forEach(clearTimeout);
       window.removeEventListener("resize", measure); window.removeEventListener("load", measure);
-      document.querySelectorAll("[data-par]").forEach((el) => { el.style.transform = ""; });
+      document.querySelectorAll("[data-par]").forEach((el) => el.style.removeProperty("--par-r"));
     };
   }, []);
 }
