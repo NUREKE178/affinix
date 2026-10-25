@@ -5,7 +5,7 @@
 import { html, useState, useEffect } from "../lib/preact.js";
 import { Button } from "../components/ui.js";
 import { Icon, LogoMark } from "../components/icons.js";
-import { LanguageSwitch } from "../components/shell.js";
+import { LanguageSwitch } from "../components/languageSwitch.js";
 import { useT, getLocale } from "../lib/i18n.js";
 import { canInstall, isStandalone, promptInstall, subscribeInstall, detectPlatform } from "../lib/pwaInstall.js";
 import { navigate } from "../router.js";

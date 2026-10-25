@@ -1,7 +1,7 @@
 import { html, useState, useEffect, useRef } from "../../lib/preact.js";
 import { navigate, HOME_PATH } from "../../router.js";
 import { Icon, LogoMark } from "../../components/icons.js";
-import { LanguageSwitch } from "../../components/shell.js";
+import { LanguageSwitch } from "../../components/languageSwitch.js";
 import { AuthError } from "./AuthLayout.js";
 import { Field, TextInput, TextArea, Select, Switch, Button, toast } from "../../components/ui.js";
 import { createOrganization, fetchMyOrganizations, addMemberByEmail } from "../../lib/org.js";

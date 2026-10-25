@@ -3944,3 +3944,14 @@ because the parallax wrote a custom property (`--par`) on large subtrees each fr
 `style.transform` directly in half-pixel steps and only when it changes -> style CPU 0.357 -> 0.022 s (desktop), 0.447 -> 0.015 s (phone); total task time roughly halved to a quarter. Also: the swipe-between-tabs
 `touchmove` listener is now passive (a blocking listener on `document` makes every phone scroll wait for script; `touch-action: pan-y` already keeps the browser from panning sideways), `useThumb` no longer measures on plain re-renders
 (only when the choice, labels or host change; the ResizeObserver covers real size changes), and the service worker only handles page navigations (scripts / styles / images / data go straight to the browser; cache name v2).
+
+## Performance fix 2: first load (module waterfall), measured (no migration)
+
+Cause of "still laggy": the landing needed 130 requests (109 JS modules, the whole app) and `index.html` blocked parsing on two classic scripts (Chart.js 205 KB + supabase 218 KB). Emulated Slow 4G + 4x CPU
+(scratchpad `load.mjs`): first content 10.5 s -> 5.8 s, requests 130 -> 53 (JS 109 -> 32), over the wire 1.29 -> 1.10 MB (local server is uncompressed; Vercel serves gzip / brotli, so real transfer is a fraction).
+- `App.js`: Shell and every page except the landing are `lazyPage(...)` (fetched on first open). `LanguageSwitch` moved to `components/languageSwitch.js` (`shell.js` re-exports it), so the landing no longer pulls the whole shell.
+- `index.html`: Chart.js removed from the head and loaded on demand by `components/charts.js` (`ensureChart()`); supabase script `defer`; generated `<link rel="modulepreload">` list for the first-screen module graph
+  (`node scripts/gen-preload.mjs`, `--check` tells whether it is stale; rerun after adding a static import to the landing / App closure).
+- `lib/idlePreload.js`: outside the landing, warms shell / Arena / feed / profile ... one module per idle slice; on the landing nothing is fetched on its own (no jank), only when a pointer / finger nears a sign-in / app / download link.
+  Skipped on Save-Data and 2g.
+- Not done (honest): the three locale dictionaries (315 KB raw) are still all in the first download.
