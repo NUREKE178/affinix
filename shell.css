@@ -110,11 +110,11 @@
   position: relative; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; padding: 0; min-width: 0;
   border: 0; background: none; color: var(--g-400, #a2a5ae); cursor: pointer; -webkit-tap-highlight-color: transparent; touch-action: none; -webkit-touch-callout: none;
 }
+.mtb-pill .ic { display: block; width: 24px; height: 24px; }
 .mtb-pill { position: relative; display: grid; place-items: center; width: 58px; height: 32px; border-radius: 999px; transition: transform .22s var(--sk-ease-spring, cubic-bezier(.3,1.5,.5,1)), color .2s; }
 .mtb-pill[data-active="true"] { background: rgba(255,106,31,.2); color: #ff8f55; }
 [data-thumb="on"] .mtb-pill[data-active="true"] { background: transparent; }
-.mtb-pill[data-active="true"] svg { filter: drop-shadow(0 0 7px rgba(255,106,31,.55)); animation: mtbPop .46s var(--sk-ease-spring, cubic-bezier(.3,1.5,.5,1)); }
-.mtb-pill[data-active="true"] .ic .b, .mtb-pill[data-active="true"] .ic .t { fill-opacity: .5; }
+.mtb-pill[data-active="true"] svg { animation: mtbPop .46s var(--sk-ease-spring, cubic-bezier(.3,1.5,.5,1)); }
 .mtb-item:active .mtb-pill { transform: scale(.9); }
 .mtb-item[data-hot="true"] .mtb-pill { transform: translateY(-6px) scale(1.16); color: #ffb48a; }
 .mtb-item[data-hot="true"] .mtb-label { color: var(--g-50, #f5f5f6); }

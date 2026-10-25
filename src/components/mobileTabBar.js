@@ -2,7 +2,7 @@
 //   Arena | Feed | Messages | Marketing | More (opens the drawer with everything else)
 // What makes it feel like an app and not a web menu:
 //  * a floating glass dock with safe-area spacing; ONE tinted pill glides under the active icon (lib/thumb.js, the same key as every other control)
-//  * the active icon takes a stronger tint and springs in; counts sit on the icons and pop when they change
+//  * every icon is drawn the same way (the app's duotone set at one size); the active one only changes colour and springs in; counts sit on the icons and pop when they change
 //  * scrub: put a finger on the dock and slide across it -- the icon under the finger rises, lifting the finger opens it (with a tick of haptics)
 //  * it gets out of the way: slides down when you scroll down (more room to read), returns on the slightest scroll up, at the top and at the end of the page;
 //    it also leaves while a field is focused (keyboard up) and inside an open chat
@@ -18,7 +18,7 @@ import { useArenaLocal, arenaAttention } from "../lib/arenaStore.js";
 const TABS = [
   { id: "arena", labelKey: "shell.community.arena", icon: "arena", path: "/app/arena" },
   { id: "feed", labelKey: "shell.community.feed", icon: "globe", path: "/app/feed" },
-  { id: "messages", labelKey: "shell.community.messages", icon: "chat", path: "/app/messages" },
+  { id: "messages", labelKey: "shell.tabbar.messages", icon: "chat", path: "/app/messages" },
   { id: "marketers", labelKey: "shell.tabbar.marketers", icon: "overview", path: "/app/styles",
     also: ["/app/overview", "/app/experiments", "/app/results", "/app/participants", "/app/reports"] },
 ];
@@ -139,7 +139,7 @@ export function MobileTabBar({ currentPath, onNavigate, onMore }) {
       <div class="mtb-in sk-thumbhost" ref=${host}>
         <span class="sk-thumb mtb-thumb" ref=${thumb} aria-hidden="true"></span>
         ${TABS.map((tab) => item(tab.id, tab.icon, t(tab.labelKey)))}
-        ${item("more", "menu", t("shell.tabbar.more"))}
+        ${item("more", "more", t("shell.tabbar.more"))}
       </div>
     </nav>
   `;

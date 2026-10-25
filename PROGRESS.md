@@ -3994,3 +3994,5 @@ drawn solid in `currentColor` (no outline / tint). Trademarks stay with their ow
 - Counts: messages unread, Arena attention, incoming friend requests on More; the badge remounts per value so it pops.
 - Layout: `--mtb-total` (62 + 10 + safe area) pads `main` and the phone chat list / Arena art; `--mtb-dock` (drops to the bare safe area while the dock is away) lifts the toast stack and the feed composer dock.
 - Locale keys `shell.tabbar.{label,more,marketers}`. Test: `test_mobile_tabbar.mjs` (27 checks incl. real touch scrub and scroll hide). Desktop / tablet unchanged.
+
+Dock fix (user report: the icons looked inconsistent, "Сообщен…" was cut off on a real phone): every tab now uses the same duotone treatment (no extra fill / glow on the active one, only colour + the pill), a new duotone `more` icon (rounded pill with three dots) replaces the thin hamburger, and the Messages tab uses a short label (`shell.tabbar.messages`: Чаты / Чат / Chats). Checked at 360px width. Full regression before this fix: 63 passed, only the known `test_loading_upgrade` fails.

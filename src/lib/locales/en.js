@@ -57,7 +57,7 @@ export default {
       friends: "Friends",
       messages: "Messages",
     },
-    tabbar: { label: "Main navigation", more: "More", marketers: "Marketing" },
+    tabbar: { messages: "Chats", label: "Main navigation", more: "More", marketers: "Marketing" },
     workspaceLabel: "Account",
     workspace: {
       download: "Download the app",
