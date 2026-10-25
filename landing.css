@@ -68,10 +68,11 @@
 
 .lp-hd {
   position: sticky; top: 0; z-index: 60;
-  background: rgba(14,14,16,.9);
-  -webkit-backdrop-filter: blur(10px); backdrop-filter: blur(10px);
+  /* fully opaque, no blur: with a see-through blurred bar the hero glow and the text sliding underneath showed up inside the header as moving smudges */
+  background: var(--g-950, #0e0e10);
   border-bottom: 1px solid var(--hair);
   box-shadow: 0 1px 0 rgba(0,0,0,.6);
+  transform: translateZ(0); /* its own layer: the header is painted once and only moved by the compositor while the page scrolls */
 }
 .lp-hd-in { display: flex; align-items: center; gap: 14px; max-width: 1200px; margin: 0 auto; padding: 12px 24px; }
 .lp-logo { display: block; line-height: 0; flex: none; }
