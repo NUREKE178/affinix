@@ -100,12 +100,12 @@ function SideFoot({ last, side, left, right, picked, t }) {
   const pct = total ? Math.round((votes / total) * 100) : 0;
   return html`
     <span class="ar-spec-foot" data-picked=${picked}>
+      ${picked && html`<span class="ar-spec-chip"><${Icon} name="check" size=${12} strokeWidth=${3.2} />${t("arena.console.pick")}</span>`}
       ${tl && total > 1
         ? html`
           <span class="ar-spec-split"><b class="sk-num ar-spec-pct">${pct}<span class="sk-unit">%</span></b><span class="ar-spec-bar"><i style=${{ width: `${pct}%` }}></i></span></span>
           <span class="ar-spec-sub">${t("arena.console.votes")}: ${votes}</span>`
         : html`<span class="ar-spec-sub">${tl ? t("crowd.mission.firstOnes") : ""}</span>`}
-      ${picked && html`<span class="ar-spec-chip">${t("arena.console.pick")}</span>`}
     </span>`;
 }
 

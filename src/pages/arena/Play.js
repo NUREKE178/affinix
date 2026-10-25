@@ -284,6 +284,7 @@ function SpecFoot({ info, c, picked, duel, t }) {
   const s = info.sides[c];
   return html`
     <span class="ar-spec-foot" data-picked=${picked}>
+      ${picked && html`<span class="ar-spec-chip"><${Icon} name="check" size=${12} strokeWidth=${3.2} />${t("arena.console.pick")}</span>`}
       ${info.known
         ? html`
           <span class="ar-spec-split"><b class="sk-num ar-spec-pct">${s.pct}<span class="sk-unit">%</span></b><span class="ar-spec-bar"><i style=${{ width: `${s.pct}%` }}></i></span></span>
@@ -293,7 +294,6 @@ function SpecFoot({ info, c, picked, duel, t }) {
         <span class="ar-spec-fact" data-win=${s.winner}>
           <${Glyph} name=${s.winner ? "check" : "target"} tone=${s.winner ? "emerald" : "off"} size=${16} />${t("arena.console.contrast", { v: s.contrast })}
         </span>`}
-      ${picked && html`<span class="ar-spec-chip">${t("arena.console.pick")}</span>`}
     </span>
   `;
 }
