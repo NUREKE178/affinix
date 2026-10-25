@@ -59,9 +59,10 @@ function useChoreography() {
     const timers = [setTimeout(measure, 800), setTimeout(measure, 2500)];
     window.addEventListener("resize", measure);
     window.addEventListener("load", measure);
-    let activeNow = -1;
+    let activeNow = -1, barNow = "";
     const off = engine.subscribe(({ y, progress }) => {
-      if (bar.current) bar.current.style.transform = `scaleX(${progress.toFixed(4)})`;
+      const w = progress.toFixed(4);
+      if (w !== barNow && bar.current) { barNow = w; bar.current.style.transform = `scaleX(${w})`; } // only when the bar actually moves
       const mid = y + vh * 0.4;
       let idx = 0;
       for (let i = 0; i < tops.length; i++) if (tops[i] <= mid) idx = i;

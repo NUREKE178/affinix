@@ -22,6 +22,14 @@ function scrollableAncestor(el, dy) {
   }
   return null;
 }
+let inner = { el: null, dir: 0, at: 0, hit: null };
+/** scrollableAncestor() for a stream of wheel events: the same element and direction within 150 ms give the same answer, without walking the tree again. */
+function scrollableAncestorCached(el, dy, now) {
+  const dir = Math.sign(dy);
+  if (inner.el === el && inner.dir === dir && now - inner.at < 150) return inner.hit;
+  inner = { el, dir, at: now, hit: scrollableAncestor(el, dy) };
+  return inner.hit;
+}
 const typing = (el) => !!el?.closest?.("input,textarea,select,button,a,summary,[contenteditable],[role=button],[role=tab],[role=switch]");
 
 /** Scrolls to a y position, an element or an element id; glides when the engine is on, otherwise uses the browser's own smooth scroll. */
@@ -38,8 +46,13 @@ export function startLandingScroll() {
   const smooth = !prefersReducedMotion() && !matchMedia("(pointer: coarse)").matches;
   const subs = new Set();
   let target = window.scrollY, pos = window.scrollY, vel = 0, raf = 0, last = 0, running = false, tw = null;
-  const maxY = () => Math.max(0, document.documentElement.scrollHeight - window.innerHeight);
-  const emit = () => { const m = maxY(); const s = { y: window.scrollY, velocity: vel, progress: m ? window.scrollY / m : 0 }; subs.forEach((fn) => fn(s)); };
+  // The page height is read when it can have changed (load, resize, content growing), not on every frame: reading scrollHeight right after
+  // scrollTo() forces the browser to lay the page out again 60 times a second.
+  let max = 0;
+  const measureMax = () => { max = Math.max(0, document.documentElement.scrollHeight - window.innerHeight); };
+  const maxY = () => max;
+  const out = { y: 0, velocity: 0, progress: 0 }; // one object for every frame (subscribers only read it)
+  const emit = () => { const y = window.scrollY; out.y = y; out.velocity = vel; out.progress = max ? y / max : 0; subs.forEach((fn) => fn(out)); };
 
   function frame(now) {
     const dt = Math.min(0.05, Math.max(0.001, (now - last) / 1000)); last = now;
@@ -58,11 +71,12 @@ export function startLandingScroll() {
     if (running) raf = requestAnimationFrame(frame);
   }
   const kick = () => { if (!running) { running = true; last = performance.now(); raf = requestAnimationFrame(frame); } };
-  const grab = () => { if (!running) { pos = window.scrollY; target = pos; } };
+  const grab = () => { if (!running) { measureMax(); pos = window.scrollY; target = pos; } }; // at rest one layout read is free: take a fresh page height
 
   const engine = {
     tween(y, duration) {
       if (!smooth) { window.scrollTo({ top: Math.min(maxY(), Math.max(0, y)), behavior: prefersReducedMotion() ? "auto" : "smooth" }); return; }
+      if (!running) measureMax();
       pos = window.scrollY;
       tw = { from: pos, to: Math.min(maxY(), Math.max(0, y)), t0: performance.now(), dur: duration };
       kick();
@@ -71,7 +85,7 @@ export function startLandingScroll() {
 
   function onWheel(e) {
     if (e.ctrlKey || e.defaultPrevented || (e.deltaX !== 0 && Math.abs(e.deltaX) > Math.abs(e.deltaY))) return;
-    if (scrollableAncestor(e.target, e.deltaY)) return;
+    if (scrollableAncestorCached(e.target, e.deltaY, e.timeStamp)) return;
     e.preventDefault();
     tw = null; grab();
     const unit = e.deltaMode === 1 ? 32 : e.deltaMode === 2 ? window.innerHeight : 1;
@@ -87,19 +101,24 @@ export function startLandingScroll() {
     else if (e.key === "End") { e.preventDefault(); engine.tween(maxY(), 1.2); }
   }
   const onScroll = () => { if (!running) { pos = target = window.scrollY; emit(); } };
-  const onResize = () => emit();
+  const onResize = () => { measureMax(); emit(); };
 
   if (smooth) { window.addEventListener("wheel", onWheel, { passive: false }); window.addEventListener("keydown", onKey); }
   window.addEventListener("scroll", onScroll, { passive: true });
   window.addEventListener("resize", onResize);
+  window.addEventListener("load", onResize);
+  const grew = typeof ResizeObserver === "function" ? new ResizeObserver(() => { measureMax(); if (!running) emit(); }) : null;
+  grew?.observe(document.body);
+  measureMax();
   current = engine;
   emit();
   return {
-    subscribe(fn) { subs.add(fn); fn({ y: window.scrollY, velocity: 0, progress: maxY() ? window.scrollY / maxY() : 0 }); return () => subs.delete(fn); },
+    subscribe(fn) { subs.add(fn); fn({ y: window.scrollY, velocity: 0, progress: max ? window.scrollY / max : 0 }); return () => subs.delete(fn); },
     stop() {
       if (current === engine) current = null;
       window.removeEventListener("wheel", onWheel); window.removeEventListener("keydown", onKey);
-      window.removeEventListener("scroll", onScroll); window.removeEventListener("resize", onResize);
+      window.removeEventListener("scroll", onScroll); window.removeEventListener("resize", onResize); window.removeEventListener("load", onResize);
+      grew?.disconnect();
       cancelAnimationFrame(raf);
     },
   };

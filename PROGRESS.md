@@ -3955,3 +3955,10 @@ Cause of "still laggy": the landing needed 130 requests (109 JS modules, the who
 - `lib/idlePreload.js`: outside the landing, warms shell / Arena / feed / profile ... one module per idle slice; on the landing nothing is fetched on its own (no jank), only when a pointer / finger nears a sign-in / app / download link.
   Skipped on Save-Data and 2g.
 - Not done (honest): the three locale dictionaries (315 KB raw) are still all in the first download.
+
+## Smooth scroll engine: lighter, same behaviour (no migration)
+
+`lib/smoothScroll.js`: the page height is cached (re-read on load / resize / body size change via ResizeObserver, and when a glide starts from rest) instead of reading `scrollHeight` every frame right after `scrollTo()`;
+one event object is reused for every frame; the "is there a scrollable panel under the cursor" walk (`getComputedStyle` up the tree) is remembered for 150 ms for the same element and direction, so a burst of wheel events does it once.
+`Landing.js`: the progress bar is written only when its value changes. Feel, constants (TAU 0.15, expo tween 1.1 s), keyboard and touch behaviour are unchanged.
+Measured (CDP, 3 s of wheel): task 0.290 -> 0.259 s, script 0.035 -> 0.027 s; phone native scroll: task 0.146 -> 0.137 s. Small, because the earlier per-frame style fix already took most of the cost. Tests: test_landing_scroll 17/17, test_download 29/29, test_motion_landing 8/8, test_landing_instrument 24/24.
