@@ -4,7 +4,6 @@
    ========================================================================== */
 
 .cr-kicker { display: inline-flex; align-items: center; gap: 8px; }
-.cr-kicker .sk-led { --led: var(--signal); --led-glow: rgba(255,106,31,.6); }
 
 /* ---- the purpose block ------------------------------------------------------ */
 .cr-hero { display: flex; flex-direction: column; gap: 22px; }

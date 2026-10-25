@@ -941,25 +941,27 @@ select.sk-input option:checked {
   background: rgba(0,0,0,.32); border: 1px solid var(--hair); box-shadow: inset 0 1px 2px rgba(0,0,0,.45);
 }
 .sk-badge:not([data-icon]) { padding-left: 10px; }
-.sk-badge[data-tone="emerald"] { --led: #34d399; --led-glow: rgba(52,211,153,.65); }
-.sk-badge[data-tone="amber"] { --led: #fbbf24; --led-glow: rgba(251,191,36,.6); }
-.sk-badge[data-tone="rose"] { --led: #fb7185; --led-glow: rgba(251,113,133,.6); }
-.sk-badge[data-tone="teal"] { --led: #2dd4bf; --led-glow: rgba(45,212,191,.55); }
-.sk-badge[data-tone="steel"] { --led: #86a5d9; --led-glow: rgba(134,165,217,.55); }
-.sk-badge[data-tone="signal"] { --led: #ff6a1f; --led-glow: rgba(255,106,31,.65); }
+:is(.sk-badge, .sk-glyph)[data-tone="emerald"] { --led: #34d399; --led-glow: rgba(52,211,153,.65); }
+:is(.sk-badge, .sk-glyph)[data-tone="amber"] { --led: #fbbf24; --led-glow: rgba(251,191,36,.6); }
+:is(.sk-badge, .sk-glyph)[data-tone="rose"] { --led: #fb7185; --led-glow: rgba(251,113,133,.6); }
+:is(.sk-badge, .sk-glyph)[data-tone="teal"] { --led: #2dd4bf; --led-glow: rgba(45,212,191,.55); }
+:is(.sk-badge, .sk-glyph)[data-tone="steel"] { --led: #86a5d9; --led-glow: rgba(134,165,217,.55); }
+:is(.sk-badge, .sk-glyph)[data-tone="signal"] { --led: #ff6a1f; --led-glow: rgba(255,106,31,.65); }
 .sk-badge[data-icon] {
   color: color-mix(in srgb, var(--led) 55%, #fff);
   background: color-mix(in srgb, var(--led) 11%, rgba(0,0,0,.34));
   border-color: color-mix(in srgb, var(--led) 38%, transparent);
   box-shadow: inset 0 1px 0 rgba(255,255,255,.06), 0 0 14px -6px var(--led-glow);
 }
-.sk-badge-ic {
-  display: inline-grid; place-items: center; width: 18px; height: 18px; flex: none; border-radius: 50%; color: #111214;
+.sk-glyph { --led: #8b8e98; --led-glow: transparent; }
+.sk-badge-ic, .sk-glyph {
+  display: inline-grid; place-items: center; width: var(--gs, 18px); height: var(--gs, 18px); flex: none; border-radius: 50%; color: #111214;
   background: var(--led); box-shadow: inset 0 1px 0 rgba(255,255,255,.35), 0 0 8px -1px var(--led-glow);
 }
-.sk-badge-ic .ic { display: block; }
-.sk-badge-ic .ic .b { fill: rgba(0,0,0,.18); }
-.sk-badge-ic .ic .f { fill: currentColor; }
+.sk-badge-ic .ic, .sk-glyph .ic { display: block; }
+.sk-badge-ic .ic .b, .sk-glyph .ic .b { fill: rgba(0,0,0,.18); }
+.sk-badge-ic .ic .f, .sk-glyph .ic .f { fill: currentColor; }
+.sk-glyph[data-tone="off"] { --led: #565963; --led-glow: transparent; color: #cfd0d6; }
 .sk-led {
   width: 6px; height: 6px; flex-shrink: 0; border-radius: 50%;
   background: var(--led, #565963); box-shadow: 0 0 6px 0 var(--led-glow, transparent);

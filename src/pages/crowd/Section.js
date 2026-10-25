@@ -1,7 +1,7 @@
 // The top of the Research page: what Research is FOR. A person puts their own options in front of the Arena crowd
 // and reads a verdict; this section explains that and lists the person's tests.
 import { html } from "../../lib/preact.js";
-import { Card, Button, Skeleton, ProgressBar, EmptyState } from "../../components/ui.js";
+import { Card, Button, Skeleton, ProgressBar, EmptyState, Glyph } from "../../components/ui.js";
 import { Icon } from "../../components/icons.js";
 import { useT } from "../../lib/i18n.js";
 import { navigate } from "../../router.js";
@@ -18,7 +18,7 @@ function Hero({ t, canCreate, xp }) {
   return html`
     <${Card} className="cr-hero p-6" data-testid="crowd-hero">
       <div class="cr-hero-top">
-        <span class="sk-caption cr-kicker"><i class="sk-led" aria-hidden="true"></i>${t("crowd.heroKicker")}</span>
+        <span class="sk-caption cr-kicker"><${Glyph} name="friends" size=${18} />${t("crowd.heroKicker")}</span>
         <h2 class="cr-hero-title">${t("crowd.heroTitle")}</h2>
         <p class="cr-hero-body">${t("crowd.heroBody")}</p>
         <div class="cr-hero-cta">
@@ -94,7 +94,7 @@ export function CrowdSection() {
     <section class="cr-mine mb-6" data-testid="crowd-mine">
       <div class="cr-mine-head">
         <div>
-          <span class="sk-caption cr-kicker"><i class="sk-led" aria-hidden="true"></i>${t("crowd.heroKicker")}</span>
+          <span class="sk-caption cr-kicker"><${Glyph} name="friends" size=${18} />${t("crowd.heroKicker")}</span>
           <h2 class="cr-mine-title">${t("crowd.mineTitle")}</h2>
           <p class="ar-muted">${t("crowd.heroTitle")} · ${open}</p>
         </div>

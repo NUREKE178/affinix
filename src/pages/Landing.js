@@ -134,8 +134,8 @@ function DashboardMock({ t }) {
             <div class="lp-m-main">
               <div class="lp-m-head">
                 <div class="lp-m-title">${t("landing.mock.title")}</div>
-                <span class="lp-tag lp-live"><i class="lp-dot"></i>${t("landing.mock.live")}</span>
-                <span class="lp-tag lp-demo">${t("landing.mock.demo")}</span>
+                <span class="lp-tag lp-live"><span class="lp-gl lp-gl-pulse" aria-hidden="true"><${Icon} name="bolt" size=${11} strokeWidth=${3} /></span>${t("landing.mock.live")}</span>
+                <span class="lp-tag lp-demo"><span class="lp-gl" aria-hidden="true"><${Icon} name="sparkle" size=${11} strokeWidth=${3} /></span>${t("landing.mock.demo")}</span>
                 <span class="lp-m-resp">${t("landing.mock.responses")}</span>
               </div>
 
@@ -146,7 +146,7 @@ function DashboardMock({ t }) {
                       <img src=${ASSETS + x.img} alt=${variantName(x)} width="220" height="220" />
                       <span class="lp-vc-l">${x.label}</span>
                       <span class="lp-vc-ck"><${Icon} name="check" size=${14} strokeWidth=${2.6} /></span>
-                      ${i === LEAD && html`<span class="lp-vc-lead">${t("landing.mock.leading")}</span>`}
+                      ${i === LEAD && html`<span class="lp-vc-lead"><span class="lp-gl" aria-hidden="true"><${Icon} name="crown" size=${10} strokeWidth=${3} /></span>${t("landing.mock.leading")}</span>`}
                     </span>
                     <span class="lp-vc-meta"><span class="lp-vc-name">${variantName(x)}</span><span class="lp-vc-pct">${x.share}%</span></span>
                     <span class="lp-vc-bar"><i style=${`width:${barWidth(x.share)}%`}></i></span>
@@ -225,7 +225,7 @@ function Duel({ t }) {
       <div class="lp-wrap">
         <${Reveal}>
           <div class="lp-sec-h">
-            <span class="lp-eyebrow">${t("landing.duel.eyebrow")}</span>
+            <span class="lp-eyebrow"><span class="lp-eb-ic" aria-hidden="true"><${Icon} name="arena" size=${13} strokeWidth=${3} /></span>${t("landing.duel.eyebrow")}</span>
             <h2 class="lp-h2">${t("landing.duel.title")}</h2>
             <p class="lp-sub">${t("landing.duel.subtitle")}</p>
           </div>
@@ -267,7 +267,7 @@ function Workflow({ t, locale }) {
       <div class="lp-wrap">
         <${Reveal}>
           <div class="lp-sec-h">
-            <span class="lp-eyebrow">${t("landing.workflow.eyebrow")}</span>
+            <span class="lp-eyebrow"><span class="lp-eb-ic" aria-hidden="true"><${Icon} name="target" size=${13} strokeWidth=${3} /></span>${t("landing.workflow.eyebrow")}</span>
             <h2 class="lp-h2">${t("landing.workflow.title")}</h2>
             <p class="lp-sub">${t("landing.workflow.subtitle")}</p>
           </div>
@@ -361,7 +361,7 @@ function Trust({ t }) {
       <div class="lp-wrap">
         <${Reveal}>
           <div class="lp-sec-h">
-            <span class="lp-eyebrow">${t("landing.trust.eyebrow")}</span>
+            <span class="lp-eyebrow"><span class="lp-eb-ic" aria-hidden="true"><${Icon} name="shield" size=${13} strokeWidth=${3} /></span>${t("landing.trust.eyebrow")}</span>
             <h2 class="lp-h2">${t("landing.trust.title")}</h2>
             <p class="lp-sub">${t("landing.trust.subtitle")}</p>
           </div>
@@ -387,7 +387,7 @@ function Mobile({ t, locale }) {
       <div class="lp-wrap">
         <${Reveal}>
           <div class="lp-sec-h">
-            <span class="lp-eyebrow">${t("landing.mobile.eyebrow")}</span>
+            <span class="lp-eyebrow"><span class="lp-eb-ic" aria-hidden="true"><${Icon} name="phone" size=${13} strokeWidth=${3} /></span>${t("landing.mobile.eyebrow")}</span>
             <h2 class="lp-h2">${t("landing.mobile.title")}</h2>
             <p class="lp-sub">${t("landing.mobile.subtitle")}</p>
           </div>

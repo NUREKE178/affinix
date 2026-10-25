@@ -141,8 +141,14 @@
 .lp-tag { display: inline-flex; align-items: center; gap: 6px; padding: 3px 10px 3px 8px; border-radius: 999px; font-size: 11.5px; font-weight: 600; color: var(--g-200); background: rgba(0,0,0,.32); border: 1px solid var(--hair); box-shadow: inset 0 1px 2px rgba(0,0,0,.45); white-space: nowrap; }
 .lp-tag.lp-live { --led: #34d399; --led-glow: rgba(52,211,153,.6); }
 .lp-tag.lp-demo { --led: #fbbf24; --led-glow: rgba(251,191,36,.55); }
-.lp-tag.lp-demo::before { content: ""; width: 6px; height: 6px; border-radius: 50%; background: var(--led); box-shadow: 0 0 6px 0 var(--led-glow); }
-.lp-dot { display: block; width: 6px; height: 6px; border-radius: 50%; background: var(--led); box-shadow: 0 0 6px 0 var(--led-glow); animation: lp-ping 2.2s infinite; }
+.lp-tag:has(.lp-gl) { padding-left: 3px; }
+/* the glyph chip of the small tags: a round disc in the tag's colour with a dark icon (the dot it replaces said nothing) */
+.lp-gl { display: grid; place-items: center; width: 18px; height: 18px; flex: none; border-radius: 50%; color: #111214; background: var(--led, var(--signal));
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.35), 0 0 8px -1px var(--led-glow, transparent); }
+.lp-gl .ic { display: block; }
+.lp-gl .ic .b { fill: rgba(0,0,0,.18); }
+.lp-gl .ic .f { fill: currentColor; }
+.lp-gl-pulse { animation: lp-ping 2.2s infinite; }
 @keyframes lp-ping { 0%, 100% { opacity: 1; } 50% { opacity: .45; } }
 .lp-m-resp { margin-left: auto; color: var(--dim); font-size: 12px; }
 
@@ -161,7 +167,8 @@
 .lp-vc-ck { position: absolute; right: 8px; top: 8px; display: flex; align-items: center; justify-content: center; width: 24px; height: 24px; border-radius: 50%; color: var(--signal-ink); background: var(--lit); box-shadow: inset 0 1px 0 rgba(255,255,255,.5), 0 1px 0 #6d2606, 0 2px 6px rgba(0,0,0,.45); opacity: 0; transform: scale(.6); transition: opacity .2s, transform .25s cubic-bezier(.3,1.4,.5,1); }
 .lp-vc.lp-on .lp-vc-ck { opacity: 1; transform: scale(1); }
 .lp-vc-lead { position: absolute; left: 8px; bottom: 8px; display: inline-flex; align-items: center; gap: 6px; padding: 3px 9px 3px 7px; border-radius: 999px; font-size: 10.5px; font-weight: 700; color: #d1fae5; background: rgba(14,14,16,.86); border: 1px solid rgba(255,255,255,.1); }
-.lp-vc-lead::before { content: ""; width: 5px; height: 5px; border-radius: 50%; background: #34d399; box-shadow: 0 0 6px rgba(52,211,153,.7); }
+.lp-vc-lead { --led: #34d399; --led-glow: rgba(52,211,153,.7); padding-left: 3px; }
+.lp-vc-lead .lp-gl { width: 16px; height: 16px; }
 .lp-vc-meta { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; padding: 0 4px; }
 .lp-vc-name { font-size: 13px; font-weight: 600; }
 .lp-vc-pct { font-size: 13px; color: var(--mut); }
@@ -213,8 +220,12 @@
 
 .lp-sec { position: relative; padding: 112px 0; overflow-x: clip; }
 .lp-sec-h { position: relative; text-align: center; margin: 0 auto; }
-.lp-eyebrow { display: inline-flex; align-items: center; gap: 10px; font-size: 12px; font-weight: 600; letter-spacing: .14em; text-transform: uppercase; color: var(--dim); }
-.lp-eyebrow::before { content: ""; width: 6px; height: 6px; border-radius: 50%; background: var(--signal); box-shadow: 0 0 7px 0 rgba(255,106,31,.7); }
+.lp-eyebrow { display: inline-flex; align-items: center; gap: 10px; font-size: 12px; font-weight: 700; letter-spacing: .13em; text-transform: uppercase; color: #ffb48a; }
+.lp-eb-ic { display: grid; place-items: center; width: 22px; height: 22px; flex: none; border-radius: 50%; color: #1a0c04;
+  background: linear-gradient(180deg, #ff8f55, var(--signal)); box-shadow: inset 0 1px 0 rgba(255,255,255,.45), 0 0 12px -1px rgba(255,106,31,.6); }
+.lp-eb-ic .ic { display: block; }
+.lp-eb-ic .ic .b { fill: rgba(26,12,4,.22); }
+.lp-eb-ic .ic .f { fill: currentColor; }
 .lp-h2 { margin: 16px auto 0; max-width: 18em; font-size: clamp(30px, 4.2vw, 52px); line-height: 1.07; letter-spacing: -.03em; font-weight: 800; text-wrap: balance; color: var(--ink); }
 .lp-sub { margin: 16px auto 0; max-width: 640px; font-size: clamp(15px, 1.4vw, 18px); line-height: 1.65; font-weight: 500; color: var(--mut); text-wrap: pretty; }
 .lp-ctx { display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: 12px 14px; padding: 64px 0 8px; }

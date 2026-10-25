@@ -75,7 +75,6 @@
 .ar-console-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; padding: 18px 20px 12px; }
 .ar-q { min-width: 0; }
 .ar-q-meta { display: inline-flex; align-items: center; flex-wrap: wrap; gap: 8px; font: 600 11px/1.2 Inter, system-ui, sans-serif; letter-spacing: .09em; text-transform: uppercase; color: var(--g-400); }
-.ar-q-meta .sk-led { --led: var(--signal); --led-glow: rgba(255,106,31,.6); }
 .ar-q-tag {
   padding: 3px 7px; border-radius: 6px; font-size: 10px; letter-spacing: .08em; color: var(--g-300);
   background: rgba(0,0,0,.32); border: 1px solid var(--hair); box-shadow: inset 0 1px 2px rgba(0,0,0,.4);
@@ -93,9 +92,9 @@
 .ar-clock { display: inline-flex; align-items: center; gap: 7px; font-size: 11.5px; line-height: 1; color: var(--g-500); white-space: nowrap; }
 .ar-clock b { font-size: 12.5px; font-weight: 500; color: var(--g-100); }
 .ar-clock[data-on="true"] { color: var(--g-300); }
-.ar-clock[data-on="true"] .sk-led { --led: var(--signal); --led-glow: rgba(255,106,31,.7); animation: arClockLed 1.6s ease-in-out infinite; }
+.ar-clock[data-on="true"] .sk-glyph { animation: arClockLed 1.6s ease-in-out infinite; }
 @keyframes arClockLed { 0%, 100% { opacity: 1; } 50% { opacity: .45; } }
-@media (prefers-reduced-motion: reduce) { .ar-clock[data-on="true"] .sk-led { animation: none; } }
+@media (prefers-reduced-motion: reduce) { .ar-clock[data-on="true"] .sk-glyph { animation: none; } }
 
 .ar-ladder { display: flex; align-items: center; gap: 6px; }
 .ar-led {
@@ -157,9 +156,7 @@
 .ar-spec[data-state="picked"] .ar-spec-bar > i { background: linear-gradient(180deg, #ff8f55, #ff6a1f); box-shadow: inset 0 1px 0 rgba(255,255,255,.4); }
 .ar-spec-sub { font-size: 12px; color: var(--g-400); line-height: 1.35; }
 .ar-spec-fact { display: inline-flex; align-items: center; gap: 7px; font: 500 12px/1.3 var(--font-mono); color: var(--g-300); }
-.ar-spec-fact .sk-led { --led: var(--led-off); }
 .ar-spec-fact[data-win="true"] { color: #86e0b9; }
-.ar-spec-fact[data-win="true"] .sk-led { --led: #34d399; --led-glow: rgba(52,211,153,.65); }
 .ar-spec-chip {
   position: absolute; top: 20px; right: 20px; padding: 3px 9px; border-radius: 999px; font-size: 11px; font-weight: 600; line-height: 16px;
   color: var(--signal-ink); background: var(--lit); box-shadow: inset 0 1px 0 rgba(255,255,255,.45), 0 1px 0 rgba(0,0,0,.4);

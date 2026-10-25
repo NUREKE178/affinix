@@ -1,6 +1,6 @@
 // The Play tab: lobby (daily challenge + free play), the duel console, the round summary.
 import { html, useState, useEffect, useMemo, useRef } from "../../lib/preact.js";
-import { Button, Badge, StatTile, ProgressBar, Switch, Skeleton } from "../../components/ui.js";
+import { Button, Badge, Glyph, StatTile, ProgressBar, Switch, Skeleton } from "../../components/ui.js";
 import { Icon } from "../../components/icons.js";
 import { useT, getLocale } from "../../lib/i18n.js";
 import { getStimulus, renderSvg } from "../../lib/arena/stimuli.js";
@@ -291,7 +291,7 @@ function SpecFoot({ info, c, picked, duel, t }) {
         : html`<span class="ar-spec-sub">${s.rate !== null ? t("arena.console.stimWin", { pct: s.rate }) : ""}</span>`}
       ${duel.objective && s.contrast !== null && html`
         <span class="ar-spec-fact" data-win=${s.winner}>
-          <i class="sk-led" aria-hidden="true"></i>${t("arena.console.contrast", { v: s.contrast })}
+          <${Glyph} name=${s.winner ? "check" : "target"} tone=${s.winner ? "emerald" : "off"} size=${16} />${t("arena.console.contrast", { v: s.contrast })}
         </span>`}
       ${picked && html`<span class="ar-spec-chip">${t("arena.console.pick")}</span>`}
     </span>
@@ -341,7 +341,7 @@ function ClockChip({ on }) {
   const seconds = useArenaClock();
   return html`
     <span class="ar-clock" data-on=${on} title=${t(on ? "arena.console.clockOnTitle" : "arena.console.clockOffTitle")} data-testid="arena-clock">
-      <i class="sk-led" aria-hidden="true"></i>
+      <${Glyph} name="clock" tone=${on ? "signal" : "off"} size=${18} />
       ${on ? html`<b class="sk-num" data-testid="arena-clock-value">${clock(seconds)}</b>` : null}
       <span>${t(on ? "arena.console.clockOn" : "arena.console.clockOff")}</span>
     </span>
@@ -373,7 +373,7 @@ function Console({ arena }) {
       <header class="ar-console-head">
         <div class="ar-q">
           <span class="ar-q-meta">
-            <i class="sk-led" aria-hidden="true"></i>${t(`arena.family.${duel.family}`)} · ${t(`builder.dimensions.${duel.dim}.label`)}
+            <${Glyph} name="target" size=${18} />${t(`arena.family.${duel.family}`)} · ${t(`builder.dimensions.${duel.dim}.label`)}
             ${duel.objective && html`<span class="ar-q-tag" data-tag="eye">${t("arena.console.eyeTag")}</span>`}
             ${duel.pool > 0 && duel.pool === dropPoolForDay(round.day) && html`<span class="ar-q-tag" data-tag="new" data-testid="arena-new-tag">${t("arena.console.newTag")}</span>`}
             ${round.mode === "daily" && html`<span class="ar-q-tag" data-testid="arena-set-tag">${round.set ? t("arena.marathon.setTag", { n: round.set }) : t("arena.console.dailyTag")}</span>`}

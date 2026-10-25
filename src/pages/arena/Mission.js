@@ -2,7 +2,7 @@
 // missions, the console is the duel screen with the author's images or texts instead of generated specimens, and
 // the summary says what the player just did for the author.
 import { html, useState, useEffect } from "../../lib/preact.js";
-import { Button, Badge, StatTile, ProgressBar, Skeleton, toast } from "../../components/ui.js";
+import { Button, Badge, Glyph, StatTile, ProgressBar, Skeleton, toast } from "../../components/ui.js";
 import { Icon } from "../../components/icons.js";
 import { Avatar } from "../../components/avatar.js";
 import { PersonLink } from "../../components/profileViewer.js";
@@ -131,7 +131,7 @@ function ClockChip() {
   const seconds = useArenaClock();
   return html`
     <span class="ar-clock" data-on="true" title=${t("arena.console.clockOnTitle")} data-testid="arena-clock">
-      <i class="sk-led" aria-hidden="true"></i><b class="sk-num" data-testid="arena-clock-value">${clock(seconds)}</b><span>${t("arena.console.clockOn")}</span>
+      <${Glyph} name="clock" tone="signal" size=${18} /><b class="sk-num" data-testid="arena-clock-value">${clock(seconds)}</b><span>${t("arena.console.clockOn")}</span>
     </span>`;
 }
 
@@ -178,7 +178,7 @@ export function MissionConsole({ arena }) {
       <header class="ar-console-head">
         <div class="ar-q">
           <span class="ar-q-meta">
-            <i class="sk-led" aria-hidden="true"></i>${test.title}
+            <${Glyph} name="friends" size=${18} />${test.title}
             <span class="ar-q-tag" data-testid="mission-tag">${t("crowd.mission.tag")}</span>
           </span>
           <h3 class="ar-q-text" data-testid="arena-question">${t(`crowd.q.${test.dim}`)}</h3>

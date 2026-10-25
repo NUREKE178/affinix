@@ -56,6 +56,12 @@ export function Badge({ tone = "neutral", led = true, className = "", children }
   return html`<span class=${`sk-badge ${className}`} data-tone=${tone} data-icon=${icon ? "true" : undefined}>${icon && html`<span class="sk-badge-ic" aria-hidden="true"><${Icon} name=${icon} size=${11} strokeWidth=${3} /></span>`}${children}</span>`;
 }
 
+/** The same glyph chip a Badge carries, on its own: replaces the plain dot in captions, kickers and status chips.
+ * `tone` colours it (see styles.css), `size` is the disc's diameter in px. */
+export function Glyph({ name, tone = "signal", size = 18, className = "" }) {
+  return html`<span class=${`sk-glyph ${className}`} data-tone=${tone} style=${`--gs:${size}px`} aria-hidden="true"><${Icon} name=${name} size=${Math.round(size * 0.62)} strokeWidth=${3} /></span>`;
+}
+
 export function DemoTag({ className = "" }) {
   return html`<${Badge} tone="amber" className=${className}>Demo data · illustrative<//>`;
 }
@@ -359,12 +365,8 @@ const TOAST_TONE_TEXT = {
   rose: "text-rose-300",
   amber: "text-amber-300",
 };
-const TOAST_TONE_DOT = {
-  neutral: "bg-graphite-400",
-  emerald: "bg-emerald-400",
-  rose: "bg-rose-400",
-  amber: "bg-amber-400",
-};
+const TOAST_GLYPH = { neutral: "bell", emerald: "check", rose: "close", amber: "sparkle" };
+const TOAST_TONE = { neutral: "off", emerald: "emerald", rose: "rose", amber: "amber" };
 
 /** Mounted once, at the app root -- toast() is a no-op until this is on
  * screen to receive setToastRoot(). Without it, every toast(...) call in
@@ -399,7 +401,7 @@ export function ToastHost() {
     <div class="sk-toast-stack fixed bottom-4 right-4 z-[100] flex flex-col gap-2 max-w-sm">
       ${items.map((t) => html`
         <div key=${t.id} class="sk-panel sk-toast-anim rounded-lg px-4 py-2.5 text-sm shadow-lg slide-up flex items-center gap-2.5" data-state=${t.leaving ? "exiting" : "entered"}>
-          <span class=${`h-1.5 w-1.5 rounded-full shrink-0 ${TOAST_TONE_DOT[t.tone] ?? TOAST_TONE_DOT.neutral}`} style="box-shadow:0 0 6px 1px currentColor"></span>
+          <${Glyph} name=${TOAST_GLYPH[t.tone] ?? TOAST_GLYPH.neutral} tone=${TOAST_TONE[t.tone] ?? "off"} size=${20} />
           <span class=${TOAST_TONE_TEXT[t.tone] ?? TOAST_TONE_TEXT.neutral}>${t.message}</span>
         </div>
       `)}
