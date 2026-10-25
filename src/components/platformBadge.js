@@ -8,7 +8,7 @@ export function PlatformBadge({ role, className = "" }) {
   if (role !== "owner" && role !== "admin") return null;
   return html`
     <span class=${`sk-platform-badge ${className}`} data-role=${role} data-testid="platform-badge" title=${t(`platform.${role}Hint`)}>
-      <${Glyph} name=${role === "owner" ? "crown" : "shield"} tone=${role === "owner" ? "signal" : "steel"} size=${18} />${t(`platform.${role}`)}
+      <${Glyph} name=${role === "owner" ? "crown" : "shield"} tone=${role === "owner" ? "signal" : "steel"} size=${22} />${t(`platform.${role}`)}
     </span>
   `;
 }

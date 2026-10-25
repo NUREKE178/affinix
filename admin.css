@@ -1,7 +1,7 @@
 /* Platform roles, the admin panel and the company team page. Built on the Instrument tokens (graphite + one signal colour). */
 
 /* ---- badge for the platform role: shown next to a name on profiles ------------------------------------ */
-.sk-platform-badge { display: inline-flex; align-items: center; gap: 7px; padding: 2px 11px 2px 3px; border-radius: 999px; font-size: 11.5px; font-weight: 700; letter-spacing: .02em; line-height: 18px; white-space: nowrap; vertical-align: middle; }
+.sk-platform-badge { display: inline-flex; align-items: center; gap: 8px; padding: 3px 14px 3px 3px; border-radius: 999px; font-size: 12px; font-weight: 700; letter-spacing: .02em; line-height: 22px; white-space: nowrap; vertical-align: middle; }
 /* the glyph chip is the same one a Badge carries (styles.css); the pill is tinted by the role */
 .sk-platform-badge[data-role="owner"] { color: #ffc9a8; background: linear-gradient(180deg, rgba(255,106,31,.2), rgba(255,106,31,.09)); box-shadow: inset 0 0 0 1px rgba(255,106,31,.5), 0 0 14px -4px rgba(255,106,31,.65); }
 .sk-platform-badge[data-role="admin"] { color: #c4d4f0; background: rgba(134,165,217,.12); box-shadow: inset 0 0 0 1px rgba(134,165,217,.42), 0 0 12px -5px rgba(134,165,217,.5); }

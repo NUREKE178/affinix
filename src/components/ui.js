@@ -59,7 +59,7 @@ export function Badge({ tone = "neutral", led = true, className = "", children }
 /** The same glyph chip a Badge carries, on its own: replaces the plain dot in captions, kickers and status chips.
  * `tone` colours it (see styles.css), `size` is the disc's diameter in px. */
 export function Glyph({ name, tone = "signal", size = 18, className = "" }) {
-  return html`<span class=${`sk-glyph ${className}`} data-tone=${tone} style=${`--gs:${size}px`} aria-hidden="true"><${Icon} name=${name} size=${Math.round(size * 0.62)} strokeWidth=${3} /></span>`;
+  return html`<span class=${`sk-glyph ${className}`} data-tone=${tone} style=${`--gs:${size}px`} aria-hidden="true"><${Icon} name=${name} size=${Math.round(size * 0.64)} strokeWidth=${size >= 22 ? 2.8 : 3} /></span>`;
 }
 
 export function DemoTag({ className = "" }) {
