@@ -1439,12 +1439,12 @@ select.sk-input option:checked {
 @media (hover: hover) and (pointer: fine) { :is(button, a, [role="tab"], summary, .sk-nav-item):hover .ic[data-ic="chevronDown"] { animation: icm-drop .45s cubic-bezier(.3,1.4,.5,1); } }
 :is(button, a, [role="tab"], summary, .sk-nav-item):focus-visible .ic[data-ic="chevronDown"],
 :is([data-active="true"], [aria-current="page"]) .ic[data-ic="chevronDown"] { animation: icm-drop .45s cubic-bezier(.3,1.4,.5,1); }
-@media (hover: hover) and (pointer: fine) { :is(button, a, [role="tab"], summary, .sk-nav-item):hover .ic[data-ic="chevronsRight"] { animation: icm-nudge-r .45s ease-out; } }
+@media (hover: hover) and (pointer: fine) { :is(button, a, [role="tab"], summary, .sk-nav-item):hover .ic[data-ic="chevronsRight"] { animation: icm-pop .45s cubic-bezier(.3,1.4,.5,1); } }
 :is(button, a, [role="tab"], summary, .sk-nav-item):focus-visible .ic[data-ic="chevronsRight"],
-:is([data-active="true"], [aria-current="page"]) .ic[data-ic="chevronsRight"] { animation: icm-nudge-r .45s ease-out; }
-@media (hover: hover) and (pointer: fine) { :is(button, a, [role="tab"], summary, .sk-nav-item):hover .ic[data-ic="chevronsLeft"] { animation: icm-nudge-l .45s ease-out; } }
+:is([data-active="true"], [aria-current="page"]) .ic[data-ic="chevronsRight"] { animation: icm-pop .45s cubic-bezier(.3,1.4,.5,1); }
+@media (hover: hover) and (pointer: fine) { :is(button, a, [role="tab"], summary, .sk-nav-item):hover .ic[data-ic="chevronsLeft"] { animation: icm-pop .45s cubic-bezier(.3,1.4,.5,1); } }
 :is(button, a, [role="tab"], summary, .sk-nav-item):focus-visible .ic[data-ic="chevronsLeft"],
-:is([data-active="true"], [aria-current="page"]) .ic[data-ic="chevronsLeft"] { animation: icm-nudge-l .45s ease-out; }
+:is([data-active="true"], [aria-current="page"]) .ic[data-ic="chevronsLeft"] { animation: icm-pop .45s cubic-bezier(.3,1.4,.5,1); }
 @media (hover: hover) and (pointer: fine) { :is(button, a, [role="tab"], summary, .sk-nav-item):hover .ic[data-ic="play"] { animation: icm-nudge-r .45s ease-out; } }
 :is(button, a, [role="tab"], summary, .sk-nav-item):focus-visible .ic[data-ic="play"],
 :is([data-active="true"], [aria-current="page"]) .ic[data-ic="play"] { animation: icm-nudge-r .45s ease-out; }
