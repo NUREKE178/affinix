@@ -1,14 +1,15 @@
 # Affinix
 
-AI-powered Consumer Decision Intelligence platform. Companies run controlled
-consumer experiments (packaging, ads, logos, pricing, UX), collect real
-behavioral responses from participants through a public link, get
-deterministic statistical analysis, and an AI-assisted research
-interpretation that is always labeled as a prediction, never a certainty.
+A taste arena for design, plus a hub for marketers. People play fast duels between two designs
+(packaging, posters, logos, cards, interfaces), earn XP and a daily streak, take the daily challenge
+and uncover their taste DNA. Marketers see which styles people really choose, with the sample size
+shown and a clear note that it is a signal about taste, not a sales forecast. Installable as an app
+(Windows, Android, Linux) and as a PWA. The earlier research tools (experiments, participants,
+reports) are still in the codebase and reachable from the marketers page.
 
 ```
-Stimulus → Controlled experiment → Participant response → Behavioral data
-  → Statistical analysis → AI interpretation → Decision recommendation
+Duel -> Choice -> XP, streak, taste DNA  (players)
+     -> Aggregated, sample-size-aware style ranking  (marketers)
 ```
 
 ## Status: production migration in progress

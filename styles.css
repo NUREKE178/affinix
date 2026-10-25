@@ -1306,3 +1306,240 @@ select.sk-input option:checked {
   .ar-stage > .ar-spec, .ar-stage > .ar-vs, .ar-stage > .ar-spec[data-state="picked"]:nth-child(n), .ar-spec-foot, .ar-spec-chip { animation: none !important; }
   .ar-spec[data-state="other"] { transform: none; }
 }
+
+/* ---- Icon motion: one small gesture per glyph --------------------------------------------------------------------------------------------
+   Plays once when the button / link / tab holding the icon is hovered or keyboard-focused, and once when it becomes the active one (nav, dock, tabs).
+   Components only render <Icon>; the gestures live here, keyed by data-ic. Reduced motion turns every one of them off. */
+.ic { overflow: visible; transform-origin: 50% 50%; }
+.ic .ia-l, .ic .ia-r { transform-box: fill-box; transform-origin: 50% 100%; }
+.ic .ia-l { transform: rotate(-9deg); }
+.ic .ia-r { transform: rotate(9deg); }
+.ic .ia-b { transform-box: fill-box; transform-origin: 50% 50%; }
+.ic .f, .ic[data-ic="overview"] rect { transform-box: fill-box; transform-origin: 50% 50%; }
+@media (hover: hover) and (pointer: fine) { :is(button, a, [role="tab"], summary, .sk-nav-item):hover .ic[data-ic="settings"] { animation: icm-turn .7s cubic-bezier(.3,1.4,.5,1); } }
+:is(button, a, [role="tab"], summary, .sk-nav-item):focus-visible .ic[data-ic="settings"],
+:is([data-active="true"], [aria-current="page"]) .ic[data-ic="settings"] { animation: icm-turn .7s cubic-bezier(.3,1.4,.5,1); }
+@media (hover: hover) and (pointer: fine) { :is(button, a, [role="tab"], summary, .sk-nav-item):hover .ic[data-ic="sliders"] { animation: icm-tilt .6s cubic-bezier(.3,1.4,.5,1); } }
+:is(button, a, [role="tab"], summary, .sk-nav-item):focus-visible .ic[data-ic="sliders"],
+:is([data-active="true"], [aria-current="page"]) .ic[data-ic="sliders"] { animation: icm-tilt .6s cubic-bezier(.3,1.4,.5,1); }
+@media (hover: hover) and (pointer: fine) { :is(button, a, [role="tab"], summary, .sk-nav-item):hover .ic[data-ic="globe"] { animation: icm-spin .8s cubic-bezier(.3,1,.5,1); } }
+:is(button, a, [role="tab"], summary, .sk-nav-item):focus-visible .ic[data-ic="globe"],
+:is([data-active="true"], [aria-current="page"]) .ic[data-ic="globe"] { animation: icm-spin .8s cubic-bezier(.3,1,.5,1); }
+@media (hover: hover) and (pointer: fine) { :is(button, a, [role="tab"], summary, .sk-nav-item):hover .ic[data-ic="bell"] { animation: icm-bell .7s ease-out; transform-origin: 50% 8%; } }
+:is(button, a, [role="tab"], summary, .sk-nav-item):focus-visible .ic[data-ic="bell"],
+:is([data-active="true"], [aria-current="page"]) .ic[data-ic="bell"] { animation: icm-bell .7s ease-out; transform-origin: 50% 8%; }
+@media (hover: hover) and (pointer: fine) { :is(button, a, [role="tab"], summary, .sk-nav-item):hover .ic[data-ic="bellOff"] { animation: icm-bell .7s ease-out; transform-origin: 50% 8%; } }
+:is(button, a, [role="tab"], summary, .sk-nav-item):focus-visible .ic[data-ic="bellOff"],
+:is([data-active="true"], [aria-current="page"]) .ic[data-ic="bellOff"] { animation: icm-bell .7s ease-out; transform-origin: 50% 8%; }
+@media (hover: hover) and (pointer: fine) { :is(button, a, [role="tab"], summary, .sk-nav-item):hover .ic[data-ic="heart"] { animation: icm-beat .6s ease-out; } }
+:is(button, a, [role="tab"], summary, .sk-nav-item):focus-visible .ic[data-ic="heart"],
+:is([data-active="true"], [aria-current="page"]) .ic[data-ic="heart"] { animation: icm-beat .6s ease-out; }
+@media (hover: hover) and (pointer: fine) { :is(button, a, [role="tab"], summary, .sk-nav-item):hover .ic[data-ic="bookmark"] { animation: icm-drop .55s cubic-bezier(.3,1.4,.5,1); } }
+:is(button, a, [role="tab"], summary, .sk-nav-item):focus-visible .ic[data-ic="bookmark"],
+:is([data-active="true"], [aria-current="page"]) .ic[data-ic="bookmark"] { animation: icm-drop .55s cubic-bezier(.3,1.4,.5,1); }
+@media (hover: hover) and (pointer: fine) { :is(button, a, [role="tab"], summary, .sk-nav-item):hover .ic[data-ic="arrowDown"] { animation: icm-drop .55s cubic-bezier(.3,1.4,.5,1); } }
+:is(button, a, [role="tab"], summary, .sk-nav-item):focus-visible .ic[data-ic="arrowDown"],
+:is([data-active="true"], [aria-current="page"]) .ic[data-ic="arrowDown"] { animation: icm-drop .55s cubic-bezier(.3,1.4,.5,1); }
+@media (hover: hover) and (pointer: fine) { :is(button, a, [role="tab"], summary, .sk-nav-item):hover .ic[data-ic="arrowUp"] { animation: icm-rise .55s cubic-bezier(.3,1.4,.5,1); } }
+:is(button, a, [role="tab"], summary, .sk-nav-item):focus-visible .ic[data-ic="arrowUp"],
+:is([data-active="true"], [aria-current="page"]) .ic[data-ic="arrowUp"] { animation: icm-rise .55s cubic-bezier(.3,1.4,.5,1); }
+@media (hover: hover) and (pointer: fine) { :is(button, a, [role="tab"], summary, .sk-nav-item):hover .ic[data-ic="upload"] { animation: icm-rise .55s cubic-bezier(.3,1.4,.5,1); } }
+:is(button, a, [role="tab"], summary, .sk-nav-item):focus-visible .ic[data-ic="upload"],
+:is([data-active="true"], [aria-current="page"]) .ic[data-ic="upload"] { animation: icm-rise .55s cubic-bezier(.3,1.4,.5,1); }
+@media (hover: hover) and (pointer: fine) { :is(button, a, [role="tab"], summary, .sk-nav-item):hover .ic[data-ic="chat"] { animation: icm-wobble .6s ease-out; transform-origin: 20% 90%; } }
+:is(button, a, [role="tab"], summary, .sk-nav-item):focus-visible .ic[data-ic="chat"],
+:is([data-active="true"], [aria-current="page"]) .ic[data-ic="chat"] { animation: icm-wobble .6s ease-out; transform-origin: 20% 90%; }
+@media (hover: hover) and (pointer: fine) { :is(button, a, [role="tab"], summary, .sk-nav-item):hover .ic[data-ic="comment"] { animation: icm-wobble .6s ease-out; transform-origin: 20% 90%; } }
+:is(button, a, [role="tab"], summary, .sk-nav-item):focus-visible .ic[data-ic="comment"],
+:is([data-active="true"], [aria-current="page"]) .ic[data-ic="comment"] { animation: icm-wobble .6s ease-out; transform-origin: 20% 90%; }
+@media (hover: hover) and (pointer: fine) { :is(button, a, [role="tab"], summary, .sk-nav-item):hover .ic[data-ic="reply"] { animation: icm-nudge-l .45s ease-out; } }
+:is(button, a, [role="tab"], summary, .sk-nav-item):focus-visible .ic[data-ic="reply"],
+:is([data-active="true"], [aria-current="page"]) .ic[data-ic="reply"] { animation: icm-nudge-l .45s ease-out; }
+@media (hover: hover) and (pointer: fine) { :is(button, a, [role="tab"], summary, .sk-nav-item):hover .ic[data-ic="search"] { animation: icm-tilt .6s cubic-bezier(.3,1.4,.5,1); } }
+:is(button, a, [role="tab"], summary, .sk-nav-item):focus-visible .ic[data-ic="search"],
+:is([data-active="true"], [aria-current="page"]) .ic[data-ic="search"] { animation: icm-tilt .6s cubic-bezier(.3,1.4,.5,1); }
+@media (hover: hover) and (pointer: fine) { :is(button, a, [role="tab"], summary, .sk-nav-item):hover .ic[data-ic="user"] { animation: icm-hop .5s cubic-bezier(.3,1.4,.5,1); } }
+:is(button, a, [role="tab"], summary, .sk-nav-item):focus-visible .ic[data-ic="user"],
+:is([data-active="true"], [aria-current="page"]) .ic[data-ic="user"] { animation: icm-hop .5s cubic-bezier(.3,1.4,.5,1); }
+@media (hover: hover) and (pointer: fine) { :is(button, a, [role="tab"], summary, .sk-nav-item):hover .ic[data-ic="friends"] { animation: icm-hop .5s cubic-bezier(.3,1.4,.5,1); } }
+:is(button, a, [role="tab"], summary, .sk-nav-item):focus-visible .ic[data-ic="friends"],
+:is([data-active="true"], [aria-current="page"]) .ic[data-ic="friends"] { animation: icm-hop .5s cubic-bezier(.3,1.4,.5,1); }
+@media (hover: hover) and (pointer: fine) { :is(button, a, [role="tab"], summary, .sk-nav-item):hover .ic[data-ic="participants"] { animation: icm-hop .5s cubic-bezier(.3,1.4,.5,1); } }
+:is(button, a, [role="tab"], summary, .sk-nav-item):focus-visible .ic[data-ic="participants"],
+:is([data-active="true"], [aria-current="page"]) .ic[data-ic="participants"] { animation: icm-hop .5s cubic-bezier(.3,1.4,.5,1); }
+@media (hover: hover) and (pointer: fine) { :is(button, a, [role="tab"], summary, .sk-nav-item):hover .ic[data-ic="team"] { animation: icm-hop .5s cubic-bezier(.3,1.4,.5,1); } }
+:is(button, a, [role="tab"], summary, .sk-nav-item):focus-visible .ic[data-ic="team"],
+:is([data-active="true"], [aria-current="page"]) .ic[data-ic="team"] { animation: icm-hop .5s cubic-bezier(.3,1.4,.5,1); }
+@media (hover: hover) and (pointer: fine) { :is(button, a, [role="tab"], summary, .sk-nav-item):hover .ic[data-ic="userPlus"] { animation: icm-hop .5s cubic-bezier(.3,1.4,.5,1); } }
+:is(button, a, [role="tab"], summary, .sk-nav-item):focus-visible .ic[data-ic="userPlus"],
+:is([data-active="true"], [aria-current="page"]) .ic[data-ic="userPlus"] { animation: icm-hop .5s cubic-bezier(.3,1.4,.5,1); }
+@media (hover: hover) and (pointer: fine) { :is(button, a, [role="tab"], summary, .sk-nav-item):hover .ic[data-ic="userCheck"] { animation: icm-hop .5s cubic-bezier(.3,1.4,.5,1); } }
+:is(button, a, [role="tab"], summary, .sk-nav-item):focus-visible .ic[data-ic="userCheck"],
+:is([data-active="true"], [aria-current="page"]) .ic[data-ic="userCheck"] { animation: icm-hop .5s cubic-bezier(.3,1.4,.5,1); }
+@media (hover: hover) and (pointer: fine) { :is(button, a, [role="tab"], summary, .sk-nav-item):hover .ic[data-ic="sparkle"] { animation: icm-twinkle .7s cubic-bezier(.3,1.4,.5,1); } }
+:is(button, a, [role="tab"], summary, .sk-nav-item):focus-visible .ic[data-ic="sparkle"],
+:is([data-active="true"], [aria-current="page"]) .ic[data-ic="sparkle"] { animation: icm-twinkle .7s cubic-bezier(.3,1.4,.5,1); }
+@media (hover: hover) and (pointer: fine) { :is(button, a, [role="tab"], summary, .sk-nav-item):hover .ic[data-ic="insights"] { animation: icm-twinkle .7s cubic-bezier(.3,1.4,.5,1); } }
+:is(button, a, [role="tab"], summary, .sk-nav-item):focus-visible .ic[data-ic="insights"],
+:is([data-active="true"], [aria-current="page"]) .ic[data-ic="insights"] { animation: icm-twinkle .7s cubic-bezier(.3,1.4,.5,1); }
+@media (hover: hover) and (pointer: fine) { :is(button, a, [role="tab"], summary, .sk-nav-item):hover .ic[data-ic="shield"] { animation: icm-pop .5s cubic-bezier(.3,1.4,.5,1); } }
+:is(button, a, [role="tab"], summary, .sk-nav-item):focus-visible .ic[data-ic="shield"],
+:is([data-active="true"], [aria-current="page"]) .ic[data-ic="shield"] { animation: icm-pop .5s cubic-bezier(.3,1.4,.5,1); }
+@media (hover: hover) and (pointer: fine) { :is(button, a, [role="tab"], summary, .sk-nav-item):hover .ic[data-ic="lock"] { animation: icm-pop .5s cubic-bezier(.3,1.4,.5,1); } }
+:is(button, a, [role="tab"], summary, .sk-nav-item):focus-visible .ic[data-ic="lock"],
+:is([data-active="true"], [aria-current="page"]) .ic[data-ic="lock"] { animation: icm-pop .5s cubic-bezier(.3,1.4,.5,1); }
+@media (hover: hover) and (pointer: fine) { :is(button, a, [role="tab"], summary, .sk-nav-item):hover .ic[data-ic="check"] { animation: icm-pop .45s cubic-bezier(.3,1.4,.5,1); } }
+:is(button, a, [role="tab"], summary, .sk-nav-item):focus-visible .ic[data-ic="check"],
+:is([data-active="true"], [aria-current="page"]) .ic[data-ic="check"] { animation: icm-pop .45s cubic-bezier(.3,1.4,.5,1); }
+@media (hover: hover) and (pointer: fine) { :is(button, a, [role="tab"], summary, .sk-nav-item):hover .ic[data-ic="checks"] { animation: icm-pop .45s cubic-bezier(.3,1.4,.5,1); } }
+:is(button, a, [role="tab"], summary, .sk-nav-item):focus-visible .ic[data-ic="checks"],
+:is([data-active="true"], [aria-current="page"]) .ic[data-ic="checks"] { animation: icm-pop .45s cubic-bezier(.3,1.4,.5,1); }
+@media (hover: hover) and (pointer: fine) { :is(button, a, [role="tab"], summary, .sk-nav-item):hover .ic[data-ic="copy"] { animation: icm-pop .45s cubic-bezier(.3,1.4,.5,1); } }
+:is(button, a, [role="tab"], summary, .sk-nav-item):focus-visible .ic[data-ic="copy"],
+:is([data-active="true"], [aria-current="page"]) .ic[data-ic="copy"] { animation: icm-pop .45s cubic-bezier(.3,1.4,.5,1); }
+@media (hover: hover) and (pointer: fine) { :is(button, a, [role="tab"], summary, .sk-nav-item):hover .ic[data-ic="image"] { animation: icm-pop .45s cubic-bezier(.3,1.4,.5,1); } }
+:is(button, a, [role="tab"], summary, .sk-nav-item):focus-visible .ic[data-ic="image"],
+:is([data-active="true"], [aria-current="page"]) .ic[data-ic="image"] { animation: icm-pop .45s cubic-bezier(.3,1.4,.5,1); }
+@media (hover: hover) and (pointer: fine) { :is(button, a, [role="tab"], summary, .sk-nav-item):hover .ic[data-ic="video"] { animation: icm-pop .45s cubic-bezier(.3,1.4,.5,1); } }
+:is(button, a, [role="tab"], summary, .sk-nav-item):focus-visible .ic[data-ic="video"],
+:is([data-active="true"], [aria-current="page"]) .ic[data-ic="video"] { animation: icm-pop .45s cubic-bezier(.3,1.4,.5,1); }
+@media (hover: hover) and (pointer: fine) { :is(button, a, [role="tab"], summary, .sk-nav-item):hover .ic[data-ic="clock"] { animation: icm-pop .45s cubic-bezier(.3,1.4,.5,1); } }
+:is(button, a, [role="tab"], summary, .sk-nav-item):focus-visible .ic[data-ic="clock"],
+:is([data-active="true"], [aria-current="page"]) .ic[data-ic="clock"] { animation: icm-pop .45s cubic-bezier(.3,1.4,.5,1); }
+@media (hover: hover) and (pointer: fine) { :is(button, a, [role="tab"], summary, .sk-nav-item):hover .ic[data-ic="card"] { animation: icm-pop .45s cubic-bezier(.3,1.4,.5,1); } }
+:is(button, a, [role="tab"], summary, .sk-nav-item):focus-visible .ic[data-ic="card"],
+:is([data-active="true"], [aria-current="page"]) .ic[data-ic="card"] { animation: icm-pop .45s cubic-bezier(.3,1.4,.5,1); }
+@media (hover: hover) and (pointer: fine) { :is(button, a, [role="tab"], summary, .sk-nav-item):hover .ic[data-ic="pin"] { animation: icm-drop .5s cubic-bezier(.3,1.4,.5,1); } }
+:is(button, a, [role="tab"], summary, .sk-nav-item):focus-visible .ic[data-ic="pin"],
+:is([data-active="true"], [aria-current="page"]) .ic[data-ic="pin"] { animation: icm-drop .5s cubic-bezier(.3,1.4,.5,1); }
+@media (hover: hover) and (pointer: fine) { :is(button, a, [role="tab"], summary, .sk-nav-item):hover .ic[data-ic="plus"] { animation: icm-turn .5s cubic-bezier(.3,1.4,.5,1); } }
+:is(button, a, [role="tab"], summary, .sk-nav-item):focus-visible .ic[data-ic="plus"],
+:is([data-active="true"], [aria-current="page"]) .ic[data-ic="plus"] { animation: icm-turn .5s cubic-bezier(.3,1.4,.5,1); }
+@media (hover: hover) and (pointer: fine) { :is(button, a, [role="tab"], summary, .sk-nav-item):hover .ic[data-ic="close"] { animation: icm-turn .5s cubic-bezier(.3,1.4,.5,1); } }
+:is(button, a, [role="tab"], summary, .sk-nav-item):focus-visible .ic[data-ic="close"],
+:is([data-active="true"], [aria-current="page"]) .ic[data-ic="close"] { animation: icm-turn .5s cubic-bezier(.3,1.4,.5,1); }
+@media (hover: hover) and (pointer: fine) { :is(button, a, [role="tab"], summary, .sk-nav-item):hover .ic[data-ic="send"] { animation: icm-fly .5s ease-out; } }
+:is(button, a, [role="tab"], summary, .sk-nav-item):focus-visible .ic[data-ic="send"],
+:is([data-active="true"], [aria-current="page"]) .ic[data-ic="send"] { animation: icm-fly .5s ease-out; }
+@media (hover: hover) and (pointer: fine) { :is(button, a, [role="tab"], summary, .sk-nav-item):hover .ic[data-ic="logout"] { animation: icm-nudge-r .45s ease-out; } }
+:is(button, a, [role="tab"], summary, .sk-nav-item):focus-visible .ic[data-ic="logout"],
+:is([data-active="true"], [aria-current="page"]) .ic[data-ic="logout"] { animation: icm-nudge-r .45s ease-out; }
+@media (hover: hover) and (pointer: fine) { :is(button, a, [role="tab"], summary, .sk-nav-item):hover .ic[data-ic="arrowRight"] { animation: icm-nudge-r .45s ease-out; } }
+:is(button, a, [role="tab"], summary, .sk-nav-item):focus-visible .ic[data-ic="arrowRight"],
+:is([data-active="true"], [aria-current="page"]) .ic[data-ic="arrowRight"] { animation: icm-nudge-r .45s ease-out; }
+@media (hover: hover) and (pointer: fine) { :is(button, a, [role="tab"], summary, .sk-nav-item):hover .ic[data-ic="arrowLeft"] { animation: icm-nudge-l .45s ease-out; } }
+:is(button, a, [role="tab"], summary, .sk-nav-item):focus-visible .ic[data-ic="arrowLeft"],
+:is([data-active="true"], [aria-current="page"]) .ic[data-ic="arrowLeft"] { animation: icm-nudge-l .45s ease-out; }
+@media (hover: hover) and (pointer: fine) { :is(button, a, [role="tab"], summary, .sk-nav-item):hover .ic[data-ic="chevronRight"] { animation: icm-nudge-r .45s ease-out; } }
+:is(button, a, [role="tab"], summary, .sk-nav-item):focus-visible .ic[data-ic="chevronRight"],
+:is([data-active="true"], [aria-current="page"]) .ic[data-ic="chevronRight"] { animation: icm-nudge-r .45s ease-out; }
+@media (hover: hover) and (pointer: fine) { :is(button, a, [role="tab"], summary, .sk-nav-item):hover .ic[data-ic="chevronLeft"] { animation: icm-nudge-l .45s ease-out; } }
+:is(button, a, [role="tab"], summary, .sk-nav-item):focus-visible .ic[data-ic="chevronLeft"],
+:is([data-active="true"], [aria-current="page"]) .ic[data-ic="chevronLeft"] { animation: icm-nudge-l .45s ease-out; }
+@media (hover: hover) and (pointer: fine) { :is(button, a, [role="tab"], summary, .sk-nav-item):hover .ic[data-ic="chevronDown"] { animation: icm-drop .45s cubic-bezier(.3,1.4,.5,1); } }
+:is(button, a, [role="tab"], summary, .sk-nav-item):focus-visible .ic[data-ic="chevronDown"],
+:is([data-active="true"], [aria-current="page"]) .ic[data-ic="chevronDown"] { animation: icm-drop .45s cubic-bezier(.3,1.4,.5,1); }
+@media (hover: hover) and (pointer: fine) { :is(button, a, [role="tab"], summary, .sk-nav-item):hover .ic[data-ic="chevronsRight"] { animation: icm-nudge-r .45s ease-out; } }
+:is(button, a, [role="tab"], summary, .sk-nav-item):focus-visible .ic[data-ic="chevronsRight"],
+:is([data-active="true"], [aria-current="page"]) .ic[data-ic="chevronsRight"] { animation: icm-nudge-r .45s ease-out; }
+@media (hover: hover) and (pointer: fine) { :is(button, a, [role="tab"], summary, .sk-nav-item):hover .ic[data-ic="chevronsLeft"] { animation: icm-nudge-l .45s ease-out; } }
+:is(button, a, [role="tab"], summary, .sk-nav-item):focus-visible .ic[data-ic="chevronsLeft"],
+:is([data-active="true"], [aria-current="page"]) .ic[data-ic="chevronsLeft"] { animation: icm-nudge-l .45s ease-out; }
+@media (hover: hover) and (pointer: fine) { :is(button, a, [role="tab"], summary, .sk-nav-item):hover .ic[data-ic="play"] { animation: icm-nudge-r .45s ease-out; } }
+:is(button, a, [role="tab"], summary, .sk-nav-item):focus-visible .ic[data-ic="play"],
+:is([data-active="true"], [aria-current="page"]) .ic[data-ic="play"] { animation: icm-nudge-r .45s ease-out; }
+@media (hover: hover) and (pointer: fine) { :is(button, a, [role="tab"], summary, .sk-nav-item):hover .ic[data-ic="link"] { animation: icm-tilt .6s cubic-bezier(.3,1.4,.5,1); } }
+:is(button, a, [role="tab"], summary, .sk-nav-item):focus-visible .ic[data-ic="link"],
+:is([data-active="true"], [aria-current="page"]) .ic[data-ic="link"] { animation: icm-tilt .6s cubic-bezier(.3,1.4,.5,1); }
+@media (hover: hover) and (pointer: fine) { :is(button, a, [role="tab"], summary, .sk-nav-item):hover .ic[data-ic="edit"] { animation: icm-tilt .6s cubic-bezier(.3,1.4,.5,1); } }
+:is(button, a, [role="tab"], summary, .sk-nav-item):focus-visible .ic[data-ic="edit"],
+:is([data-active="true"], [aria-current="page"]) .ic[data-ic="edit"] { animation: icm-tilt .6s cubic-bezier(.3,1.4,.5,1); }
+@media (hover: hover) and (pointer: fine) { :is(button, a, [role="tab"], summary, .sk-nav-item):hover .ic[data-ic="trash"] { animation: icm-bell .6s ease-out; transform-origin: 50% 20%; } }
+:is(button, a, [role="tab"], summary, .sk-nav-item):focus-visible .ic[data-ic="trash"],
+:is([data-active="true"], [aria-current="page"]) .ic[data-ic="trash"] { animation: icm-bell .6s ease-out; transform-origin: 50% 20%; }
+@media (hover: hover) and (pointer: fine) { :is(button, a, [role="tab"], summary, .sk-nav-item):hover .ic[data-ic="bolt"] { animation: icm-flash .55s cubic-bezier(.3,1.4,.5,1); } }
+:is(button, a, [role="tab"], summary, .sk-nav-item):focus-visible .ic[data-ic="bolt"],
+:is([data-active="true"], [aria-current="page"]) .ic[data-ic="bolt"] { animation: icm-flash .55s cubic-bezier(.3,1.4,.5,1); }
+@media (hover: hover) and (pointer: fine) { :is(button, a, [role="tab"], summary, .sk-nav-item):hover .ic[data-ic="flame"] { animation: icm-flicker .7s ease-in-out; transform-origin: 50% 90%; } }
+:is(button, a, [role="tab"], summary, .sk-nav-item):focus-visible .ic[data-ic="flame"],
+:is([data-active="true"], [aria-current="page"]) .ic[data-ic="flame"] { animation: icm-flicker .7s ease-in-out; transform-origin: 50% 90%; }
+@media (hover: hover) and (pointer: fine) { :is(button, a, [role="tab"], summary, .sk-nav-item):hover .ic[data-ic="trophy"] { animation: icm-hop .5s cubic-bezier(.3,1.4,.5,1); } }
+:is(button, a, [role="tab"], summary, .sk-nav-item):focus-visible .ic[data-ic="trophy"],
+:is([data-active="true"], [aria-current="page"]) .ic[data-ic="trophy"] { animation: icm-hop .5s cubic-bezier(.3,1.4,.5,1); }
+@media (hover: hover) and (pointer: fine) { :is(button, a, [role="tab"], summary, .sk-nav-item):hover .ic[data-ic="medal"] { animation: icm-hop .5s cubic-bezier(.3,1.4,.5,1); } }
+:is(button, a, [role="tab"], summary, .sk-nav-item):focus-visible .ic[data-ic="medal"],
+:is([data-active="true"], [aria-current="page"]) .ic[data-ic="medal"] { animation: icm-hop .5s cubic-bezier(.3,1.4,.5,1); }
+@media (hover: hover) and (pointer: fine) { :is(button, a, [role="tab"], summary, .sk-nav-item):hover .ic[data-ic="crown"] { animation: icm-hop .5s cubic-bezier(.3,1.4,.5,1); } }
+:is(button, a, [role="tab"], summary, .sk-nav-item):focus-visible .ic[data-ic="crown"],
+:is([data-active="true"], [aria-current="page"]) .ic[data-ic="crown"] { animation: icm-hop .5s cubic-bezier(.3,1.4,.5,1); }
+@media (hover: hover) and (pointer: fine) { :is(button, a, [role="tab"], summary, .sk-nav-item):hover .ic[data-ic="target"] { animation: icm-pop .5s cubic-bezier(.3,1.4,.5,1); } }
+:is(button, a, [role="tab"], summary, .sk-nav-item):focus-visible .ic[data-ic="target"],
+:is([data-active="true"], [aria-current="page"]) .ic[data-ic="target"] { animation: icm-pop .5s cubic-bezier(.3,1.4,.5,1); }
+@media (hover: hover) and (pointer: fine) { :is(button, a, [role="tab"], summary, .sk-nav-item):hover .ic[data-ic="shuffle"] { animation: icm-tilt .6s cubic-bezier(.3,1.4,.5,1); } }
+:is(button, a, [role="tab"], summary, .sk-nav-item):focus-visible .ic[data-ic="shuffle"],
+:is([data-active="true"], [aria-current="page"]) .ic[data-ic="shuffle"] { animation: icm-tilt .6s cubic-bezier(.3,1.4,.5,1); }
+@media (hover: hover) and (pointer: fine) { :is(button, a, [role="tab"], summary, .sk-nav-item):hover .ic[data-ic="smile"] { animation: icm-tilt .6s cubic-bezier(.3,1.4,.5,1); } }
+:is(button, a, [role="tab"], summary, .sk-nav-item):focus-visible .ic[data-ic="smile"],
+:is([data-active="true"], [aria-current="page"]) .ic[data-ic="smile"] { animation: icm-tilt .6s cubic-bezier(.3,1.4,.5,1); }
+@media (hover: hover) and (pointer: fine) { :is(button, a, [role="tab"], summary, .sk-nav-item):hover .ic[data-ic="monitor"] { animation: icm-pop .45s cubic-bezier(.3,1.4,.5,1); } }
+:is(button, a, [role="tab"], summary, .sk-nav-item):focus-visible .ic[data-ic="monitor"],
+:is([data-active="true"], [aria-current="page"]) .ic[data-ic="monitor"] { animation: icm-pop .45s cubic-bezier(.3,1.4,.5,1); }
+@media (hover: hover) and (pointer: fine) { :is(button, a, [role="tab"], summary, .sk-nav-item):hover .ic[data-ic="phone"] { animation: icm-wobble .6s ease-out; } }
+:is(button, a, [role="tab"], summary, .sk-nav-item):focus-visible .ic[data-ic="phone"],
+:is([data-active="true"], [aria-current="page"]) .ic[data-ic="phone"] { animation: icm-wobble .6s ease-out; }
+@media (hover: hover) and (pointer: fine) { :is(button, a, [role="tab"], summary, .sk-nav-item):hover .ic[data-ic="experiments"] { animation: icm-wobble .6s ease-out; } }
+:is(button, a, [role="tab"], summary, .sk-nav-item):focus-visible .ic[data-ic="experiments"],
+:is([data-active="true"], [aria-current="page"]) .ic[data-ic="experiments"] { animation: icm-wobble .6s ease-out; }
+@media (hover: hover) and (pointer: fine) { :is(button, a, [role="tab"], summary, .sk-nav-item):hover .ic[data-ic="reports"] { animation: icm-rise .5s cubic-bezier(.3,1.4,.5,1); } }
+:is(button, a, [role="tab"], summary, .sk-nav-item):focus-visible .ic[data-ic="reports"],
+:is([data-active="true"], [aria-current="page"]) .ic[data-ic="reports"] { animation: icm-rise .5s cubic-bezier(.3,1.4,.5,1); }
+@media (hover: hover) and (pointer: fine) { :is(button, a, [role="tab"], summary, .sk-nav-item):hover .ic[data-ic="results"] { animation: icm-pop .45s cubic-bezier(.3,1.4,.5,1); } }
+:is(button, a, [role="tab"], summary, .sk-nav-item):focus-visible .ic[data-ic="results"],
+:is([data-active="true"], [aria-current="page"]) .ic[data-ic="results"] { animation: icm-pop .45s cubic-bezier(.3,1.4,.5,1); }
+@media (hover: hover) and (pointer: fine) { :is(button, a, [role="tab"], summary, .sk-nav-item):hover .ic[data-ic="menu"] { animation: icm-pop .4s cubic-bezier(.3,1.4,.5,1); } }
+:is(button, a, [role="tab"], summary, .sk-nav-item):focus-visible .ic[data-ic="menu"],
+:is([data-active="true"], [aria-current="page"]) .ic[data-ic="menu"] { animation: icm-pop .4s cubic-bezier(.3,1.4,.5,1); }
+@media (hover: hover) and (pointer: fine) { :is(button, a, [role="tab"], summary, .sk-nav-item):hover .ic[data-ic="arena"] .ia-l { animation: icm-clash-l .62s cubic-bezier(.3,1.4,.5,1); } }
+:is(button, a, [role="tab"], summary, .sk-nav-item):focus-visible .ic[data-ic="arena"] .ia-l,
+:is([data-active="true"], [aria-current="page"]) .ic[data-ic="arena"] .ia-l { animation: icm-clash-l .62s cubic-bezier(.3,1.4,.5,1); }
+@media (hover: hover) and (pointer: fine) { :is(button, a, [role="tab"], summary, .sk-nav-item):hover .ic[data-ic="arena"] .ia-r { animation: icm-clash-r .62s cubic-bezier(.3,1.4,.5,1); } }
+:is(button, a, [role="tab"], summary, .sk-nav-item):focus-visible .ic[data-ic="arena"] .ia-r,
+:is([data-active="true"], [aria-current="page"]) .ic[data-ic="arena"] .ia-r { animation: icm-clash-r .62s cubic-bezier(.3,1.4,.5,1); }
+@media (hover: hover) and (pointer: fine) { :is(button, a, [role="tab"], summary, .sk-nav-item):hover .ic[data-ic="arena"] .ia-b { animation: icm-bolt .62s ease-out; } }
+:is(button, a, [role="tab"], summary, .sk-nav-item):focus-visible .ic[data-ic="arena"] .ia-b,
+:is([data-active="true"], [aria-current="page"]) .ic[data-ic="arena"] .ia-b { animation: icm-bolt .62s ease-out; }
+@media (hover: hover) and (pointer: fine) { :is(button, a, [role="tab"], summary, .sk-nav-item):hover .ic[data-ic="chat"] .f { animation: icm-wave .5s ease-in-out; } }
+:is(button, a, [role="tab"], summary, .sk-nav-item):focus-visible .ic[data-ic="chat"] .f,
+:is([data-active="true"], [aria-current="page"]) .ic[data-ic="chat"] .f { animation: icm-wave .5s ease-in-out; }
+@media (hover: hover) and (pointer: fine) { :is(button, a, [role="tab"], summary, .sk-nav-item):hover .ic[data-ic="more"] .f { animation: icm-wave .5s ease-in-out; } }
+:is(button, a, [role="tab"], summary, .sk-nav-item):focus-visible .ic[data-ic="more"] .f,
+:is([data-active="true"], [aria-current="page"]) .ic[data-ic="more"] .f { animation: icm-wave .5s ease-in-out; }
+@media (hover: hover) and (pointer: fine) { :is(button, a, [role="tab"], summary, .sk-nav-item):hover .ic[data-ic="overview"] rect { animation: icm-pop .5s cubic-bezier(.3,1.4,.5,1); } }
+:is(button, a, [role="tab"], summary, .sk-nav-item):focus-visible .ic[data-ic="overview"] rect,
+:is([data-active="true"], [aria-current="page"]) .ic[data-ic="overview"] rect { animation: icm-pop .5s cubic-bezier(.3,1.4,.5,1); }
+.ic[data-ic="chat"] .f:nth-of-type(2), .ic[data-ic="more"] .f:nth-of-type(2) { animation-delay: .07s; }
+.ic[data-ic="chat"] .f:nth-of-type(3), .ic[data-ic="more"] .f:nth-of-type(3) { animation-delay: .14s; }
+.ic[data-ic="overview"] rect:nth-of-type(2) { animation-delay: .06s; }
+.ic[data-ic="overview"] rect:nth-of-type(3) { animation-delay: .12s; }
+.ic[data-ic="overview"] rect:nth-of-type(4) { animation-delay: .18s; }
+@keyframes icm-turn { to { transform: rotate(90deg); } }
+@keyframes icm-spin { to { transform: rotate(360deg); } }
+@keyframes icm-tilt { 0% { transform: rotate(0); } 35% { transform: rotate(-14deg) scale(1.1); } 70% { transform: rotate(5deg); } 100% { transform: rotate(0); } }
+@keyframes icm-bell { 0%, 100% { transform: rotate(0); } 20% { transform: rotate(14deg); } 40% { transform: rotate(-12deg); } 60% { transform: rotate(8deg); } 80% { transform: rotate(-4deg); } }
+@keyframes icm-beat { 0% { transform: scale(1); } 30% { transform: scale(1.28); } 50% { transform: scale(.96); } 70% { transform: scale(1.14); } 100% { transform: scale(1); } }
+@keyframes icm-drop { 0% { transform: translateY(-3px); } 60% { transform: translateY(2px); } 100% { transform: translateY(0); } }
+@keyframes icm-rise { 0% { transform: translateY(3px); } 60% { transform: translateY(-2px); } 100% { transform: translateY(0); } }
+@keyframes icm-wobble { 0% { transform: rotate(0); } 30% { transform: rotate(-9deg) scale(1.06); } 60% { transform: rotate(4deg); } 100% { transform: rotate(0); } }
+@keyframes icm-hop { 0% { transform: translateY(0) scale(1); } 40% { transform: translateY(-3px) scale(1.08); } 100% { transform: translateY(0) scale(1); } }
+@keyframes icm-pop { 0% { transform: scale(.72); } 55% { transform: scale(1.18); } 100% { transform: scale(1); } }
+@keyframes icm-twinkle { 0% { transform: rotate(0) scale(1); } 45% { transform: rotate(24deg) scale(1.2); } 100% { transform: rotate(0) scale(1); } }
+@keyframes icm-nudge-r { 0% { transform: translateX(0); } 45% { transform: translateX(3px); } 100% { transform: translateX(0); } }
+@keyframes icm-nudge-l { 0% { transform: translateX(0); } 45% { transform: translateX(-3px); } 100% { transform: translateX(0); } }
+@keyframes icm-fly { 0% { transform: translate(0, 0); } 45% { transform: translate(3px, -3px) scale(1.06); } 100% { transform: translate(0, 0); } }
+@keyframes icm-flash { 0% { transform: scale(1); } 35% { transform: scale(1.3) rotate(-8deg); } 100% { transform: scale(1) rotate(0); } }
+@keyframes icm-flicker { 0%, 100% { transform: scale(1, 1); } 25% { transform: scale(.94, 1.1); } 55% { transform: scale(1.05, .95); } 80% { transform: scale(.97, 1.06); } }
+@keyframes icm-wave { 0%, 100% { transform: translateY(0); } 40% { transform: translateY(-3px); } }
+@keyframes icm-clash-l { 0% { transform: rotate(-9deg); } 38% { transform: translate(1.1px, -.4px) rotate(3deg); } 62% { transform: rotate(-13deg); } 100% { transform: rotate(-9deg); } }
+@keyframes icm-clash-r { 0% { transform: rotate(9deg); } 38% { transform: translate(-1.1px, -.4px) rotate(-3deg); } 62% { transform: rotate(13deg); } 100% { transform: rotate(9deg); } }
+@keyframes icm-bolt { 0% { transform: scale(1); } 38% { transform: scale(1.7); filter: drop-shadow(0 0 3px #ff8f55); } 100% { transform: scale(1); } }
+@media (prefers-reduced-motion: reduce) { .ic, .ic * { animation: none !important; } }

@@ -380,3 +380,37 @@
 /* ---- the gentle parallax of the dashboard preview and the phone fan (lib/scrollWatch.js + Landing's useParallax) ---- */
 [data-par] { will-change: transform; }
 @media (prefers-reduced-motion: reduce) { [data-par] { will-change: auto; } }
+
+/* ---- "Try a duel": two designs, tap one, see how many players chose the same (sample numbers) ------------------------------------------------ */
+.lp-root .lp-duel { min-height: 0; max-width: 820px; margin: 38px auto 0; padding: 26px; align-items: stretch; }
+.lp-root .lp-duel:hover { transform: none; }
+.lp-duel-top { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px 16px; }
+.lp-duel-count { font-size: 12px; font-weight: 600; letter-spacing: .14em; text-transform: uppercase; color: var(--dim); }
+.lp-duel-meta { display: inline-flex; align-items: center; gap: 14px; font-family: "JetBrains Mono", ui-monospace, monospace; font-size: 13px; color: var(--mut); }
+.lp-duel-meta span { display: inline-flex; align-items: center; gap: 6px; }
+.lp-duel-meta .lp-ic { color: var(--signal-hi); }
+.lp-duel-meta b { font-weight: 600; color: var(--signal-hi); }
+.lp-duel-q { margin: 16px 0 0; font-size: clamp(19px, 2.4vw, 24px); line-height: 1.25; letter-spacing: -.02em; font-weight: 600; color: var(--ink); }
+.lp-duel-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; margin-top: 20px; }
+.lp-duel-card { display: flex; flex-direction: column; gap: 10px; padding: 10px; border: 1px solid var(--hair); border-radius: 16px; background: var(--well); box-shadow: var(--sh-well); color: inherit; font: inherit; text-align: left; cursor: pointer;
+  transition: transform .28s cubic-bezier(.3,1.4,.5,1), border-color .2s, box-shadow .2s; }
+.lp-duel-card:hover { transform: translateY(-4px); border-color: var(--hair-2); }
+.lp-duel-card:focus-visible { outline: 2px solid var(--signal-hi); outline-offset: 3px; }
+.lp-duel-card.lp-won { border-color: rgba(255,106,31,.7); box-shadow: var(--sh-well), 0 0 0 1px rgba(255,106,31,.5); }
+.lp-duel-art { position: relative; display: block; height: clamp(150px, 24vw, 230px); border-radius: 11px; overflow: hidden; }
+.lp-art-A { background: linear-gradient(160deg, #f1e4cd, #c7a46a); }
+.lp-art-B { background: linear-gradient(160deg, #ff7a2f, #d93a6a); }
+.lp-art-a-in { position: absolute; inset: 18% 24%; display: grid; place-items: center; border-radius: 10px; background: #2a1c10; }
+.lp-art-a-in b { font-size: clamp(18px, 3vw, 28px); letter-spacing: .22em; color: #e9d3a8; font-weight: 600; }
+.lp-art-b-in { position: absolute; inset: 24% 16%; display: grid; place-items: center; border-radius: 999px; background: #fff7ee; }
+.lp-art-b-in b { font-size: clamp(18px, 3vw, 28px); font-weight: 700; letter-spacing: -.02em; color: #d93a6a; }
+.lp-duel-row { display: flex; align-items: center; justify-content: space-between; padding: 0 4px 2px; font-size: 14px; }
+.lp-duel-l { color: var(--g-300); font-weight: 600; }
+.lp-duel-pct { font-family: "JetBrains Mono", ui-monospace, monospace; font-size: 15px; font-weight: 600; color: var(--signal-hi); min-height: 1.2em; }
+.lp-duel-bar { height: 6px; margin-top: 18px; border-radius: 3px; background: var(--well); box-shadow: var(--sh-well); overflow: hidden; }
+.lp-duel-bar i { display: block; height: 100%; border-radius: 3px; background: var(--signal); transition: width .5s cubic-bezier(.3,1,.5,1); }
+.lp-duel-hint { margin: 12px 0 0; min-height: 3em; font-size: 14px; line-height: 1.55; color: var(--mut); }
+.lp-duel-cta { margin-top: 18px; justify-content: flex-start; }
+.lp-mb-dl { margin-top: 24px; }
+@media (max-width: 520px) { .lp-duel-grid { gap: 10px; } .lp-duel { padding: 18px; } }
+@media (prefers-reduced-motion: reduce) { .lp-duel-card, .lp-duel-bar i { transition: none; } .lp-duel-card:hover { transform: none; } }

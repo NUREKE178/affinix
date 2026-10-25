@@ -115,7 +115,6 @@
 .mtb-pill { position: relative; display: grid; place-items: center; width: 58px; height: 32px; border-radius: 999px; transition: color .2s; }
 .mtb-pill[data-active="true"] { background: rgba(255,106,31,.2); color: #ff8f55; }
 [data-thumb="on"] .mtb-pill[data-active="true"] { background: transparent; }
-.mtb-pill[data-active="true"] svg { animation: mtbPop .46s var(--sk-ease-spring, cubic-bezier(.3,1.5,.5,1)); }
 .mtb-item:active .mtb-ico { transform: scale(.88); }
 .mtb-item[data-hot="true"] .mtb-ico { transform: translateY(-6px) scale(1.16); }
 .mtb-item[data-hot="true"] .mtb-pill { color: #ffb48a; }
@@ -129,13 +128,12 @@
   background: linear-gradient(180deg, #ff8f55, #ff6a1f); box-shadow: 0 0 0 2px #1b1c1f, 0 2px 8px rgba(255,106,31,.5);
   animation: mtbBadge .5s var(--sk-ease-spring, cubic-bezier(.3,1.5,.5,1));
 }
-@keyframes mtbPop { 0% { transform: scale(.6); } 55% { transform: scale(1.22); } 100% { transform: scale(1); } }
 @keyframes mtbBadge { 0% { transform: scale(0); } 60% { transform: scale(1.3); } 100% { transform: scale(1); } }
 /* out of the way: sliding down while reading, while a field is focused (keyboard up), inside an open chat (the composer owns the bottom edge) */
 html[data-mtb-hide] .mtb, html[data-kb] .mtb, body:has(.sk-chat[data-pane="chat"]) .mtb { transform: translateY(calc(100% + var(--mtb-gap, 10px) + env(safe-area-inset-bottom, 0px) + 16px)); }
 html[data-kb] .mtb, body:has(.sk-chat[data-pane="chat"]) .mtb { opacity: 0; pointer-events: none; }
 @media (min-width: 768px) { .mtb { display: none; } }
-@media (prefers-reduced-motion: reduce) { .mtb, .mtb-pill, .mtb-label { transition: none; } .mtb-pill svg, .mtb-badge { animation: none !important; } }
+@media (prefers-reduced-motion: reduce) { .mtb, .mtb-pill, .mtb-label { transition: none; } .mtb-badge { animation: none !important; } }
 
 /* Content that slides sideways (tab swipes, tab slide-in, page enter) sticks out of the screen for a moment. On a phone that makes the browser enlarge the layout
    viewport and zoom the page out for those frames, which drags every fixed element (the bottom dock) along with it. Clipping the overflow in the content area keeps the
