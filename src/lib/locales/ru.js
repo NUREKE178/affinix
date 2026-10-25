@@ -57,6 +57,7 @@ export default {
       friends: "Друзья",
       messages: "Сообщения",
     },
+    tabbar: { label: "Основная навигация", more: "Ещё", marketers: "Маркетинг" },
     workspaceLabel: "Аккаунт",
     workspace: {
       download: "Скачать приложение",

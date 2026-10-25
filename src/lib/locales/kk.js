@@ -57,6 +57,7 @@ export default {
       friends: "Достар",
       messages: "Хабарламалар",
     },
+    tabbar: { label: "Негізгі навигация", more: "Тағы", marketers: "Маркетинг" },
     workspaceLabel: "Аккаунт",
     workspace: {
       download: "Қосымшаны жүктеу",

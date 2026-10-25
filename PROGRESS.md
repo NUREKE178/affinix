@@ -3984,3 +3984,10 @@ Tests: test_download 29/29, test_nav_tabs 31/31, test_nav_thumb 11/11, test_dash
 
 On request ("put their own icons, don't draw them yourself"): `windows`, `linux` (Tux), `android`, `apple` in `components/icons.js` are now the brands' real marks from the Simple Icons set (CC0 data; the Windows mark from Simple Icons 5.23.0 because later releases dropped it),
 drawn solid in `currentColor` (no outline / tint). Trademarks stay with their owners; used only to label the matching download. Test download 29/29, nav tabs 31/31.
+
+## Phone bottom tab bar (no migration)
+
+`components/mobileTabBar.js` (rendered by `Shell`, below md only): Arena | Feed | Messages | Marketing | More (opens the existing drawer, which keeps everything else). The active tab has a tinted pill that glides via `useThumb` (data-active sits on the pill, not the button);
+counts on the icons (messages unread, Arena attention, incoming friend requests on More); More lights up on pages that are not a tab; re-tapping the current tab scrolls to the top (instant). The bar slides away while a text field is focused (`html[data-kb]`, set by focusin / focusout)
+and while a chat is open (`body:has(.sk-chat[data-pane="chat"])`). Layout: `--mtb-total` (64px + safe area) pads `main`, lifts the toast stack and the feed composer dock, and is subtracted from the phone chat list height and the Arena specimen art. Locale keys `shell.tabbar.{label,more,marketers}` (parity ok).
+Test: `test_mobile_tabbar.mjs` (22 checks). Desktop / tablet unchanged.
