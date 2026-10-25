@@ -23,6 +23,8 @@ const TABS = [
     also: ["/app/overview", "/app/experiments", "/app/results", "/app/participants", "/app/reports"] },
 ];
 
+// NOTE: the sliding pill is measured with getBoundingClientRect(), which includes transforms. So nothing that moves or scales (press, raise, spring) may sit on
+// .mtb-pill itself -- those effects live on the inner .mtb-ico, or the pill would be measured mid-effect and land bigger and higher than it is.
 const matches = (tab, path) => [tab.path, ...(tab.also ?? [])].some((p) => path === p || path.startsWith(p + "/"));
 const tick = (ms = 7) => { try { navigator.vibrate?.(ms); } catch { /* no haptics here */ } };
 
@@ -126,8 +128,10 @@ export function MobileTabBar({ currentPath, onNavigate, onMore }) {
       <button type="button" class="mtb-item" data-id=${id} data-hot=${hot === id ? "true" : undefined} onClick=${() => activate(id)}
         aria-current=${on ? "page" : undefined} aria-label=${n > 0 ? `${label}, ${n}` : label} data-testid=${`mtb-${id}`}>
         <span class="mtb-pill" data-active=${on}>
-          <${Icon} name=${icon} size=${22} />
-          ${n > 0 && html`<span class="mtb-badge" key=${n} aria-hidden="true">${n > 99 ? "99+" : n}</span>`}
+          <span class="mtb-ico">
+            <${Icon} name=${icon} size=${22} />
+            ${n > 0 && html`<span class="mtb-badge" key=${n} aria-hidden="true">${n > 99 ? "99+" : n}</span>`}
+          </span>
         </span>
         <span class="mtb-label" data-on=${on}>${label}</span>
       </button>
