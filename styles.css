@@ -996,10 +996,6 @@ select.sk-input option:checked {
   .sk-page-enter, .sk-locale-fade, .fade-in, .slide-up { animation: none !important; }
 }
 
-html { scroll-behavior: smooth; }
-@media (prefers-reduced-motion: reduce) {
-  html { scroll-behavior: auto; }
-}
 
 /* ==========================================================================
    Live badge (Results) + messenger (pages/Messages.js)

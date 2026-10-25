@@ -377,7 +377,7 @@
   .lp-root *, .lp-root *::before, .lp-root *::after { animation: none !important; transition: none !important; }
 }
 
-/* ---- the landing page's choreography (lib/smoothScroll.js + Landing's useChoreography) ---- */
+/* ---- the landing page's choreography (lib/scrollWatch.js + Landing's useChoreography) ---- */
 .lp-progress { position: fixed; left: 0; right: 0; top: 0; height: 2px; z-index: 60; pointer-events: none; background: transparent; }
 .lp-progress i { display: block; height: 100%; transform-origin: 0 50%; transform: scaleX(0); background: linear-gradient(90deg, #ff8f55, #ff6a1f); box-shadow: 0 0 10px 1px rgba(255,106,31,.6); will-change: transform; }
 .lp-rail { position: fixed; right: 18px; top: 50%; z-index: 55; display: none; flex-direction: column; gap: 6px; transform: translateY(-50%); }

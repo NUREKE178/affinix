@@ -3,7 +3,7 @@ import { Icon } from "../components/icons.js";
 import { LanguageSwitch } from "../components/languageSwitch.js";
 import { useT, useLocale, useLocaleFadeClass } from "../lib/i18n.js";
 import { useReveal } from "../lib/motion.js";
-import { startLandingScroll, scrollToTarget } from "../lib/smoothScroll.js";
+import { startLandingScroll, scrollToTarget } from "../lib/scrollWatch.js";
 
 // The landing in the product's own "Instrument" look (graphite, one orange signal, tactile keys, quiet plates). All
 // styling lives in landing.css (every class is lp- prefixed and scoped under .lp-root, because vendor/tailwind.css is

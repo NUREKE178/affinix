@@ -3962,3 +3962,10 @@ Cause of "still laggy": the landing needed 130 requests (109 JS modules, the who
 one event object is reused for every frame; the "is there a scrollable panel under the cursor" walk (`getComputedStyle` up the tree) is remembered for 150 ms for the same element and direction, so a burst of wheel events does it once.
 `Landing.js`: the progress bar is written only when its value changes. Feel, constants (TAU 0.15, expo tween 1.1 s), keyboard and touch behaviour are unchanged.
 Measured (CDP, 3 s of wheel): task 0.290 -> 0.259 s, script 0.035 -> 0.027 s; phone native scroll: task 0.146 -> 0.137 s. Small, because the earlier per-frame style fix already took most of the cost. Tests: test_landing_scroll 17/17, test_download 29/29, test_motion_landing 8/8, test_landing_instrument 24/24.
+
+## Smooth scroll removed (no migration)
+
+On request: no smoothing anywhere on the landing. `lib/smoothScroll.js` is replaced by `lib/scrollWatch.js`, which only watches the native scroll position (rAF-coalesced, page height cached) and notifies the progress line, the section rail and the parallax;
+the wheel, keys and touch are fully native, `scrollToTarget()` jumps instantly (`behavior: "instant"`), and `html { scroll-behavior: smooth }` is removed from `styles.css`. `index.html` modulepreload list regenerated (it listed the old file -> 404).
+Not touched: in-app `scrollIntoView({ behavior: "smooth" })` in Feed (jump to a post), Messages (chat to the newest message, jump to a replied message) and the tab swipe slide-in; those are not page smooth-scrolling.
+Tests rewritten for native behaviour: test_landing_scroll 17/17, test_download 29/29; test_motion_landing 8/8, test_landing_instrument 24/24, test_swipe_tabs 27/27. Earlier smooth-scroll sections above describe the removed engine.
