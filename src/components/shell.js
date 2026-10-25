@@ -18,6 +18,7 @@ import { useMountTransition } from "../lib/motion.js";
 import { ProfileViewerHost } from "./profileViewer.js";
 import { openProfile } from "../lib/profileViewer.js";
 import { GlobalSearch, SearchSheetButton } from "./globalSearch.js";
+import { MobileTabBar } from "./mobileTabBar.js";
 
 // Two work areas. The Arena is the home of the app (first item; see HOME_PATH). "Research" holds everything about
 // experiments and crowd tests: its overview, participants and reports are tabs of that one area (`also` keeps the
@@ -424,12 +425,14 @@ export function Shell({ currentPath, children }) {
         </button>
       </header>
       <div class="sk-shell-main" data-narrow=${reservedNarrow}>
-        <main class="px-4 py-6 md:px-8 md:py-8 max-w-[1400px] mx-auto">
+        <main class="sk-main px-4 py-6 md:px-8 md:py-8 max-w-[1400px] mx-auto">
           <div key=${currentPath} class="sk-page-enter">
             ${children}
           </div>
         </main>
       </div>
+      <!-- Phone only: the places used all day, one tap away (the drawer above holds the rest) -->
+      <${MobileTabBar} currentPath=${currentPath} onNavigate=${onNavigate} onMore=${() => setMobileOpen(true)} />
       <!-- Every avatar + name in the app opens its person here -->
       <${ProfileViewerHost} />
     </div>
