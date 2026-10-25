@@ -1,5 +1,5 @@
 // The landing page's scroll state, with NO smoothing: the page scrolls the way the browser scrolls it (wheel, keys, touch, anchors all native and immediate).
-// This only watches the scroll position and tells subscribers { y, velocity, progress } once per frame (the progress line, the section rail and the parallax use it).
+// This only watches the scroll position and tells subscribers { y, velocity, progress } once per frame (the landing's parallax uses it).
 /** Jumps to a y position, an element or an element id (no animation). */
 export function scrollToTarget(target, { offset = 0 } = {}) {
   const el = typeof target === "string" ? document.getElementById(target) : target instanceof Element ? target : null;

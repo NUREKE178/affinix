@@ -377,16 +377,6 @@
   .lp-root *, .lp-root *::before, .lp-root *::after { animation: none !important; transition: none !important; }
 }
 
-/* ---- the landing page's choreography (lib/scrollWatch.js + Landing's useChoreography) ---- */
-.lp-progress { position: fixed; left: 0; right: 0; top: 0; height: 2px; z-index: 60; pointer-events: none; background: transparent; }
-.lp-progress i { display: block; height: 100%; transform-origin: 0 50%; transform: scaleX(0); background: linear-gradient(90deg, #ff8f55, #ff6a1f); box-shadow: 0 0 10px 1px rgba(255,106,31,.6); will-change: transform; }
-.lp-rail { position: fixed; right: 18px; top: 50%; z-index: 55; display: none; flex-direction: column; gap: 6px; transform: translateY(-50%); }
-@media (min-width: 1180px) { .lp-rail { display: flex; } }
-.lp-rail-dot { position: relative; display: grid; place-items: center; width: 22px; height: 22px; padding: 0; border: 0; background: none; cursor: pointer; }
-.lp-rail-dot::before { content: ""; width: 7px; height: 7px; border-radius: 50%; background: var(--g-600, #4a4d55); transition: transform .25s cubic-bezier(.3,1.4,.5,1), background .2s, box-shadow .2s; }
-.lp-rail-dot:hover::before { background: var(--g-300, #c3c5cb); transform: scale(1.3); }
-.lp-rail-dot[data-on="true"]::before { background: #ff6a1f; transform: scale(1.5); box-shadow: 0 0 10px 1px rgba(255,106,31,.7); }
-.lp-rail-dot span { position: absolute; right: 26px; top: 50%; transform: translate(6px, -50%); padding: 4px 9px; border-radius: 8px; white-space: nowrap; font-size: 12px; color: var(--g-100, #ececee); background: rgba(24,25,28,.92); box-shadow: 0 0 0 1px rgba(255,255,255,.08); opacity: 0; pointer-events: none; transition: opacity .18s, transform .18s; }
-.lp-rail-dot:hover span, .lp-rail-dot:focus-visible span { opacity: 1; transform: translate(0, -50%); }
+/* ---- the gentle parallax of the dashboard preview and the phone fan (lib/scrollWatch.js + Landing's useParallax) ---- */
 [data-par] { will-change: transform; }
-@media (prefers-reduced-motion: reduce) { [data-par] { will-change: auto; } .lp-rail-dot::before, .lp-rail-dot span { transition: none; } }
+@media (prefers-reduced-motion: reduce) { [data-par] { will-change: auto; } }

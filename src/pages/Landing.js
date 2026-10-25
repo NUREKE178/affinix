@@ -1,4 +1,4 @@
-import { html, useState, useEffect, useRef } from "../lib/preact.js";
+import { html, useState, useEffect } from "../lib/preact.js";
 import { Icon } from "../components/icons.js";
 import { LanguageSwitch } from "../components/languageSwitch.js";
 import { useT, useLocale, useLocaleFadeClass } from "../lib/i18n.js";
@@ -33,22 +33,16 @@ function scrollToId(id) {
   scrollToTarget(id, { offset: -64 });
 }
 
-const RAIL = ["lp-top", "lp-workflow", "lp-trust", "lp-mobile", "lp-start"];
-
-/** The page's choreography: a progress line at the top, a rail of section dots on the right, and a gentle parallax on the
- *  blocks marked data-par (they move a little slower than the page). All of it is driven by the scroll engine's frames. */
-function useChoreography() {
-  const [active, setActive] = useState(0);
-  const bar = useRef(null);
+/** A gentle parallax on the blocks marked data-par (they move a little slower than the page), driven by the scroll watcher. */
+function useParallax() {
   useEffect(() => {
     const engine = startLandingScroll();
     const reduced = typeof matchMedia === "function" && matchMedia("(prefers-reduced-motion: reduce)").matches;
     // Measure once (and again when the layout can have moved), never per frame: reading layout every frame while scrolling is what made the page stutter.
-    let tops = [], pars = [], vh = window.innerHeight;
+    let pars = [], vh = window.innerHeight;
     const measure = () => {
       vh = window.innerHeight;
       const sy = window.scrollY;
-      tops = RAIL.map((id) => { const el = document.getElementById(id); return el ? el.getBoundingClientRect().top + sy : Infinity; });
       pars = [...document.querySelectorAll("[data-par]")].map((el) => {
         el.style.transform = ""; // measure without our own offset
         const r = el.getBoundingClientRect();
@@ -59,14 +53,7 @@ function useChoreography() {
     const timers = [setTimeout(measure, 800), setTimeout(measure, 2500)];
     window.addEventListener("resize", measure);
     window.addEventListener("load", measure);
-    let activeNow = -1, barNow = "";
-    const off = engine.subscribe(({ y, progress }) => {
-      const w = progress.toFixed(4);
-      if (w !== barNow && bar.current) { barNow = w; bar.current.style.transform = `scaleX(${w})`; } // only when the bar actually moves
-      const mid = y + vh * 0.4;
-      let idx = 0;
-      for (let i = 0; i < tops.length; i++) if (tops[i] <= mid) idx = i;
-      if (idx !== activeNow) { activeNow = idx; setActive(idx); }
+    const off = engine.subscribe(({ y }) => {
       if (!reduced) {
         for (const p of pars) {
           const d = p.centre - (y + vh / 2);
@@ -82,19 +69,6 @@ function useChoreography() {
       document.querySelectorAll("[data-par]").forEach((el) => { el.style.transform = ""; });
     };
   }, []);
-  return { active, bar };
-}
-
-function Choreography({ t, active, bar }) {
-  return html`
-    <div class="lp-progress" aria-hidden="true"><i ref=${bar}></i></div>
-    <nav class="lp-rail" aria-label=${t("landing.sections.label")}>
-      ${RAIL.map((id, i) => html`
-        <button type="button" key=${id} class="lp-rail-dot" data-on=${active === i} aria-label=${t(`landing.sections.${id.slice(3)}`)} aria-current=${active === i ? "true" : undefined} onClick=${() => scrollToId(id)}>
-          <span>${t(`landing.sections.${id.slice(3)}`)}</span>
-        </button>`)}
-    </nav>
-  `;
 }
 
 /** Fades/slides a block in once when it first scrolls into view (the app's existing .sk-reveal). */
@@ -445,13 +419,12 @@ function Footer({ t }) {
 
 export function Landing() {
   const t = useT();
-  const choreo = useChoreography(); // the smooth engine, progress line, section rail and parallax: landing page only, never inside the app
+  useParallax(); // landing page only, never inside the app
   const locale = useLocale();
   const localeFadeClass = useLocaleFadeClass();
   return html`
     <div class=${`lp-root ${localeFadeClass}`}>
       <${Header} t=${t} />
-      <${Choreography} t=${t} active=${choreo.active} bar=${choreo.bar} />
       <main>
         <${Hero} t=${t} />
         <${CanTest} t=${t} />

@@ -3969,3 +3969,8 @@ On request: no smoothing anywhere on the landing. `lib/smoothScroll.js` is repla
 the wheel, keys and touch are fully native, `scrollToTarget()` jumps instantly (`behavior: "instant"`), and `html { scroll-behavior: smooth }` is removed from `styles.css`. `index.html` modulepreload list regenerated (it listed the old file -> 404).
 Not touched: in-app `scrollIntoView({ behavior: "smooth" })` in Feed (jump to a post), Messages (chat to the newest message, jump to a replied message) and the tab swipe slide-in; those are not page smooth-scrolling.
 Tests rewritten for native behaviour: test_landing_scroll 17/17, test_download 29/29; test_motion_landing 8/8, test_landing_instrument 24/24, test_swipe_tabs 27/27. Earlier smooth-scroll sections above describe the removed engine.
+
+## Landing: progress line and section rail removed (no migration)
+
+On request. `Landing.js`: `useChoreography` / `Choreography` replaced by `useParallax` (the data-par blocks only); the `.lp-progress` / `.lp-rail*` CSS is gone from `landing.css`; the page no longer re-renders when the section changes.
+`landing.sections.*` locale keys are now unused (kept, parity unchanged). Tests: test_landing_scroll rewritten (11 checks: no line, no rail, native wheel / keys, parallax, buttons jump), test_download 29/29, test_motion_landing 8/8, test_landing_instrument 24/24.
