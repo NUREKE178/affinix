@@ -1330,6 +1330,7 @@ select.sk-input option:checked {
 /* Arena: the two specimens come in from their own sides, the VS key pops, the chosen one answers */
 @keyframes arSpecInL { from { opacity: 0; transform: translate3d(-22px, 0, 0) scale(.985); } }
 @keyframes arSpecInR { from { opacity: 0; transform: translate3d(22px, 0, 0) scale(.985); } }
+@keyframes arChipPop { 0% { opacity: 0; transform: scale(.6); } 70% { transform: scale(1.06); } 100% { opacity: 1; transform: none; } }
 @keyframes arVsPop { 0% { opacity: 0; transform: translate(-50%, -50%) scale(.4); } 70% { transform: translate(-50%, -50%) scale(1.12); } 100% { opacity: 1; transform: translate(-50%, -50%) scale(1); } }
 @keyframes arPickPop { 0% { transform: scale(1); } 35% { transform: scale(1.018); } 100% { transform: scale(1); } }
 .ar-stage > .ar-spec:nth-child(1) { animation: arSpecInL .5s var(--sk-ease-out) backwards; }
@@ -1338,7 +1339,8 @@ select.sk-input option:checked {
 .ar-stage > .ar-spec[data-state="picked"]:nth-child(n) { animation: arPickPop .5s var(--sk-ease-out), skRing .9s ease-out; }
 .ar-spec[data-state="other"] { transform: scale(.985); }
 .ar-spec-foot { animation: skRise .4s var(--sk-ease-out) .12s backwards; }
-.ar-spec-chip { animation: arVsPop .4s cubic-bezier(.3,1.4,.5,1) .2s backwards; }
+/* its own keyframes: arVsPop carries translate(-50%, -50%) (it centres the VS disc), which threw the chip half a chip up and to the left while it popped in and left it jumping back */
+.ar-spec-chip { animation: arChipPop .4s cubic-bezier(.3,1.4,.5,1) .2s backwards; transform-origin: 0 50%; }
 
 @media (prefers-reduced-motion: reduce) {
   .sk-grow, .sk-progress-fill, .ar-spec-bar > i, .ar-split > i, .ar-badge-prog > i, .sty-bar, .cr-res-bar > i, .ar-fader-fill,
