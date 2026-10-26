@@ -164,6 +164,9 @@
   color: var(--signal-ink); background: var(--lit); box-shadow: inset 0 1px 0 rgba(255,255,255,.45), 0 1px 0 rgba(0,0,0,.4);
 }
 .ar-spec-chip .ic { display: block; }
+.ar-spec-foot, .ar-spec-slot { min-width: 0; max-width: 100%; }
+.ar-spec-slot { overflow: hidden; } /* nothing in a card's result block can ever stick out of the card */
+.ar-spec-chip { max-width: 100%; }
 
 .ar-console-foot { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px 18px; padding: 12px 20px 16px; border-top: 1px solid var(--hair); background: rgba(0,0,0,.14); min-height: 68px; }
 .ar-foot-actions { display: flex; align-items: center; gap: 14px; margin-left: auto; }
@@ -362,7 +365,11 @@
   .ar-streak-chip { height: 56px; }
   .ar-lobby-grid { grid-template-columns: minmax(0, 1fr); }
   .ar-console-head { padding: 14px 14px 8px; flex-wrap: wrap; }
-  .ar-console-side { flex-direction: row; align-items: center; justify-content: space-between; width: 100%; }
+  /* rows, not one line: the progress dots + the leave key, then the count and the clock. One line overflowed the console on a narrow screen or with large system text (the clock stuck out past the edge, "2 / 10" broke in two) */
+  .ar-console-side { flex-direction: row; flex-wrap: wrap; align-items: center; justify-content: space-between; width: 100%; gap: 8px 12px; }
+  .ar-console-side-top { width: 100%; justify-content: space-between; }
+  .ar-round-count { white-space: nowrap; }
+  .ar-clock { min-width: 0; white-space: normal; text-align: right; }
   .ar-q-text { font-size: 18px; }
   .ar-stage { grid-template-columns: minmax(0, 1fr); gap: 10px; padding: 4px 14px 14px; }
   .ar-vs { top: calc(50% - 4px); width: 32px; height: 32px; }
