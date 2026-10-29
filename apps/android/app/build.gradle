@@ -1,0 +1,65 @@
+// Affinix for Android: a Trusted Web Activity. The app is the real Chrome engine showing https://affinix.space full screen (no address bar), so
+// everything the site does works the same (Google sign-in included, which a plain WebView would be refused) and the app is always the current
+// version of the site. The Android side is only the shell: icon, splash screen, launcher shortcuts, "open affinix.space links in the app".
+plugins {
+    id "com.android.application"
+}
+
+// Set by the release workflow: -PappVersion=1.2.3 -PappVersionCode=12345
+def appVersion = (project.findProperty("appVersion") ?: "1.0.0").toString()
+def appVersionCode = (project.findProperty("appVersionCode") ?: "1").toString().toInteger()
+
+// The key the APK is signed with comes from the environment (the release workflow creates it, or takes yours from repository secrets): no key is stored
+// in this repository. Without one (a local build) the release APK would be unsigned, so the debug key is used.
+def ksPath = System.getenv("ANDROID_KEYSTORE_PATH")
+def ksPass = System.getenv("ANDROID_KEYSTORE_PASSWORD")
+def ksAlias = System.getenv("ANDROID_KEY_ALIAS") ?: "affinix"
+def ksKeyPass = System.getenv("ANDROID_KEY_PASSWORD") ?: ksPass
+
+android {
+    namespace "space.affinix.app"
+    compileSdk 34
+
+    defaultConfig {
+        applicationId "space.affinix.app"
+        minSdk 23
+        targetSdk 34
+        versionCode appVersionCode
+        versionName appVersion
+    }
+
+    signingConfigs {
+        if (ksPath) {
+            release {
+                storeFile file(ksPath)
+                storePassword ksPass
+                keyAlias ksAlias
+                keyPassword ksKeyPass
+                enableV1Signing true
+                enableV2Signing true
+                enableV3Signing true
+            }
+        }
+    }
+
+    buildTypes {
+        release {
+            // no shrinking: the shell is a few classes of the library, and a size saving of a few MB is not worth a build that cannot be tried here
+            minifyEnabled false
+            signingConfig = ksPath ? signingConfigs.release : signingConfigs.debug
+        }
+    }
+
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_17
+        targetCompatibility JavaVersion.VERSION_17
+    }
+
+    lint {
+        abortOnError false
+    }
+}
+
+dependencies {
+    implementation "com.google.androidbrowserhelper:androidbrowserhelper:2.5.0"
+}

@@ -3,8 +3,8 @@
 A taste arena for design, plus a hub for marketers. People play fast duels between two designs
 (packaging, posters, logos, cards, interfaces), earn XP and a daily streak, take the daily challenge
 and uncover their taste DNA. Marketers see which styles people really choose, with the sample size
-shown and a clear note that it is a signal about taste, not a sales forecast. Installable as an app
-(Windows, Android, Linux) and as a PWA. The earlier research tools (experiments, participants,
+shown and a clear note that it is a signal about taste, not a sales forecast. Installable as a real app
+(Windows .exe, Linux AppImage / .deb, Android .apk, built by GitHub Actions: see `apps/README.md`) and as a PWA. The earlier research tools (experiments, participants,
 reports) are still in the codebase and reachable from the marketers page.
 
 ```

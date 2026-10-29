@@ -11,33 +11,47 @@ import { canInstall, isStandalone, promptInstall, subscribeInstall, detectPlatfo
 import { navigate } from "../router.js";
 
 export const REPO = "NUREKE178/affinix";
-export const ASSETS = { windows: "Affinix-Setup.exe", android: "Affinix.apk", linux: "Affinix.AppImage" };
-const LATEST_API = `https://api.github.com/repos/${REPO}/releases/latest`;
-const CACHE_KEY = "affinix_latest_release";
+export const ASSETS = { windows: "Affinix-Setup.exe", android: "Affinix.apk", linux: "Affinix.AppImage", deb: "Affinix.deb" };
+const RELEASES_API = `https://api.github.com/repos/${REPO}/releases?per_page=8`;
+const CACHE_KEY = "affinix_release_files";
 const CACHE_MS = 10 * 60 * 1000;
 
 const mb = (n) => `${(n / 1048576).toFixed(n > 10485760 ? 0 : 1)} MB`;
+const direct = (name) => `https://github.com/${REPO}/releases/latest/download/${name}`;
 
-/** { version, published, files: { windows?: {url, size}, android?: {url, size} } } | null (no release / offline). */
+/** { version, published, files: { windows?, android?, linux?, deb?: { url, size, version, published } } }
+ *  null: no release yet (the page says the installers are being prepared);
+ *  { unknown: true, files: {...direct links} }: GitHub could not be asked (offline, rate limit): the buttons still work, through the stable "latest" links.
+ *  Each file comes from the newest release that has it, so a release in which one build failed does not take that app off the page. */
 export async function fetchRelease(fetcher = fetch) {
   try {
     const raw = sessionStorage.getItem(CACHE_KEY);
     if (raw) { const c = JSON.parse(raw); if (Date.now() - c.at < CACHE_MS) return c.data; }
   } catch { /* storage may be unavailable */ }
   let data = null;
+  let cacheable = true;
   try {
-    const res = await fetcher(LATEST_API, { headers: { Accept: "application/vnd.github+json" } });
+    const res = await fetcher(RELEASES_API, { headers: { Accept: "application/vnd.github+json" } });
     if (res.ok) {
-      const j = await res.json();
+      const list = (await res.json()).filter((r) => !r.draft && !r.prerelease);
       const files = {};
-      for (const [key, name] of Object.entries(ASSETS)) {
-        const a = (j.assets ?? []).find((x) => x.name === name);
-        if (a) files[key] = { url: a.browser_download_url, size: a.size };
+      for (const r of list) {
+        for (const [key, name] of Object.entries(ASSETS)) {
+          if (files[key]) continue;
+          const a = (r.assets ?? []).find((x) => x.name === name);
+          if (a) files[key] = { url: a.browser_download_url, size: a.size, version: String(r.tag_name ?? "").replace(/^v/, ""), published: r.published_at };
+        }
       }
-      data = { version: String(j.tag_name ?? "").replace(/^v/, ""), published: j.published_at, files };
+      if (list.length) data = { version: String(list[0].tag_name ?? "").replace(/^v/, ""), published: list[0].published_at, files };
+    } else if (res.status !== 404) {
+      cacheable = false;
+      data = { unknown: true, version: "", published: null, files: Object.fromEntries(Object.entries(ASSETS).map(([k, n]) => [k, { url: direct(n), size: 0, version: "", published: null }])) };
     }
-  } catch { data = null; }
-  try { sessionStorage.setItem(CACHE_KEY, JSON.stringify({ at: Date.now(), data })); } catch { /* ignore */ }
+  } catch {
+    cacheable = false;
+    data = { unknown: true, version: "", published: null, files: Object.fromEntries(Object.entries(ASSETS).map(([k, n]) => [k, { url: direct(n), size: 0, version: "", published: null }])) };
+  }
+  if (cacheable) { try { sessionStorage.setItem(CACHE_KEY, JSON.stringify({ at: Date.now(), data })); } catch { /* ignore */ } }
   return data;
 }
 
@@ -67,7 +81,11 @@ export function DownloadPage({ standalone: standaloneLayout = false }) {
   useEffect(() => { let live = true; fetchRelease().then((r) => live && setRelease(r)); return () => { live = false; }; }, []);
 
   const files = release?.files ?? {};
-  const info = (k) => release && files[k] ? t("download.version", { v: release.version, size: mb(files[k].size), date: new Date(release.published).toLocaleDateString(getLocale()) }) : null;
+  const info = (k) => {
+    const f = files[k];
+    if (!f || !f.version) return null; // the stable "latest" links carry no version
+    return t("download.version", { v: f.version, size: mb(f.size), date: new Date(f.published).toLocaleDateString(getLocale()) });
+  };
   // the visitor's own system comes first, but every download stays available to everyone
   const order = ({
     android: ["android", "windows", "linux", "apple"],
@@ -95,10 +113,13 @@ export function DownloadPage({ standalone: standaloneLayout = false }) {
       <//>`,
     linux: html`
       <${Platform} key="linux" icon="linux" name=${t("download.linux.name")} note=${t("download.linux.note")} first=${order[0] === "linux"} testid="dl-linux">
-        ${files.linux
-          ? html`<a class="dl-btn" href=${files.linux.url} data-testid="dl-linux-link" download><${Icon} name="arrowDown" size=${16} /> ${t("download.linux.cta")}</a><p class="dl-meta">${info("linux")}</p>`
+        ${files.linux || files.deb
+          ? html`
+            ${files.linux && html`<a class="dl-btn" href=${files.linux.url} data-testid="dl-linux-link" download><${Icon} name="arrowDown" size=${16} /> ${t("download.linux.cta")}</a><p class="dl-meta">${info("linux")}</p>`}
+            ${files.deb && html`<a class="dl-btn dl-btn-2" href=${files.deb.url} data-testid="dl-deb-link" download><${Icon} name="arrowDown" size=${16} /> ${t("download.linux.ctaDeb")}</a><p class="dl-meta">${info("deb")}</p>`}`
           : html`<p class="dl-meta" data-testid="dl-linux-soon">${release === undefined ? "…" : t("download.pending")}</p>`}
         <p class="dl-warn">${t("download.warn.linux")}</p>
+        <p class="dl-warn">${t("download.warn.deb")}</p>
       <//>`,
     apple: html`
       <${Platform} key="apple" icon="apple" name=${t("download.apple.name")} note=${t("download.apple.note")} first=${order[0] === "apple"} testid="dl-apple">

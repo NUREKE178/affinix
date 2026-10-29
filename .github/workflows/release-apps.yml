@@ -1,6 +1,16 @@
-# Builds the Affinix apps and publishes them as a GitHub release, which is where the Download page of the site looks for them:
-#   Affinix-Setup.exe (Windows, Electron), Affinix.AppImage (Linux, Electron) and Affinix.apk (Android, Capacitor).
-# Run it by hand: Actions -> "Release apps" -> Run workflow (type a version, e.g. 1.0.0), or push a tag like v1.0.0.
+# Builds the real Affinix apps and publishes them as a GitHub release; the Download page of the site reads that release:
+#   Affinix-Setup.exe  Windows installer          (Electron, built on a Windows machine)
+#   Affinix.AppImage   Linux, runs anywhere       (Electron)         + latest-linux.yml (self-update)
+#   Affinix.deb        Linux, Debian / Ubuntu / Mint (Electron)
+#   Affinix.apk        Android                    (Trusted Web Activity: Chrome in an app shell, signed)
+#   SHA256SUMS.txt     checksums of the four files
+#
+# Run it: Actions -> "Release apps" -> Run workflow -> type a version (1.0.0)   or   push a tag like v1.0.0.
+# Android signing: no key is stored in the repository. Every build creates a one-off key, unless you give it yours: put these repository secrets
+# (Settings -> Secrets and variables -> Actions) once, with `bash scripts/android-key.sh` or by hand:
+#   ANDROID_KEYSTORE_BASE64 (the .jks file in base64), ANDROID_KEYSTORE_PASSWORD, ANDROID_KEY_ALIAS, ANDROID_KEY_PASSWORD (optional)
+# With your own key every release is signed the same way, so a phone updates the app in place. After each build the "Asset links" job publishes the
+# key's fingerprint in .well-known/assetlinks.json, which is what lets the app run full screen without a browser bar.
 name: Release apps
 
 on:
@@ -16,11 +26,44 @@ on:
 permissions:
   contents: write
 
-env:
-  VERSION: ${{ inputs.version || github.ref_name }}
+concurrency:
+  group: release-apps
+  cancel-in-progress: false
 
 jobs:
+  meta:
+    name: Version
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.v.outputs.version }}
+      tag: ${{ steps.v.outputs.tag }}
+      code: ${{ steps.v.outputs.code }}
+    steps:
+      - id: v
+        env:
+          RAW: ${{ inputs.version || github.ref_name }}
+        run: |
+          V="${RAW#v}"
+          if ! echo "$V" | grep -Eq '^[0-9]+\.[0-9]+\.[0-9]+(-[0-9A-Za-z.]+)?$'; then echo "::error::'$RAW' is not a version like 1.2.3"; exit 1; fi
+          {
+            echo "version=$V"
+            echo "tag=v$V"
+            echo "code=$(( $(date +%s) / 60 ))"   # Android's versionCode: grows with every build
+          } >> "$GITHUB_OUTPUT"
+
+  check:
+    name: Check the app files
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - run: node scripts/check-apps.mjs
+
   windows:
+    name: Windows installer (.exe)
+    needs: [meta, check]
     runs-on: windows-latest
     defaults:
       run:
@@ -30,20 +73,28 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 20
+          cache: npm
+          cache-dependency-path: apps/desktop/package-lock.json
       - name: Set the version
         shell: bash
-        run: |
-          V="${VERSION#v}"
-          npm version "$V" --no-git-tag-version --allow-same-version
-      - run: npm install
+        run: npm version "${{ needs.meta.outputs.version }}" --no-git-tag-version --allow-same-version
+      - run: npm ci
       - run: npm run dist
+      - name: Check what was built
+        shell: bash
+        run: ls -l dist && test -s dist/Affinix-Setup.exe
       - uses: actions/upload-artifact@v4
         with:
           name: windows
-          path: apps/desktop/dist/Affinix-Setup.exe
+          path: |
+            apps/desktop/dist/Affinix-Setup.exe
+            apps/desktop/dist/Affinix-Setup.exe.blockmap
+            apps/desktop/dist/latest.yml
           if-no-files-found: error
 
   linux:
+    name: Linux (.AppImage and .deb)
+    needs: [meta, check]
     runs-on: ubuntu-latest
     defaults:
       run:
@@ -53,69 +104,169 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 20
+          cache: npm
+          cache-dependency-path: apps/desktop/package-lock.json
       - name: Set the version
-        run: npm version "${VERSION#v}" --no-git-tag-version --allow-same-version
-      - run: npm install
+        run: npm version "${{ needs.meta.outputs.version }}" --no-git-tag-version --allow-same-version
+      - run: npm ci
       - run: npm run dist-linux
+      - name: Check what was built
+        run: |
+          ls -l dist
+          test -s dist/Affinix.AppImage
+          dpkg-deb --info dist/Affinix.deb
       - uses: actions/upload-artifact@v4
         with:
           name: linux
-          path: apps/desktop/dist/Affinix.AppImage
+          path: |
+            apps/desktop/dist/Affinix.AppImage
+            apps/desktop/dist/Affinix.deb
+            apps/desktop/dist/latest-linux.yml
           if-no-files-found: error
 
   android:
+    name: Android (.apk)
+    needs: [meta, check]
     runs-on: ubuntu-latest
     defaults:
       run:
         working-directory: apps/android
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 20
       - uses: actions/setup-java@v4
         with:
           distribution: temurin
           java-version: 17
-      - run: npm install
-      - name: Create the Android project
-        run: npx cap add android
-      - name: Icons and version
+      - name: Signing key
+        env:
+          KS: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+          KS_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          KS_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+          KS_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
         run: |
-          V="${VERSION#v}"
-          RES=android/app/src/main/res
-          for d in mdpi hdpi xhdpi xxhdpi xxxhdpi; do cp icons/mipmap-$d/*.png $RES/mipmap-$d/; done
-          rm -rf $RES/mipmap-anydpi-v26   # use the plain launcher PNGs above instead of the template's adaptive icon
-          CODE=$(( $(date +%s) / 60 ))
-          sed -i "s/versionCode [0-9]*/versionCode $CODE/; s/versionName \"[^\"]*\"/versionName \"$V\"/" android/app/build.gradle
-      - run: npx cap sync android
+          if [ -n "$KS" ]; then
+            echo "$KS" | base64 -d > "$RUNNER_TEMP/release.jks"
+            ALIAS="${KS_ALIAS:-affinix}"
+            PW="$KS_PASSWORD"
+            KEYPW="${KS_KEY_PASSWORD:-$KS_PASSWORD}"
+            echo "Signing with the key from the repository secrets."
+          else
+            ALIAS=affinix
+            PW=$(openssl rand -hex 24)
+            KEYPW="$PW"
+            keytool -genkeypair -keystore "$RUNNER_TEMP/release.jks" -alias "$ALIAS" -keyalg RSA -keysize 2048 -validity 36500 \
+              -startdate "2020/01/01 00:00:00" -storepass "$PW" -keypass "$KEYPW" -dname "CN=Affinix, O=Nurlan Company, C=KZ"
+            echo "::notice::Signing with a one-off key (no ANDROID_KEYSTORE_* secrets). Phones will not update this APK in place; see apps/README.md."
+          fi
+          echo "::add-mask::$PW"
+          {
+            echo "ANDROID_KEYSTORE_PATH=$RUNNER_TEMP/release.jks"
+            echo "ANDROID_KEYSTORE_PASSWORD=$PW"
+            echo "ANDROID_KEY_ALIAS=$ALIAS"
+            echo "ANDROID_KEY_PASSWORD=$KEYPW"
+          } >> "$GITHUB_ENV"
       - name: Build the APK
-        working-directory: apps/android/android
-        run: ./gradlew assembleDebug --no-daemon
-      - name: Name it
-        run: cp android/app/build/outputs/apk/debug/app-debug.apk Affinix.apk
+        run: |
+          chmod +x ./gradlew
+          ./gradlew assembleRelease --no-daemon --stacktrace \
+            -PappVersion="${{ needs.meta.outputs.version }}" -PappVersionCode="${{ needs.meta.outputs.code }}"
+      - name: Name it and check it
+        run: |
+          cp app/build/outputs/apk/release/app-release.apk Affinix.apk
+          BT=$(find "$ANDROID_HOME/build-tools" -mindepth 1 -maxdepth 1 -type d | sort -V | tail -1)
+          "$BT/apksigner" verify --verbose --print-certs Affinix.apk | tee verify.txt
+          "$BT/aapt" dump badging Affinix.apk | grep -E "^package:|application-label:" || true
+          ls -l Affinix.apk
+          # the certificate's SHA-256 as aa:bb:.. (what .well-known/assetlinks.json lists)
+          sed -n 's/.*certificate SHA-256 digest: //p' verify.txt | head -1 | tr 'a-f' 'A-F' | sed 's/../&:/g; s/:$//' > fingerprint.txt
+          echo "Signing certificate SHA-256: $(cat fingerprint.txt)"
+          grep -Eq '^([0-9A-F]{2}:){31}[0-9A-F]{2}$' fingerprint.txt
       - uses: actions/upload-artifact@v4
         with:
           name: android
           path: apps/android/Affinix.apk
           if-no-files-found: error
+      - uses: actions/upload-artifact@v4
+        with:
+          name: android-fingerprint
+          path: apps/android/fingerprint.txt
+          if-no-files-found: error
+
+  assetlinks:
+    name: Asset links (the APK's key, published on the site)
+    needs: [android]
+    if: ${{ needs.android.result == 'success' }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - uses: actions/download-artifact@v4
+        with:
+          name: android-fingerprint
+          path: fp
+      - name: Add the fingerprint to .well-known/assetlinks.json
+        run: node scripts/update-assetlinks.mjs "$(cat fp/fingerprint.txt)"
+      - name: Commit it to main (the site redeploys)
+        continue-on-error: true
+        run: |
+          if git diff --quiet; then echo "assetlinks.json already lists this key"; exit 0; fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add .well-known/assetlinks.json assetlinks.json
+          git commit -m "Android: publish the app's signing fingerprint (Digital Asset Links)"
+          git pull --rebase origin main
+          git push origin HEAD:main
 
   release:
-    needs: [windows, linux, android]
+    name: Publish the release
+    needs: [meta, windows, linux, android]
+    # publish whatever was built: a failed Android build must not keep the Windows and Linux installers from the Download page
+    if: ${{ !cancelled() && needs.meta.result == 'success' && (needs.windows.result == 'success' || needs.linux.result == 'success' || needs.android.result == 'success') }}
     runs-on: ubuntu-latest
     steps:
       - uses: actions/download-artifact@v4
         with:
+          pattern: "{windows,linux,android}"
           path: out
           merge-multiple: true
-      - name: Publish the release
+      - name: Checksums and notes
+        env:
+          V: ${{ needs.meta.outputs.version }}
+          WIN: ${{ needs.windows.result }}
+          LIN: ${{ needs.linux.result }}
+          AND: ${{ needs.android.result }}
+        run: |
+          cd out
+          ls -l
+          sha256sum Affinix-Setup.exe Affinix.AppImage Affinix.deb Affinix.apk 2>/dev/null | tee SHA256SUMS.txt
+          {
+            echo "## Affinix $V"
+            echo
+            echo "| | File | How to install |"
+            echo "|---|---|---|"
+            echo "| Windows | \`Affinix-Setup.exe\` | Run it. If Windows says \"protected your PC\": **More info -> Run anyway** (the app is not signed with a paid certificate yet). |"
+            echo "| Android | \`Affinix.apk\` | Open it on the phone and allow \"install from this source\" when asked. |"
+            echo "| Linux | \`Affinix.AppImage\` | \`chmod +x Affinix.AppImage && ./Affinix.AppImage\` |"
+            echo "| Debian / Ubuntu / Mint | \`Affinix.deb\` | \`sudo apt install ./Affinix.deb\` |"
+            echo
+            echo "The apps open https://affinix.space, so they are always the current version of the site. Windows and the Linux AppImage also update themselves."
+            echo "Checksums: \`SHA256SUMS.txt\`."
+            [ "$WIN" = "success" ] || echo "> The Windows build did not finish for this release."
+            [ "$LIN" = "success" ] || echo "> The Linux build did not finish for this release."
+            [ "$AND" = "success" ] || echo "> The Android build did not finish for this release."
+          } > ../notes.md
+      - name: Publish
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: ${{ inputs.version && format('v{0}', inputs.version) || github.ref_name }}
-          name: Affinix ${{ inputs.version || github.ref_name }}
+          tag_name: ${{ needs.meta.outputs.tag }}
+          target_commitish: ${{ github.sha }}
+          name: Affinix ${{ needs.meta.outputs.version }}
+          body_path: notes.md
           make_latest: true
           generate_release_notes: true
-          files: |
-            out/Affinix-Setup.exe
-            out/Affinix.apk
-            out/Affinix.AppImage
+          fail_on_unmatched_files: false
+          files: out/*

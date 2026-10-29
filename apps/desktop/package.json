@@ -2,27 +2,32 @@
   "name": "affinix-desktop",
   "version": "1.0.0",
   "private": true,
-  "description": "Affinix for Windows: a window around affinix.space.",
-  "author": "Nurlan Company",
+  "description": "Affinix for Windows and Linux: a native window around affinix.space.",
+  "homepage": "https://affinix.space",
+  "author": { "name": "Nurlan Company", "email": "NUREKE178@users.noreply.github.com" },
+  "license": "UNLICENSED",
   "main": "main.js",
   "scripts": {
     "start": "electron .",
     "dist": "electron-builder --win nsis --publish never",
-    "dist-linux": "electron-builder --linux AppImage --publish never"
+    "dist-linux": "electron-builder --linux AppImage deb --publish never"
+  },
+  "dependencies": {
+    "electron-updater": "^6.3.9"
   },
   "devDependencies": {
-    "electron": "^33.2.0",
-    "electron-builder": "^25.1.8"
+    "electron": "33.2.1",
+    "electron-builder": "25.1.8"
   },
   "build": {
     "appId": "space.affinix.app",
     "productName": "Affinix",
     "copyright": "Nurlan Company",
     "directories": { "buildResources": "build", "output": "dist" },
-    "files": ["main.js", "offline.html", "build/icon.png"],
+    "files": ["main.js", "lib.js", "offline.html", "build/icon.png"],
+    "protocols": [{ "name": "Affinix", "schemes": ["affinix"] }],
+    "publish": [{ "provider": "github", "owner": "NUREKE178", "repo": "affinix" }],
     "win": { "target": [{ "target": "nsis", "arch": ["x64"] }], "icon": "build/icon.ico" },
-    "linux": { "target": [{ "target": "AppImage", "arch": ["x64"] }], "icon": "build/icon.png", "category": "Office", "synopsis": "Affinix" },
-    "appImage": { "artifactName": "Affinix.AppImage" },
     "nsis": {
       "oneClick": false,
       "perMachine": false,
@@ -30,7 +35,21 @@
       "createDesktopShortcut": true,
       "createStartMenuShortcut": true,
       "shortcutName": "Affinix",
+      "runAfterFinish": true,
+      "deleteAppDataOnUninstall": false,
       "artifactName": "Affinix-Setup.exe"
-    }
+    },
+    "linux": {
+      "target": [{ "target": "AppImage", "arch": ["x64"] }, { "target": "deb", "arch": ["x64"] }],
+      "icon": "build/icon.png",
+      "category": "Network",
+      "synopsis": "Affinix",
+      "description": "Affinix: see which designs people love. The Arena, taste DNA and what people prefer, in its own window.",
+      "maintainer": "Nurlan Company <NUREKE178@users.noreply.github.com>",
+      "executableName": "affinix",
+      "desktop": { "StartupWMClass": "Affinix", "Keywords": "design;taste;arena;affinix;" }
+    },
+    "appImage": { "artifactName": "Affinix.AppImage" },
+    "deb": { "artifactName": "Affinix.deb", "packageName": "affinix" }
   }
 }

@@ -118,6 +118,7 @@ export default {
     version: "Version {v} · {size} · {date}",
     warn: {
       linux: "After downloading: make the file executable (right-click → Properties → Allow executing, or chmod +x Affinix.AppImage) and run it.",
+      deb: "On Debian, Ubuntu and Mint the .deb is easier to install: sudo apt install ./Affinix.deb",
       win: "Windows may show “Windows protected your PC”. The app is not signed with a paid certificate yet: choose More info → Run anyway.",
       android: "Android will ask to allow installs from your browser. Allow it for this one install, then open the file."
     },
@@ -129,7 +130,7 @@ export default {
       t3: "Updates itself",
       b3: "You always see today's new designs."
     },
-    linux: { name: "Linux", note: "Any distribution. AppImage (x64)", cta: "Download for Linux" },
+    linux: { name: "Linux", note: "Any distribution: AppImage or .deb (x64)", cta: "Download for Linux", ctaDeb: "Download .deb (Debian, Ubuntu)" },
     android: {
       name: "Android",
       note: "Android 7 and newer. Install file (.apk)",

@@ -118,6 +118,7 @@ export default {
     version: "Версия {v} · {size} · {date}",
     warn: {
       linux: "После загрузки сделайте файл исполняемым (ПКМ → Свойства → Разрешить выполнение, или chmod +x Affinix.AppImage) и запустите.",
+      deb: "На Debian, Ubuntu и Mint проще поставить .deb: sudo apt install ./Affinix.deb",
       win: "Windows может показать «Windows защитила ваш компьютер». У приложения пока нет платной подписи: выберите «Подробнее» → «Выполнить в любом случае».",
       android: "Android попросит разрешить установку из браузера. Разрешите один раз, затем откройте файл."
     },
@@ -129,7 +130,7 @@ export default {
       t3: "Обновляется само",
       b3: "Вы всегда видите сегодняшние новые дизайны."
     },
-    linux: { name: "Linux", note: "Любой дистрибутив. AppImage (x64)", cta: "Скачать для Linux" },
+    linux: { name: "Linux", note: "Любой дистрибутив: AppImage или .deb (x64)", cta: "Скачать для Linux", ctaDeb: "Скачать .deb (Debian, Ubuntu)" },
     android: {
       name: "Android",
       note: "Android 7 и новее. Файл установки (.apk)",

@@ -1,0 +1,14 @@
+[
+  {
+    "relation": [
+      "delegate_permission/common.handle_all_urls"
+    ],
+    "target": {
+      "namespace": "android_app",
+      "package_name": "space.affinix.app",
+      "sha256_cert_fingerprints": [
+        "F8:B0:0C:14:1D:A9:FC:39:10:CB:89:F3:37:56:95:BE:EF:EA:9E:EB:29:DE:FC:E9:07:6A:FB:11:AD:79:D9:93"
+      ]
+    }
+  }
+]

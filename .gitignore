@@ -5,3 +5,6 @@ node_modules/
 dist/
 apps/android/android/
 apps/android/package-lock.json
+# signing keys are never committed
+*.jks
+*.keystore

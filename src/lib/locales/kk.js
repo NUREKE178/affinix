@@ -118,6 +118,7 @@ export default {
     version: "Нұсқа {v} · {size} · {date}",
     warn: {
       linux: "Жүктегеннен кейін файлды орындалатын етіңіз (тінтуірдің оң түймесі → Қасиеттер → Орындауға рұқсат, немесе chmod +x Affinix.AppImage) да іске қосыңыз.",
+      deb: "Debian, Ubuntu және Mint-те .deb орнату оңай: sudo apt install ./Affinix.deb",
       win: "Windows «Компьютеріңізді қорғады» деп көрсетуі мүмкін. Қосымшада әлі ақылы қол жоқ: «Толығырақ» → «Бәрібір орындау» таңдаңыз.",
       android: "Android браузерден орнатуға рұқсат сұрайды. Бір рет рұқсат беріп, файлды ашыңыз."
     },
@@ -129,7 +130,7 @@ export default {
       t3: "Өзі жаңарады",
       b3: "Бүгінгі жаңа дизайндарды әрдайым көресіз."
     },
-    linux: { name: "Linux", note: "Кез келген дистрибутив. AppImage (x64)", cta: "Linux үшін жүктеу" },
+    linux: { name: "Linux", note: "Кез келген дистрибутив: AppImage немесе .deb (x64)", cta: "Linux үшін жүктеу", ctaDeb: ".deb жүктеу (Debian, Ubuntu)" },
     android: {
       name: "Android",
       note: "Android 7 және одан жаңа. Орнату файлы (.apk)",

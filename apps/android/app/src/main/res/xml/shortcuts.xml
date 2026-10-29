@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Long-press the launcher icon: straight to the Arena, to "what people love", to the feed. -->
+<shortcuts xmlns:android="http://schemas.android.com/apk/res/android">
+    <shortcut android:shortcutId="arena" android:shortcutShortLabel="@string/shortcut_arena" android:enabled="true">
+        <intent android:action="android.intent.action.VIEW" android:data="https://affinix.space/#/app/arena"
+            android:targetPackage="space.affinix.app" android:targetClass="com.google.androidbrowserhelper.trusted.LauncherActivity" />
+    </shortcut>
+    <shortcut android:shortcutId="styles" android:shortcutShortLabel="@string/shortcut_styles" android:enabled="true">
+        <intent android:action="android.intent.action.VIEW" android:data="https://affinix.space/#/app/styles"
+            android:targetPackage="space.affinix.app" android:targetClass="com.google.androidbrowserhelper.trusted.LauncherActivity" />
+    </shortcut>
+    <shortcut android:shortcutId="feed" android:shortcutShortLabel="@string/shortcut_feed" android:enabled="true">
+        <intent android:action="android.intent.action.VIEW" android:data="https://affinix.space/#/app/feed"
+            android:targetPackage="space.affinix.app" android:targetClass="com.google.androidbrowserhelper.trusted.LauncherActivity" />
+    </shortcut>
+</shortcuts>
