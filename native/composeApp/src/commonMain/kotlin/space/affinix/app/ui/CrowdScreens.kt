@@ -91,7 +91,7 @@ fun CrowdEntryCard(model: AppModel) {
         Spacer(Modifier.height(6.dp))
         Txt(t("crowd.heroBody"), 13, color = C.g400)
         Spacer(Modifier.height(12.dp))
-        KeyButton(t("crowd.heroKicker"), { model.tab = Tab.Research }, Modifier.fillMaxWidth())
+        KeyButton(t("crowd.heroKicker"), { model.research.section = space.affinix.app.store.ResearchModel.Section.Crowd; model.tab = Tab.Research }, Modifier.fillMaxWidth())
     }
 }
 

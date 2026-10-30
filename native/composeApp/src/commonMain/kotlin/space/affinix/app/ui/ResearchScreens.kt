@@ -67,7 +67,7 @@ private fun statusTone(status: String) = when (status) { "published" -> Tone.Ok;
 @Composable
 private fun researchTypeText(id: String?): String = if (id == null) "" else t("questionTypes.research.$id.label")
 
-/** Research: the experiments of the company, their results, the participants, the crowd tests and the team. */
+/** "For marketers" (the website's sidebar item): the experiments of the company, their results, the participants, the crowd tests and the team. */
 @Composable
 fun ResearchScreen(model: AppModel) {
     val r = model.research
@@ -79,7 +79,7 @@ fun ResearchScreen(model: AppModel) {
     Column(Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(14.dp)) {
         Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             IcoAction("arrowLeft", { model.tab = Tab.Play })
-            Txt(t("research.title"), 24, FontWeight.ExtraBold, C.g50)
+            Txt(t("shell.nav.marketers"), 24, FontWeight.ExtraBold, C.g50)
         }
         if (r.orgs.size > 1) CompanyPicker(r)
         else r.org?.let { Txt(it.name, 13, FontWeight.Bold, C.g400) }
