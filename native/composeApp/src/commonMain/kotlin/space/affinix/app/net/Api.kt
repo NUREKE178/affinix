@@ -155,6 +155,23 @@ class Api(
     suspend fun tallies(items: List<TallyQuery>): List<Tally> =
         rpc("arena_tallies", buildJsonObject { put("p_items", ApiJson.encodeToJsonElement(ListSerializer(TallyQuery.serializer()), items)) }, ListSerializer(Tally.serializer()))
 
+    /** Every (pair, dim) the player has answered in [season]: what a new device must know not to deal the same duel twice. */
+    suspend fun myVotes(season: String): List<Pair<String, String>> {
+        val out = ArrayList<Pair<String, String>>()
+        var after = 0L
+        for (page in 0 until 12) {
+            val res = rpc("arena_my_votes", buildJsonObject { put("p_season", season); put("p_after", after); put("p_limit", 5000) }, MyVotes.serializer())
+            for (row in res.rows) {
+                val pair = (row.getOrNull(0) as? JsonPrimitive)?.content ?: continue
+                val dim = (row.getOrNull(1) as? JsonPrimitive)?.content ?: continue
+                out += pair to dim
+            }
+            after = res.last
+            if (!res.more) break
+        }
+        return out
+    }
+
     suspend fun leaderboard(scope: String, friends: Boolean = false): Leaderboard =
         rpc("arena_leaderboard", buildJsonObject { put("p_scope", scope); put("p_friends", friends) }, Leaderboard.serializer())
 

@@ -6,6 +6,8 @@ expect object Platform {
     /** minutes east of UTC at this moment */
     fun tzOffsetMinutes(): Int
     fun uuid(): String
+    /** the device's language, e.g. "kk" */
+    fun languageTag(): String
 }
 
 /** Civil date (proleptic Gregorian) of a day number counted from 1970-01-01. */

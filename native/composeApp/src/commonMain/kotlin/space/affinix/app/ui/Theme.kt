@@ -14,8 +14,6 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.geometry.CornerRadius
-import androidx.compose.ui.geometry.Offset
-import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Shape
@@ -102,7 +100,6 @@ fun ts(size: Int, weight: FontWeight = FontWeight.Normal, color: Color = C.g100,
 fun Modifier.plate(radius: Dp = 16.dp): Modifier = this.drawBehind {
     val r = CornerRadius(radius.toPx())
     drawRoundRect(brush = PlateBrush, cornerRadius = r)
-    drawRoundRect(color = Color.White.copy(alpha = .055f), cornerRadius = r, topLeft = Offset(0f, 0f), size = Size(size.width, 1.2f.coerceAtLeast(1f)), alpha = .0f)
 }.border(1.dp, C.hair, RoundedCornerShape(radius))
 
 /** Sunken well: the website's `sk-well`. */

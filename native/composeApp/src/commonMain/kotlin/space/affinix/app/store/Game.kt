@@ -1,8 +1,11 @@
 package space.affinix.app.store
 
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import space.affinix.app.Platform
 import space.affinix.app.Rules
 import space.affinix.app.net.Duel
@@ -71,6 +74,7 @@ class Game(
 
     /** Votes not yet accepted by the server, oldest first. They survive failed flushes. */
     private val pending = ArrayDeque<WireVote>()
+    private val flushLock = Mutex()
     val pendingCount get() = pending.size
 
     fun start(mode: Mode, duels: List<Duel>) {
@@ -130,17 +134,19 @@ class Game(
     fun end() { _round.value = null }
 
     /** Sends pending votes in batches; returns true when the queue is empty. A failure keeps what was not accepted. */
-    suspend fun flush(): Boolean {
+    suspend fun flush(): Boolean = flushLock.withLock {
         var guard = 0
         while (pending.isNotEmpty() && guard++ < 60) {
             val batch = pending.take(Rules.MAX_VOTES_PER_SUBMIT)
             try {
                 sink.submit(batch, today())
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
-                return false
+                return@withLock false
             }
             repeat(batch.size) { pending.removeFirst() }
         }
-        return pending.isEmpty()
+        pending.isEmpty()
     }
 }

@@ -72,6 +72,24 @@ compose.desktop {
             targetFormats(TargetFormat.Deb, TargetFormat.Msi, TargetFormat.Exe, TargetFormat.AppImage)
             packageName = "Affinix"
             packageVersion = appVersion
+            description = "Affinix: the design taste arena"
+            vendor = "Affinix"
+            // jlink keeps only the JDK modules the app needs: smaller installers
+            modules("java.instrument", "java.management", "java.naming", "java.net.http", "java.sql", "jdk.unsupported", "jdk.crypto.ec")
+            linux {
+                iconFile.set(project.file("packaging/icon.png"))
+                shortcut = true
+                debMaintainer = "support@affinix.space"
+                menuGroup = "Education"
+            }
+            windows {
+                iconFile.set(project.file("packaging/icon.ico"))
+                shortcut = true
+                menuGroup = "Affinix"
+                perUserInstall = true
+                dirChooser = true
+                upgradeUuid = "45391da7-9cc4-4ae3-b9b8-56bed6cb50b9"
+            }
         }
     }
 }

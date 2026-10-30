@@ -7,4 +7,5 @@ actual object Platform {
     actual fun nowMillis(): Long = System.currentTimeMillis()
     actual fun tzOffsetMinutes(): Int = TimeZone.getDefault().getOffset(System.currentTimeMillis()) / 60_000
     actual fun uuid(): String = UUID.randomUUID().toString()
+    actual fun languageTag(): String = java.util.Locale.getDefault().language
 }

@@ -2,6 +2,7 @@ package space.affinix.app.net
 
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
+import kotlinx.serialization.json.JsonArray
 
 @Serializable
 data class Session(
@@ -91,6 +92,9 @@ data class WireVote(
 
 @Serializable
 data class TallyQuery(val pair: String, val dim: String)
+
+@Serializable
+data class MyVotes(val rows: List<JsonArray> = emptyList(), val last: Long = 0, val more: Boolean = false)
 
 @Serializable
 data class LeaderRow(
