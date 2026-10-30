@@ -99,6 +99,7 @@ fun ProfileScreen(model: AppModel) {
                 Row2(t("arena.lobby.statEye"), if ((p?.eyeTotal ?: 0) == 0) "–" else "${p?.eyeCorrect}/${p?.eyeTotal}")
             }
         }
+        DnaCard(model)
         Badges(model)
         EditProfile(model)
         Plate(Modifier.fillMaxWidth()) {

@@ -30,6 +30,7 @@ const KEYS = [
   "arena.tabs.play", "arena.tabs.rankings", "arena.tabs.profile",
   ...RANKS.map((r) => `arena.rank.${r}`),
   ...DIMS.map((d) => `arena.q.${d}`),
+  ...DIMS.map((d) => `builder.dimensions.${d}.label`),
   ...FAMILIES.map((f) => `arena.family.${f}`),
   "arena.console.progress", "arena.console.option", "arena.console.pick", "arena.console.skip", "arena.console.next", "arena.console.leave",
   "arena.console.flowBonus", "arena.console.pioneer", "arena.console.votes", "arena.console.stimWin", "arena.console.contrast", "arena.console.repeat",
@@ -60,7 +61,7 @@ const KEYS = [
 ];
 
 // whole subtrees of the site's locale (every string under the prefix), for screens that use most of a section
-const PREFIXES = ["messages", "search", "arena.marathon"];
+const PREFIXES = ["messages", "search", "arena.marathon", "arena.dna", "arena.traits", "arena.archetype", "arena.share"];
 const leaves = (o, base) => Object.entries(o).flatMap(([k, v]) => (typeof v === "string" ? [`${base}.${k}`] : v && typeof v === "object" ? leaves(v, `${base}.${k}`) : []));
 for (const p of PREFIXES) for (const k of leaves(get(ru, p), p)) if (!KEYS.includes(k)) KEYS.push(k);
 

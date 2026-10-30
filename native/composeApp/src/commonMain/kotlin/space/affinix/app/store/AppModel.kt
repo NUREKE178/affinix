@@ -378,6 +378,41 @@ class AppModel(
         flushJob = scope.launch { delay(3500); offline = !game.flush() }
     }
 
+    // ---- Taste DNA -----------------------------------------------------------------------------------------------------------------
+
+    /** how my picks lean along the seven taste axes (null until computed) */
+    var dna by mutableStateOf<Taste.Result?>(null)
+        private set
+    var dnaLoading by mutableStateOf(false)
+        private set
+    var dnaFailed by mutableStateOf(false)
+        private set
+    private var dnaForVotes = -1L
+    private val traitCache = HashMap<String, DoubleArray>()
+    private val pairRe = Regex("^(\\d{6})/([a-z]{2,12})/(\\d{1,4})-(\\d{1,4})$")
+
+    /** Reads this and last season's answers and the traits of the specimens (from the same generator as the website), and computes the DNA. Cheap to call again: it only works when the vote count changed. */
+    fun loadDna() {
+        val total = (profile?.votes ?: 0).toLong()
+        if (dnaLoading || (dna != null && dnaForVotes == total)) return
+        scope.launch {
+            dnaLoading = true; dnaFailed = false
+            try {
+                val season = seasonOf()
+                val rows = listOf(prevSeason(season), season).flatMap { api.myVoteRows(it) }
+                val answers = rows.mapNotNull { (pair, dim, pick) -> pairRe.matchEntire(pair)?.let { Triple(it.groupValues, dim, pick) } }
+                val need = answers.flatMap { (g, _, _) -> listOf(Triple(g[1], g[2], g[3].toInt()), Triple(g[1], g[2], g[4].toInt())) }
+                    .filter { "${it.first}/${it.second}/${it.third}" !in traitCache }.distinct()
+                for (chunk in need.chunked(2500)) for ((k, v) in api.traits(chunk)) traitCache[k] = v
+                val zero = DoubleArray(Taste.TRAITS.size)
+                dna = Taste.build(answers.map { (g, dim, pick) ->
+                    Taste.Answer(dim, pick, traitCache["${g[1]}/${g[2]}/${g[3].toInt()}"] ?: zero, traitCache["${g[1]}/${g[2]}/${g[4].toInt()}"] ?: zero)
+                })
+                dnaForVotes = total
+            } catch (e: CancellationException) { throw e } catch (e: Exception) { dnaFailed = true } finally { dnaLoading = false }
+        }
+    }
+
     // ---- my profile ------------------------------------------------------------------------------------------------------------------
 
     fun loadMyProfile() {

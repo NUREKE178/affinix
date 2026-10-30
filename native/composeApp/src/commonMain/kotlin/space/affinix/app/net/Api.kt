@@ -24,6 +24,10 @@ import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
+import kotlinx.serialization.json.double
+import kotlinx.serialization.json.jsonArray
+import kotlinx.serialization.json.jsonObject
+import kotlinx.serialization.json.jsonPrimitive
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.put
 
@@ -193,6 +197,34 @@ class Api(
             if (!res.more) break
         }
         return out
+    }
+
+    /** Every answer of [season] as (pair, dim, pick); pick 0 = the specimen with the lower index. */
+    suspend fun myVoteRows(season: String): List<Triple<String, String, Int>> {
+        val out = ArrayList<Triple<String, String, Int>>()
+        var after = 0L
+        for (page in 0 until 12) {
+            val res = rpc("arena_my_votes", buildJsonObject { put("p_season", season); put("p_after", after); put("p_limit", 5000) }, MyVotes.serializer())
+            for (row in res.rows) {
+                val pair = (row.getOrNull(0) as? JsonPrimitive)?.content ?: continue
+                val dim = (row.getOrNull(1) as? JsonPrimitive)?.content ?: continue
+                val pick = (row.getOrNull(2) as? JsonPrimitive)?.content?.toIntOrNull() ?: continue
+                out += Triple(pair, dim, pick)
+            }
+            after = res.last
+            if (!res.more) break
+        }
+        return out
+    }
+
+    /** The measured taste traits of specimens (season, family, index) -> seven numbers in the order of Taste.TRAITS; asked of the same generator the website uses. */
+    suspend fun traits(items: List<Triple<String, String, Int>>): Map<String, DoubleArray> {
+        val body = buildJsonObject { put("items", JsonArray(items.map { JsonArray(listOf(JsonPrimitive(it.first), JsonPrimitive(it.second), JsonPrimitive(it.third))) })) }
+        val r = http.post(config.apiBase + "/api/arena-traits") { contentType(ContentType.Application.Json); setBody(body.toString()) }
+        val text = r.bodyAsText()
+        if (!r.status.isSuccess()) throw ApiException(r.status.value, errorOf(text, r.status.value))
+        val obj = ApiJson.parseToJsonElement(text).jsonObject["traits"]?.jsonObject ?: throw ApiException(200, "unexpected answer: " + text.take(120))
+        return obj.mapValues { (_, v) -> v.jsonArray.map { it.jsonPrimitive.double }.toDoubleArray() }
     }
 
     suspend fun leaderboard(scope: String, friends: Boolean = false): Leaderboard =

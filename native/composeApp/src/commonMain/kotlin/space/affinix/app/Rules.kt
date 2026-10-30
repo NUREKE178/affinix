@@ -91,6 +91,9 @@ object Rules {
     fun rankForLevel(level: Int): String = ranks.last { level >= it.first }.second
 
 
+    /** the questions of the Arena, in the order of the website's DIMENSION_IDS */
+    val DIMENSIONS = listOf("preference", "attention", "trust", "quality", "premium", "clarity", "purchaseIntent", "friendly", "modern", "natural", "energetic")
+
     // ---- Stage 3: extra shared sets and the theme of the week (migration 0023, mirrored from src/lib/arena/rules.js) ----------------
     val EXTRA_SETS = listOf(2, 3, 4, 5, 6)
     const val SET_SIZE = DAILY_SET_SIZE
