@@ -1,0 +1,120 @@
+10-30 15:05:53.916  1431  4933 I NamespaceManager: Package com.android.refreshratecontrol name not found! Using module version.
+10-30 15:05:53.916  1431  4933 I NamespaceManager: Package com.google.oslo name not found! Using module version.
+10-30 15:05:53.916  1431  4933 I NamespaceManager: Package com.android.media name not found! Using module version.
+10-30 15:05:53.916  1431  4933 I NamespaceManager: Package com.android.media.swcodec name not found! Using module version.
+10-30 15:05:53.916  1431  4933 I NamespaceManager: Package com.android.appsearch name not found! Using module version.
+10-30 15:05:53.916  1431  4933 I NamespaceManager: Package com.android.neuralnetworks name not found! Using module version.
+10-30 15:05:53.916  1431  4933 I NamespaceManager: Package com.android.media name not found! Using module version.
+10-30 15:05:53.916  1431  4933 I NamespaceManager: Package 1 name not found! Using module version.
+10-30 15:05:53.919  1431  4933 I NamespaceManager: Package com.android.refreshratecontrol name not found! Using module version.
+10-30 15:05:53.924  4265  4389 W ziparchive: Unable to open '/data/user_de/0/com.google.android.gms/app_chimera/m/00000002/DynamiteLoader.dm': No such file or directory
+10-30 15:05:53.924  4265  4389 W ziparchive: Unable to open '/data/user_de/0/com.google.android.gms/app_chimera/m/00000002/DynamiteLoader.dm': No such file or directory
+10-30 15:05:53.924  4265  4389 I .apps.messaging: Waiting for a blocking GC ClassLinker
+10-30 15:05:53.924  1431  4933 I NamespaceManager: Package com.google.oslo name not found! Using module version.
+10-30 15:05:53.926  1431  4933 I NamespaceManager: Package com.android.media name not found! Using module version.
+10-30 15:05:53.926  1431  4933 I NamespaceManager: Package com.android.media.swcodec name not found! Using module version.
+10-30 15:05:53.926  1431  4933 I NamespaceManager: Package com.android.appsearch name not found! Using module version.
+10-30 15:05:53.926  1431  4933 I NamespaceManager: Package com.android.neuralnetworks name not found! Using module version.
+10-30 15:05:53.926  1431  4933 I NamespaceManager: Package com.android.media name not found! Using module version.
+10-30 15:05:53.926  1431  4933 I NamespaceManager: Package 1 name not found! Using module version.
+10-30 15:05:53.932  4688  4727 V ClearcutMetricXmitter: Transmission is done.
+10-30 15:05:53.933  4688  4700 V ClearcutMetricXmitter: Transmission is done.
+10-30 15:05:53.934   519   519 I PackageWatchdog: Syncing health check requests for packages: {}
+10-30 15:05:53.934   519   519 I ExplicitHealthCheckController: Service not ready to get health check supported packages. Binding...
+10-30 15:05:53.942  1431  3428 I NamespaceManager: Package com.android.refreshratecontrol name not found! Using module version.
+10-30 15:05:53.942  1431  3428 I NamespaceManager: Package com.google.oslo name not found! Using module version.
+10-30 15:05:53.943   519   519 I ExplicitHealthCheckController: Explicit health check service is bound
+10-30 15:05:53.944   519   519 I ExplicitHealthCheckController: Explicit health check service is connected ComponentInfo{com.google.android.ext.services/android.ext.services.watchdog.ExplicitHealthCheckServiceImpl}
+10-30 15:05:53.944   519   519 I ExplicitHealthCheckController: Service initialized, syncing requests
+10-30 15:05:53.944   519   519 I PackageWatchdog: Syncing health check requests for packages: {}
+10-30 15:05:53.944   519   519 D ExplicitHealthCheckController: Getting health check supported packages
+10-30 15:05:53.944  1431  3428 I NamespaceManager: Package com.android.media name not found! Using module version.
+10-30 15:05:53.944  1431  3428 I NamespaceManager: Package com.android.media.swcodec name not found! Using module version.
+10-30 15:05:53.947  4265  4389 I .apps.messaging: WaitForGcToComplete blocked ClassLinker on Background for 23.189ms
+10-30 15:05:53.949   519   533 I ExplicitHealthCheckController: Explicit health check supported packages [PackageConfig{com.google.android.networkstack, 86400000}]
+10-30 15:05:53.949   519   533 D PackageWatchdog: Received supported packages [PackageConfig{com.google.android.networkstack, 86400000}]
+10-30 15:05:53.949   519   533 D ExplicitHealthCheckController: Getting health check requested packages
+10-30 15:05:53.949  4265  4389 I DynamiteModule: Considering local module com.google.android.gms.cronet_dynamite:0 and remote module com.google.android.gms.cronet_dynamite:2411
+10-30 15:05:53.949  4265  4389 I DynamiteModule: Selected remote version of com.google.android.gms.cronet_dynamite, version >= 2411
+10-30 15:05:53.949  4265  4389 V DynamiteModule: Dynamite loader version >= 2, using loadModule2NoCrashUtils
+10-30 15:05:53.951  1431  3428 I NamespaceManager: Package com.android.appsearch name not found! Using module version.
+10-30 15:05:53.951  1431  3428 I NamespaceManager: Package com.android.neuralnetworks name not found! Using module version.
+10-30 15:05:53.952  1431  3428 I NamespaceManager: Package com.android.media name not found! Using module version.
+10-30 15:05:53.952  1431  3428 I NamespaceManager: Package 1 name not found! Using module version.
+10-30 15:05:53.953  3769  4787 I ConfigUpdater: Update started
+10-30 15:05:53.954   519   533 I ExplicitHealthCheckController: Explicit health check requested packages []
+10-30 15:05:53.954   519   533 I ExplicitHealthCheckController: No more health check requests, unbinding...
+10-30 15:05:53.957   519   615 I RescueParty: Starting to observe: [android, com.android.settings], updated namespace: app_hibernation
+10-30 15:05:53.957   519   547 I PackageWatchdog: Syncing state, reason: observing new packages
+10-30 15:05:53.957   519   547 D PackageWatchdog: rescue-party-observer added the following packages to monitor [android, com.android.settings]
+10-30 15:05:53.957   519   547 I PackageWatchdog: Syncing state, reason: updated observers
+10-30 15:05:53.957   519   547 I PackageWatchdog: Not pruning observers, elapsed time: 0ms
+10-30 15:05:53.957   519   547 I PackageWatchdog: Saving observer state to file
+10-30 15:05:53.963   519   533 I ExplicitHealthCheckController: Explicit health check service is unbound
+10-30 15:05:53.963   519   519 I PackageWatchdog: Syncing health check requests for packages: {}
+10-30 15:05:53.964  4265  4389 W ziparchive: Unable to open '/data/user_de/0/com.google.android.gms/app_chimera/m/00000001/CronetDynamite.dm': No such file or directory
+10-30 15:05:53.964  4265  4389 W ziparchive: Unable to open '/data/user_de/0/com.google.android.gms/app_chimera/m/00000001/CronetDynamite.dm': No such file or directory
+10-30 15:05:53.964   519   519 I ExplicitHealthCheckController: Service not ready to get health check supported packages. Binding...
+10-30 15:05:53.968   519   519 I ExplicitHealthCheckController: Explicit health check service is bound
+10-30 15:05:53.969   519   519 D AppHibernationService: App hibernation changed to enabled=true
+10-30 15:05:53.970   519   519 I ExplicitHealthCheckController: Explicit health check service is connected ComponentInfo{com.google.android.ext.services/android.ext.services.watchdog.ExplicitHealthCheckServiceImpl}
+10-30 15:05:53.970   519   519 I ExplicitHealthCheckController: Service initialized, syncing requests
+10-30 15:05:53.971   519   519 I PackageWatchdog: Syncing health check requests for packages: {}
+10-30 15:05:53.971   519   519 D ExplicitHealthCheckController: Getting health check supported packages
+10-30 15:05:53.971   519   533 I ExplicitHealthCheckController: Explicit health check supported packages [PackageConfig{com.google.android.networkstack, 86400000}]
+10-30 15:05:53.971   519   533 D PackageWatchdog: Received supported packages [PackageConfig{com.google.android.networkstack, 86400000}]
+10-30 15:05:53.971   519   533 D ExplicitHealthCheckController: Getting health check requested packages
+10-30 15:05:53.971   519   533 I ExplicitHealthCheckController: Explicit health check requested packages []
+10-30 15:05:53.971   519   533 I ExplicitHealthCheckController: No more health check requests, unbinding...
+10-30 15:05:53.976   519   533 I ExplicitHealthCheckController: Explicit health check service is unbound
+10-30 15:05:53.984  4265  4389 D nativeloader: Configuring clns-11 for other apk . target_sdk_version=34, uses_libraries=ALL, library_path=/data/user_de/0/com.google.android.gms/app_chimera/m/00000001/CronetDynamite.apk!/lib/x86_64:/data/user_de/0/com.google.android.gms/app_chimera/m/00000001/CronetDynamite.apk!/lib/arm64-v8a, permitted_path=/data:/mnt/expand
+10-30 15:05:53.988  4265  4389 I cr_CronetLibraryLoader: Cronet version: 113.0.5672.51, arch: x86_64
+10-30 15:05:53.994   519   533 D ConnectivityService: requestNetwork for uid/pid:10129/4265 activeRequest: null callbackRequest: 126 [NetworkRequest [ REQUEST id=127, [ Capabilities: INTERNET&NOT_RESTRICTED&TRUSTED&NOT_VCN_MANAGED Uid: 10129 RequestorUid: 10129 RequestorPkg: com.google.android.apps.messaging UnderlyingNetworks: Null] ]] callback flags: 0 order: 2147483647
+10-30 15:05:53.999   519   754 D WifiNetworkFactory: got request NetworkRequest [ REQUEST id=127, [ Capabilities: INTERNET&NOT_RESTRICTED&TRUSTED&NOT_VCN_MANAGED Uid: 10129 RequestorUid: 10129 RequestorPkg: com.google.android.apps.messaging UnderlyingNetworks: Null] ]
+10-30 15:05:53.999   519   754 D UntrustedWifiNetworkFactory: got request NetworkRequest [ REQUEST id=127, [ Capabilities: INTERNET&NOT_RESTRICTED&TRUSTED&NOT_VCN_MANAGED Uid: 10129 RequestorUid: 10129 RequestorPkg: com.google.android.apps.messaging UnderlyingNetworks: Null] ]
+10-30 15:05:53.999   519   754 D OemPaidWifiNetworkFactory: got request NetworkRequest [ REQUEST id=127, [ Capabilities: INTERNET&NOT_RESTRICTED&TRUSTED&NOT_VCN_MANAGED Uid: 10129 RequestorUid: 10129 RequestorPkg: com.google.android.apps.messaging UnderlyingNetworks: Null] ]
+10-30 15:05:53.999   519   754 D MultiInternetWifiNetworkFactory: got request NetworkRequest [ REQUEST id=127, [ Capabilities: INTERNET&NOT_RESTRICTED&TRUSTED&NOT_VCN_MANAGED Uid: 10129 RequestorUid: 10129 RequestorPkg: com.google.android.apps.messaging UnderlyingNetworks: Null] ]
+10-30 15:05:53.999   519   762 D ConnectivityService: NetReassign [127 : null → 100] [c 1] [a 2] [i 3]
+10-30 15:05:54.000   519   762 D ConnectivityService: NetReassign [no changes] [c 0] [a 0] [i 1]
+10-30 15:05:54.029  1021  1021 V MediaPlayerList: mPackageChangedBroadcastReceiver: action: android.intent.action.PACKAGE_CHANGED
+10-30 15:05:54.030  1021  1021 V MediaPlayerList: mPackageChangedBroadcastReceiver: action: android.intent.action.PACKAGE_CHANGED
+10-30 15:05:54.030  1021  1021 V MediaPlayerList: mPackageChangedBroadcastReceiver: action: android.intent.action.PACKAGE_CHANGED
+10-30 15:05:54.030  1021  1021 V MediaPlayerList: mPackageChangedBroadcastReceiver: action: android.intent.action.PACKAGE_CHANGED
+10-30 15:05:54.031  1021  1021 V MediaPlayerList: mPackageChangedBroadcastReceiver: action: android.intent.action.PACKAGE_CHANGED
+10-30 15:05:54.032  1021  1021 V MediaPlayerList: mPackageChangedBroadcastReceiver: action: android.intent.action.PACKAGE_CHANGED
+10-30 15:05:54.032  1021  1021 V MediaPlayerList: mPackageChangedBroadcastReceiver: action: android.intent.action.PACKAGE_CHANGED
+10-30 15:05:54.032  1021  1021 V MediaPlayerList: mPackageChangedBroadcastReceiver: action: android.intent.action.PACKAGE_CHANGED
+10-30 15:05:54.032  1021  1021 V MediaPlayerList: mPackageChangedBroadcastReceiver: action: android.intent.action.PACKAGE_CHANGED
+10-30 15:05:54.033  1021  1021 V MediaPlayerList: mPackageChangedBroadcastReceiver: action: android.intent.action.PACKAGE_CHANGED
+10-30 15:05:54.034  1021  1021 V MediaPlayerList: mPackageChangedBroadcastReceiver: action: android.intent.action.PACKAGE_CHANGED
+10-30 15:05:54.034  1021  1021 V MediaPlayerList: mPackageChangedBroadcastReceiver: action: android.intent.action.PACKAGE_CHANGED
+10-30 15:05:54.040  4265  4389 I BugleNetwork: Creating gRPC Managed channel with Cronet: instantmessaging-pa.googleapis.com:443
+10-30 15:05:54.053   835   835 D ControlsListingControllerImpl: ServiceConfig reloaded, count: 0
+10-30 15:05:54.058   835   835 D ControlsListingControllerImpl: ServiceConfig reloaded, count: 0
+10-30 15:05:54.059   835   835 D ControlsListingControllerImpl: ServiceConfig reloaded, count: 0
+10-30 15:05:54.063   835   835 D ControlsListingControllerImpl: ServiceConfig reloaded, count: 0
+10-30 15:05:54.065   835   835 D ControlsListingControllerImpl: ServiceConfig reloaded, count: 0
+10-30 15:05:54.081   835   835 D ControlsListingControllerImpl: ServiceConfig reloaded, count: 0
+10-30 15:05:54.104   835   835 D StatusBarIconController: ignoring old pipeline callbacks, because the new mobile icons are enabled
+10-30 15:05:54.127  2072  4936 D DownloadManager: [3] Finished with status SUCCESS
+10-30 15:05:54.130   336  4996 I resolv  : GetAddrInfoHandler::run: {100 786532 100 983140 10129 0}
+10-30 15:05:54.144   336  4997 I resolv  : res_nmkquery: (QUERY, IN, AAAA)
+10-30 15:05:54.144   336  4998 I resolv  : res_nmkquery: (QUERY, IN, A)
+10-30 15:05:54.162   336  4997 I resolv  : res_nsend: used send_dg 276 terrno: 0
+10-30 15:05:54.162   336  4997 I resolv  : doQuery: rcode=0, ancount=8, return value=276
+10-30 15:05:54.169   336  4998 I resolv  : res_nsend: used send_dg 180 terrno: 0
+10-30 15:05:54.170   336  4998 I resolv  : doQuery: rcode=0, ancount=8, return value=180
+10-30 15:05:54.188  2072  4999 D DownloadManager: [4] Starting
+10-30 15:05:54.199  2072  4999 D TrafficStats: tagSocket(78) with statsTag=0xffffff01, statsUid=10130
+10-30 15:05:54.211  4990  4990 W BpBinder: Linking to death on android.gui.ISurfaceComposer but there are no threads (yet?) listening to incoming transactions. See ProcessState::startThreadPool and ProcessState::setThreadPoolMaxThreadCount. Generally you should setup the binder threadpool before other initialization steps.
+10-30 15:05:54.212  4990  4990 W ProcessState: Extra binder thread started, but 0 threads requested. Do not use *startThreadPool when zero threads are requested.
+10-30 15:05:54.218   401   568 W ServiceManagerCppClient: Permission failure: android.permission.CAPTURE_BLACKOUT_CONTENT from uid=2000 pid=4990
+10-30 15:05:54.218   401   568 D PermissionCache: checking android.permission.CAPTURE_BLACKOUT_CONTENT for uid=2000 => denied (268 us)
+10-30 15:05:54.253  2072  4999 D DownloadManager: [4] Finished with status SUCCESS
+10-30 15:05:54.478     0     0 I servicemanager: Could not find android.hardware.graphics.allocator.IAllocator/default in the VINTF manifest.
+10-30 15:05:54.291   135   135 I hwservicemanager: getTransport: Cannot find entry android.hardware.graphics.mapper@4.0::IMapper/default in either framework or device VINTF manifest.
+10-30 15:05:54.291  4990  5001 I Gralloc4: mapper 4.x is not supported
+10-30 15:05:54.342  2072  5004 D DownloadManager: [5] Starting
+10-30 15:05:54.350  2072  5004 D TrafficStats: tagSocket(78) with statsTag=0xffffff01, statsUid=10130
+10-30 15:05:54.579     0     0 I logd    : logdr: UID=2000 GID=2000 PID=5006 n tail=0 logMask=99 pid=0 start=0ns deadline=0ns
+10-30 15:05:54.461  1431  2118 I HeterodyneSyncer: Removed 0 invalid users [CONTEXT service_id=51 ]
