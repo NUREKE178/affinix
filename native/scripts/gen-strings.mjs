@@ -9,7 +9,19 @@ const DIMS = ["preference", "attention", "trust", "quality", "premium", "clarity
 const FAMILIES = ["mark", "palette", "button", "card", "pack", "poster", "appicon", "scene", "shot"];
 const RANKS = ["novice", "apprentice", "observer", "sharpEye", "tastemaker", "artDirector", "creativeDirector", "maestro"];
 
+const NAMED_BADGES = Object.keys(ru.arena.badge);
+
 const KEYS = [
+  "shell.notifications.title", "shell.notifications.empty", "shell.notifications.commentOn", "shell.notifications.friendRequest", "shell.notifications.friendAccepted",
+  "arena.tabs.quests", "arena.quests.today", "arena.quests.resetNote", "arena.quests.claim", "arena.quests.claimed", "arena.quests.clearTitle", "arena.quests.clearBody",
+  "arena.quest.votes", "arena.quest.families", "arena.quest.dims", "arena.quest.combo", "arena.quest.eye", "arena.quest.time",
+  "arena.tier.easy", "arena.tier.medium", "arena.tier.hard", "arena.toast.claimed", "arena.toast.claimRefused", "arena.lobby.dailyClaim",
+  "arena.badgeName.votes", "arena.badgeName.streak", "arena.badgeName.daily", "arena.badgeName.level",
+  ...NAMED_BADGES.flatMap((b) => [`arena.badge.${b}.name`, `arena.badge.${b}.desc`]),
+  "arena.profile.badges", "arena.rankings.visible", "arena.rankings.visibleHint", "arena.rankings.saveFailed", "arena.rankings.serverPending",
+  "profile.personal.fullNameLabel", "profile.personal.usernameLabel", "profile.personal.usernamePlaceholder", "profile.personal.usernameHint", "profile.personal.usernameHintInvalid",
+  "profile.personal.roleTitleLabel", "profile.personal.bioLabel", "profile.personal.saveButton", "profile.personal.profileSaved", "profile.personal.usernameTaken", "profile.personal.usernameInvalid",
+  "common.save", "common.saving", "favorites.title", "favorites.emptyTitle", "favorites.emptyBody",
   "common.loading", "common.retry", "common.back", "common.continue", "common.cancel",
   "shell.userMenu.logout",
   "arena.title", "arena.subtitle", "arena.level",
@@ -33,6 +45,15 @@ const KEYS = [
   "auth.login.title", "auth.login.subtitle", "auth.login.noAccount", "auth.login.register", "auth.login.forgotPassword", "auth.login.submit", "auth.login.submitting",
   "auth.register.title", "auth.register.subtitle", "auth.register.haveAccount", "auth.register.login", "auth.register.submit", "auth.register.submitting",
   "auth.register.checkEmailTitle", "auth.register.checkEmailSent",
+  "feed.title", "feed.subtitle", "feed.composerPlaceholder", "feed.posting", "feed.publish", "feed.posted", "feed.postedCensored", "feed.deletePost", "feed.postDeleted",
+  "feed.confirmDeleteTitle", "feed.confirmDeleteBody", "feed.unknownAuthor", "feed.loadErrorTitle", "feed.loadErrorBody", "feed.emptyTitle", "feed.emptyBody",
+  "feed.profanityBlocked", "feed.like", "feed.comment", "feed.save", "feed.noComments", "feed.commentPlaceholder", "feed.commentSubmit", "feed.commentPostedCensored",
+  "feed.deleteComment", "feed.tabAll", "feed.tabMine", "feed.mineEmptyTitle", "feed.mineEmptyBody", "feed.loadMore", "feed.loadMoreFailed", "feed.edited",
+  "friends.message", "friends.title", "friends.incomingTitle", "friends.outgoingTitle", "friends.friendsTitle", "friends.accept", "friends.decline", "friends.cancel",
+  "friends.remove", "friends.addFriend", "friends.requestSent", "friends.requestAccepted", "friends.emptyTitle", "friends.emptyBody", "friends.loadErrorTitle", "friends.loadErrorBody",
+  "people.searchPlaceholder", "people.searchHint", "people.noResultsTitle", "people.noResultsBody", "people.errorTitle", "people.errorBody", "people.retry", "people.you",
+  "messages.title", "messages.you", "messages.placeholder", "messages.send", "messages.back", "messages.noMessagesYet", "messages.failedRetry", "messages.noFriendsBody",
+  "messages.goToFriends", "messages.photo", "messages.deletedMine", "messages.deletedTheirs", "messages.edited", "messages.startChat",
   "auth.forgot.title", "auth.forgot.subtitle", "auth.forgot.back", "auth.forgot.submit", "auth.forgot.submitting", "auth.forgot.sentMessage",
 ];
 
@@ -40,11 +61,17 @@ const KEYS = [
 const EXTRA = {
   "app.name": { ru: "Affinix", kk: "Affinix", en: "Affinix" },
   "app.language": { ru: "Язык", kk: "Тіл", en: "Language" },
+  "app.profileTitle": { ru: "Мой профиль", kk: "Менің профилім", en: "My profile" },
+  "app.markRead": { ru: "Прочитано", kk: "Оқылды", en: "Mark read" },
   "app.noNetwork": { ru: "Нет связи с сервером. Проверьте интернет и повторите.", kk: "Серверге қосылу мүмкін болмады. Интернетті тексеріп, қайталаңыз.", en: "Can't reach the server. Check your connection and try again." },
   "app.imageFailed": { ru: "Не удалось загрузить картинку", kk: "Сурет жүктелмеді", en: "Couldn't load the picture" },
   "app.signedInAs": { ru: "Вы вошли как {email}", kk: "{email} ретінде кірдіңіз", en: "Signed in as {email}" },
   "app.xp": { ru: "XP", kk: "XP", en: "XP" },
   "app.streakDays": { ru: "дней подряд: {n}", kk: "қатарынан {n} күн", en: "{n}-day streak" },
+  "app.ago.now": { ru: "только что", kk: "жаңа ғана", en: "just now" },
+  "app.ago.min": { ru: "{n} мин назад", kk: "{n} мин бұрын", en: "{n} min ago" },
+  "app.ago.hour": { ru: "{n} ч назад", kk: "{n} сағ бұрын", en: "{n} h ago" },
+  "app.ago.day": { ru: "{n} дн назад", kk: "{n} күн бұрын", en: "{n} d ago" },
   "app.votes": { ru: "Дуэлей: {n}", kk: "Дуэль: {n}", en: "Duels: {n}" },
 };
 

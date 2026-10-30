@@ -1,6 +1,7 @@
 package space.affinix.app.ui
 
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -8,6 +9,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
@@ -32,6 +34,11 @@ fun LevelHeader(model: AppModel, modifier: Modifier = Modifier) {
                 Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     Txt("${t("arena.level")} ${prog.level}", 18, FontWeight.ExtraBold, C.g50)
                     Chip(t("arena.rank.${Rules.rankForLevel(prog.level)}"), Tone.Neutral)
+                    Box(Modifier.weight(1f))
+                    Box(contentAlignment = Alignment.TopEnd) {
+                        IcoAction("bell", { model.tab = space.affinix.app.store.Tab.Notifications }, active = model.notifications.unread > 0, filled = false)
+                        if (model.notifications.unread > 0) Box(Modifier.padding(top = 2.dp).background(C.signal, Pill).padding(horizontal = 5.dp)) { Txt("${model.notifications.unread}", 10, FontWeight.ExtraBold, C.signalInk) }
+                    }
                 }
                 Bar(prog.ratio)
                 Txt("${prog.into} / ${prog.span} ${t("app.xp")}", 12, FontWeight.Medium, C.g400)
@@ -54,6 +61,7 @@ fun HomeScreen(model: AppModel) {
     val p = model.profile
     val size = Rules.DAILY_SET_SIZE
     Column(Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(14.dp)) {
+        ArenaTabs(model)
         LevelHeader(model)
 
         if (model.offline) {
@@ -101,4 +109,11 @@ fun HomeScreen(model: AppModel) {
         model.error?.let { Txt(it, 13, FontWeight.Medium, C.bad) }
         if (model.loading) Txt(t("common.loading"), 13, color = C.g500)
     }
+}
+
+/** Play / Quests / Rankings: the three parts of the Arena, one tab in the bottom bar. */
+@Composable
+fun ArenaTabs(model: AppModel) {
+    val parts = listOf(space.affinix.app.store.Tab.Play, space.affinix.app.store.Tab.Quests, space.affinix.app.store.Tab.Rankings)
+    Segmented(listOf(t("arena.tabs.play"), t("arena.tabs.quests"), t("arena.tabs.rankings")), parts.indexOf(model.tab).coerceAtLeast(0), { model.tab = parts[it] })
 }

@@ -10,9 +10,11 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import kotlinx.serialization.json.put
 import org.jetbrains.compose.resources.ExperimentalResourceApi
 import org.jetbrains.compose.resources.decodeToImageBitmap
 import space.affinix.app.Platform
+import space.affinix.app.Rules
 import space.affinix.app.i18n.Lang
 import space.affinix.app.i18n.tr
 import space.affinix.app.localDay
@@ -22,13 +24,14 @@ import space.affinix.app.net.DayStats
 import space.affinix.app.net.Duel
 import space.affinix.app.net.KeyValueStore
 import space.affinix.app.net.Leaderboard
+import space.affinix.app.net.MyProfileRow
 import space.affinix.app.net.Profile
 import space.affinix.app.net.Tally
 import space.affinix.app.net.TallyQuery
 import space.affinix.app.net.WireVote
 import space.affinix.app.seasonOf
 
-enum class Tab { Play, Rankings, Profile }
+enum class Tab { Play, Quests, Feed, Chats, People, Rankings, Profile, Notifications }
 
 /** Everything the screens read. Plain Compose state, so a screen recomposes when a value here changes. */
 class AppModel(
@@ -58,6 +61,10 @@ class AppModel(
         private set
     var autoNext by mutableStateOf(false)
 
+    /** my own `profiles` row, for the edit form */
+    var myProfile by mutableStateOf<MyProfileRow?>(null)
+        private set
+
     /** specimen PNGs by "season/family/index" */
     val images = mutableStateMapOf<String, ImageBitmap>()
     val imageFailed = mutableStateMapOf<String, Boolean>()
@@ -71,6 +78,23 @@ class AppModel(
             override suspend fun submit(votes: List<WireVote>, day: String) { api.submit(votes, day) }
         },
     )
+
+    var feed by mutableStateOf(FeedModel(api, scope) { api.session?.userId })
+        private set
+    var people by mutableStateOf(PeopleModel(api, scope, { api.session?.userId }, feed))
+        private set
+    var messages by mutableStateOf(MessagesModel(api, scope, { api.session?.userId }, feed))
+        private set
+    var notifications by mutableStateOf(NotificationsModel(api, scope, { api.session?.userId }, feed))
+        private set
+
+    /** a signed-out player's posts, friends and chats must not show for the next one */
+    private fun freshSocial() {
+        feed = FeedModel(api, scope) { api.session?.userId }
+        people = PeopleModel(api, scope, { api.session?.userId }, feed)
+        messages = MessagesModel(api, scope, { api.session?.userId }, feed)
+        notifications = NotificationsModel(api, scope, { api.session?.userId }, feed)
+    }
 
     val email get() = api.session?.email.orEmpty()
     fun text(key: String, vararg vars: Pair<String, Any>) = tr(lang, key, *vars)
@@ -100,6 +124,7 @@ class AppModel(
         profile = null; today = null; leaderboard = null
         game.end()
         seen.clear(); seenLoaded = false
+        freshSocial()
         tab = Tab.Play
     }
 
@@ -122,6 +147,7 @@ class AppModel(
                 val st = api.state(localDay())
                 profile = st.profile; today = st.today
                 offline = false
+                ensureSlate()
                 loadSeen()
             } catch (e: CancellationException) {
                 throw e
@@ -135,6 +161,26 @@ class AppModel(
             }
         }
     }
+
+    /** Today's three quests are stored on the server by whoever asks first (the website or this app) with the same rule, so both agree. */
+    private suspend fun ensureSlate() {
+        val uid = api.session?.userId ?: return
+        val day = localDay()
+        if ((today?.slate?.size ?: 0) >= 3) return
+        runCatching {
+            val res = api.submit(emptyList(), day, day to Rules.slateFor(uid, day))
+            res.state?.let { profile = it.profile; today = it.today ?: today }
+        }
+    }
+
+    /** What today's quests are; empty until the server has them. */
+    val quests: List<Rules.QuestDef> get() = today?.slate.orEmpty().mapNotNull { Rules.QUEST_BY_ID[it] }
+
+    /** Claims a quest reward ("votes_15", "daily_set", "daily_clear"). Returns null when taken, or the strings key to show. */
+    suspend fun claim(id: String): String? = try {
+        val res = api.claim(localDay(), id)
+        if (res.ok) { res.state?.let { profile = it.profile; today = it.today ?: today }; null } else "arena.toast.claimRefused"
+    } catch (e: CancellationException) { throw e } catch (e: Exception) { "app.noNetwork" }
 
     private suspend fun loadSeen() {
         if (seenLoaded) return
@@ -205,6 +251,16 @@ class AppModel(
         }
     }
 
+    /** A picture by URL (avatars, post photos), loaded once and kept in [images]. */
+    @OptIn(ExperimentalResourceApi::class)
+    fun ensureUrlImage(url: String?) {
+        if (url.isNullOrBlank() || images.containsKey(url) || imageFailed[url] == true) return
+        scope.launch {
+            try { images[url] = api.fetchBytes(url).decodeToImageBitmap() }
+            catch (e: CancellationException) { throw e } catch (e: Exception) { imageFailed[url] = true }
+        }
+    }
+
     fun vote(side: Int) {
         game.vote(side)
         game.round.value?.last?.let { seen += "${it.duel.pair}|${it.duel.dim}" }
@@ -236,6 +292,50 @@ class AppModel(
     private fun scheduleFlush() {
         flushJob?.cancel()
         flushJob = scope.launch { delay(3500); offline = !game.flush() }
+    }
+
+    // ---- my profile ------------------------------------------------------------------------------------------------------------------
+
+    fun loadMyProfile() {
+        val uid = api.session?.userId ?: return
+        scope.launch {
+            try {
+                myProfile = api.restGet("profiles", kotlinx.serialization.builtins.ListSerializer(MyProfileRow.serializer()), "select" to "full_name,username,role_title,bio", "id" to "eq.$uid").firstOrNull()
+            } catch (e: CancellationException) { throw e } catch (e: Exception) { /* the form just stays empty */ }
+        }
+    }
+
+    /** Same rule as the website: 3-30 of a-z, 0-9, _ (or empty). */
+    fun usernameOk(u: String) = u.isEmpty() || Regex("^[a-z0-9_]{3,30}$").matches(u)
+
+    /** Returns null when saved, or the strings key of what went wrong. */
+    suspend fun saveMyProfile(name: String, username: String, role: String, bio: String): String? {
+        val uid = api.session?.userId ?: return "app.noNetwork"
+        val u = username.trim().lowercase()
+        if (!usernameOk(u)) return "profile.personal.usernameInvalid"
+        return try {
+            api.restWrite(
+                io.ktor.http.HttpMethod.Patch, "profiles", listOf("id" to "eq.$uid"),
+                kotlinx.serialization.json.buildJsonObject {
+                    put("full_name", name.trim()); put("username", if (u.isEmpty()) kotlinx.serialization.json.JsonNull else kotlinx.serialization.json.JsonPrimitive(u))
+                    put("role_title", role.trim()); put("bio", bio.trim())
+                },
+            )
+            myProfile = MyProfileRow(name.trim(), u.ifEmpty { null }, role.trim(), bio.trim())
+            null
+        } catch (e: CancellationException) { throw e } catch (e: ApiException) {
+            if (e.status == 409 || e.message.contains("duplicate", true) || e.message.contains("unique", true)) "profile.personal.usernameTaken" else "app.noNetwork"
+        } catch (e: Exception) { "app.noNetwork" }
+    }
+
+    /** Show me in the rankings or not (arena_set_visibility); put back when the server says no. */
+    fun setVisible(v: Boolean) {
+        val before = profile ?: return
+        profile = before.copy(visible = v)
+        scope.launch {
+            try { api.rpcText("arena_set_visibility", kotlinx.serialization.json.buildJsonObject { put("p_visible", v) }) }
+            catch (e: CancellationException) { throw e } catch (e: Exception) { profile = profile?.copy(visible = before.visible); error = text("arena.rankings.saveFailed") }
+        }
     }
 
     // ---- rankings ------------------------------------------------------------------------

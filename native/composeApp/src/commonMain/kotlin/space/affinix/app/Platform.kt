@@ -37,3 +37,32 @@ fun seasonOf(nowMillis: Long = Platform.nowMillis()): String {
     val (y, m, _) = civil((nowMillis).floorDiv(86_400_000L))
     return "$y${two(m)}"
 }
+
+/** Days since 1970-01-01 of a civil date (the inverse of [civil]). */
+internal fun daysFromCivil(y0: Int, m: Int, d: Int): Long {
+    val y = (if (m <= 2) y0 - 1 else y0).toLong()
+    val era = (if (y >= 0) y else y - 399) / 400
+    val yoe = y - era * 400
+    val doy = (153 * (if (m > 2) m - 3 else m + 9) + 2) / 5 + d - 1
+    val doe = yoe * 365 + yoe / 4 - yoe / 100 + doy
+    return era * 146097 + doe - 719468
+}
+
+private val isoRe = Regex("""(\d{4})-(\d{2})-(\d{2})[T ](\d{2}):(\d{2}):(\d{2})(?:\.(\d+))?(Z|[+-]\d{2}(?::?\d{2})?)?""")
+
+/** Epoch milliseconds of an ISO-8601 timestamp as Postgres prints it ("2026-10-30T09:12:36.123456+00:00"), or null. */
+fun epochOfIso(s: String): Long? {
+    val m = isoRe.find(s) ?: return null
+    val g = m.groupValues
+    val days = daysFromCivil(g[1].toInt(), g[2].toInt(), g[3].toInt())
+    var ms = ((days * 24 + g[4].toInt()) * 60 + g[5].toInt()) * 60_000L + g[6].toInt() * 1000L
+    if (g[7].isNotEmpty()) ms += (g[7].padEnd(3, '0').take(3)).toLong()
+    val z = g[8]
+    if (z.isNotEmpty() && z != "Z") {
+        val sign = if (z[0] == '-') -1 else 1
+        val digits = z.drop(1).replace(":", "")
+        val h = digits.take(2).toInt(); val mi = if (digits.length >= 4) digits.substring(2, 4).toInt() else 0
+        ms -= sign * (h * 60 + mi) * 60_000L
+    }
+    return ms
+}
