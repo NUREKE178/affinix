@@ -114,6 +114,8 @@ fun HomeScreen(model: AppModel) {
 
         MarathonPlate(model)
 
+        CrowdEntryCard(model)
+
         Plate(Modifier.fillMaxWidth()) {
             Txt(t("arena.lobby.freeTitle"), 18, FontWeight.ExtraBold, C.g50)
             Spacer(Modifier.height(6.dp))

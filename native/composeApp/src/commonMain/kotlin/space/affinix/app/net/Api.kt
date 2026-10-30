@@ -31,7 +31,8 @@ import kotlinx.serialization.json.jsonPrimitive
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.put
 
-class ApiException(val status: Int, override val message: String) : Exception(message)
+/** [hint] is the short machine word a database function raises with (need_level, bad_title ...), when there is one */
+class ApiException(val status: Int, override val message: String, val hint: String? = null) : Exception(message)
 
 val ApiJson = Json { ignoreUnknownKeys = true; isLenient = true; explicitNulls = false; encodeDefaults = true }
 
@@ -158,7 +159,7 @@ class Api(
             }
             if (r.status.value == 401 && !retried) { retried = true; s = fresh(force = true); continue }
             val text = r.bodyAsText()
-            if (!r.status.isSuccess()) throw ApiException(r.status.value, errorOf(text, r.status.value))
+            if (!r.status.isSuccess()) throw ApiException(r.status.value, errorOf(text, r.status.value), hintOf(text))
             return text
         }
     }
@@ -340,6 +341,8 @@ class Api(
         if (!r.status.isSuccess()) throw ApiException(r.status.value, "specimen ${r.status.value}")
         return r.body()
     }
+
+    private fun hintOf(text: String): String? = runCatching { ((ApiJson.parseToJsonElement(text) as JsonObject)["hint"] as? JsonPrimitive)?.content?.takeIf { it.isNotBlank() } }.getOrNull()
 
     private fun errorOf(text: String, status: Int): String = runCatching {
         val o = ApiJson.parseToJsonElement(text) as JsonObject

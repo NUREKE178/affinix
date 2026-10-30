@@ -61,7 +61,7 @@ const KEYS = [
 ];
 
 // whole subtrees of the site's locale (every string under the prefix), for screens that use most of a section
-const PREFIXES = ["messages", "search", "arena.marathon", "arena.dna", "auth.social", "arena.traits", "arena.archetype", "arena.share"];
+const PREFIXES = ["messages", "search", "arena.marathon", "arena.dna", "crowd", "auth.social", "arena.traits", "arena.archetype", "arena.share"];
 const leaves = (o, base) => Object.entries(o).flatMap(([k, v]) => (typeof v === "string" ? [`${base}.${k}`] : v && typeof v === "object" ? leaves(v, `${base}.${k}`) : []));
 for (const p of PREFIXES) for (const k of leaves(get(ru, p), p)) if (!KEYS.includes(k)) KEYS.push(k);
 

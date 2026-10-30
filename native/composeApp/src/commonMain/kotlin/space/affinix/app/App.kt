@@ -108,6 +108,7 @@ private fun MainShell(model: AppModel) {
                         Tab.Profile -> ProfileScreen(model)
                         Tab.Notifications -> NotificationsScreen(model)
                         Tab.Search -> SearchScreen(model)
+                        Tab.Research -> space.affinix.app.ui.ResearchScreen(model)
                     }
                 }
             }

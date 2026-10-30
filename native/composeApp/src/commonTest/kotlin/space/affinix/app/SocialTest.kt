@@ -46,7 +46,11 @@ private class Rig(
             val line = "${req.method.value} ${req.url.encodedPath}?${req.url.encodedQuery} $body"
             synchronized(seen) { seen += line }
             val refused = reject(req.method.value, req.url.encodedPath, req.url.encodedQuery)
-            if (refused != null) respond("""{"message":"$refused"}""", HttpStatusCode.BadRequest, jsonH)
+            if (refused != null) {
+                // "message|hint": a database function that raised with a hint
+                val parts = refused.split("|")
+                respond("""{"message":"${parts[0]}"${if (parts.size > 1) ""","hint":"${parts[1]}"""" else ""}}""", HttpStatusCode.BadRequest, jsonH)
+            }
             else if (failWrites() && req.method.value != "GET") respond("""{"message":"boom"}""", HttpStatusCode.InternalServerError, jsonH)
             else respond(handler(req.method.value, req.url.encodedPath, req.url.encodedQuery, body), HttpStatusCode.OK, jsonH)
         }
@@ -57,6 +61,8 @@ private class Rig(
     val messages = MessagesModel(api, scope, { "me" }, feed)
     val notifications = space.affinix.app.store.NotificationsModel(api, scope, { "me" }, feed)
     val search = space.affinix.app.store.SearchModel(api, scope, feed, people)
+    var xp = 500L
+    val crowd = space.affinix.app.store.CrowdModel(api, scope, { "me" }, { xp })
     val app by lazy { space.affinix.app.store.AppModel(api, scope, space.affinix.app.net.MemoryKeyValueStore()) }
     fun log() = synchronized(seen) { seen.toList() }
 }
@@ -565,5 +571,126 @@ class PictureUploadTest {
         assertEquals("me/a.jpg", api.pathFromPublicUrl("avatars", url))
         assertNull(api.pathFromPublicUrl("avatars", "https://elsewhere.test/a.jpg"))
         assertNull(api.pathFromPublicUrl("avatars", null))
+    }
+}
+
+
+class CrowdTestTest {
+    private val mine = """[{"id":"t1","title":"Which logo?","dim":"trust","status":"open","target":150,"votes":120,"voters":9,"createdAt":"2026-10-29T10:00:00Z","note":null,
+        "items":[{"id":"i1","pos":0,"label":"Blue","path":null,"wins":45,"games":60},{"id":"i2","pos":1,"label":null,"path":"me/x.jpg","wins":20,"games":60},{"id":"i3","pos":2,"label":"Green","path":null,"wins":10,"games":60}]},
+        {"id":"t2","title":"Slogan","dim":"preference","status":"closed","target":150,"votes":0,"voters":0,"createdAt":"2026-10-28T10:00:00Z","items":[{"id":"i4","pos":0,"label":"A","wins":0,"games":0},{"id":"i5","pos":1,"label":"B","wins":0,"games":0}]}]"""
+
+    private fun rig(reject: (String, String, String) -> String? = { _, _, _ -> null }, answers: (String, String) -> String? = { _, _ -> null }) =
+        Rig({ m, path, _, _ -> answers(m, path) ?: when {
+            path.endsWith("/rpc/arena_test_mine") -> mine
+            path.endsWith("/rpc/arena_test_create") -> """{"id":"t9"}"""
+            path.endsWith("/rpc/arena_test_delete") -> """{"paths":["me/x.jpg","me/y.jpg"]}"""
+            else -> "{}"
+        } }, reject = reject)
+
+    @Test fun wilsonIntervalsMatchTheWebsiteToTheLastDigit() {
+        fun same(a: Pair<Double, Double>, lo: Double, hi: Double) = assertTrue(abs(a.first - lo) < 1e-12 && abs(a.second - hi) < 1e-12, a.toString())
+        val w = space.affinix.app.store.CrowdVerdict
+        same(w.wilson(30, 50), 0.46181189102759373, 0.7239181021375426)
+        same(w.wilson(0, 10), 0.0, 0.2775401687666165)
+        same(w.wilson(10, 10), 0.7224598312333834, 1.0)
+        same(w.wilson(45, 60), 0.627676890545152, 0.8422361442158816)
+        same(w.wilson(20, 60), 0.2272909421592783, 0.459433701333366)
+        same(w.wilson(0, 0), 0.0, 0.0)
+    }
+
+    private fun abs(x: Double) = kotlin.math.abs(x)
+
+    @Test fun theListIsReadAndTheVerdictsFollowTheHonestyRule() = runTest {
+        val r = rig(); r.crowd.loadNow()
+        assertEquals(listOf("t1", "t2"), r.crowd.tests.map { it.id })
+        assertEquals(1, r.crowd.openCount)
+        val v1 = space.affinix.app.store.CrowdVerdict.of(r.crowd.tests[0])
+        assertEquals("winner", v1.state) // 75% [63,84] against 33% [23,46]: the leader lies wholly above
+        assertEquals(listOf("i1", "i2", "i3"), v1.ranked.map { it.item.id })
+        assertEquals(0.8f, v1.progress)
+        assertEquals("empty", space.affinix.app.store.CrowdVerdict.of(r.crowd.tests[1]).state)
+    }
+
+    @Test fun belowThirtyDuelsThereIsNoVerdictAndCloseOptionsAreCalledClose() {
+        val v = space.affinix.app.store.CrowdVerdict
+        fun test(w1: Int, g1: Int, w2: Int, g2: Int, votes: Int = 40) = space.affinix.app.store.CrowdTest("t", items = listOf(
+            space.affinix.app.store.CrowdItem("a", 0, "A", null, w1, g1), space.affinix.app.store.CrowdItem("b", 1, "B", null, w2, g2)), votes = votes, target = 150)
+        assertEquals("collecting", v.of(test(14, 20, 6, 20)).state) // 20 duels: too early
+        assertEquals("close", v.of(test(33, 60, 27, 60)).state)
+        assertEquals("winner", v.of(test(50, 60, 10, 60)).state)
+    }
+
+    @Test fun anErrorHintBecomesTheSitesMessage() = runTest {
+        val r = rig(reject = { _, p, _ -> if (p.endsWith("/rpc/arena_test_mine")) "x" else null })
+        r.crowd.loadNow() // a refusal without a hint reads as a generic failure
+        assertEquals("crowd.err.generic", r.crowd.loadError)
+        val hinted = rig(reject = { _, p, _ -> if (p.endsWith("/rpc/arena_test_mine")) "No|too_many_open" else null })
+        hinted.crowd.loadNow()
+        assertEquals("crowd.err.too_many_open", hinted.crowd.loadError)
+        val missing = rig(reject = { _, p, _ -> if (p.endsWith("/rpc/arena_test_mine")) "Could not find the function public.arena_test_mine" else null })
+        missing.crowd.loadNow()
+        assertEquals("crowd.err.pending", missing.crowd.loadError)
+    }
+
+    @Test fun creatingAnUnderLevelPlayerIsGatedAndTheFormIsCheckedFirst() = runTest {
+        val r = rig()
+        r.xp = 40
+        assertTrue(r.crowd.locked)
+        r.xp = 100
+        assertTrue(!r.crowd.locked)
+        val two = listOf(space.affinix.app.store.DraftOption("A", null), space.affinix.app.store.DraftOption("B", null))
+        assertEquals("crowd.err.bad_title", r.crowd.validate("ab", "trust", two))
+        assertEquals("crowd.err.bad_question", r.crowd.validate("Good title", "nonsense", two))
+        assertEquals("crowd.err.bad_items", r.crowd.validate("Good title", "trust", two.take(1)))
+        assertEquals("crowd.err.bad_items", r.crowd.validate("Good title", "trust", two + listOf(space.affinix.app.store.DraftOption("x".repeat(61), null))))
+        assertEquals("crowd.err.bad_items", r.crowd.validate("Good title", "trust", List(5) { space.affinix.app.store.DraftOption("o$it", null) }))
+        assertEquals(null, r.crowd.validate("Good title", "trust", two + space.affinix.app.store.DraftOption("", null))) // an empty option row is ignored
+    }
+
+    @Test fun aTestIsCreatedAfterItsPicturesAreUploaded() = runTest {
+        val r = rig()
+        val img = space.affinix.app.ShrunkImage(byteArrayOf(1, 2), "image/jpeg", "jpg")
+        val e = r.crowd.create("  Which logo?  ", "trust", listOf(space.affinix.app.store.DraftOption("Blue", img), space.affinix.app.store.DraftOption("", img), space.affinix.app.store.DraftOption("Red", null)))
+        assertNull(e)
+        val log = r.log()
+        assertEquals(2, log.count { it.startsWith("POST") && it.contains("/storage/v1/object/arena-tests/me/") })
+        val call = log.first { it.contains("/rpc/arena_test_create") }
+        assertTrue(call.contains("\"p_title\":\"Which logo?\"") && call.contains("\"p_dim\":\"trust\""), call)
+        assertTrue(call.contains("\"label\":\"Blue\"") && call.contains("\"label\":\"Red\"") && Regex("\"path\":\"me/[^\"]+\\.jpg\"").findAll(call).count() == 2, call)
+        assertTrue(log.indexOfLast { it.contains("/storage/") } < log.indexOfFirst { it.contains("/rpc/arena_test_create") })
+        assertEquals(2, r.crowd.tests.size) // the list is read again
+    }
+
+    @Test fun aRefusedTestTakesItsPicturesBackAndSaysWhy() = runTest {
+        val r = rig(reject = { _, p, _ -> if (p.endsWith("/rpc/arena_test_create")) "Play a round in the Arena first (level 2).|need_level" else null })
+        val img = space.affinix.app.ShrunkImage(byteArrayOf(1), "image/jpeg", "jpg")
+        val e = r.crowd.create("Which logo?", "trust", listOf(space.affinix.app.store.DraftOption("A", img), space.affinix.app.store.DraftOption("B", null)))
+        assertEquals("crowd.err.need_level", e)
+        assertTrue(r.log().any { it.startsWith("DELETE") && it.contains("/storage/v1/object/arena-tests") })
+    }
+
+    @Test fun deletingRemovesThePicturesTheServerNames() = runTest {
+        val r = rig(); r.crowd.loadNow()
+        assertNull(r.crowd.delete(r.crowd.tests[0]))
+        val del = r.log().first { it.startsWith("DELETE") && it.contains("/storage/v1/object/arena-tests") }
+        assertTrue(del.contains("me/x.jpg") && del.contains("me/y.jpg"), del)
+    }
+
+    @Test fun pausingAndReopeningUseTheSameRpcAsTheWebsite() = runTest {
+        val r = rig(); r.crowd.loadNow()
+        assertNull(r.crowd.setStatus(r.crowd.tests[0], open = false))
+        assertTrue(r.log().first { it.contains("/rpc/arena_test_set_status") }.contains("\"p_status\":\"closed\""))
+        assertNull(r.crowd.setStatus(r.crowd.tests[1], open = true))
+        assertTrue(r.log().last { it.contains("/rpc/arena_test_set_status") }.contains("\"p_status\":\"open\""))
+    }
+
+    @Test fun theResultsDecodeWithPairsAndAverageTime() = runTest {
+        val r = rig(answers = { _, p -> if (p.endsWith("/rpc/arena_test_results")) """{"test":$mine""".let { _ -> """{"test":{"id":"t1","title":"T","dim":"trust","status":"open","target":150,"votes":10,"voters":2,"items":[{"id":"i1","pos":0,"label":"A","wins":3,"games":5}]},"pairs":[{"a":"i1","b":"i2","aVotes":3,"bVotes":2}],"avgMs":2400}""" } else null })
+        r.crowd.open("t1")
+        until { r.crowd.result != null }
+        assertEquals(1, r.crowd.result!!.pairs.size)
+        assertEquals(2400.0, r.crowd.result!!.avgMs)
+        assertEquals("p_test", Regex("\"(p_test)\"").find(r.log().first { it.contains("/rpc/arena_test_results") })!!.groupValues[1])
     }
 }
