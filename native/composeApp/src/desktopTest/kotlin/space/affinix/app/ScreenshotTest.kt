@@ -49,6 +49,9 @@ class ScreenshotTest {
     private fun model(signedIn: Boolean, marathon: Boolean = false, dna: Boolean = false): AppModel {
         val engine = MockEngine { req ->
             val body = when {
+                req.url.encodedPath.endsWith("arena_test_mine") -> """[{"id":"t1","title":"Which logo for my coffee shop?","dim":"trust","status":"open","target":150,"votes":120,"voters":9,"items":[{"id":"i1","pos":0,"label":"Blue cup","wins":45,"games":60},{"id":"i2","pos":1,"label":"Orange bean","wins":20,"games":60},{"id":"i3","pos":2,"label":"Mono wordmark","wins":10,"games":60}]},{"id":"t2","title":"Slogan for the launch","dim":"preference","status":"closed","target":150,"votes":0,"voters":0,"items":[{"id":"i4","pos":0,"label":"Fresh start","wins":0,"games":0},{"id":"i5","pos":1,"label":"Own the morning","wins":0,"games":0}]}]"""
+                req.url.encodedPath.endsWith("arena_test_results") -> """{"test":{"id":"t1","title":"Which logo for my coffee shop?","dim":"trust","status":"open","target":150,"votes":120,"voters":9,"items":[{"id":"i1","pos":0,"label":"Blue cup","wins":45,"games":60},{"id":"i2","pos":1,"label":"Orange bean","wins":20,"games":60},{"id":"i3","pos":2,"label":"Mono wordmark","wins":10,"games":60}]},"pairs":[{"a":"i1","b":"i2","aVotes":18,"bVotes":7},{"a":"i1","b":"i3","aVotes":19,"bVotes":6}],"avgMs":2400}"""
+                req.url.encodedPath.endsWith("arena_test_queue") -> """{"available":2,"missionXp":24,"cap":300,"tests":[{"id":"q1","title":"Poster for a jazz night","dim":"attention","owner":{"id":"u3","name":"Dias","username":"dias"},"items":[{"id":"a1","pos":0,"label":"Neon","path":null},{"id":"a2","pos":1,"label":"Paper cut","path":null}],"pairs":[["a1","a2"]],"done":0,"total":1}]}"""
                 marathon && req.url.encodedPath.endsWith("arena_state") -> """{"profile":{"xp":2840,"level":8,"votes":331,"eyeCorrect":18,"eyeTotal":25,"streak":4,"bestCombo":9,"visible":true,"badges":["first_vote","votes_100"]},"today":{"day":"${localDay()}","votes":27,"dailyVotes":10,"setVotes":[10,4,0,0,0],"familyVotes":{"card":22,"mark":5},"maxCombo":7,"slate":["votes_15","fam_5","combo_6"],"claimed":["votes_15","daily_set","set_2"]},"days":[]}"""
                 dna && req.url.encodedPath.endsWith("arena_my_votes") -> if (String(req.body.toByteArray()).contains("\"${seasonOf()}\"")) """{"rows":[${(dnaFixture["votes"] as kotlinx.serialization.json.JsonArray).joinToString(",")}],"last":90,"more":false}""" else """{"rows":[],"last":0,"more":false}"""
                 dna && req.url.encodedPath.endsWith("arena-traits") -> """{"order":${dnaFixture["order"]},"traits":${dnaFixture["traits"]}}"""
@@ -144,6 +147,28 @@ class ScreenshotTest {
     @Test fun profile() { val m = model(true); m.tab = Tab.Profile; shoot("08-profile-phone", 420, 1500, m) }
 
     @Test fun marathon() { shoot("17-marathon-phone", 420, 1500, model(true, marathon = true)) { Thread.sleep(600) } }
+
+    @Test fun researchList() { val m = model(true); m.tab = Tab.Research; shoot("19-research-phone", 420, 1100, m) { Thread.sleep(600) } }
+
+    @Test fun researchResults() {
+        val m = model(true); m.tab = Tab.Research
+        shoot("20-research-results-phone", 420, 1500, m) { Thread.sleep(500); m.crowd.open("t1"); Thread.sleep(700) }
+    }
+
+    @Test fun researchCreate() {
+        val m = model(true); m.tab = Tab.Research
+        shoot("21-research-create-phone", 420, 1300, m) { Thread.sleep(400); m.crowd.view = space.affinix.app.store.CrowdModel.View.Create }
+    }
+
+    @Test fun missionHome() { shoot("22-mission-home-phone", 420, 1500, model(true, marathon = true)) { Thread.sleep(700) } }
+
+    @Test fun missionDuel() {
+        val m = model(true, marathon = true)
+        shoot("23-mission-duel-phone", 420, 900, m) {
+            Thread.sleep(700); m.mission.loadQueue(); Thread.sleep(600)
+            m.mission.queue?.tests?.firstOrNull()?.let { m.mission.start(it) }
+        }
+    }
 
     @Test fun tasteDna() {
         val m = model(true, dna = true); m.tab = Tab.Profile
