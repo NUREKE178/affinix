@@ -120,7 +120,7 @@ export default {
       linux: "After downloading: make the file executable (right-click → Properties → Allow executing, or chmod +x Affinix.AppImage) and run it.",
       deb: "On Debian, Ubuntu and Mint the .deb is easier to install: sudo apt install ./Affinix.deb",
       win: "Windows may show “Windows protected your PC”. The app is not signed with a paid certificate yet: choose More info → Run anyway.",
-      android: "Android will ask to allow installs from your browser. Allow it for this one install, then open the file."
+      android: "The file is small (about 0.5 MB). If the download window keeps saying “Downloading…” after 100%, Chrome and Google Play Protect are checking it (up to a minute): wait, or open the file from the notification shade or the Downloads folder. Then Android will ask to allow installs from your browser: allow it once."
     },
     why: {
       t1: "Always in reach",
