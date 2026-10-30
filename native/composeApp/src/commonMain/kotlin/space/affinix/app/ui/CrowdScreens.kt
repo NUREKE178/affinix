@@ -95,8 +95,9 @@ fun CrowdEntryCard(model: AppModel) {
     }
 }
 
+/** The crowd-test screens: the list (a section of Research), the form and one test. */
 @Composable
-fun ResearchScreen(model: AppModel) {
+internal fun CrowdFlow(model: AppModel) {
     val c = model.crowd
     LaunchedEffect(Unit) { c.load() }
     when (c.view) {
@@ -112,10 +113,6 @@ private fun CrowdList(model: AppModel) {
     // the numbers move while the crowd answers
     LaunchedEffect(Unit) { while (true) { delay(30_000); c.load() } }
     Column(Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(14.dp)) {
-        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            IcoAction("arrowLeft", { model.tab = Tab.Play })
-            Txt(t("crowd.mineTitle"), 22, FontWeight.ExtraBold, C.g50)
-        }
         Plate(Modifier.fillMaxWidth()) {
             Txt(t("crowd.heroBody"), 13, color = C.g400)
             Spacer(Modifier.height(8.dp))

@@ -47,7 +47,7 @@ jobs:
       - name: Strings are in sync with the website
         run: |
           node scripts/gen-strings.mjs
-          git diff --exit-code -- composeApp/src/commonMain/kotlin/space/affinix/app/i18n/Strings.kt
+          git diff --exit-code -- composeApp/src/commonMain/kotlin/space/affinix/app/i18n/
       - name: Unit tests and screenshots
         run: ./gradlew :composeApp:desktopTest --no-daemon
       - uses: actions/upload-artifact@v4

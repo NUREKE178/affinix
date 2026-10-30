@@ -198,6 +198,9 @@ class Api(
         send(HttpMethod.Post, objectUrl(bucket, path), extra = mapOf("cache-control" to "max-age=3600", "x-upsert" to "false"), raw = bytes, rawMime = mime)
     }
 
+    /** Calls one of the website's Supabase edge functions as the signed-in person (invite-member ...). Returns the answer's text. */
+    suspend fun invokeFunction(name: String, body: JsonObject): String = send(HttpMethod.Post, "${config.supabaseUrl}/functions/v1/$name", body = body.toString())
+
     fun publicObjectUrl(bucket: String, path: String) = "${config.supabaseUrl}/storage/v1/object/public/$bucket/$path"
 
     /** the storage path inside [bucket] of a public URL made by [publicObjectUrl], or null */
