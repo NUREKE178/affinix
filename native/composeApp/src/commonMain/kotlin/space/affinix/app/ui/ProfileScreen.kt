@@ -82,12 +82,31 @@ private fun EditProfile(model: AppModel) {
     }
 }
 
+/** My picture and the key that changes it. */
+@Composable
+private fun MyPhoto(model: AppModel) {
+    val me = model.myProfile
+    val scope = rememberCoroutineScope()
+    var note by remember { mutableStateOf<String?>(null) }
+    Plate(Modifier.fillMaxWidth(), pad = 14) {
+        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(14.dp)) {
+            Avatar(model, space.affinix.app.net.Person(model.api.session?.userId.orEmpty(), me?.fullName, me?.username, me?.avatarUrl), 64.dp)
+            Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                Txt(me?.fullName?.ifBlank { null } ?: model.email, 16, FontWeight.ExtraBold, C.g50, maxLines = 1)
+                KeyButton(if (model.avatarBusy) t("common.saving") else t("app.changePhoto"), { scope.launch { note = model.changeAvatar() } }, compact = true, enabled = !model.avatarBusy)
+                note?.let { Txt(t(it), 12, FontWeight.Medium, if (it == "app.photoSaved") C.ok else C.bad) }
+            }
+        }
+    }
+}
+
 @Composable
 fun ProfileScreen(model: AppModel) {
     val p = model.profile
     LaunchedEffect(Unit) { if (model.myProfile == null) model.loadMyProfile() }
     Column(Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(14.dp)) {
         LevelHeader(model)
+        MyPhoto(model)
         Plate(Modifier.fillMaxWidth()) {
             Txt(t("app.signedInAs", "email" to model.email), 13, color = C.g400)
             Spacer(Modifier.height(12.dp))

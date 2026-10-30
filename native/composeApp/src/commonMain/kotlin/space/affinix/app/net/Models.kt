@@ -159,4 +159,5 @@ data class MyProfileRow(
     val username: String? = null,
     @SerialName("role_title") val roleTitle: String? = null,
     val bio: String? = null,
+    @SerialName("avatar_url") val avatarUrl: String? = null,
 )

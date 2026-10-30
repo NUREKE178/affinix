@@ -14,7 +14,9 @@ import kotlinx.serialization.json.put
 import org.jetbrains.compose.resources.ExperimentalResourceApi
 import org.jetbrains.compose.resources.decodeToImageBitmap
 import space.affinix.app.Platform
+import space.affinix.app.BuildInfo
 import space.affinix.app.Rules
+import space.affinix.app.Versions
 import space.affinix.app.i18n.Lang
 import space.affinix.app.i18n.tr
 import space.affinix.app.localDay
@@ -105,7 +107,20 @@ class AppModel(
     val email get() = api.session?.email.orEmpty()
     fun text(key: String, vararg vars: Pair<String, Any>) = tr(lang, key, *vars)
 
-    init { if (signedIn) refresh() }
+    /** the version of a newer release when there is one (null otherwise); shown as a note with a link to the download page */
+    var newerVersion by mutableStateOf<String?>(null)
+        private set
+
+    fun checkForUpdate() {
+        scope.launch {
+            try {
+                val latest = Versions.newestNative(api.releaseTags())
+                newerVersion = latest?.takeIf { Versions.isNewer(it, BuildInfo.VERSION) }
+            } catch (e: CancellationException) { throw e } catch (e: Exception) { /* offline or rate limited: no note */ }
+        }
+    }
+
+    init { checkForUpdate(); if (signedIn) refresh() }
 
     fun changeLang(l: Lang) { lang = l; kv.put("lang", l.tag) }
 
@@ -117,6 +132,14 @@ class AppModel(
             val s = api.signUp(email, password)
             if (s == null) return@guard "CONFIRM"
         } else api.signIn(email, password)
+        signedIn = true
+        refresh()
+        null
+    }
+
+    /** Sign in with Google through the system browser (the same Supabase provider as the website). Null on success or when the player gave up, else the message to show. */
+    suspend fun googleSignIn(): String? = guard {
+        if (api.signInWithGoogle() == null) return@guard null
         signedIn = true
         refresh()
         null
@@ -313,6 +336,8 @@ class AppModel(
         }
     }
 
+    private val AVATAR_BUCKET = "avatars"
+
     fun imageKey(d: Duel, index: Int) = "${d.season}/${d.family}/$index"
 
     @OptIn(ExperimentalResourceApi::class)
@@ -419,9 +444,30 @@ class AppModel(
         val uid = api.session?.userId ?: return
         scope.launch {
             try {
-                myProfile = api.restGet("profiles", kotlinx.serialization.builtins.ListSerializer(MyProfileRow.serializer()), "select" to "full_name,username,role_title,bio", "id" to "eq.$uid").firstOrNull()
+                myProfile = api.restGet("profiles", kotlinx.serialization.builtins.ListSerializer(MyProfileRow.serializer()), "select" to "full_name,username,role_title,bio,avatar_url", "id" to "eq.$uid").firstOrNull()
             } catch (e: CancellationException) { throw e } catch (e: Exception) { /* the form just stays empty */ }
         }
+    }
+
+    var avatarBusy by mutableStateOf(false)
+        private set
+
+    /** Chooses a picture, shrinks it, uploads it to the avatars bucket (the player's own folder) and points the profile at it; the previous file is removed. Returns the locale key to show (success or why not), or null if cancelled. */
+    suspend fun changeAvatar(): String? {
+        val uid = api.session?.userId ?: return null
+        val (img, why) = space.affinix.app.ImageRules.chooseAndShrink(space.affinix.app.ImageRules.AVATAR_SIDE, space.affinix.app.ImageRules.AVATAR_BYTES)
+        if (img == null) return why
+        avatarBusy = true
+        return try {
+            val path = "$uid/${Platform.uuid()}.${img.ext}"
+            api.uploadObject(AVATAR_BUCKET, path, img.bytes, img.mime)
+            val url = api.publicObjectUrl(AVATAR_BUCKET, path)
+            val previous = myProfile?.avatarUrl
+            api.restWrite(io.ktor.http.HttpMethod.Patch, "profiles", listOf("id" to "eq.$uid"), kotlinx.serialization.json.buildJsonObject { put("avatar_url", url) })
+            myProfile = (myProfile ?: MyProfileRow()).copy(avatarUrl = url)
+            api.pathFromPublicUrl(AVATAR_BUCKET, previous)?.takeIf { it.startsWith("$uid/") }?.let { old -> runCatching { api.removeObjects(AVATAR_BUCKET, listOf(old)) } }
+            "app.photoSaved"
+        } catch (e: CancellationException) { throw e } catch (e: Exception) { "app.imageFailed" } finally { avatarBusy = false }
     }
 
     /** Same rule as the website: 3-30 of a-z, 0-9, _ (or empty). */
@@ -440,7 +486,7 @@ class AppModel(
                     put("role_title", role.trim()); put("bio", bio.trim())
                 },
             )
-            myProfile = MyProfileRow(name.trim(), u.ifEmpty { null }, role.trim(), bio.trim())
+            myProfile = MyProfileRow(name.trim(), u.ifEmpty { null }, role.trim(), bio.trim(), myProfile?.avatarUrl)
             null
         } catch (e: CancellationException) { throw e } catch (e: ApiException) {
             if (e.status == 409 || e.message.contains("duplicate", true) || e.message.contains("unique", true)) "profile.personal.usernameTaken" else "app.noNetwork"

@@ -69,6 +69,14 @@ fun HomeScreen(model: AppModel) {
     Column(Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(14.dp)) {
         ArenaTabs(model)
         LevelHeader(model)
+        model.newerVersion?.let { v ->
+            Plate(Modifier.fillMaxWidth(), pad = 14) {
+                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                    Txt(t("app.updateAvailable", "v" to v), 14, FontWeight.Bold, C.g100, Modifier.weight(1f))
+                    KeyButton(t("app.updateGet"), { space.affinix.app.Browser.openUrl(space.affinix.app.Versions.DOWNLOAD_PAGE) }, lit = true, compact = true)
+                }
+            }
+        }
 
         if (model.offline) {
             Plate(Modifier.fillMaxWidth(), pad = 14) {

@@ -18,6 +18,12 @@ import space.affinix.app.store.Tab
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        // the system's picture chooser (posts, chat, avatar): registered before the activity starts, as the platform requires
+        val pickImage = registerForActivityResult(androidx.activity.result.contract.ActivityResultContracts.GetContent()) { uri -> AndroidImages.deliver(uri) }
+        AndroidImages.context = applicationContext
+        AndroidAuth.context = applicationContext
+        AndroidAuth.deliver(intent?.data)
+        AndroidImages.launch = { pickImage.launch("image/*") }
         val kv = PrefsKeyValueStore(applicationContext)
         setContent {
             val scope = rememberCoroutineScope()
@@ -33,5 +39,16 @@ class MainActivity : ComponentActivity() {
             }
             App(model)
         }
+    }
+
+    override fun onNewIntent(intent: android.content.Intent) {
+        super.onNewIntent(intent)
+        setIntent(intent)
+        AndroidAuth.deliver(intent.data) // the browser coming back from Google
+    }
+
+    override fun onDestroy() {
+        AndroidImages.launch = null
+        super.onDestroy()
     }
 }

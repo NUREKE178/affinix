@@ -247,3 +247,29 @@ class MarathonTest {
         assertTrue(synchronized(seenLines) { seenLines.none { it.contains("arena-deal") } })
     }
 }
+
+class VersionsTest {
+    @Test fun versionsAreComparedNumberByNumber() {
+        assertTrue(Versions.isNewer("0.2.2", "0.2.1"))
+        assertTrue(Versions.isNewer("0.10.0", "0.9.9")) // not as text
+        assertTrue(Versions.isNewer("1.0", "0.9.9"))
+        assertTrue(!Versions.isNewer("0.2.2", "0.2.2"))
+        assertTrue(!Versions.isNewer("0.2.1", "0.2.2"))
+        assertTrue(!Versions.isNewer("1.0", "1.0.0"))
+        assertTrue(Versions.isNewer("v1.2.0-beta", "1.1.9"))
+    }
+
+    @Test fun theNewestNativeReleaseIsFoundAmongOtherTags() {
+        assertEquals("0.2.2", Versions.newestNative(listOf("v1.9.0", "native-v0.2.1", "native-v0.2.2", "native-v0.1.0", "apps-v3")))
+        assertNull(Versions.newestNative(listOf("v1.0.0")))
+        assertNull(Versions.newestNative(emptyList()))
+    }
+
+    @Test fun theReleaseListOfGithubIsReadWithoutDraftsAndPreReleases() = kotlinx.coroutines.test.runTest {
+        val engine = MockEngine {
+            respond("""[{"tag_name":"native-v0.9.0","draft":true},{"tag_name":"native-v0.8.0","prerelease":true},{"tag_name":"native-v0.2.2","draft":false,"prerelease":false},{"tag_name":"v1"}]""", HttpStatusCode.OK, jsonH)
+        }
+        val api = Api(HttpClient(engine), Config(), MemorySessionStore(null))
+        assertEquals(listOf("native-v0.2.2", "v1"), api.releaseTags())
+    }
+}

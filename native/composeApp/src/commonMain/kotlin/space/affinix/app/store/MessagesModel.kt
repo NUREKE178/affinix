@@ -57,7 +57,7 @@ class MessagesModel(private val api: Api, private val scope: CoroutineScope, pri
 
     val unreadTotal: Long get() = conversations.sumOf { it.unread }
 
-    private fun say(key: String) { notice = key; scope.launch { delay(3500); if (notice == key) notice = null } }
+    internal fun say(key: String) { notice = key; scope.launch { delay(3500); if (notice == key) notice = null } }
 
     /** The locale key that words a failed chat call: the server raises short words (edit_expired, not_found, deleted, bad_text, bad_emoji, not_friends). */
     internal fun errorKey(e: Exception): String {
@@ -111,7 +111,7 @@ class MessagesModel(private val api: Api, private val scope: CoroutineScope, pri
     private fun map(r: MessageRow) = Message(
         r.id, r.conversationId, r.senderId, r.body.orEmpty(), r.createdAt, r.readAt != null, r.editedAt != null, r.deletedAt != null, r.attachmentPath != null,
         r.reactions.map { Reaction(it.userId, it.emoji) },
-        r.reply?.let { Quote(it.id, it.senderId, it.body.orEmpty(), it.attachmentPath != null, it.deletedAt != null) }, r.replyToId,
+        r.reply?.let { Quote(it.id, it.senderId, it.body.orEmpty(), it.attachmentPath != null, it.deletedAt != null) }, r.replyToId, r.attachmentPath,
     )
 
     /** an older database (before 0024) has no reactions table or reply relation: the plain read still works */
@@ -169,10 +169,10 @@ class MessagesModel(private val api: Api, private val scope: CoroutineScope, pri
 
     // ---- sending --------------------------------------------------------------------------------------------------------------------
 
-    fun send(text: String) {
+    fun send(text: String, image: space.affinix.app.ShrunkImage? = null) {
         val c = open ?: return
         val body = text.trim().take(4000)
-        if (body.isEmpty()) return
+        if (body.isEmpty() && image == null) return
         val being = editing
         if (being != null) { editing = null; edit(being, body); return }
         val uid = me() ?: return
@@ -181,8 +181,19 @@ class MessagesModel(private val api: Api, private val scope: CoroutineScope, pri
         val to = replyTo
         replyTo = null
         val quote = to?.let { Quote(it.id, it.senderId, it.body, it.hasImage, it.deleted) }
-        thread = thread + Message(id, c.id, uid, body, isoOf(now), read = false, edited = false, deleted = false, hasImage = false, reply = quote, replyToId = to?.id, status = "sending")
+        thread = thread + Message(id, c.id, uid, body, isoOf(now), read = false, edited = false, deleted = false, hasImage = image != null, reply = quote, replyToId = to?.id, status = "sending")
+        if (image != null) pendingImages[id] = image
         deliver(c.id, id, body, to?.id)
+    }
+
+    /** pictures of messages that have not been confirmed yet, kept for a retry */
+    private val pendingImages = HashMap<String, space.affinix.app.ShrunkImage>()
+    private val attachmentUrls = HashMap<String, String>()
+
+    /** A temporary link to a picture of a chat (the bucket is private), signed once and kept for most of its hour. */
+    suspend fun attachmentUrl(path: String): String? {
+        attachmentUrls[path]?.let { return it }
+        return try { api.signedUrls(IMAGE_BUCKET, listOf(path))[path]?.also { attachmentUrls[path] = it } } catch (e: CancellationException) { throw e } catch (e: Exception) { null }
     }
 
     fun retry(m: Message) {
@@ -192,13 +203,22 @@ class MessagesModel(private val api: Api, private val scope: CoroutineScope, pri
 
     private fun deliver(convId: String, id: String, body: String, replyToId: String? = null) {
         scope.launch {
+            var uploaded: String? = null
             try {
+                val image = pendingImages[id]
+                if (image != null) {
+                    val path = "$convId/${me()}/$id.${image.ext}"
+                    api.uploadObject(IMAGE_BUCKET, path, image.bytes, image.mime)
+                    uploaded = path
+                }
                 val written = api.restWrite(HttpMethod.Post, "messages", body = buildJsonObject {
                     put("id", id); put("conversation_id", convId); put("body", body); if (replyToId != null) put("reply_to_id", replyToId)
+                    if (image != null) put("attachment_path", "$convId/${me()}/$id.${image.ext}")
                 }, returning = true)
+                pendingImages.remove(id)
                 val row = kotlinx.serialization.json.Json { ignoreUnknownKeys = true; isLenient = true }.decodeFromString(ListSerializer(MessageRow.serializer()), written).firstOrNull()
                 thread = thread.map { if (it.id == id) (row?.let { r -> map(r).copy(reply = it.reply) } ?: it.copy(status = null)) else it }.sortedBy { epochOfIso(it.createdAt) ?: Long.MAX_VALUE }
-                conversations = conversations.map { if (it.id == convId) it.copy(lastBody = body.take(140), lastAt = row?.createdAt ?: it.lastAt, lastSender = me(), unread = 0) else it }
+                conversations = conversations.map { if (it.id == convId) it.copy(lastBody = body.take(140), lastHasImage = uploaded != null, lastAt = row?.createdAt ?: it.lastAt, lastSender = me(), unread = 0) else it }
             } catch (e: CancellationException) { throw e } catch (e: Exception) {
                 thread = thread.map { if (it.id == id) it.copy(status = "failed") else it }
             }
@@ -241,7 +261,10 @@ class MessagesModel(private val api: Api, private val scope: CoroutineScope, pri
         patch(m.id) { it.copy(body = "", deleted = true, hasImage = false, reactions = emptyList()) }
         if (isLast) conversations = conversations.map { if (it.id == c.id) it.copy(lastBody = "", lastHasImage = false, lastDeleted = true) else it }
         scope.launch {
-            try { api.rpcText("delete_message", buildJsonObject { put("p_message_id", m.id) }) }
+            try {
+                val path = api.rpcText("delete_message", buildJsonObject { put("p_message_id", m.id) }).trim().trim('"')
+                if (path.isNotEmpty() && path != "null") { attachmentUrls.remove(path); runCatching { api.removeObjects(IMAGE_BUCKET, listOf(path)) } }
+            }
             catch (e: CancellationException) { throw e } catch (e: Exception) {
                 patch(m.id) { m }
                 if (isLast) conversations = conversations.map { if (it.id == c.id) it.copy(lastBody = m.body.take(140), lastHasImage = m.hasImage, lastDeleted = false) else it }
@@ -313,6 +336,7 @@ class MessagesModel(private val api: Api, private val scope: CoroutineScope, pri
 
     companion object {
         const val PAGE = 40
+        const val IMAGE_BUCKET = "message-images"
         const val EDIT_WINDOW_MS = 48L * 3600 * 1000
         val REACTIONS = listOf("👍", "❤️", "😂", "😮", "😢", "🙏")
         private val KNOWN_ERRORS = setOf("edit_expired", "not_found", "deleted", "bad_text", "bad_emoji", "not_friends")

@@ -84,6 +84,21 @@ class Api(
         }
     }
 
+    /** The address that starts Google sign-in at Supabase and comes back to [redirect] with a one-time code (PKCE). */
+    fun googleUrl(redirect: String, challenge: String): String =
+        "${config.supabaseUrl}/auth/v1/authorize?provider=google&flow_type=pkce&code_challenge=$challenge&code_challenge_method=s256&redirect_to=${space.affinix.app.urlEncode(redirect)}"
+
+    /** Sign in with Google through the system browser. Returns the session, or null when the player did not finish. */
+    suspend fun signInWithGoogle(): Session? {
+        val verifier = space.affinix.app.Pkce.verifier()
+        val challenge = space.affinix.app.Pkce.challenge(verifier)
+        val back = space.affinix.app.Browser.authorize { redirect -> googleUrl(redirect, challenge) } ?: return null
+        back["error_description"]?.let { throw ApiException(400, it) }
+        back["error"]?.let { throw ApiException(400, it) }
+        val code = back["code"] ?: throw ApiException(400, "no code came back")
+        return token("pkce", buildJsonObject { put("auth_code", code); put("code_verifier", verifier) })
+    }
+
     private suspend fun token(grant: String, body: JsonObject): Session {
         val r = http.post("${config.supabaseUrl}/auth/v1/token") {
             parameter("grant_type", grant)
@@ -125,7 +140,10 @@ class Api(
     // ---- RPC -------------------------------------------------------------------
 
     /** One authenticated call to Supabase (RPC or table). A token about to expire is refreshed first; a 401 is retried once with a fresh token. */
-    private suspend fun send(method: HttpMethod, url: String, query: List<Pair<String, String>> = emptyList(), body: String? = null, extra: Map<String, String> = emptyMap()): String {
+    private suspend fun send(
+        method: HttpMethod, url: String, query: List<Pair<String, String>> = emptyList(), body: String? = null, extra: Map<String, String> = emptyMap(),
+        raw: ByteArray? = null, rawMime: String = "application/octet-stream",
+    ): String {
         var s = fresh()
         var retried = false
         while (true) {
@@ -136,6 +154,7 @@ class Api(
                 header(HttpHeaders.Authorization, "Bearer ${s.accessToken}")
                 extra.forEach { header(it.key, it.value) }
                 if (body != null) { contentType(ContentType.Application.Json); setBody(body) }
+                if (raw != null) { contentType(ContentType.parse(rawMime)); setBody(raw) }
             }
             if (r.status.value == 401 && !retried) { retried = true; s = fresh(force = true); continue }
             val text = r.bodyAsText()
@@ -158,6 +177,56 @@ class Api(
         send(method, "${config.supabaseUrl}/rest/v1/$table", query, body?.toString(), mapOf("Prefer" to if (returning) "return=representation" else "return=minimal"))
 
     suspend fun <T> rpc(name: String, args: JsonElement, ser: KSerializer<T>): T = ApiJson.decodeFromString(ser, rpcText(name, args))
+
+    /** Tags of the newest published releases of the project (no sign-in needed); drafts and pre-releases are left out. */
+    suspend fun releaseTags(): List<String> {
+        val r = http.get("https://api.github.com/repos/NUREKE178/affinix/releases?per_page=15") { header("Accept", "application/vnd.github+json") }
+        val text = r.bodyAsText()
+        if (!r.status.isSuccess()) throw ApiException(r.status.value, errorOf(text, r.status.value))
+        return ApiJson.parseToJsonElement(text).jsonArray.map { it.jsonObject }
+            .filter { it["draft"]?.jsonPrimitive?.content != "true" && it["prerelease"]?.jsonPrimitive?.content != "true" }
+            .mapNotNull { it["tag_name"]?.jsonPrimitive?.content }
+    }
+
+    // ---- storage (pictures) ----------------------------------------------------------------------------------------------------
+
+    private fun objectUrl(bucket: String, path: String) = "${config.supabaseUrl}/storage/v1/object/$bucket/$path"
+
+    /** Uploads one file under [path] in [bucket]; the storage policies decide whether the path (it starts with the player's id) is allowed. */
+    suspend fun uploadObject(bucket: String, path: String, bytes: ByteArray, mime: String) {
+        send(HttpMethod.Post, objectUrl(bucket, path), extra = mapOf("cache-control" to "max-age=3600", "x-upsert" to "false"), raw = bytes, rawMime = mime)
+    }
+
+    fun publicObjectUrl(bucket: String, path: String) = "${config.supabaseUrl}/storage/v1/object/public/$bucket/$path"
+
+    /** the storage path inside [bucket] of a public URL made by [publicObjectUrl], or null */
+    fun pathFromPublicUrl(bucket: String, url: String?): String? {
+        val marker = "/object/public/$bucket/"
+        val i = url?.indexOf(marker) ?: -1
+        return if (i < 0) null else url!!.substring(i + marker.length)
+    }
+
+    suspend fun removeObjects(bucket: String, paths: List<String>) {
+        if (paths.isEmpty()) return
+        send(HttpMethod.Delete, "${config.supabaseUrl}/storage/v1/object/$bucket", body = buildJsonObject { put("prefixes", JsonArray(paths.map { JsonPrimitive(it) })) }.toString())
+    }
+
+    /** Temporary links (an hour) to files of a private bucket; a path the server could not sign is left out of the answer. */
+    suspend fun signedUrls(bucket: String, paths: List<String>): Map<String, String> {
+        if (paths.isEmpty()) return emptyMap()
+        val text = send(
+            HttpMethod.Post, "${config.supabaseUrl}/storage/v1/object/sign/$bucket",
+            body = buildJsonObject { put("expiresIn", 3600); put("paths", JsonArray(paths.map { JsonPrimitive(it) })) }.toString(),
+        )
+        val out = HashMap<String, String>()
+        for (e in ApiJson.parseToJsonElement(text).jsonArray) {
+            val o = e.jsonObject
+            val path = o["path"]?.jsonPrimitive?.content ?: continue
+            val signed = o["signedURL"]?.takeIf { it !is kotlinx.serialization.json.JsonNull }?.jsonPrimitive?.content ?: continue
+            out[path] = "${config.supabaseUrl}/storage/v1$signed"
+        }
+        return out
+    }
 
     suspend fun state(day: String, history: Int = 84): StateResponse =
         rpc("arena_state", buildJsonObject { put("p_day", day); put("p_history", history) }, StateResponse.serializer())

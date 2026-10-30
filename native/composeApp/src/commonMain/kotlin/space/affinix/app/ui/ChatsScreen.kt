@@ -1,6 +1,12 @@
 package space.affinix.app.ui
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.Image
+import androidx.compose.foundation.layout.aspectRatio
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.layout.ContentScale
+import kotlinx.coroutines.launch
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
@@ -138,6 +144,20 @@ private fun QuoteBar(model: AppModel, q: Quote, mine: Boolean) {
     }
 }
 
+/** The picture of a message: the bucket is private, so the link is signed first and the picture is then loaded like any other. */
+@Composable
+private fun AttachmentImage(model: AppModel, path: String) {
+    var url by remember(path) { mutableStateOf<String?>(null) }
+    LaunchedEffect(path) { url = model.messages.attachmentUrl(path); model.ensureUrlImage(url) }
+    val bmp = url?.let { model.images[it] }
+    val ratio = if (bmp != null && bmp.height > 0) bmp.width.toFloat() / bmp.height else 1.3f
+    Box(Modifier.widthIn(max = 240.dp).fillMaxWidth().aspectRatio(ratio.coerceIn(.6f, 2f)).clip(RoundedCornerShape(10.dp)).background(C.g700).padding(bottom = 0.dp), contentAlignment = Alignment.Center) {
+        if (bmp != null) Image(bmp, null, Modifier.matchParentSize(), contentScale = ContentScale.Crop)
+        else Txt(t("common.loading"), 12, color = C.g500)
+    }
+    Spacer(Modifier.height(6.dp))
+}
+
 @Composable
 private fun Bubble(model: AppModel, m: Message, selected: Boolean, onSelect: () -> Unit) {
     val mine = m.senderId == model.api.session?.userId
@@ -151,12 +171,13 @@ private fun Bubble(model: AppModel, m: Message, selected: Boolean, onSelect: () 
             ) {
                 m.reply?.takeIf { !m.deleted }?.let { QuoteBar(model, it, mine) }
                 if (m.reply == null && m.replyToId != null && !m.deleted) Txt(t("messages.quoteMissing"), 12, color = if (mine) C.signalInk.copy(alpha = .7f) else C.g500)
+                if (m.attachmentPath != null && !m.deleted) AttachmentImage(model, m.attachmentPath)
                 val text = when {
                     m.deleted -> if (mine) t("messages.deletedMine") else t("messages.deletedTheirs")
-                    m.hasImage && m.body.isBlank() -> t("messages.photo")
+                    m.hasImage && m.body.isBlank() -> if (m.attachmentPath == null) t("messages.photo") else ""
                     else -> m.body
                 }
-                Txt(text, 15, if (m.deleted) FontWeight.Normal else FontWeight.Medium, if (mine) C.signalInk else C.g100)
+                if (text.isNotEmpty()) Txt(text, 15, if (m.deleted) FontWeight.Normal else FontWeight.Medium, if (mine) C.signalInk else C.g100)
             }
             if (m.reactions.isNotEmpty()) {
                 Row(Modifier.padding(top = 3.dp), horizontalArrangement = Arrangement.spacedBy(4.dp)) {
@@ -226,6 +247,8 @@ fun ThreadScreen(model: AppModel) {
     val c = msg.open ?: return
     var draft by remember(c.id) { mutableStateOf("") }
     var selected by remember(c.id) { mutableStateOf<String?>(null) }
+    var image by remember(c.id) { mutableStateOf<space.affinix.app.ShrunkImage?>(null) }
+    val scope = androidx.compose.runtime.rememberCoroutineScope()
     LaunchedEffect(msg.editing?.id) { msg.editing?.let { draft = it.body } }
     LaunchedEffect(c.id) { while (true) { delay(4_000); msg.poll() } }
     Column(Modifier.fillMaxSize().padding(horizontal = 12.dp).padding(top = 8.dp, bottom = 8.dp)) {
@@ -267,9 +290,17 @@ fun ThreadScreen(model: AppModel) {
                 IcoAction("close", { msg.editing = null; draft = "" })
             }
         }
+        image?.let { img -> Box(Modifier.padding(top = 8.dp)) { PickedPreview(img) { image = null } } }
         Row(Modifier.fillMaxWidth().padding(top = 8.dp), verticalAlignment = Alignment.Bottom, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            Box(Modifier.weight(1f)) { TextArea(draft, { draft = it }, t("messages.placeholder"), minHeight = 44.dp) }
-            KeyButton(if (msg.editing != null) t("messages.save") else t("messages.send"), { if (draft.isNotBlank()) { msg.send(draft); draft = ""; selected = null } }, lit = true, enabled = draft.isNotBlank())
+            if (msg.editing == null) IcoAction("image", {
+                scope.launch {
+                    val (img, why) = space.affinix.app.ImageRules.chooseAndShrink(space.affinix.app.ImageRules.CHAT_SIDE, space.affinix.app.ImageRules.CHAT_BYTES)
+                    if (img != null) image = img else if (why != null) msg.say(why)
+                }
+            }, active = image != null, filled = false)
+            Box(Modifier.weight(1f)) { TextArea(draft, { draft = it }, if (image != null) t("messages.captionPlaceholder") else t("messages.placeholder"), minHeight = 44.dp) }
+            val canSend = draft.isNotBlank() || image != null
+            KeyButton(if (msg.editing != null) t("messages.save") else t("messages.send"), { if (canSend) { msg.send(draft, image); draft = ""; image = null; selected = null } }, lit = true, enabled = canSend)
         }
     }
 }

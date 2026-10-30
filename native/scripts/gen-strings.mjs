@@ -51,7 +51,7 @@ const KEYS = [
   "feed.title", "feed.subtitle", "feed.composerPlaceholder", "feed.posting", "feed.publish", "feed.posted", "feed.postedCensored", "feed.deletePost", "feed.postDeleted",
   "feed.confirmDeleteTitle", "feed.confirmDeleteBody", "feed.unknownAuthor", "feed.loadErrorTitle", "feed.loadErrorBody", "feed.emptyTitle", "feed.emptyBody",
   "feed.profanityBlocked", "feed.like", "feed.comment", "feed.save", "feed.noComments", "feed.commentPlaceholder", "feed.commentSubmit", "feed.commentPostedCensored",
-  "feed.deleteComment", "feed.tabAll", "feed.tabMine", "feed.mineEmptyTitle", "feed.mineEmptyBody", "feed.loadMore", "feed.loadMoreFailed", "feed.edited",
+  "feed.deleteComment", "feed.tabAll", "feed.tabMine", "feed.mineEmptyTitle", "feed.mineEmptyBody", "feed.loadMore", "feed.loadMoreFailed", "feed.edited", "feed.addImage", "feed.removeImage",
   "friends.message", "friends.title", "friends.incomingTitle", "friends.outgoingTitle", "friends.friendsTitle", "friends.accept", "friends.decline", "friends.cancel",
   "friends.remove", "friends.addFriend", "friends.requestSent", "friends.requestAccepted", "friends.emptyTitle", "friends.emptyBody", "friends.loadErrorTitle", "friends.loadErrorBody",
   "people.searchPlaceholder", "people.searchHint", "people.noResultsTitle", "people.noResultsBody", "people.errorTitle", "people.errorBody", "people.retry", "people.you",
@@ -61,13 +61,17 @@ const KEYS = [
 ];
 
 // whole subtrees of the site's locale (every string under the prefix), for screens that use most of a section
-const PREFIXES = ["messages", "search", "arena.marathon", "arena.dna", "arena.traits", "arena.archetype", "arena.share"];
+const PREFIXES = ["messages", "search", "arena.marathon", "arena.dna", "auth.social", "arena.traits", "arena.archetype", "arena.share"];
 const leaves = (o, base) => Object.entries(o).flatMap(([k, v]) => (typeof v === "string" ? [`${base}.${k}`] : v && typeof v === "object" ? leaves(v, `${base}.${k}`) : []));
 for (const p of PREFIXES) for (const k of leaves(get(ru, p), p)) if (!KEYS.includes(k)) KEYS.push(k);
 
 // only the apps have these
 const EXTRA = {
   "app.name": { ru: "Affinix", kk: "Affinix", en: "Affinix" },
+  "app.updateAvailable": { ru: "Вышла новая версия: {v}", kk: "Жаңа нұсқа шықты: {v}", en: "A new version is out: {v}" },
+  "app.updateGet": { ru: "Скачать", kk: "Жүктеу", en: "Download" },
+  "app.changePhoto": { ru: "Сменить фото", kk: "Фотоны ауыстыру", en: "Change photo" },
+  "app.photoSaved": { ru: "Фото профиля обновлено", kk: "Профиль фотосы жаңартылды", en: "Profile photo updated" },
   "app.language": { ru: "Язык", kk: "Тіл", en: "Language" },
   "app.profileTitle": { ru: "Мой профиль", kk: "Менің профилім", en: "My profile" },
   "app.markRead": { ru: "Прочитано", kk: "Оқылды", en: "Mark read" },

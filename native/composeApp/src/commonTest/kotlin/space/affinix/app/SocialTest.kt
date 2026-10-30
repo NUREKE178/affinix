@@ -494,3 +494,76 @@ class GlobalSearchTest {
         assertTrue(r.log().none { it.contains("/posts?") })
     }
 }
+
+class PictureUploadTest {
+    private val jpg = space.affinix.app.ShrunkImage(byteArrayOf(1, 2, 3), "image/jpeg", "jpg")
+
+    @Test fun aPostWithAPictureUploadsItFirstAndPointsThePostAtIt() = runTest {
+        val r = Rig({ _, _, _, _ -> "[]" })
+        assertNull(r.feed.publish("hello world", jpg))
+        val log = r.log()
+        val up = log.first { it.contains("/storage/v1/object/post-images/me/") }
+        assertTrue(up.startsWith("POST") && up.contains(".jpg"), up)
+        val path = Regex("/post-images/(me/[^?]+\\.jpg)").find(up)!!.groupValues[1]
+        val post = log.first { it.startsWith("POST") && it.contains("/rest/v1/posts") }
+        assertTrue(post.contains("\"image_url\":\"https://sb.test/storage/v1/object/public/post-images/$path\""), post)
+        assertTrue(log.indexOf(up) < log.indexOf(post)) // the file first, then the row that names it
+    }
+
+    @Test fun aPostWhoseRowIsRefusedTakesItsPictureBack() = runTest {
+        val r = Rig({ _, _, _, _ -> "[]" }, reject = { m, p, _ -> if (m == "POST" && p.endsWith("/rest/v1/posts")) "boom" else null })
+        assertEquals("app.noNetwork", r.feed.publish("hello world", jpg))
+        val del = r.log().firstOrNull { it.startsWith("DELETE") && it.contains("/storage/v1/object/post-images") }
+        assertTrue(del != null && del.contains("\"prefixes\":[\"me/"), r.log().toString())
+    }
+
+    @Test fun aPostWithoutAPictureSendsNoImageUrl() = runTest {
+        val r = Rig({ _, _, _, _ -> "[]" })
+        r.feed.publish("just words", null)
+        assertTrue(r.log().none { it.contains("/storage/") })
+        assertTrue(r.log().first { it.startsWith("POST") && it.contains("/rest/v1/posts") }.let { !it.contains("image_url") })
+    }
+
+    @Test fun aChatPictureIsUploadedToTheConversationFolderAndNamedInTheMessage() = runTest {
+        val r = Rig({ m, path, _, body ->
+            when {
+                path.endsWith("/conversations") -> """[{"id":"c1","user_a":"me","user_b":"u2"}]"""
+                path.endsWith("/profiles_public") -> PROFILES
+                path.endsWith("/messages") && m == "GET" -> "[]"
+                path.endsWith("/messages") && m == "POST" -> """[{"id":"${Regex("\"id\":\"([^\"]+)\"").find(body)!!.groupValues[1]}","conversation_id":"c1","sender_id":"me","body":"","created_at":"2026-10-30T09:05:00+00:00","attachment_path":"x"}]"""
+                else -> "null"
+            }
+        })
+        r.messages.refreshNow(); r.messages.openChat(r.messages.conversations.first()); until { r.messages.threadLoaded }
+        r.messages.send("", jpg)
+        assertTrue(r.messages.thread.last().hasImage)
+        until { r.messages.thread.none { it.status != null } }
+        val up = r.log().first { it.contains("/storage/v1/object/message-images/c1/me/") }
+        val id = Regex("/message-images/c1/me/([^.]+)\\.jpg").find(up)!!.groupValues[1]
+        val msg = r.log().first { it.startsWith("POST") && it.contains("/rest/v1/messages") }
+        assertTrue(msg.contains("\"attachment_path\":\"c1/me/$id.jpg\"") && msg.contains("\"id\":\"$id\""), msg)
+    }
+
+    @Test fun aChatPictureIsSignedBeforeItIsShown() = runTest {
+        val r = Rig({ _, path, _, _ -> if (path.contains("/storage/v1/object/sign/message-images")) """[{"path":"c1/u2/a.jpg","signedURL":"/object/sign/message-images/c1/u2/a.jpg?token=T"},{"path":"c1/u2/b.jpg","signedURL":null,"error":"not found"}]""" else "[]" })
+        assertEquals("https://sb.test/storage/v1/object/sign/message-images/c1/u2/a.jpg?token=T", r.messages.attachmentUrl("c1/u2/a.jpg"))
+        assertNull(r.messages.attachmentUrl("c1/u2/b.jpg"))
+        r.messages.attachmentUrl("c1/u2/a.jpg") // second time from memory
+        assertEquals(2, r.log().count { it.contains("/storage/v1/object/sign/") })
+    }
+
+    @Test fun onlyRealPicturesOfASaneSizeAreAccepted() {
+        val c = space.affinix.app.ImageRules
+        assertNull(c.check(space.affinix.app.PickedImage(ByteArray(10), "image/png")))
+        assertEquals("messages.err.img_bad_type", c.check(space.affinix.app.PickedImage(ByteArray(10), "application/pdf")))
+        assertEquals("messages.err.img_too_big", c.check(space.affinix.app.PickedImage(ByteArray(0), "image/jpeg", tooBig = true)))
+    }
+
+    @Test fun aPublicUrlGivesBackItsStoragePath() {
+        val api = Rig({ _, _, _, _ -> "[]" }).api
+        val url = api.publicObjectUrl("avatars", "me/a.jpg")
+        assertEquals("me/a.jpg", api.pathFromPublicUrl("avatars", url))
+        assertNull(api.pathFromPublicUrl("avatars", "https://elsewhere.test/a.jpg"))
+        assertNull(api.pathFromPublicUrl("avatars", null))
+    }
+}

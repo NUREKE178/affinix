@@ -152,7 +152,7 @@ data class Conversation(
 data class Message(
     val id: String, val conversationId: String, val senderId: String, val body: String, val createdAt: String,
     val read: Boolean, val edited: Boolean, val deleted: Boolean, val hasImage: Boolean,
-    val reactions: List<Reaction> = emptyList(), val reply: Quote? = null, val replyToId: String? = null,
+    val reactions: List<Reaction> = emptyList(), val reply: Quote? = null, val replyToId: String? = null, val attachmentPath: String? = null,
     /** null = confirmed by the server; "sending" or "failed" = only on this device so far */
     val status: String? = null,
 )
