@@ -121,4 +121,11 @@ class ApiTest {
         assertEquals("Aru", lb.rows.single().name); assertEquals(1, lb.me!!.rank)
         assertEquals("https://api.test/api/arena-specimen?season=202610&family=card&index=17&w=640&v=1", api.specimenUrl("202610", "card", 17))
     }
+
+    @Test fun aWebPageInsteadOfDuelsIsReportedAsWhatItIs() = runTest {
+        val engine = MockEngine { respond("<!doctype html><html><head><title>Affinix</title></head>", HttpStatusCode.OK, headersOf(HttpHeaders.ContentType, "text/html")) }
+        val api = Api(HttpClient(engine), config, MemorySessionStore())
+        val e = assertFailsWith<ApiException> { api.dealDaily("2026-10-30", "202610") }
+        assertTrue(e.message.startsWith("unexpected answer: <!doctype html>"), e.message)
+    }
 }

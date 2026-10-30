@@ -220,7 +220,12 @@ class Api(
     private suspend fun decodeDuels(r: HttpResponse): List<Duel> {
         val text = r.bodyAsText()
         if (!r.status.isSuccess()) throw ApiException(r.status.value, errorOf(text, r.status.value))
-        return ApiJson.decodeFromString(ListSerializer(Duel.serializer()), text)
+        return try {
+            ApiJson.decodeFromString(ListSerializer(Duel.serializer()), text)
+        } catch (e: kotlinx.serialization.SerializationException) {
+            // not the JSON the dealer sends (a web page, a platform error): say what came back instead of a vague network message
+            throw ApiException(r.status.value, "unexpected answer: " + text.replace(Regex("\\s+"), " ").take(120))
+        }
     }
 
     /** Any public file (an avatar, a post picture), no login. */
