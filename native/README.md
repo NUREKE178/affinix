@@ -3,11 +3,13 @@
 A real app, no browser engine inside: one Kotlin code base draws the screens itself (Skia) on **Windows, Linux and Android**.
 It talks to the same Supabase project and the same rules as the website, so XP, levels, rankings and answers are shared.
 
-What is in it: sign in / sign up / reset password; the **Arena** (Daily Challenge, free play, duel console with reveal and crowd percentages, XP and combo, eye tests, round summary,
-rankings, **daily quests** with claims); the **Feed** (posts, likes, saves, comments, composer with the site's word filter); **Friends** (search by name or @username, requests);
-**Chats** (text messages with friends, read ticks, unread badge); **Profile** (edit, rankings visibility, awards); **Notifications**; ru / kk / en.
-What is **not** in it yet: marketers' tools (experiments, builder, results, crowd tests, participants, reports), admin, team, billing, Google sign-in, photo upload (posts, chat, avatar),
-chat reactions / replies / editing and live delivery, extra daily sets and the weekly theme, Taste DNA, global search, push notifications, self-update.
+What is in it: sign in / sign up / reset password / Google; the **Arena** (Daily Challenge, extra sets and the weekly theme, free play, duel console with reveal and crowd percentages, XP and combo,
+eye tests, round summary, rankings, friends race, **daily quests** with claims, Taste DNA); the **Feed** (posts with pictures, likes, saves, comments, composer with the site's word filter);
+**Friends** (search by name or @username, requests); **Chats** (text and picture messages, reactions, replies, edit, delete, pin / mute, search, read ticks, unread badge); global **search**;
+**Profile** (edit, picture, rankings visibility, awards); **Notifications**; **crowd tests** (create, results with the 95% verdict, pause, delete) and research missions; ru / kk / en.
+New in this round, the marketers' **Research** tab: company picker, experiments (list, publish with a public link, delete), **results** (the website's own formulas, ported from `stats.js`),
+participants, team (roles, add by e-mail, remove), the crowd tests section and the **experiment builder** (variants with pictures, the ready-made measurement questions and your own, draft or publish).
+What is **not** in it yet: editing / pausing / duplicating an experiment, reports, AI insights, the admin panel, creating a company, push notifications, live chat delivery, self-install of updates.
 
 ## Layout
 
@@ -20,12 +22,12 @@ native/
       store/Game.kt           one round as a state machine (vote, combo, XP, offline queue)
       store/AppModel.kt       what the screens read
       ui/                     Instrument theme (graphite + one orange signal) and the screens
-      i18n/Strings.kt         GENERATED from the site's locale files (see below)
+      i18n/Strings{Ru,Kk,En}.kt  GENERATED from the site's locale files (see below)
     composeResources          Rubik font, logo
   composeApp/src/desktopMain  window + settings file          composeApp/src/androidMain  activity + SharedPreferences
   composeApp/src/commonTest   unit tests (rules parity with the JS, game logic, API client on a mock server)
   composeApp/src/desktopTest  offscreen screenshots of every screen
-  scripts/gen-strings.mjs     regenerates Strings.kt from src/lib/locales/{ru,kk,en}.js
+  scripts/gen-strings.mjs     regenerates i18n/Strings*.kt from src/lib/locales/{ru,kk,en}.js
   scripts/gen-icons.mjs       regenerates IconData.kt from src/components/icons.js (the site's own icon set)
 ```
 
@@ -54,7 +56,7 @@ cd native
 ./gradlew :composeApp:assembleRelease -PwithAndroid=true   # APK (needs the Android SDK)
 ```
 
-If you change a string on the website, run `node native/scripts/gen-strings.mjs` (CI fails when `Strings.kt` is out of date).
+If you change a string on the website, run `node native/scripts/gen-strings.mjs` (CI fails when `i18n/Strings*.kt` is out of date).
 
 ## Honest limits
 
@@ -65,4 +67,5 @@ If you change a string on the website, run `node native/scripts/gen-strings.mjs`
 - Google sign-in needs `http://127.0.0.1:**` and `space.affinix.app://auth` in Supabase, Auth, URL configuration, Redirect URLs. Picture picking and Google sign-in are covered by tests but have not been tried on a real phone.
 - The app only tells you that a newer release exists (it links to the download page); it does not install updates itself.
 - Chats ask the server every few seconds (no live socket, no "typing" or online dots); there are no push notifications.
-- Not in the apps yet: the experiment builder, results, participants, reports, team, billing and admin screens.
+- Not in the apps yet: editing an existing experiment, reports, AI insights, the admin screen, creating a company and real billing (the site has none either).
+- The Research tab has been checked by tests (the numbers equal what the website's `stats.js` gives, request bodies of the builder are asserted) and by screenshots in CI, not by a person on a real PC or phone.
