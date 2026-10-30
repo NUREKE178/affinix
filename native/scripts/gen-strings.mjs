@@ -15,7 +15,7 @@ const get = (o, path) => path.split(".").reduce((a, k) => (a == null ? a : a[k])
 
 const KEYS = [
   "shell.notifications.title", "shell.notifications.empty", "shell.notifications.commentOn", "shell.notifications.friendRequest", "shell.notifications.friendAccepted",
-  "shell.nav.marketers", "shell.tabbar.marketers",
+  "shell.nav.marketers", "shell.tabbar.marketers", "shell.tabbar.messages",
   "arena.tabs.quests", "arena.quests.today", "arena.quests.resetNote", "arena.quests.claim", "arena.quests.claimed", "arena.quests.clearTitle", "arena.quests.clearBody",
   "arena.quest.votes", "arena.quest.families", "arena.quest.dims", "arena.quest.combo", "arena.quest.eye", "arena.quest.time",
   "arena.tier.easy", "arena.tier.medium", "arena.tier.hard", "arena.toast.claimed", "arena.toast.claimRefused", "arena.lobby.dailyClaim", "arena.lobby.boardAll",

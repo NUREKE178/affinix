@@ -9,6 +9,7 @@ internal val STRINGS_RU: Map<String, String> = mapOf(
     "shell.notifications.friendAccepted" to "{name} принял(а) ваш запрос в друзья",
     "shell.nav.marketers" to "Маркетологам",
     "shell.tabbar.marketers" to "Маркетинг",
+    "shell.tabbar.messages" to "Чаты",
     "arena.tabs.quests" to "Задания",
     "arena.quests.today" to "Задания на сегодня",
     "arena.quests.resetNote" to "Новые задания каждый день",

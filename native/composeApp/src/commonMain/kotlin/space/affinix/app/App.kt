@@ -126,7 +126,7 @@ private fun TabBar(model: AppModel) {
             val tabs = listOf(
                 Triple(Tab.Play, "arena", t("arena.tabs.play")),
                 Triple(Tab.Feed, "globe", t("feed.title")),
-                Triple(Tab.Chats, "chat", t("messages.title")),
+                Triple(Tab.Chats, "chat", t("shell.tabbar.messages")),
                 Triple(Tab.People, "friends", t("friends.title")),
                 Triple(Tab.Research, "overview", t("shell.tabbar.marketers")),
                 Triple(Tab.Profile, "user", t("arena.tabs.profile")),

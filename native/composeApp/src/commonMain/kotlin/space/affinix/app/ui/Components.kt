@@ -4,6 +4,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.hoverable
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.collectIsHoveredAsState
 import androidx.compose.foundation.interaction.collectIsPressedAsState
@@ -17,6 +18,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicText
 import androidx.compose.foundation.text.BasicTextField
@@ -154,12 +156,17 @@ fun LangSwitch(current: Lang, onPick: (Lang) -> Unit, modifier: Modifier = Modif
 /** A two- or three-way segmented control; the selected key sits "pressed in". */
 @Composable
 fun Segmented(labels: List<String>, selected: Int, onPick: (Int) -> Unit, modifier: Modifier = Modifier) {
-    Row(modifier.fillMaxWidth().well(14.dp).padding(4.dp), horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+    // up to three labels share the row; with more the labels keep their own width and the row scrolls sideways, so none is cut off
+    val scrolls = labels.size >= 4
+    Row(
+        modifier.fillMaxWidth().well(14.dp).then(if (scrolls) Modifier.horizontalScroll(rememberScrollState()) else Modifier).padding(4.dp),
+        horizontalArrangement = Arrangement.spacedBy(4.dp),
+    ) {
         labels.forEachIndexed { i, label ->
             val on = i == selected
             Box(
-                Modifier.weight(1f).then(if (on) Modifier.key(10.dp, down = false) else Modifier)
-                    .clickable(remember { MutableInteractionSource() }, null, role = Role.Tab) { onPick(i) }.padding(vertical = 10.dp),
+                (if (scrolls) Modifier else Modifier.weight(1f)).then(if (on) Modifier.key(10.dp, down = false) else Modifier)
+                    .clickable(remember { MutableInteractionSource() }, null, role = Role.Tab) { onPick(i) }.padding(vertical = 10.dp, horizontal = if (scrolls) 14.dp else 0.dp),
                 contentAlignment = Alignment.Center,
             ) { Txt(label, 14, if (on) FontWeight.Bold else FontWeight.Medium, if (on) C.g50 else C.g400, maxLines = 1) }
         }
