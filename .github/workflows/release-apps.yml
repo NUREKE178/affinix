@@ -5,6 +5,7 @@
 #   Affinix.apk        Android                    (Trusted Web Activity: Chrome in an app shell, signed)
 #   SHA256SUMS.txt     checksums of the four files
 #
+# (The Linux machines are pinned to ubuntu-24.04: "ubuntu-latest" is moving to Ubuntu 26, whose preinstalled Android SDK and Java may differ from what was proven.)
 # Run it: Actions -> "Release apps" -> Run workflow -> type a version (1.0.0)   or   push a tag like v1.0.0.
 # Android signing: no key is stored in the repository. Every build creates a one-off key, unless you give it yours: put these repository secrets
 # (Settings -> Secrets and variables -> Actions) once, with `bash scripts/android-key.sh` or by hand:
@@ -33,7 +34,7 @@ concurrency:
 jobs:
   meta:
     name: Version
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     outputs:
       version: ${{ steps.v.outputs.version }}
       tag: ${{ steps.v.outputs.tag }}
@@ -53,7 +54,7 @@ jobs:
 
   check:
     name: Check the app files
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -95,7 +96,7 @@ jobs:
   linux:
     name: Linux (.AppImage and .deb)
     needs: [meta, check]
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     defaults:
       run:
         working-directory: apps/desktop
@@ -127,7 +128,7 @@ jobs:
   android:
     name: Android (.apk)
     needs: [meta, check]
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     defaults:
       run:
         working-directory: apps/android
@@ -196,7 +197,7 @@ jobs:
     name: Asset links (the APK's key, published on the site)
     needs: [android]
     if: ${{ needs.android.result == 'success' }}
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v4
         with:
@@ -226,7 +227,7 @@ jobs:
     needs: [meta, windows, linux, android]
     # publish whatever was built: a failed Android build must not keep the Windows and Linux installers from the Download page
     if: ${{ !cancelled() && needs.meta.result == 'success' && (needs.windows.result == 'success' || needs.linux.result == 'success' || needs.android.result == 'success') }}
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     steps:
       - uses: actions/download-artifact@v4
         with:
