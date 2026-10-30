@@ -67,9 +67,23 @@ data class DayStats(
     val day: String = "",
     val votes: Int = 0,
     val xp: Long = 0,
+    val sec: Int = 0,
     val dailyVotes: Int = 0,
     val maxCombo: Int = 0,
-)
+    val eyeCorrect: Int = 0,
+    val families: List<String> = emptyList(),
+    val dims: List<String> = emptyList(),
+    val slate: List<String> = emptyList(),
+    val claimed: List<String> = emptyList(),
+) {
+    /** The day's value of the counter a quest of this kind watches. */
+    fun metric(kind: String): Int = when (kind) {
+        "votes" -> votes; "families" -> families.size; "dims" -> dims.size; "combo" -> maxCombo; "eye" -> eyeCorrect; "time" -> sec; else -> 0
+    }
+}
+
+@Serializable
+data class ClaimResponse(val ok: Boolean = false, val reason: String? = null, val state: StateResponse? = null, val newBadges: List<String> = emptyList())
 
 @Serializable
 data class StateResponse(val profile: Profile = Profile(), val today: DayStats? = null, val serverDay: String? = null)

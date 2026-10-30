@@ -42,6 +42,7 @@ import space.affinix.app.ui.DuelScreen
 import space.affinix.app.ui.ChatsListScreen
 import space.affinix.app.ui.FeedScreen
 import space.affinix.app.ui.PeopleScreen
+import space.affinix.app.ui.QuestsScreen
 import space.affinix.app.ui.Pill
 import space.affinix.app.ui.ThreadScreen
 import space.affinix.app.ui.Ico
@@ -97,6 +98,7 @@ private fun MainShell(model: AppModel) {
                     if (round != null) DuelScreen(model)
                     else when (model.tab) {
                         Tab.Play -> HomeScreen(model)
+                        Tab.Quests -> QuestsScreen(model)
                         Tab.Feed -> FeedScreen(model)
                         Tab.Chats -> ChatsListScreen(model)
                         Tab.People -> PeopleScreen(model)
@@ -122,7 +124,7 @@ private fun TabBar(model: AppModel) {
                 Triple(Tab.Profile, "user", t("arena.tabs.profile")),
             )
             for ((tab, icon, label) in tabs) {
-                val on = model.tab == tab || (tab == Tab.Play && model.tab == Tab.Rankings)
+                val on = model.tab == tab || (tab == Tab.Play && (model.tab == Tab.Rankings || model.tab == Tab.Quests))
                 Column(
                     Modifier.weight(1f)
                         .then(if (on) Modifier.key(12.dp) else Modifier)

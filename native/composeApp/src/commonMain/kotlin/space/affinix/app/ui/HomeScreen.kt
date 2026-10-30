@@ -54,7 +54,7 @@ fun HomeScreen(model: AppModel) {
     val p = model.profile
     val size = Rules.DAILY_SET_SIZE
     Column(Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(14.dp)) {
-        Segmented(listOf(t("arena.tabs.play"), t("arena.tabs.rankings")), 0, { if (it == 1) model.tab = space.affinix.app.store.Tab.Rankings })
+        ArenaTabs(model)
         LevelHeader(model)
 
         if (model.offline) {
@@ -102,4 +102,11 @@ fun HomeScreen(model: AppModel) {
         model.error?.let { Txt(it, 13, FontWeight.Medium, C.bad) }
         if (model.loading) Txt(t("common.loading"), 13, color = C.g500)
     }
+}
+
+/** Play / Quests / Rankings: the three parts of the Arena, one tab in the bottom bar. */
+@Composable
+fun ArenaTabs(model: AppModel) {
+    val parts = listOf(space.affinix.app.store.Tab.Play, space.affinix.app.store.Tab.Quests, space.affinix.app.store.Tab.Rankings)
+    Segmented(listOf(t("arena.tabs.play"), t("arena.tabs.quests"), t("arena.tabs.rankings")), parts.indexOf(model.tab).coerceAtLeast(0), { model.tab = parts[it] })
 }

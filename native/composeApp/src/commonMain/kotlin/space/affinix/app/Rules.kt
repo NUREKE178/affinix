@@ -55,6 +55,37 @@ object Rules {
         "combo_8", "combo_12", "eye_80", "crowd_70", "explorer", "level_5", "level_10", "level_20", "level_30", "hour_1", "marathon_3h",
     )
 
+    // ---- daily quests (QUEST_DEFS in rules.js) ----------------------------------------------------------------------------------
+    enum class Tier(val xp: Int) { Easy(30), Medium(60), Hard(120) }
+    data class QuestDef(val id: String, val tier: Tier, val kind: String, val target: Int, val retired: Boolean = false) { val xp get() = tier.xp }
+
+    const val DAILY_SET_BONUS = 100
+    const val DAILY_CLEAR_BONUS = 50
+
+    val QUESTS = listOf(
+        QuestDef("votes_15", Tier.Easy, "votes", 15), QuestDef("fam_3", Tier.Easy, "families", 3), QuestDef("dims_3", Tier.Easy, "dims", 3),
+        QuestDef("time_5", Tier.Easy, "time", 300, retired = true),
+        QuestDef("votes_40", Tier.Medium, "votes", 40), QuestDef("fam_5", Tier.Medium, "families", 5), QuestDef("dims_5", Tier.Medium, "dims", 5),
+        QuestDef("combo_6", Tier.Medium, "combo", 6), QuestDef("eye_5", Tier.Medium, "eye", 5), QuestDef("time_15", Tier.Medium, "time", 900, retired = true),
+        QuestDef("votes_100", Tier.Hard, "votes", 100), QuestDef("combo_12", Tier.Hard, "combo", 12), QuestDef("eye_12", Tier.Hard, "eye", 12),
+        QuestDef("fam_7", Tier.Hard, "families", 7), QuestDef("time_30", Tier.Hard, "time", 1800, retired = true), QuestDef("time_60", Tier.Hard, "time", 3600, retired = true),
+    )
+    val QUEST_BY_ID = QUESTS.associateBy { it.id }
+
+    /** Three quests for a day, one per tier and never two of the same kind, picked with the supplied PRNG. */
+    fun pickSlate(rand: () -> Double): List<String> {
+        val used = HashSet<String>()
+        return Tier.entries.map { tier ->
+            val pool = QUESTS.filter { it.tier == tier && !it.retired && it.kind !in used }
+            val q = pool[kotlin.math.floor(rand() * pool.size).toInt()]
+            used += q.kind
+            q.id
+        }
+    }
+
+    /** A player's own slate for a day (the same seed string as the website). */
+    fun slateFor(userId: String, day: String): List<String> = pickSlate(Prng.mulberry32(Prng.hashStringToSeed("$userId/$day/slate")))
+
     private val ranks = listOf(1 to "novice", 3 to "apprentice", 6 to "observer", 10 to "sharpEye", 15 to "tastemaker", 20 to "artDirector", 30 to "creativeDirector", 40 to "maestro")
 
     fun rankForLevel(level: Int): String = ranks.last { level >= it.first }.second

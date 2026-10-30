@@ -14,6 +14,7 @@ import kotlinx.serialization.json.put
 import org.jetbrains.compose.resources.ExperimentalResourceApi
 import org.jetbrains.compose.resources.decodeToImageBitmap
 import space.affinix.app.Platform
+import space.affinix.app.Rules
 import space.affinix.app.i18n.Lang
 import space.affinix.app.i18n.tr
 import space.affinix.app.localDay
@@ -30,7 +31,7 @@ import space.affinix.app.net.TallyQuery
 import space.affinix.app.net.WireVote
 import space.affinix.app.seasonOf
 
-enum class Tab { Play, Feed, Chats, People, Rankings, Profile }
+enum class Tab { Play, Quests, Feed, Chats, People, Rankings, Profile }
 
 /** Everything the screens read. Plain Compose state, so a screen recomposes when a value here changes. */
 class AppModel(
@@ -143,6 +144,7 @@ class AppModel(
                 val st = api.state(localDay())
                 profile = st.profile; today = st.today
                 offline = false
+                ensureSlate()
                 loadSeen()
             } catch (e: CancellationException) {
                 throw e
@@ -156,6 +158,26 @@ class AppModel(
             }
         }
     }
+
+    /** Today's three quests are stored on the server by whoever asks first (the website or this app) with the same rule, so both agree. */
+    private suspend fun ensureSlate() {
+        val uid = api.session?.userId ?: return
+        val day = localDay()
+        if ((today?.slate?.size ?: 0) >= 3) return
+        runCatching {
+            val res = api.submit(emptyList(), day, day to Rules.slateFor(uid, day))
+            res.state?.let { profile = it.profile; today = it.today ?: today }
+        }
+    }
+
+    /** What today's quests are; empty until the server has them. */
+    val quests: List<Rules.QuestDef> get() = today?.slate.orEmpty().mapNotNull { Rules.QUEST_BY_ID[it] }
+
+    /** Claims a quest reward ("votes_15", "daily_set", "daily_clear"). Returns null when taken, or the strings key to show. */
+    suspend fun claim(id: String): String? = try {
+        val res = api.claim(localDay(), id)
+        if (res.ok) { res.state?.let { profile = it.profile; today = it.today ?: today }; null } else "arena.toast.claimRefused"
+    } catch (e: CancellationException) { throw e } catch (e: Exception) { "app.noNetwork" }
 
     private suspend fun loadSeen() {
         if (seenLoaded) return

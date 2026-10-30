@@ -45,7 +45,7 @@ class ScreenshotTest {
     private fun model(signedIn: Boolean): AppModel {
         val engine = MockEngine { req ->
             val body = when {
-                req.url.encodedPath.endsWith("arena_state") -> """{"profile":{"xp":1240,"level":5,"votes":231,"eyeCorrect":18,"eyeTotal":25,"streak":4,"bestCombo":9,"visible":true,"badges":["first_vote","votes_100","streak_3","level_5","combo_8"]},"today":{"day":"2026-10-30","votes":4,"dailyVotes":4}}"""
+                req.url.encodedPath.endsWith("arena_state") -> """{"profile":{"xp":1240,"level":5,"votes":231,"eyeCorrect":18,"eyeTotal":25,"streak":4,"bestCombo":9,"visible":true,"badges":["first_vote","votes_100","streak_3","level_5","combo_8"]},"today":{"day":"2026-10-30","votes":16,"dailyVotes":4,"maxCombo":7,"eyeCorrect":2,"sec":0,"families":["mark","card","poster"],"dims":["trust","clarity"],"slate":["votes_15","fam_5","combo_6"],"claimed":["votes_15"]}}"""
                 req.url.encodedPath.endsWith("arena_my_votes") -> """{"rows":[],"last":0,"more":false}"""
                 req.url.encodedPath.endsWith("arena_leaderboard") -> """{"rows":[{"rank":1,"userId":"a","name":"Aigerim K.","xp":5120,"level":11,"isMe":false},{"rank":2,"userId":"b","name":"Dias","xp":4410,"level":10,"isMe":false},{"rank":3,"userId":"u1","name":"Me","xp":1240,"level":5,"isMe":true}],"me":{"rank":3,"xp":1240}}"""
                 req.url.encodedPath.endsWith("/posts") -> """[{"id":"p1","author_id":"u2","body":"Which logo feels more trustworthy for a bank? I keep going back and forth between the calm blue and the bold orange.","created_at":"2026-10-30T09:12:36+00:00","updated_at":"2026-10-30T09:12:36+00:00","post_likes":[{"count":12}],"post_comments":[{"count":2}]},{"id":"p2","author_id":"u1","body":"Қазақша пост: бүгінгі күн сынағы өте қызық болды!","created_at":"2026-10-29T08:00:00+00:00","updated_at":"2026-10-29T08:00:00+00:00","post_likes":[{"count":3}],"post_comments":[{"count":0}]}]"""
@@ -157,5 +157,10 @@ class ScreenshotTest {
     @Test fun thread() {
         val m = model(true); m.tab = Tab.Chats
         shoot("13-thread-phone", 420, 820, m) { Thread.sleep(500); m.messages.conversations.firstOrNull()?.let { m.messages.openChat(it) }; Thread.sleep(600) }
+    }
+
+    @Test fun quests() {
+        val m = model(true); m.tab = Tab.Quests
+        shoot("14-quests-phone", 420, 900, m)
     }
 }

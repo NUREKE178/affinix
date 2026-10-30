@@ -12,6 +12,9 @@ const RANKS = ["novice", "apprentice", "observer", "sharpEye", "tastemaker", "ar
 const NAMED_BADGES = Object.keys(ru.arena.badge);
 
 const KEYS = [
+  "arena.tabs.quests", "arena.quests.today", "arena.quests.resetNote", "arena.quests.claim", "arena.quests.claimed", "arena.quests.clearTitle", "arena.quests.clearBody",
+  "arena.quest.votes", "arena.quest.families", "arena.quest.dims", "arena.quest.combo", "arena.quest.eye", "arena.quest.time",
+  "arena.tier.easy", "arena.tier.medium", "arena.tier.hard", "arena.toast.claimed", "arena.toast.claimRefused", "arena.lobby.dailyClaim",
   "arena.badgeName.votes", "arena.badgeName.streak", "arena.badgeName.daily", "arena.badgeName.level",
   ...NAMED_BADGES.flatMap((b) => [`arena.badge.${b}.name`, `arena.badge.${b}.desc`]),
   "arena.profile.badges", "arena.rankings.visible", "arena.rankings.visibleHint", "arena.rankings.saveFailed", "arena.rankings.serverPending",

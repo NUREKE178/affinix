@@ -158,17 +158,22 @@ class Api(
     suspend fun state(day: String, history: Int = 84): StateResponse =
         rpc("arena_state", buildJsonObject { put("p_day", day); put("p_history", history) }, StateResponse.serializer())
 
-    suspend fun submit(votes: List<WireVote>, day: String): SubmitResponse =
+    /** [slate] (day, quest ids) is sent along when the server has none for the day yet. */
+    suspend fun submit(votes: List<WireVote>, day: String, slate: Pair<String, List<String>>? = null): SubmitResponse =
         rpc(
             "arena_submit",
             buildJsonObject {
                 put("p_votes", ApiJson.encodeToJsonElement(ListSerializer(WireVote.serializer()), votes))
                 put("p_slices", JsonArray(emptyList()))
-                put("p_slate", JsonPrimitive(null as String?))
+                if (slate == null) put("p_slate", JsonPrimitive(null as String?))
+                else put("p_slate", buildJsonObject { put("day", slate.first); put("ids", JsonArray(slate.second.map { JsonPrimitive(it) })) })
                 put("p_day", day)
             },
             SubmitResponse.serializer(),
         )
+
+    suspend fun claim(day: String, quest: String): ClaimResponse =
+        rpc("arena_claim", buildJsonObject { put("p_day", day); put("p_quest", quest) }, ClaimResponse.serializer())
 
     suspend fun tallies(items: List<TallyQuery>): List<Tally> =
         rpc("arena_tallies", buildJsonObject { put("p_items", ApiJson.encodeToJsonElement(ListSerializer(TallyQuery.serializer()), items)) }, ListSerializer(Tally.serializer()))
