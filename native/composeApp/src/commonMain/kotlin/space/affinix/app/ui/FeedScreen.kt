@@ -67,7 +67,7 @@ fun Avatar(model: AppModel, person: Person, size: Dp = 40.dp) {
 }
 
 @Composable
-private fun TextArea(value: String, onChange: (String) -> Unit, placeholder: String, modifier: Modifier = Modifier, minHeight: Dp = 84.dp) {
+internal fun TextArea(value: String, onChange: (String) -> Unit, placeholder: String, modifier: Modifier = Modifier, minHeight: Dp = 84.dp) {
     Box(modifier.fillMaxWidth().well(12.dp).padding(horizontal = 14.dp, vertical = 12.dp).heightIn(min = minHeight)) {
         if (value.isEmpty()) Txt(placeholder, 15, color = C.g600)
         BasicTextField(value, onChange, textStyle = ts(15, FontWeight.Medium, C.g50, LocalFonts.current.family), cursorBrush = SolidColor(C.signal), modifier = Modifier.fillMaxWidth())

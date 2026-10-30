@@ -39,7 +39,11 @@ import space.affinix.app.store.Phase
 import space.affinix.app.store.Tab
 import space.affinix.app.ui.C
 import space.affinix.app.ui.DuelScreen
+import space.affinix.app.ui.ChatsListScreen
 import space.affinix.app.ui.FeedScreen
+import space.affinix.app.ui.PeopleScreen
+import space.affinix.app.ui.Pill
+import space.affinix.app.ui.ThreadScreen
 import space.affinix.app.ui.Ico
 import space.affinix.app.ui.HomeScreen
 import space.affinix.app.ui.LocalFonts
@@ -66,6 +70,8 @@ private fun MainShell(model: AppModel) {
     val round by model.game.round.collectAsState()
     val focus = remember { FocusRequester() }
     LaunchedEffect(round?.idx, round?.phase) { runCatching { focus.requestFocus() } }
+    // the unread badge on the chats tab
+    LaunchedEffect(model.signedIn) { while (true) { model.messages.refresh(); kotlinx.coroutines.delay(30_000) } }
     Column(
         Modifier.fillMaxSize()
             .focusRequester(focus)
@@ -82,18 +88,25 @@ private fun MainShell(model: AppModel) {
                 }
             },
     ) {
+        val inThread = round == null && model.tab == Tab.Chats && model.messages.open != null
         Box(Modifier.weight(1f).fillMaxWidth(), contentAlignment = Alignment.TopCenter) {
-            Column(Modifier.widthIn(max = 760.dp).fillMaxWidth().verticalScroll(rememberScrollState()).padding(horizontal = 16.dp, vertical = 16.dp)) {
-                if (round != null) DuelScreen(model)
-                else when (model.tab) {
-                    Tab.Play -> HomeScreen(model)
-                    Tab.Feed -> FeedScreen(model)
-                    Tab.Rankings -> RankingsScreen(model)
-                    Tab.Profile -> ProfileScreen(model)
+            if (inThread) {
+                Box(Modifier.widthIn(max = 760.dp).fillMaxWidth()) { ThreadScreen(model) }
+            } else {
+                Column(Modifier.widthIn(max = 760.dp).fillMaxWidth().verticalScroll(rememberScrollState()).padding(horizontal = 16.dp, vertical = 16.dp)) {
+                    if (round != null) DuelScreen(model)
+                    else when (model.tab) {
+                        Tab.Play -> HomeScreen(model)
+                        Tab.Feed -> FeedScreen(model)
+                        Tab.Chats -> ChatsListScreen(model)
+                        Tab.People -> PeopleScreen(model)
+                        Tab.Rankings -> RankingsScreen(model)
+                        Tab.Profile -> ProfileScreen(model)
+                    }
                 }
             }
         }
-        if (round == null) TabBar(model)
+        if (round == null && !inThread) TabBar(model)
     }
 }
 
@@ -104,11 +117,12 @@ private fun TabBar(model: AppModel) {
             val tabs = listOf(
                 Triple(Tab.Play, "arena", t("arena.tabs.play")),
                 Triple(Tab.Feed, "globe", t("feed.title")),
-                Triple(Tab.Rankings, "trophy", t("arena.tabs.rankings")),
+                Triple(Tab.Chats, "chat", t("messages.title")),
+                Triple(Tab.People, "friends", t("friends.title")),
                 Triple(Tab.Profile, "user", t("arena.tabs.profile")),
             )
             for ((tab, icon, label) in tabs) {
-                val on = model.tab == tab
+                val on = model.tab == tab || (tab == Tab.Play && model.tab == Tab.Rankings)
                 Column(
                     Modifier.weight(1f)
                         .then(if (on) Modifier.key(12.dp) else Modifier)
@@ -117,7 +131,10 @@ private fun TabBar(model: AppModel) {
                     horizontalAlignment = Alignment.CenterHorizontally,
                     verticalArrangement = Arrangement.spacedBy(3.dp),
                 ) {
-                    Ico(icon, color = if (on) C.g50 else C.g500, size = 22.dp, filled = on)
+                    Box(contentAlignment = Alignment.TopEnd) {
+                        Ico(icon, color = if (on) C.g50 else C.g500, size = 22.dp)
+                        if (tab == Tab.Chats && model.messages.unreadTotal > 0) Box(Modifier.padding(start = 20.dp).background(C.signal, Pill).padding(horizontal = 5.dp)) { Txt("${model.messages.unreadTotal}", 10, FontWeight.ExtraBold, C.signalInk) }
+                    }
                     Txt(label, 11, if (on) FontWeight.ExtraBold else FontWeight.Medium, if (on) C.g50 else C.g500, maxLines = 1)
                 }
             }

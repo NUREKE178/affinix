@@ -37,6 +37,11 @@ const KEYS = [
   "feed.confirmDeleteTitle", "feed.confirmDeleteBody", "feed.unknownAuthor", "feed.loadErrorTitle", "feed.loadErrorBody", "feed.emptyTitle", "feed.emptyBody",
   "feed.profanityBlocked", "feed.like", "feed.comment", "feed.save", "feed.noComments", "feed.commentPlaceholder", "feed.commentSubmit", "feed.commentPostedCensored",
   "feed.deleteComment", "feed.tabAll", "feed.tabMine", "feed.mineEmptyTitle", "feed.mineEmptyBody", "feed.loadMore", "feed.loadMoreFailed", "feed.edited",
+  "friends.message", "friends.title", "friends.incomingTitle", "friends.outgoingTitle", "friends.friendsTitle", "friends.accept", "friends.decline", "friends.cancel",
+  "friends.remove", "friends.addFriend", "friends.requestSent", "friends.requestAccepted", "friends.emptyTitle", "friends.emptyBody", "friends.loadErrorTitle", "friends.loadErrorBody",
+  "people.searchPlaceholder", "people.searchHint", "people.noResultsTitle", "people.noResultsBody", "people.errorTitle", "people.errorBody", "people.retry", "people.you",
+  "messages.title", "messages.you", "messages.placeholder", "messages.send", "messages.back", "messages.noMessagesYet", "messages.failedRetry", "messages.noFriendsBody",
+  "messages.goToFriends", "messages.photo", "messages.deletedMine", "messages.deletedTheirs", "messages.edited", "messages.startChat",
   "auth.forgot.title", "auth.forgot.subtitle", "auth.forgot.back", "auth.forgot.submit", "auth.forgot.submitting", "auth.forgot.sentMessage",
 ];
 

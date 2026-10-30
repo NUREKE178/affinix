@@ -54,6 +54,7 @@ fun HomeScreen(model: AppModel) {
     val p = model.profile
     val size = Rules.DAILY_SET_SIZE
     Column(Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(14.dp)) {
+        Segmented(listOf(t("arena.tabs.play"), t("arena.tabs.rankings")), 0, { if (it == 1) model.tab = space.affinix.app.store.Tab.Rankings })
         LevelHeader(model)
 
         if (model.offline) {

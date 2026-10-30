@@ -24,7 +24,7 @@ fun RankingsScreen(model: AppModel) {
     LaunchedEffect(Unit) { model.loadLeaderboard() }
     val lb = model.leaderboard
     Column(Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(14.dp)) {
-        Txt(t("arena.tabs.rankings"), 24, FontWeight.ExtraBold, C.g50)
+        Segmented(listOf(t("arena.tabs.play"), t("arena.tabs.rankings")), 1, { if (it == 0) model.tab = space.affinix.app.store.Tab.Play })
         Segmented(
             listOf(t("arena.rankings.week"), t("arena.rankings.all")),
             if (model.leaderboardScope == "week") 0 else 1,

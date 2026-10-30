@@ -60,3 +60,57 @@ data class Post(
 data class Comment(val id: String, val postId: String, val author: Person, val body: String, val createdAt: String)
 
 fun AuthorRow.toPerson() = Person(id, fullName, username, avatarUrl, roleTitle, bio)
+
+@Serializable
+data class FriendshipRow(
+    val id: String,
+    @SerialName("requester_id") val requesterId: String,
+    @SerialName("addressee_id") val addresseeId: String,
+    val status: String = "",
+    @SerialName("created_at") val createdAt: String = "",
+)
+
+/** One friendship as the viewer sees it. */
+data class Friendship(val id: String, val other: Person, val status: String, val iRequested: Boolean, val createdAt: String) {
+    val accepted get() = status == "accepted"
+}
+
+@Serializable
+data class ConversationRow(
+    val id: String,
+    @SerialName("user_a") val userA: String,
+    @SerialName("user_b") val userB: String,
+    @SerialName("last_message_body") val lastBody: String? = null,
+    @SerialName("last_message_at") val lastAt: String? = null,
+    @SerialName("last_message_sender_id") val lastSender: String? = null,
+    @SerialName("last_message_has_attachment") val lastHasImage: Boolean = false,
+    @SerialName("last_message_deleted") val lastDeleted: Boolean = false,
+)
+
+@Serializable
+data class UnreadRow(@SerialName("conversation_id") val conversationId: String, val unread: kotlinx.serialization.json.JsonPrimitive? = null)
+
+@Serializable
+data class MessageRow(
+    val id: String,
+    @SerialName("conversation_id") val conversationId: String,
+    @SerialName("sender_id") val senderId: String,
+    val body: String? = null,
+    @SerialName("created_at") val createdAt: String = "",
+    @SerialName("read_at") val readAt: String? = null,
+    @SerialName("edited_at") val editedAt: String? = null,
+    @SerialName("deleted_at") val deletedAt: String? = null,
+    @SerialName("attachment_path") val attachmentPath: String? = null,
+)
+
+data class Conversation(
+    val id: String, val other: Person, val lastBody: String?, val lastAt: String?, val lastSender: String?,
+    val lastHasImage: Boolean, val lastDeleted: Boolean, val unread: Long,
+)
+
+data class Message(
+    val id: String, val conversationId: String, val senderId: String, val body: String, val createdAt: String,
+    val read: Boolean, val edited: Boolean, val deleted: Boolean, val hasImage: Boolean,
+    /** null = confirmed by the server; "sending" or "failed" = only on this device so far */
+    val status: String? = null,
+)
