@@ -922,6 +922,78 @@ class ResearchModelTest {
         assertTrue(r.log().none { it.contains("invite-member") })
     }
 
+    private val img = space.affinix.app.ShrunkImage(byteArrayOf(1, 2), "image/jpeg", "jpg")
+    private fun variants() = listOf(space.affinix.app.store.ResearchModel.DraftVariant("Blue cup", "calm", img), space.affinix.app.store.ResearchModel.DraftVariant("Orange bean", "", null), space.affinix.app.store.ResearchModel.DraftVariant("  ", "", null))
+    private fun questions(m: space.affinix.app.store.ResearchModel) = listOf(
+        m.dimensionQuestion("preference", "Which would you choose?")!!, m.dimensionQuestion("purchaseIntent", "Would you buy it?")!!,
+        space.affinix.app.store.ResearchModel.DraftQuestion("single_choice", "general", null, "How often?", "Daily, Weekly, ,Rarely", null),
+        space.affinix.app.store.ResearchModel.DraftQuestion("open_text", "general", null, "Anything else?", "", null),
+    )
+
+    @Test fun theBuilderChecksWhatTheWebsiteChecks() = runTest {
+        val m = rigWith().research
+        val v = variants(); val q = questions(m)
+        assertEquals("builder.step7.checkInfo", m.validate(" ", "obj", "logo_testing", v, q))
+        assertEquals("builder.step7.checkInfo", m.validate("n", "", "logo_testing", v, q))
+        assertEquals("builder.steps.researchType", m.validate("n", "o", null, v, q))
+        assertEquals("builder.step7.checkVariants", m.validate("n", "o", "logo_testing", v.take(1) + v.last(), q)) // a variant with a blank name does not count
+        assertEquals("builder.step7.checkQuestions", m.validate("n", "o", "logo_testing", v, emptyList()))
+        assertNull(m.validate("n", "o", "logo_testing", v, q))
+    }
+
+    @Test fun aDimensionIsAReadyMadeQuestionLikeTheWebsitesChips() = runTest {
+        val m = rigWith().research
+        val p = m.dimensionQuestion("preference", "P?")!!; val pi = m.dimensionQuestion("purchaseIntent", "B?")!!
+        assertEquals(listOf("single_choice", "variants", "selection", null), listOf(p.type, p.appliesTo, p.role, p.scaleMax))
+        assertEquals(listOf("rating", "purchase_intention", 7), listOf(pi.type, pi.role, pi.scaleMax))
+        assertNull(m.dimensionQuestion("nonsense", "x"))
+    }
+
+    @Test fun savingADraftWritesTheRowThenVariantsQuestionsAndOptionsInThatOrder() = runTest {
+        val r = rigWith(); r.research.loadOrgs(); until { r.research.experimentsLoaded }
+        r.research.creating = true
+        val e = r.research.create("  Coffee logo ", " Which cup? ", "logo_testing", 120, true, variants(), questions(r.research), publish = false)
+        assertNull(e)
+        assertTrue(!r.research.creating)
+        val posts = r.log().filter { it.startsWith("POST") && it.contains("/rest/v1/") }.map { Regex("/rest/v1/([a-z_]+)").find(it)!!.groupValues[1] }
+        assertEquals(listOf("experiments", "experiment_variants", "experiment_questions", "experiment_question_options"), posts)
+        val row = r.log().first { it.startsWith("POST") && it.contains("/rest/v1/experiments") }
+        assertTrue(row.contains("\"name\":\"Coffee logo\"") && row.contains("\"objective\":\"Which cup?\"") && row.contains("\"organization_id\":\"o1\"") && row.contains("\"status\":\"draft\"") &&
+            row.contains("\"research_type\":\"logo_testing\"") && row.contains("\"participant_limit\":120") && row.contains("\"targetCount\":120") && row.contains("\"randomizeVariantOrder\":true") && !row.contains("public_slug"), row)
+        val id = Regex("\"id\":\"([^\"]+)\"").find(row)!!.groupValues[1]
+        // two named variants (the blank one is dropped), labelled A and B, the first with its picture under <company>/<experiment>/
+        val vrows = r.log().first { it.contains("/rest/v1/experiment_variants") }
+        assertTrue(vrows.contains("\"label\":\"A\"") && vrows.contains("\"label\":\"B\"") && !vrows.contains("\"label\":\"C\"") && vrows.contains("\"position\":1"), vrows)
+        assertTrue(Regex("\"asset_url\":\"https://sb.test/storage/v1/object/public/variant-assets/o1/$id/[^\"]+\\.jpg\"").containsMatchIn(vrows) && vrows.contains("\"asset_type\":\"image\""), vrows)
+        assertEquals(1, r.log().count { it.startsWith("POST") && it.contains("/storage/v1/object/variant-assets/o1/$id/") })
+        val qrows = r.log().first { it.contains("/rest/v1/experiment_questions") }
+        assertTrue(qrows.contains("\"role\":\"selection\"") && qrows.contains("\"scale\":{\"min\":1,\"max\":7}") && qrows.contains("\"applies_to\":\"general\""), qrows)
+        // the options of the general choice question: trimmed, empty ones dropped, in order
+        val orows = r.log().first { it.contains("/rest/v1/experiment_question_options") }
+        assertTrue(Regex("\"label\":\"Daily\".*\"label\":\"Weekly\".*\"label\":\"Rarely\"").containsMatchIn(orows) && !orows.contains("\"label\":\"\""), orows)
+    }
+
+    @Test fun publishingAlsoGivesTheExperimentAPublicLink() = runTest {
+        val r = rigWith(); r.research.loadOrgs(); until { r.research.experimentsLoaded }
+        assertNull(r.research.create("N", "O", "ad_testing", 50, false, variants(), questions(r.research), publish = true))
+        val row = r.log().first { it.startsWith("POST") && it.contains("/rest/v1/experiments") }
+        assertTrue(row.contains("\"status\":\"published\"") && Regex("\"public_slug\":\"[a-hj-km-np-z2-9]{8}\"").containsMatchIn(row) && row.contains("\"published_at\":\"20") && row.contains("\"randomizeVariantOrder\":false"), row)
+    }
+
+    @Test fun anIncompleteFormSendsNothing() = runTest {
+        val r = rigWith(); r.research.loadOrgs(); until { r.research.experimentsLoaded }
+        assertEquals("builder.step7.checkQuestions", r.research.create("N", "O", "ad_testing", 50, true, variants(), emptyList(), publish = false))
+        assertTrue(r.log().none { it.startsWith("POST") && it.contains("/rest/v1/experiments") })
+    }
+
+    @Test fun aRefusedWriteTakesTheRowAndThePictureBack() = runTest {
+        val r = rigWith(reject = { m, p, _ -> if (m == "POST" && p.endsWith("/rest/v1/experiment_questions")) "denied" else null }); r.research.loadOrgs(); until { r.research.experimentsLoaded }
+        assertEquals("research.actionFailed", r.research.create("N", "O", "ad_testing", 50, true, variants(), questions(r.research), publish = false))
+        val log = r.log()
+        assertTrue(log.any { it.startsWith("DELETE") && it.contains("/rest/v1/experiments?id=eq.") }, log.toString())
+        assertTrue(log.any { it.startsWith("DELETE") && it.contains("/storage/v1/object/variant-assets") })
+    }
+
     @Test fun aViewerCannotManageTheTeam() = runTest {
         val r = rigWith(); r.research.loadOrgs(); until { r.research.experimentsLoaded }
         r.research.pickOrg("o2")

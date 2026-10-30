@@ -239,5 +239,126 @@ class ResearchModel(private val api: Api, private val scope: CoroutineScope, pri
         } catch (e: Exception) { "error:" }
     }
 
-    companion object { val ROLES = listOf("admin", "researcher", "viewer") }
+    // ---- the builder: a new experiment ----------------------------------------------------------------------------------------------
+
+    /** a variant being typed: a name, a short description and a picture */
+    class DraftVariant(val name: String, val description: String, val image: space.affinix.app.ShrunkImage?)
+
+    /** a question being built; [options] are comma-separated, as in the website's builder */
+    class DraftQuestion(val type: String, val appliesTo: String, val role: String?, val prompt: String, val options: String, val scaleMax: Int?)
+
+    var creating by mutableStateOf(false)
+    var saving by mutableStateOf(false)
+        private set
+
+    /** the ready-made question of a measurement dimension (builder.dimensions.*), the prompt in the player's language */
+    fun dimensionQuestion(id: String, prompt: String): DraftQuestion? {
+        val d = DIMENSIONS.firstOrNull { it.id == id } ?: return null
+        return DraftQuestion(d.type, "variants", d.role, prompt, "", d.scaleMax ?: if (d.type == "rating") 5 else null)
+    }
+
+    class Dimension(val id: String, val type: String, val role: String, val scaleMax: Int? = null)
+
+    /** Same rules as the website's steps 1-4: a name and a research question, a research type, two named variants, one question. Returns the locale key of what is missing. */
+    fun validate(name: String, objective: String, type: String?, variants: List<DraftVariant>, questions: List<DraftQuestion>): String? = when {
+        name.isBlank() || objective.isBlank() -> "builder.step7.checkInfo"
+        type.isNullOrBlank() -> "builder.steps.researchType"
+        variants.count { it.name.isNotBlank() } < 2 -> "builder.step7.checkVariants"
+        questions.isEmpty() -> "builder.step7.checkQuestions"
+        else -> null
+    }
+
+    /**
+     * Creates the experiment the way the website's builder saves a new draft: the row, the variants (pictures go to `variant-assets/<company>/<experiment>/`), the questions
+     * and their fixed options; [publish] then also gives it a public link. A failure removes what was made. Returns null when saved, else the locale key.
+     */
+    suspend fun create(name: String, objective: String, type: String?, target: Int, randomize: Boolean, variants: List<DraftVariant>, questions: List<DraftQuestion>, publish: Boolean): String? {
+        validate(name, objective, type, variants, questions)?.let { return it }
+        val orgId = activeOrgId ?: return "research.noCompany"
+        val id = Platform.uuid()
+        saving = true
+        val uploaded = ArrayList<String>()
+        var rowMade = false
+        return try {
+            val settings = buildJsonObject {
+                put("randomizeVariantOrder", randomize); put("randomizeQuestionOrder", false); put("timeLimitSeconds", kotlinx.serialization.json.JsonNull)
+                put("anonymous", true); put("requireConsent", true); put("preventDuplicates", true)
+            }
+            val ps = buildJsonObject {
+                put("targetCount", target)
+                put("ageRange", kotlinx.serialization.json.JsonArray(listOf(kotlinx.serialization.json.JsonPrimitive("18-24"), kotlinx.serialization.json.JsonPrimitive("65+"))))
+                put("countries", kotlinx.serialization.json.JsonArray(emptyList())); put("languages", kotlinx.serialization.json.JsonArray(emptyList()))
+                put("demographicQuestions", kotlinx.serialization.json.JsonArray(listOf("ageRange", "country", "language").map { kotlinx.serialization.json.JsonPrimitive(it) }))
+            }
+            api.restWrite(
+                HttpMethod.Post, "experiments",
+                body = buildJsonObject {
+                    put("id", id); put("organization_id", orgId); put("name", name.trim()); put("objective", objective.trim()); put("research_type", type!!)
+                    put("status", if (publish) "published" else "draft"); put("settings", settings); put("participant_settings", ps); put("participant_limit", target)
+                    if (publish) { put("public_slug", newSlug()); put("published_at", isoNow()) }
+                },
+            )
+            rowMade = true
+            val named = variants.filter { it.name.isNotBlank() }
+            val variantRows = named.mapIndexed { i, v ->
+                var url: String? = null
+                if (v.image != null) {
+                    val path = "$orgId/$id/${Platform.uuid()}.${v.image.ext}"
+                    api.uploadObject(VARIANT_BUCKET, path, v.image.bytes, v.image.mime)
+                    uploaded += path
+                    url = api.publicObjectUrl(VARIANT_BUCKET, path)
+                }
+                buildJsonObject {
+                    put("id", Platform.uuid()); put("experiment_id", id); put("label", ('A' + i).toString()); put("name", v.name.trim())
+                    if (v.description.isNotBlank()) put("description", v.description.trim())
+                    if (url != null) { put("asset_url", url); put("asset_type", "image") }
+                    put("position", i)
+                }
+            }
+            api.restWrite(HttpMethod.Post, "experiment_variants", body = kotlinx.serialization.json.JsonArray(variantRows))
+            val questionIds = questions.map { Platform.uuid() }
+            val questionRows = questions.mapIndexed { i, q ->
+                buildJsonObject {
+                    put("id", questionIds[i]); put("experiment_id", id); put("type", q.type); put("applies_to", q.appliesTo)
+                    if (q.role != null) put("role", q.role)
+                    put("prompt", q.prompt.trim())
+                    if (q.scaleMax != null) put("scale", buildJsonObject { put("min", 1); put("max", q.scaleMax) })
+                    put("required", true); put("position", i)
+                }
+            }
+            api.restWrite(HttpMethod.Post, "experiment_questions", body = kotlinx.serialization.json.JsonArray(questionRows))
+            val optionRows = questions.flatMapIndexed { i, q ->
+                val wanted = (q.type == "single_choice" || q.type == "multiple_choice") && q.appliesTo == "general" || q.type == "price_perception"
+                if (!wanted) emptyList() else q.options.split(",").map { it.trim() }.filter { it.isNotEmpty() }.mapIndexed { pos, label ->
+                    buildJsonObject { put("question_id", questionIds[i]); put("label", label); put("position", pos) }
+                }
+            }
+            if (optionRows.isNotEmpty()) api.restWrite(HttpMethod.Post, "experiment_question_options", body = kotlinx.serialization.json.JsonArray(optionRows))
+            creating = false
+            loadExperiments()
+            null
+        } catch (e: CancellationException) { throw e } catch (e: Exception) {
+            // take back what was made: the row cascades to its variants and questions
+            if (rowMade) runCatching { api.restWrite(HttpMethod.Delete, "experiments", listOf("id" to "eq.$id")) }
+            if (uploaded.isNotEmpty()) runCatching { api.removeObjects(VARIANT_BUCKET, uploaded) }
+            "research.actionFailed"
+        } finally { saving = false }
+    }
+
+    companion object {
+        val ROLES = listOf("admin", "researcher", "viewer")
+        const val VARIANT_BUCKET = "variant-assets"
+        const val MAX_VARIANTS = 4
+        val RESEARCH_TYPES = listOf("product_comparison", "ad_testing", "packaging_testing", "logo_testing", "pricing_research", "ux_testing", "brand_perception", "custom")
+        val QUESTION_TYPES = listOf("single_choice", "multiple_choice", "rating", "ranking", "yes_no", "price_perception", "recall", "open_text")
+        val INFLUENCE_FACTORS = "Price, Design, Brand, Packaging, Quality perception, Other"
+        /** the measurement dimensions of the builder: each is a ready-made question (src/lib/questionTypes.js) */
+        val DIMENSIONS = listOf(
+            Dimension("preference", "single_choice", "selection"), Dimension("attention", "single_choice", "attention"), Dimension("trust", "single_choice", "trust"),
+            Dimension("quality", "single_choice", "quality"), Dimension("premium", "single_choice", "premium"), Dimension("clarity", "single_choice", "clarity"),
+            Dimension("recall", "recall", "recall"), Dimension("purchaseIntent", "rating", "purchase_intention", 7),
+        )
+        /** which questions can ask about the variants (typeSupportsVariants) */
+        fun supportsVariants(type: String) = type in setOf("single_choice", "rating", "ranking", "yes_no", "recall")
+    }
 }

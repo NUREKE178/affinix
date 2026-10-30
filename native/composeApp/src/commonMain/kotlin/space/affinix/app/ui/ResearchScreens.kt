@@ -21,6 +21,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.semantics.Role
@@ -73,6 +74,7 @@ fun ResearchScreen(model: AppModel) {
     val c = model.crowd
     LaunchedEffect(Unit) { r.loadOrgs() }
     if (c.view != CrowdModel.View.List) { CrowdFlow(model); return }
+    if (r.creating) { ExperimentBuilder(model); return }
     if (r.openId != null) { ExperimentResults(model); return }
     Column(Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(14.dp)) {
         Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -121,6 +123,7 @@ private fun ExperimentsList(model: AppModel) {
     var confirm by remember { mutableStateOf<Experiment?>(null) }
     val clipboard = androidx.compose.ui.platform.LocalClipboardManager.current
     LaunchedEffect(r.activeOrgId) { r.loadExperiments() }
+    KeyButton(t("experiments.newExperiment"), { r.creating = true }, Modifier.fillMaxWidth(), lit = true)
     val filters = listOf("all" to "experiments.filters.all", "published" to "experiments.filters.active", "completed" to "experiments.filters.completed", "draft" to "experiments.filters.draft", "paused" to "experiments.filters.paused")
     FlowRow(horizontalArrangement = Arrangement.spacedBy(6.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
         filters.forEach { (id, key) -> Chip(t(key), if (id == filter) Tone.Signal else Tone.Neutral, Modifier.clickable(remember { MutableInteractionSource() }, null, role = Role.Button) { filter = id }) }
@@ -403,5 +406,130 @@ private fun TeamSection(model: AppModel) {
         }
         Spacer(Modifier.height(6.dp))
         Txt(t("billing.emptyBody"), 12, color = C.g500)
+    }
+}
+
+
+// ---- the builder -----------------------------------------------------------------------------------------------------------------------
+
+private class VariantDraft { var name by mutableStateOf(""); var description by mutableStateOf(""); var image by mutableStateOf<space.affinix.app.ShrunkImage?>(null) }
+
+private class QuestionDraft(val type: String, val appliesTo: String, val role: String?, prompt: String, options: String, val scaleMax: Int?) {
+    var prompt by mutableStateOf(prompt); var options by mutableStateOf(options)
+}
+
+/** A compact version of the website's seven-step builder on one screen: what the experiment is, the variants, the questions, how many people; saved as a draft or published. */
+@OptIn(ExperimentalLayoutApi::class)
+@Composable
+private fun ExperimentBuilder(model: AppModel) {
+    val r = model.research
+    val scope = rememberCoroutineScope()
+    var name by remember { mutableStateOf("") }
+    var objective by remember { mutableStateOf("") }
+    var type by remember { mutableStateOf<String?>(null) }
+    var target by remember { mutableStateOf("100") }
+    var randomize by remember { mutableStateOf(true) }
+    val variants = remember { androidx.compose.runtime.mutableStateListOf(VariantDraft(), VariantDraft()) }
+    val questions = remember { androidx.compose.runtime.mutableStateListOf<QuestionDraft>() }
+    var error by remember { mutableStateOf<String?>(null) }
+    val dimensionPrompts = ResearchModel.DIMENSIONS.associate { it.id to t("builder.dimensions.${it.id}.prompt") }
+
+    fun drafts() = variants.map { ResearchModel.DraftVariant(it.name, it.description, it.image) } to
+        questions.map { ResearchModel.DraftQuestion(it.type, it.appliesTo, it.role, it.prompt, it.options, it.scaleMax) }
+
+    fun save(publish: Boolean) {
+        val (vs, qs) = drafts()
+        val why = r.validate(name, objective, type, vs, qs)
+        if (why != null) { error = why; return }
+        scope.launch { error = r.create(name, objective, type, target.toIntOrNull()?.coerceIn(1, 100_000) ?: 100, randomize, vs, qs, publish) }
+    }
+
+    Column(Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(14.dp)) {
+        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            IcoAction("arrowLeft", { r.creating = false })
+            Txt(t("builder.titleNew"), 22, FontWeight.ExtraBold, C.g50)
+        }
+        Plate(Modifier.fillMaxWidth()) {
+            Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                Field(name, { name = it; error = null }, t("builder.step1.nameLabel"), imeDone = false)
+                Field(objective, { objective = it; error = null }, t("builder.step1.objectiveLabel"), imeDone = false)
+                Txt(t("builder.step1.objectiveHint"), 12, color = C.g500)
+                Txt(t("builder.steps.researchType"), 12, FontWeight.Medium, C.g400)
+                FlowRow(horizontalArrangement = Arrangement.spacedBy(6.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                    ResearchModel.RESEARCH_TYPES.forEach { id -> Chip(t("questionTypes.research.$id.label"), if (id == type) Tone.Signal else Tone.Neutral, Modifier.clickable(remember { MutableInteractionSource() }, null, role = Role.Button) { type = id; error = null }) }
+                }
+            }
+        }
+        Plate(Modifier.fillMaxWidth()) {
+            Txt(t("builder.steps.stimuli"), 15, FontWeight.ExtraBold, C.g50)
+            Txt(t("builder.step3.intro"), 12, color = C.g500)
+            Spacer(Modifier.height(8.dp))
+            variants.forEachIndexed { i, v ->
+                Column(Modifier.fillMaxWidth().padding(vertical = 6.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        Txt(('A' + i).toString(), 16, FontWeight.ExtraBold, C.signalHi, Modifier.size(20.dp))
+                        Box(Modifier.weight(1f)) { Field(v.name, { v.name = it; error = null }, t("builder.step3.variantName"), imeDone = false) }
+                        val img = v.image
+                        if (img != null) PickedPreview(img) { v.image = null }
+                        else IcoAction("image", {
+                            scope.launch {
+                                val (got, why) = space.affinix.app.ImageRules.chooseAndShrink(1600, 1500 * 1024)
+                                if (got != null) v.image = got else if (why != null) error = why
+                            }
+                        })
+                        if (variants.size > 2) IcoAction("trash", { variants.removeAt(i) })
+                    }
+                    Field(v.description, { v.description = it }, t("builder.step3.variantDescription"), imeDone = false)
+                }
+            }
+            if (variants.size < ResearchModel.MAX_VARIANTS) KeyButton(t("builder.step3.addVariant", "label" to ('A' + variants.size).toString()), { variants.add(VariantDraft()) }, compact = true)
+        }
+        Plate(Modifier.fillMaxWidth()) {
+            Txt(t("builder.steps.questions"), 15, FontWeight.ExtraBold, C.g50)
+            Txt(t("builder.dimensions.intro"), 12, color = C.g500)
+            Spacer(Modifier.height(8.dp))
+            FlowRow(horizontalArrangement = Arrangement.spacedBy(6.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                ResearchModel.DIMENSIONS.forEach { d ->
+                    val have = questions.any { it.role == d.role }
+                    Chip(t("builder.dimensions.${d.id}.label") + if (have) " ✓" else "", if (have) Tone.Ok else Tone.Neutral, Modifier.clickable(remember { MutableInteractionSource() }, null, role = Role.Button) {
+                        r.dimensionQuestion(d.id, dimensionPrompts.getValue(d.id))?.let { q -> questions.add(QuestionDraft(q.type, q.appliesTo, q.role, q.prompt, q.options, q.scaleMax)); error = null }
+                    })
+                }
+            }
+            Spacer(Modifier.height(10.dp))
+            questions.forEachIndexed { i, q ->
+                Column(Modifier.fillMaxWidth().padding(vertical = 6.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        Txt("${i + 1}.", 13, FontWeight.Bold, C.g500)
+                        Box(Modifier.weight(1f)) { Field(q.prompt, { q.prompt = it; error = null }, t("builder.step4.promptPlaceholder"), imeDone = false) }
+                        IcoAction("trash", { questions.removeAt(i) })
+                    }
+                    Txt(t("questionTypes.question.${q.type}") + " · " + t(if (q.appliesTo == "variants") "builder.step4.appliesToVariants" else "builder.step4.appliesToGeneral"), 11, color = C.g500)
+                    val needsOptions = (q.type == "single_choice" || q.type == "multiple_choice") && q.appliesTo == "general" || q.type == "price_perception"
+                    if (needsOptions) Field(q.options, { q.options = it }, if (q.type == "price_perception") t("builder.step4.priceOptionsLabel") else t("builder.step4.optionsLabel"), imeDone = false)
+                }
+            }
+            Txt(t("builder.step4.addQuestion"), 12, FontWeight.Medium, C.g400)
+            FlowRow(horizontalArrangement = Arrangement.spacedBy(6.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                ResearchModel.QUESTION_TYPES.forEach { qt ->
+                    Chip(t("questionTypes.question.$qt"), Tone.Neutral, Modifier.clickable(remember { MutableInteractionSource() }, null, role = Role.Button) {
+                        val applies = if (ResearchModel.supportsVariants(qt)) "variants" else "general"
+                        val opts = if ((qt == "single_choice" || qt == "multiple_choice") && applies == "general") ResearchModel.INFLUENCE_FACTORS else if (qt == "multiple_choice") ResearchModel.INFLUENCE_FACTORS else ""
+                        questions.add(QuestionDraft(qt, applies, null, "", opts, if (qt == "rating") 5 else null)); error = null
+                    })
+                }
+            }
+        }
+        Plate(Modifier.fillMaxWidth()) {
+            Field(target, { target = it.filter { c -> c.isDigit() }.take(6) }, t("builder.step5.targetCountLabel"), imeDone = false)
+            Spacer(Modifier.height(10.dp))
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Txt(t("builder.step6.randomizeVariants"), 14, FontWeight.Medium, C.g100, Modifier.weight(1f))
+                Toggle(randomize, { randomize = it })
+            }
+        }
+        error?.let { Txt(t(it), 13, FontWeight.Medium, C.bad) }
+        KeyButton(if (r.saving) t("builder.publishing") else t("builder.publishButton"), { save(true) }, Modifier.fillMaxWidth(), lit = true, big = true, enabled = !r.saving)
+        KeyButton(t("builder.saveAndExit"), { save(false) }, Modifier.fillMaxWidth(), enabled = !r.saving)
     }
 }

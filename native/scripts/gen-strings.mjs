@@ -61,7 +61,7 @@ const KEYS = [
 ];
 
 // whole subtrees of the site's locale (every string under the prefix), for screens that use most of a section
-const PREFIXES = ["messages", "search", "arena.marathon", "arena.dna", "crowd", "auth.social", "arena.traits", "arena.archetype", "arena.share", "experiments", "results", "participants", "team", "billing", "questionTypes", "stats", "common"];
+const PREFIXES = ["messages", "search", "arena.marathon", "arena.dna", "crowd", "auth.social", "arena.traits", "arena.archetype", "arena.share", "experiments", "results", "participants", "team", "billing", "questionTypes", "stats", "common", "builder"];
 const leaves = (o, base) => Object.entries(o).flatMap(([k, v]) => (typeof v === "string" ? [`${base}.${k}`] : v && typeof v === "object" ? leaves(v, `${base}.${k}`) : []));
 for (const p of PREFIXES) for (const k of leaves(get(ru, p), p)) if (!KEYS.includes(k)) KEYS.push(k);
 
@@ -73,7 +73,7 @@ const EXTRA = {
   "research.title": { ru: "Исследования", kk: "Зерттеулер", en: "Research" },
   "research.actionFailed": { ru: "Не получилось. Проверьте права и интернет.", kk: "Болмады. Рұқсат пен интернетті тексеріңіз.", en: "That did not work. Check your permissions and connection." },
   "research.noCompany": { ru: "Вы пока не состоите ни в одной компании. Создайте её на сайте affinix.space.", kk: "Сіз әлі ешбір компанияда жоқсыз. Оны affinix.space сайтында құрыңыз.", en: "You are not in a company yet. Create one on affinix.space." },
-  "research.buildOnWeb": { ru: "Новые эксперименты создаются на сайте affinix.space: конструктор пока только там.", kk: "Жаңа тәжірибелер affinix.space сайтында құрылады: құрастырушы әзірге тек сонда.", en: "New experiments are built on affinix.space: the builder is only there for now." },
+  "research.buildOnWeb": { ru: "Редактировать готовый эксперимент пока можно только на сайте affinix.space.", kk: "Дайын тәжірибені өңдеуді әзірге тек affinix.space сайтында жасауға болады.", en: "Editing an existing experiment is only possible on affinix.space for now." },
   "research.company": { ru: "Компания", kk: "Компания", en: "Company" },
   "research.copyLink": { ru: "Скопировать ссылку", kk: "Сілтемені көшіру", en: "Copy link" },
   "research.loadMore": { ru: "Показать ещё", kk: "Тағы көрсету", en: "Show more" },

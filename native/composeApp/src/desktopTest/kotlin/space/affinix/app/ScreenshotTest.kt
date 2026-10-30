@@ -161,6 +161,11 @@ class ScreenshotTest {
         shoot("24-experiment-results-phone", 420, 3600, m) { Thread.sleep(900); m.research.openExperiment("exp-0001"); Thread.sleep(900) }
     }
 
+    @Test fun researchBuilder() {
+        val m = model(true); m.tab = Tab.Research
+        shoot("27-builder-phone", 420, 2300, m) { Thread.sleep(700); m.research.creating = true }
+    }
+
     @Test fun researchParticipants() {
         val m = model(true); m.tab = Tab.Research
         shoot("25-participants-phone", 420, 1500, m) { Thread.sleep(700); m.research.section = space.affinix.app.store.ResearchModel.Section.Participants; Thread.sleep(900) }
