@@ -35,8 +35,10 @@ class FeedModel(private val api: Api, private val scope: CoroutineScope, private
         private set
     var failed by mutableStateOf(false)
         private set
-    var mineOnly by mutableStateOf(false)
+    /** 0 = everyone, 1 = my own posts, 2 = the posts I saved */
+    var mode by mutableStateOf(0)
         private set
+    val mineOnly get() = mode == 1
 
     /** a short message for the player: a key of the strings table, shown once */
     var notice by mutableStateOf<String?>(null)
@@ -49,7 +51,7 @@ class FeedModel(private val api: Api, private val scope: CoroutineScope, private
 
     private fun say(key: String) { notice = key; scope.launch { delay(3500); if (notice == key) notice = null } }
 
-    fun showMine(v: Boolean) { if (mineOnly != v) { mineOnly = v; load() } }
+    fun showMode(m: Int) { if (mode != m) { mode = m; load() } }
 
     // ---- reading --------------------------------------------------------------------------------------------------------------------
 
@@ -71,6 +73,7 @@ class FeedModel(private val api: Api, private val scope: CoroutineScope, private
     }
 
     internal suspend fun page(before: String?): List<Post> {
+        if (mode == 2) return savedPage()
         val q = mutableListOf("select" to "*,post_likes(count),post_comments(count)", "order" to "created_at.desc", "limit" to PAGE.toString())
         if (before != null) q += "created_at" to "lt.$before"
         if (mineOnly) me()?.let { q += "author_id" to "eq.$it" }
@@ -87,13 +90,29 @@ class FeedModel(private val api: Api, private val scope: CoroutineScope, private
         }
     }
 
+    /** the posts the viewer saved, newest save first (the website's Favorites page) */
+    private suspend fun savedPage(): List<Post> {
+        val uid = me() ?: return emptyList()
+        val saves = api.restGet("post_saves", ListSerializer(PostIdRow.serializer()), "select" to "post_id", "user_id" to "eq.$uid", "order" to "created_at.desc", "limit" to "100")
+        if (saves.isEmpty()) return emptyList()
+        val ids = saves.map { it.postId }
+        val rows = api.restGet("posts", ListSerializer(PostRow.serializer()), "select" to "*,post_likes(count),post_comments(count)", "id" to "in.(${ids.joinToString(",")})")
+        val authors = authors(rows.map { it.authorId })
+        val liked = viewerIds("post_likes", ids)
+        val byId = rows.associateBy { it.id }
+        return ids.mapNotNull { byId[it] }.map { r ->
+            Post(r.id, authors[r.authorId] ?: Person(r.authorId, null, null, null), r.body, r.imageUrl, r.createdAt, r.updatedAt != null && r.updatedAt != r.createdAt,
+                r.postLikes.firstOrNull()?.count ?: 0, r.postComments.firstOrNull()?.count ?: 0, r.id in liked, true)
+        }
+    }
+
     fun load() { scope.launch { loadNow() } }
 
     internal suspend fun loadNow() {
         loading = true; failed = false
         try {
             val p = page(null)
-            posts = p; hasMore = p.size >= PAGE; loaded = true
+            posts = p; hasMore = mode != 2 && p.size >= PAGE; loaded = true
         } catch (e: CancellationException) { throw e } catch (e: Exception) { failed = true } finally { loading = false }
     }
 

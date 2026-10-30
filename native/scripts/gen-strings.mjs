@@ -9,7 +9,15 @@ const DIMS = ["preference", "attention", "trust", "quality", "premium", "clarity
 const FAMILIES = ["mark", "palette", "button", "card", "pack", "poster", "appicon", "scene", "shot"];
 const RANKS = ["novice", "apprentice", "observer", "sharpEye", "tastemaker", "artDirector", "creativeDirector", "maestro"];
 
+const NAMED_BADGES = Object.keys(ru.arena.badge);
+
 const KEYS = [
+  "arena.badgeName.votes", "arena.badgeName.streak", "arena.badgeName.daily", "arena.badgeName.level",
+  ...NAMED_BADGES.flatMap((b) => [`arena.badge.${b}.name`, `arena.badge.${b}.desc`]),
+  "arena.profile.badges", "arena.rankings.visible", "arena.rankings.visibleHint", "arena.rankings.saveFailed", "arena.rankings.serverPending",
+  "profile.personal.fullNameLabel", "profile.personal.usernameLabel", "profile.personal.usernamePlaceholder", "profile.personal.usernameHint", "profile.personal.usernameHintInvalid",
+  "profile.personal.roleTitleLabel", "profile.personal.bioLabel", "profile.personal.saveButton", "profile.personal.profileSaved", "profile.personal.usernameTaken", "profile.personal.usernameInvalid",
+  "common.save", "common.saving", "favorites.title", "favorites.emptyTitle", "favorites.emptyBody",
   "common.loading", "common.retry", "common.back", "common.continue", "common.cancel",
   "shell.userMenu.logout",
   "arena.title", "arena.subtitle", "arena.level",
@@ -49,6 +57,7 @@ const KEYS = [
 const EXTRA = {
   "app.name": { ru: "Affinix", kk: "Affinix", en: "Affinix" },
   "app.language": { ru: "Язык", kk: "Тіл", en: "Language" },
+  "app.profileTitle": { ru: "Мой профиль", kk: "Менің профилім", en: "My profile" },
   "app.noNetwork": { ru: "Нет связи с сервером. Проверьте интернет и повторите.", kk: "Серверге қосылу мүмкін болмады. Интернетті тексеріп, қайталаңыз.", en: "Can't reach the server. Check your connection and try again." },
   "app.imageFailed": { ru: "Не удалось загрузить картинку", kk: "Сурет жүктелмеді", en: "Couldn't load the picture" },
   "app.signedInAs": { ru: "Вы вошли как {email}", kk: "{email} ретінде кірдіңіз", en: "Signed in as {email}" },

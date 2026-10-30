@@ -24,3 +24,10 @@ val LocalLang = compositionLocalOf { Lang.Ru }
 
 @Composable
 fun t(key: String, vararg vars: Pair<String, Any>): String = tr(LocalLang.current, key, *vars)
+
+/** An award's name: the tiered ones ("votes_100") share one template per group, the others have their own. */
+@Composable
+fun badgeName(id: String): String {
+    val m = Regex("^(votes|streak|daily|level)_(\\d+)$").matchEntire(id)
+    return if (m != null) t("arena.badgeName.${m.groupValues[1]}", "n" to m.groupValues[2]) else t("arena.badge.$id.name")
+}

@@ -58,6 +58,8 @@ data class Profile(
     val bestStreak: Int = 0,
     val lastDay: String? = null,
     val dailySets: Int = 0,
+    val visible: Boolean = true,
+    val badges: List<String> = emptyList(),
 )
 
 @Serializable
@@ -132,3 +134,12 @@ internal data class TokenResponse(
 
 @Serializable
 internal data class TokenUser(val id: String = "", val email: String? = null)
+
+/** My own row of `profiles` (the columns the app edits). */
+@Serializable
+data class MyProfileRow(
+    @SerialName("full_name") val fullName: String? = null,
+    val username: String? = null,
+    @SerialName("role_title") val roleTitle: String? = null,
+    val bio: String? = null,
+)

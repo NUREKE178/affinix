@@ -49,6 +49,12 @@ object Rules {
         return Progress(level, into, span, if (span > 0) (into.toFloat() / span).coerceIn(0f, 1f) else 1f)
     }
 
+    /** All awards, in the order the website lists them (BADGE_DEFS in rules.js). The server decides which a player has; the app only names them. */
+    val BADGE_IDS = listOf(
+        "first_vote", "votes_100", "votes_500", "votes_1000", "votes_2500", "votes_5000", "streak_3", "streak_7", "streak_14", "streak_30", "daily_7", "daily_30",
+        "combo_8", "combo_12", "eye_80", "crowd_70", "explorer", "level_5", "level_10", "level_20", "level_30", "hour_1", "marathon_3h",
+    )
+
     private val ranks = listOf(1 to "novice", 3 to "apprentice", 6 to "observer", 10 to "sharpEye", 15 to "tastemaker", 20 to "artDirector", 30 to "creativeDirector", 40 to "maestro")
 
     fun rankForLevel(level: Int): String = ranks.last { level >= it.first }.second

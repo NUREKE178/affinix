@@ -10,6 +10,7 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import kotlinx.serialization.json.put
 import org.jetbrains.compose.resources.ExperimentalResourceApi
 import org.jetbrains.compose.resources.decodeToImageBitmap
 import space.affinix.app.Platform
@@ -22,6 +23,7 @@ import space.affinix.app.net.DayStats
 import space.affinix.app.net.Duel
 import space.affinix.app.net.KeyValueStore
 import space.affinix.app.net.Leaderboard
+import space.affinix.app.net.MyProfileRow
 import space.affinix.app.net.Profile
 import space.affinix.app.net.Tally
 import space.affinix.app.net.TallyQuery
@@ -57,6 +59,10 @@ class AppModel(
     var leaderboardFailed by mutableStateOf(false)
         private set
     var autoNext by mutableStateOf(false)
+
+    /** my own `profiles` row, for the edit form */
+    var myProfile by mutableStateOf<MyProfileRow?>(null)
+        private set
 
     /** specimen PNGs by "season/family/index" */
     val images = mutableStateMapOf<String, ImageBitmap>()
@@ -261,6 +267,50 @@ class AppModel(
     private fun scheduleFlush() {
         flushJob?.cancel()
         flushJob = scope.launch { delay(3500); offline = !game.flush() }
+    }
+
+    // ---- my profile ------------------------------------------------------------------------------------------------------------------
+
+    fun loadMyProfile() {
+        val uid = api.session?.userId ?: return
+        scope.launch {
+            try {
+                myProfile = api.restGet("profiles", kotlinx.serialization.builtins.ListSerializer(MyProfileRow.serializer()), "select" to "full_name,username,role_title,bio", "id" to "eq.$uid").firstOrNull()
+            } catch (e: CancellationException) { throw e } catch (e: Exception) { /* the form just stays empty */ }
+        }
+    }
+
+    /** Same rule as the website: 3-30 of a-z, 0-9, _ (or empty). */
+    fun usernameOk(u: String) = u.isEmpty() || Regex("^[a-z0-9_]{3,30}$").matches(u)
+
+    /** Returns null when saved, or the strings key of what went wrong. */
+    suspend fun saveMyProfile(name: String, username: String, role: String, bio: String): String? {
+        val uid = api.session?.userId ?: return "app.noNetwork"
+        val u = username.trim().lowercase()
+        if (!usernameOk(u)) return "profile.personal.usernameInvalid"
+        return try {
+            api.restWrite(
+                io.ktor.http.HttpMethod.Patch, "profiles", listOf("id" to "eq.$uid"),
+                kotlinx.serialization.json.buildJsonObject {
+                    put("full_name", name.trim()); put("username", if (u.isEmpty()) kotlinx.serialization.json.JsonNull else kotlinx.serialization.json.JsonPrimitive(u))
+                    put("role_title", role.trim()); put("bio", bio.trim())
+                },
+            )
+            myProfile = MyProfileRow(name.trim(), u.ifEmpty { null }, role.trim(), bio.trim())
+            null
+        } catch (e: CancellationException) { throw e } catch (e: ApiException) {
+            if (e.status == 409 || e.message.contains("duplicate", true) || e.message.contains("unique", true)) "profile.personal.usernameTaken" else "app.noNetwork"
+        } catch (e: Exception) { "app.noNetwork" }
+    }
+
+    /** Show me in the rankings or not (arena_set_visibility); put back when the server says no. */
+    fun setVisible(v: Boolean) {
+        val before = profile ?: return
+        profile = before.copy(visible = v)
+        scope.launch {
+            try { api.rpcText("arena_set_visibility", kotlinx.serialization.json.buildJsonObject { put("p_visible", v) }) }
+            catch (e: CancellationException) { throw e } catch (e: Exception) { profile = profile?.copy(visible = before.visible); error = text("arena.rankings.saveFailed") }
+        }
     }
 
     // ---- rankings ------------------------------------------------------------------------

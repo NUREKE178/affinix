@@ -16,6 +16,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicText
 import androidx.compose.foundation.text.BasicTextField
@@ -163,4 +164,14 @@ fun Segmented(labels: List<String>, selected: Int, onPick: (Int) -> Unit, modifi
             ) { Txt(label, 14, if (on) FontWeight.Bold else FontWeight.Medium, if (on) C.g50 else C.g400, maxLines = 1) }
         }
     }
+}
+
+/** An on/off switch: a sunken track with a key-like knob that lights orange when on. */
+@Composable
+fun Toggle(on: Boolean, onChange: (Boolean) -> Unit, modifier: Modifier = Modifier) {
+    Box(
+        modifier.size(width = 52.dp, height = 30.dp).then(if (on) Modifier.lit(15.dp) else Modifier.well(15.dp))
+            .clickable(remember { MutableInteractionSource() }, null, role = Role.Switch) { onChange(!on) }.padding(3.dp),
+        contentAlignment = if (on) Alignment.CenterEnd else Alignment.CenterStart,
+    ) { Box(Modifier.size(24.dp).then(if (on) Modifier.key(12.dp) else Modifier.key(12.dp, hover = false))) }
 }

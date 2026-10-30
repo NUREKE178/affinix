@@ -182,7 +182,7 @@ fun FeedScreen(model: AppModel) {
     LaunchedEffect(Unit) { if (!feed.loaded && !feed.loading) feed.load() }
     Column(Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(14.dp)) {
         Txt(t("feed.title"), 24, FontWeight.ExtraBold, C.g50)
-        Segmented(listOf(t("feed.tabAll"), t("feed.tabMine")), if (feed.mineOnly) 1 else 0, { feed.showMine(it == 1) })
+        Segmented(listOf(t("feed.tabAll"), t("feed.tabMine"), t("favorites.title")), feed.mode, { feed.showMode(it) })
         Composer(model)
         feed.notice?.let { Chip(t(it), Tone.Info) }
         when {
@@ -195,9 +195,9 @@ fun FeedScreen(model: AppModel) {
             }
             !feed.loaded -> Txt(t("common.loading"), 14, color = C.g500)
             feed.posts.isEmpty() -> Plate(Modifier.fillMaxWidth()) {
-                Txt(if (feed.mineOnly) t("feed.mineEmptyTitle") else t("feed.emptyTitle"), 16, FontWeight.Bold, C.g50)
+                Txt(when (feed.mode) { 1 -> t("feed.mineEmptyTitle"); 2 -> t("favorites.emptyTitle"); else -> t("feed.emptyTitle") }, 16, FontWeight.Bold, C.g50)
                 Spacer(Modifier.height(4.dp))
-                Txt(if (feed.mineOnly) t("feed.mineEmptyBody") else t("feed.emptyBody"), 13, color = C.g400)
+                Txt(when (feed.mode) { 1 -> t("feed.mineEmptyBody"); 2 -> t("favorites.emptyBody"); else -> t("feed.emptyBody") }, 13, color = C.g400)
             }
             else -> {
                 feed.posts.forEach { PostCard(model, it) }

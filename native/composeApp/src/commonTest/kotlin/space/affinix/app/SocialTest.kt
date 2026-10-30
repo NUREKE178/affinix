@@ -48,6 +48,7 @@ private class Rig(val handler: (method: String, path: String, query: String, bod
     val feed = FeedModel(api, scope) { "me" }
     val people = PeopleModel(api, scope, { "me" }, feed)
     val messages = MessagesModel(api, scope, { "me" }, feed)
+    val app by lazy { space.affinix.app.store.AppModel(api, scope, space.affinix.app.net.MemoryKeyValueStore()) }
     fun log() = synchronized(seen) { seen.toList() }
 }
 
@@ -178,5 +179,52 @@ class MessagesTest {
         r.messages.refreshNow(); r.messages.openChat(r.messages.conversations[0]); until { r.messages.threadLoaded }
         r.messages.send("   ")
         assertTrue(r.messages.thread.none { it.status == "sending" })
+    }
+}
+
+class ProfileTest {
+    private fun rig() = Rig({ _, path, _, _ -> if (path.endsWith("/profiles")) """[{"full_name":"Me","username":"me","role_title":"","bio":""}]""" else "{}" })
+
+    @Test fun usernameRuleIsTheWebsites() {
+        val a = rig().app
+        assertTrue(a.usernameOk("") && a.usernameOk("nurlan") && a.usernameOk("a_b_9") && a.usernameOk("x".repeat(30)))
+        assertTrue(!a.usernameOk("ab") && !a.usernameOk("Nurlan") && !a.usernameOk("has space") && !a.usernameOk("x".repeat(31)) && !a.usernameOk("қазақ"))
+    }
+
+    @Test fun savingSendsOneTrimmedPatchWithALowerCaseUsername() = runTest {
+        val r = rig()
+        assertNull(r.app.saveMyProfile("  Nurlan K  ", " NurLan ", " Head of Research ", "  Hi there  "))
+        val patch = r.log().first { it.startsWith("PATCH") }
+        assertTrue(patch.contains("/profiles?id=eq.me"), patch)
+        assertTrue(patch.contains("\"full_name\":\"Nurlan K\"") && patch.contains("\"username\":\"nurlan\"") && patch.contains("\"role_title\":\"Head of Research\"") && patch.contains("\"bio\":\"Hi there\""), patch)
+        assertEquals("nurlan", r.app.myProfile?.username)
+    }
+
+    @Test fun anInvalidUsernameIsRefusedBeforeAnythingIsSent() = runTest {
+        val r = rig()
+        assertEquals("profile.personal.usernameInvalid", r.app.saveMyProfile("A", "No Good", "", ""))
+        assertTrue(r.log().none { it.startsWith("PATCH") })
+    }
+
+    @Test fun anEmptyUsernameIsSentAsNull() = runTest {
+        val r = rig()
+        assertNull(r.app.saveMyProfile("A", "", "", ""))
+        assertTrue(r.log().first { it.startsWith("PATCH") }.contains("\"username\":null"))
+    }
+
+    @Test fun savedPostsComeInTheOrderTheyWereSaved() = runTest {
+        val r = Rig({ _, path, _, _ ->
+            when {
+                path.endsWith("/post_saves") -> """[{"post_id":"p2"},{"post_id":"p1"}]"""
+                path.endsWith("/posts") -> """[{"id":"p1","author_id":"u2","body":"one","created_at":"2026-10-01T00:00:00+00:00","post_likes":[{"count":0}],"post_comments":[{"count":0}]},{"id":"p2","author_id":"u2","body":"two","created_at":"2026-10-02T00:00:00+00:00","post_likes":[{"count":0}],"post_comments":[{"count":0}]}]"""
+                path.endsWith("/profiles_public") -> PROFILES
+                else -> "[]"
+            }
+        })
+        r.feed.showMode(2)
+        until { r.feed.loaded }
+        assertEquals(listOf("p2", "p1"), r.feed.posts.map { it.id })
+        assertTrue(r.feed.posts.all { it.saved })
+        assertTrue(!r.feed.hasMore)
     }
 }
