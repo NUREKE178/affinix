@@ -1,0 +1,56 @@
+// The Android half of the build (Groovy, so the Android DSL needs no compile-time types). Applied from build.gradle.kts only with -PwithAndroid=true:
+// it needs Google's Maven and the Android SDK, so it runs in CI.
+def appVersion = (project.findProperty("appVersion") ?: "0.1.0").toString()
+def appVersionCode = (project.findProperty("appVersionCode") ?: "1").toString().toInteger()
+
+// The signing key comes from the environment (the CI job creates a one-off one or takes yours from repository secrets); none is stored in the repository.
+def ksPath = System.getenv("ANDROID_KEYSTORE_PATH")
+def ksPass = System.getenv("ANDROID_KEYSTORE_PASSWORD")
+def ksAlias = System.getenv("ANDROID_KEY_ALIAS") ?: "affinix"
+def ksKeyPass = System.getenv("ANDROID_KEY_PASSWORD") ?: ksPass
+
+android {
+    namespace "space.affinix.app"
+    compileSdk 34
+
+    defaultConfig {
+        applicationId "space.affinix.app"
+        minSdk 24
+        targetSdk 34
+        versionCode appVersionCode
+        versionName appVersion
+    }
+
+    signingConfigs {
+        if (ksPath) {
+            release {
+                storeFile file(ksPath)
+                storePassword ksPass
+                keyAlias ksAlias
+                keyPassword ksKeyPass
+            }
+        }
+    }
+
+    buildTypes {
+        release {
+            minifyEnabled false
+            signingConfig = ksPath ? signingConfigs.release : signingConfigs.debug
+        }
+    }
+
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_17
+        targetCompatibility JavaVersion.VERSION_17
+    }
+
+    packaging {
+        resources {
+            excludes += ["/META-INF/{AL2.0,LGPL2.1}", "/META-INF/INDEX.LIST", "/META-INF/io.netty.versions.properties"]
+        }
+    }
+
+    lint {
+        abortOnError false
+    }
+}

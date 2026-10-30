@@ -13,7 +13,7 @@ plugins {
 }
 if (withAndroid) {
     apply(plugin = "com.android.application")
-    apply(from = "android.gradle.kts")
+    apply(from = "android.gradle")
 }
 
 kotlin {
