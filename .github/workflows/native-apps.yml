@@ -2,6 +2,7 @@
 #   test            unit tests + offscreen screenshots of every screen (artifact "native-screenshots": open the PNGs to see the app)
 #   package-linux   Affinix.deb + a tar.gz of the self-contained app folder
 #   package-windows Affinix.msi + Affinix.exe installers
+#   package-android Affinix-native.apk (signed: with your repository secrets ANDROID_KEYSTORE_* or a one-off key, like release-apps.yml)
 # Run it: Actions -> "Native apps" -> Run workflow (optionally type a version), or push a change under native/.
 # The old web-wrapper apps (release-apps.yml) stay until the native app has everything they have.
 name: Native apps
@@ -96,6 +97,57 @@ jobs:
           ls -la out
       - uses: actions/upload-artifact@v4
         with: { name: native-windows, path: native/out/* }
+
+  package-android:
+    name: Android (.apk)
+    needs: test
+    runs-on: ubuntu-24.04
+    defaults: { run: { working-directory: native } }
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with: { distribution: temurin, java-version: "21" }
+      - uses: gradle/actions/setup-gradle@v4
+      - name: Signing key
+        env:
+          KS: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+          KS_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          KS_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+          KS_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+        run: |
+          if [ -n "$KS" ]; then
+            echo "$KS" | base64 -d > "$RUNNER_TEMP/release.jks"
+            ALIAS="${KS_ALIAS:-affinix}"
+            PW="$KS_PASSWORD"
+            KEYPW="${KS_KEY_PASSWORD:-$KS_PASSWORD}"
+            echo "Signing with the key from the repository secrets."
+          else
+            ALIAS=affinix
+            PW=$(openssl rand -hex 24)
+            KEYPW="$PW"
+            keytool -genkeypair -keystore "$RUNNER_TEMP/release.jks" -alias "$ALIAS" -keyalg RSA -keysize 2048 -validity 36500 \
+              -startdate "2020/01/01 00:00:00" -storepass "$PW" -keypass "$KEYPW" -dname "CN=Affinix, O=Nurlan Company, C=KZ"
+            echo "::notice::Signing with a one-off key (no ANDROID_KEYSTORE_* secrets): a phone will not update this APK in place."
+          fi
+          echo "::add-mask::$PW"
+          {
+            echo "ANDROID_KEYSTORE_PATH=$RUNNER_TEMP/release.jks"
+            echo "ANDROID_KEYSTORE_PASSWORD=$PW"
+            echo "ANDROID_KEY_ALIAS=$ALIAS"
+            echo "ANDROID_KEY_PASSWORD=$KEYPW"
+          } >> "$GITHUB_ENV"
+      - name: Build the APK
+        run: ./gradlew :composeApp:assembleRelease -PwithAndroid=true -PappVersion="$APP_VERSION" -PappVersionCode="$(( $(date +%s) / 60 ))" --no-daemon --stacktrace
+      - name: Name it and check it
+        run: |
+          mkdir -p out
+          cp "$(find composeApp/build/outputs/apk/release -name '*.apk' | head -1)" out/Affinix-native.apk
+          BT=$(find "$ANDROID_HOME/build-tools" -mindepth 1 -maxdepth 1 -type d | sort -V | tail -1)
+          "$BT/apksigner" verify --verbose --print-certs out/Affinix-native.apk
+          "$BT/aapt" dump badging out/Affinix-native.apk | grep -E "^package:|application-label:|sdkVersion|launchable" || true
+          ls -l out
+      - uses: actions/upload-artifact@v4
+        with: { name: native-android, path: native/out/* }
 
   # Puts the screenshots on a branch of their own (replaced on every run) so they can be opened straight from GitHub: branch "native-shots".
   publish-shots:

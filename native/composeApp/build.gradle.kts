@@ -1,4 +1,5 @@
 import org.jetbrains.compose.desktop.application.dsl.TargetFormat
+import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 
 val withAndroid = (findProperty("withAndroid") as String?) == "true"
 val appVersion = (findProperty("appVersion") as String?) ?: "1.0.0"
@@ -10,11 +11,14 @@ plugins {
     id("org.jetbrains.kotlin.plugin.compose")
     id("org.jetbrains.compose")
 }
-if (withAndroid) apply(plugin = "com.android.application")
+if (withAndroid) {
+    apply(plugin = "com.android.application")
+    apply(from = "android.gradle.kts")
+}
 
 kotlin {
     jvmToolchain(21)
-    if (withAndroid) androidTarget()
+    if (withAndroid) androidTarget { compilerOptions { jvmTarget.set(JvmTarget.JVM_17) } }
     jvm("desktop")
 
     sourceSets {
