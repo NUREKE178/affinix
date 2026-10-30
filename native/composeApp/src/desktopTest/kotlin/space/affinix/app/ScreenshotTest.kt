@@ -43,12 +43,18 @@ class ScreenshotTest {
     private val json = headersOf(HttpHeaders.ContentType, "application/json")
     private val outDir = File(System.getProperty("shots") ?: "build/shots").also { it.mkdirs() }
 
+    private val researchFixture = kotlinx.serialization.json.Json.parseToJsonElement(javaClass.getResource("/research.json")!!.readText()) as kotlinx.serialization.json.JsonObject
+
     private val dnaFixture = kotlinx.serialization.json.Json.parseToJsonElement(javaClass.getResource("/dna.json")!!.readText()) as kotlinx.serialization.json.JsonObject
 
     /** [marathon]: the daily ten is done and set 2 too, set 3 is half way; [dna]: the player has 90 answers on record */
     private fun model(signedIn: Boolean, marathon: Boolean = false, dna: Boolean = false): AppModel {
         val engine = MockEngine { req ->
             val body = when {
+                req.url.encodedPath.endsWith("/organization_members") && req.url.encodedQuery.contains("organization%3Aorganizations") -> """[{"role":"owner","organization":{"id":"org-1","name":"Acme Coffee","slug":"acme"}}]"""
+                req.url.encodedPath.endsWith("/organization_members") -> """[{"id":"m1","role":"owner","user_id":"u1","created_at":"2026-09-01T10:00:00+00:00","profile":{"full_name":"Nurlan K.","email":"nurlan@acme.kz"}},{"id":"m2","role":"researcher","user_id":"u3","created_at":"2026-10-01T10:00:00+00:00","profile":{"full_name":"Dias","email":"dias@acme.kz"}},{"id":"m3","role":"viewer","user_id":"u5","created_at":"2026-10-12T10:00:00+00:00","profile":{"full_name":"","email":"madina@acme.kz"}}]"""
+                req.url.encodedPath.endsWith("/experiments") -> """[${researchFixture["experiment"]},{"id":"exp-0002","organization_id":"org-1","name":"Poster draft","objective":"Which poster for the launch?","research_type":"ad_testing","status":"draft","created_at":"2026-10-20T10:00:00+00:00","updated_at":"2026-10-28T10:00:00+00:00","experiment_variants":[],"experiment_questions":[]}]"""
+                req.url.encodedPath.endsWith("/participant_sessions") -> if (req.url.encodedQuery.contains("experiments")) """[${(researchFixture["sessions"] as kotlinx.serialization.json.JsonArray).take(8).joinToString(",") { it.toString().dropLast(1) + ""","experiments":{"id":"exp-0001","name":"Fixture"}}""" }}]""" else researchFixture["sessions"].toString()
                 req.url.encodedPath.endsWith("arena_test_mine") -> """[{"id":"t1","title":"Which logo for my coffee shop?","dim":"trust","status":"open","target":150,"votes":120,"voters":9,"items":[{"id":"i1","pos":0,"label":"Blue cup","wins":45,"games":60},{"id":"i2","pos":1,"label":"Orange bean","wins":20,"games":60},{"id":"i3","pos":2,"label":"Mono wordmark","wins":10,"games":60}]},{"id":"t2","title":"Slogan for the launch","dim":"preference","status":"closed","target":150,"votes":0,"voters":0,"items":[{"id":"i4","pos":0,"label":"Fresh start","wins":0,"games":0},{"id":"i5","pos":1,"label":"Own the morning","wins":0,"games":0}]}]"""
                 req.url.encodedPath.endsWith("arena_test_results") -> """{"test":{"id":"t1","title":"Which logo for my coffee shop?","dim":"trust","status":"open","target":150,"votes":120,"voters":9,"items":[{"id":"i1","pos":0,"label":"Blue cup","wins":45,"games":60},{"id":"i2","pos":1,"label":"Orange bean","wins":20,"games":60},{"id":"i3","pos":2,"label":"Mono wordmark","wins":10,"games":60}]},"pairs":[{"a":"i1","b":"i2","aVotes":18,"bVotes":7},{"a":"i1","b":"i3","aVotes":19,"bVotes":6}],"avgMs":2400}"""
                 req.url.encodedPath.endsWith("arena_test_queue") -> """{"available":2,"missionXp":24,"cap":300,"tests":[{"id":"q1","title":"Poster for a jazz night","dim":"attention","owner":{"id":"u3","name":"Dias","username":"dias"},"items":[{"id":"a1","pos":0,"label":"Neon","path":null},{"id":"a2","pos":1,"label":"Paper cut","path":null}],"pairs":[["a1","a2"]],"done":0,"total":1}]}"""
@@ -148,7 +154,22 @@ class ScreenshotTest {
 
     @Test fun marathon() { shoot("17-marathon-phone", 420, 1500, model(true, marathon = true)) { Thread.sleep(600) } }
 
-    @Test fun researchList() { val m = model(true); m.tab = Tab.Research; shoot("19-research-phone", 420, 1100, m) { Thread.sleep(600) } }
+    @Test fun researchList() { val m = model(true); m.tab = Tab.Research; shoot("19-research-phone", 420, 1300, m) { Thread.sleep(900) } }
+
+    @Test fun researchExperimentResults() {
+        val m = model(true); m.tab = Tab.Research
+        shoot("24-experiment-results-phone", 420, 3600, m) { Thread.sleep(900); m.research.openExperiment("exp-0001"); Thread.sleep(900) }
+    }
+
+    @Test fun researchParticipants() {
+        val m = model(true); m.tab = Tab.Research
+        shoot("25-participants-phone", 420, 1500, m) { Thread.sleep(700); m.research.section = space.affinix.app.store.ResearchModel.Section.Participants; Thread.sleep(900) }
+    }
+
+    @Test fun researchTeam() {
+        val m = model(true); m.tab = Tab.Research
+        shoot("26-team-phone", 420, 1500, m) { Thread.sleep(700); m.research.section = space.affinix.app.store.ResearchModel.Section.Team; Thread.sleep(900) }
+    }
 
     @Test fun researchResults() {
         val m = model(true); m.tab = Tab.Research

@@ -63,6 +63,7 @@ private class Rig(
     val search = space.affinix.app.store.SearchModel(api, scope, feed, people)
     var xp = 500L
     val crowd = space.affinix.app.store.CrowdModel(api, scope, { "me" }, { xp })
+    val research = space.affinix.app.store.ResearchModel(api, scope) { "me" }
     var adopted = 0
     val mission = space.affinix.app.store.MissionModel(api, scope, { "me" }) { adopted++ }
     val app by lazy { space.affinix.app.store.AppModel(api, scope, space.affinix.app.net.MemoryKeyValueStore()) }
@@ -798,5 +799,132 @@ class MissionTest {
         r.mission.end()
         until { r.log().count { it.contains("arena_test_queue") } == 2 }
         assertNull(r.mission.round)
+    }
+}
+
+
+class ResearchModelTest {
+    private val orgs = """[{"role":"owner","organization":{"id":"o1","name":"Acme","slug":"acme"}},{"role":"viewer","organization":{"id":"o2","name":"Other","slug":"other"}}]"""
+    private val exps = """[{"id":"e1","organization_id":"o1","name":"Logo test","objective":"Pick one","research_type":"logo_testing","status":"draft","public_slug":null,"participant_limit":50,
+        "created_at":"2026-10-01T10:00:00+00:00","updated_at":"2026-10-20T10:00:00+00:00",
+        "experiment_variants":[{"id":"v2","label":"B","name":"Two","position":1},{"id":"v1","label":"A","name":"One","position":0}],
+        "experiment_questions":[{"id":"q1","type":"single_choice","applies_to":"variants","role":"selection","prompt":"Which?","position":0,"experiment_question_options":[]}]},
+        {"id":"e2","organization_id":"o1","name":"Poster","status":"published","public_slug":"abcd2345","participant_settings":{"targetCount":80},"participant_limit":50,
+        "created_at":"2026-09-01T10:00:00+00:00","updated_at":"2026-10-25T10:00:00+00:00","experiment_variants":[],"experiment_questions":[]}]"""
+    private val members = """[{"id":"m1","role":"owner","user_id":"me","created_at":"2026-09-01T10:00:00+00:00","profile":{"full_name":"Me","email":"me@x.kz"}},
+        {"id":"m2","role":"viewer","user_id":"u2","created_at":"2026-10-01T10:00:00+00:00","profile":{"full_name":"","email":"dias@x.kz"}}]"""
+
+    // the same path serves both uses of organization_members (my companies, a company's members): answer by what is asked for
+    private fun rigWith(reject: (String, String, String) -> String? = { _, _, _ -> null }): Rig = Rig({ m, path, q, _ -> when {
+        path.endsWith("/organization_members") && q.contains("organization%3Aorganizations") -> orgs
+        path.endsWith("/organization_members") -> members
+        path.endsWith("/experiments") -> exps
+        path.endsWith("/participant_sessions") -> """[{"id":"s1","experiment_id":"e1","status":"completed","started_at":"2026-10-03T10:00:00+00:00","completed_at":"2026-10-03T10:03:00+00:00","demographics":{"ageRange":"25-34"},"responses":[{"question_id":"q1","variant_id":null,"value":"v1","response_time_ms":2000,"created_at":"2026-10-03T10:01:00+00:00"}],"experiments":{"id":"e1","name":"Logo test"}}]"""
+        path.endsWith("/rpc/add_member_by_email") -> """{"id":"m9"}"""
+        else -> "[]"
+    } }, reject = reject)
+
+    @Test fun theCompaniesOfThePersonAreReadAndTheFirstIsActive() = runTest {
+        val r = rigWith(); r.research.loadOrgs()
+        until { r.research.experimentsLoaded }
+        assertEquals(listOf("Acme", "Other"), r.research.orgs.map { it.name })
+        assertEquals("o1", r.research.activeOrgId)
+        assertTrue(r.research.canManage) // an owner
+        val q = r.log().first { it.contains("organization_members") }
+        assertTrue(q.contains("user_id=eq.me"), q)
+        assertTrue(r.log().any { it.contains("/experiments?") && it.contains("organization_id=eq.o1") })
+    }
+
+    @Test fun experimentsAreMappedWithTheirVariantsAndTheTargetTheWebsiteUses() = runTest {
+        val r = rigWith(); r.research.loadOrgs(); until { r.research.experimentsLoaded }
+        val e1 = r.research.experiments.first { it.id == "e1" }; val e2 = r.research.experiments.first { it.id == "e2" }
+        assertEquals(listOf("A", "B"), e1.variants.map { it.label }) // by position
+        assertEquals(50, e1.targetCount); assertEquals(80, e2.targetCount) // the settings win over the limit
+        assertEquals("Which?", e1.questions.single().prompt)
+        assertEquals("https://affinix.space/#/research/abcd2345", r.research.publicLink(e2)); assertNull(r.research.publicLink(e1))
+    }
+
+    @Test fun publishingADraftSendsTheStatusASlugAndTheTime() = runTest {
+        val r = rigWith(); r.research.loadOrgs(); until { r.research.experimentsLoaded }
+        r.research.publish(r.research.experiments.first { it.id == "e1" })
+        until { r.log().any { it.startsWith("PATCH") && it.contains("/experiments") } }
+        val call = r.log().first { it.startsWith("PATCH") && it.contains("/experiments") }
+        assertTrue(call.contains("id=eq.e1") && call.contains("\"status\":\"published\"") && Regex("\"public_slug\":\"[a-hj-km-np-z2-9]{8}\"").containsMatchIn(call) && call.contains("\"published_at\":\"20"), call)
+    }
+
+    @Test fun deletingRemovesTheRowAndAFailureLeavesItInPlace() = runTest {
+        val r = rigWith(); r.research.loadOrgs(); until { r.research.experimentsLoaded }
+        r.research.delete(r.research.experiments.first { it.id == "e2" })
+        until { r.research.experiments.none { it.id == "e2" } }
+        assertTrue(r.log().any { it.startsWith("DELETE") && it.contains("id=eq.e2") })
+        val bad = rigWith(reject = { m, _, _ -> if (m == "DELETE") "denied" else null }); bad.research.loadOrgs(); until { bad.research.experimentsLoaded }
+        bad.research.delete(bad.research.experiments.first { it.id == "e1" })
+        until { bad.research.notice != null }
+        assertEquals("research.actionFailed", bad.research.notice)
+        assertTrue(bad.research.experiments.any { it.id == "e1" })
+    }
+
+    @Test fun theResultsOfOneExperimentAreAskedWithTheirAnswers() = runTest {
+        val r = rigWith(); r.research.loadOrgs(); until { r.research.experimentsLoaded }
+        r.research.openExperiment("e1"); until { r.research.sessionsLoaded }
+        assertEquals(1, r.research.sessions.size)
+        val s = space.affinix.app.store.ResearchStats.summary(r.research.openExperiment!!, r.research.sessions)
+        assertEquals("A", s.topVariant?.label)
+        val q = r.log().first { it.contains("/participant_sessions?") && it.contains("experiment_id=eq.e1") }
+        assertTrue(q.contains("responses"), q)
+    }
+
+    @Test fun theParticipantsOfTheCompanyCarryTheExperimentName() = runTest {
+        val r = rigWith(); r.research.loadOrgs(); until { r.research.experimentsLoaded }
+        r.research.loadOrgSessions(); until { r.research.orgSessionsLoaded }
+        assertEquals("Logo test", r.research.orgSessions.single().experimentName)
+        assertTrue(r.log().any { it.contains("experiments.organization_id=eq.o1") && it.contains("inner") })
+    }
+
+    @Test fun theTeamIsReadAndTheNameFallsBackToTheEmail() = runTest {
+        val r = rigWith(); r.research.loadOrgs(); until { r.research.experimentsLoaded }
+        r.research.loadMembers(); until { r.research.membersLoaded }
+        assertEquals(listOf("Me", "dias@x.kz"), r.research.members.map { it.name })
+        assertEquals(listOf("owner", "viewer"), r.research.members.map { it.role })
+    }
+
+    @Test fun aRoleChangeShowsAtOnceAndIsPutBackWhenRefused() = runTest {
+        val r = rigWith(); r.research.loadOrgs(); until { r.research.experimentsLoaded }
+        r.research.loadMembers(); until { r.research.membersLoaded }
+        r.research.setRole(r.research.members[1], "admin")
+        assertEquals("admin", r.research.members[1].role)
+        until { r.log().any { it.startsWith("PATCH") && it.contains("organization_members") } }
+        assertTrue(r.log().first { it.startsWith("PATCH") && it.contains("organization_members") }.contains("\"role\":\"admin\""))
+        val bad = rigWith(reject = { m, p, _ -> if (m == "PATCH" && p.endsWith("/organization_members")) "denied" else null }); bad.research.loadOrgs(); until { bad.research.experimentsLoaded }
+        bad.research.loadMembers(); until { bad.research.membersLoaded }
+        bad.research.setRole(bad.research.members[1], "admin")
+        until { bad.research.notice != null }
+        assertEquals("viewer", bad.research.members[1].role)
+    }
+
+    @Test fun anExistingAccountIsAddedAtOnce() = runTest {
+        val r = rigWith(); r.research.loadOrgs(); until { r.research.experimentsLoaded }
+        assertEquals("added", r.research.addMember("  dias@x.kz ", "researcher"))
+        val call = r.log().first { it.contains("/rpc/add_member_by_email") }
+        assertTrue(call.contains("\"org_id\":\"o1\"") && call.contains("\"member_email\":\"dias@x.kz\"") && call.contains("\"member_role\":\"researcher\""), call)
+    }
+
+    @Test fun anUnknownEmailGetsAnInviteFromTheEdgeFunction() = runTest {
+        val r = rigWith(reject = { _, p, _ -> if (p.endsWith("/rpc/add_member_by_email")) "No account found for this email" else null }); r.research.loadOrgs(); until { r.research.experimentsLoaded }
+        assertEquals("invited", r.research.addMember("new@x.kz", "viewer"))
+        val call = r.log().first { it.contains("/functions/v1/invite-member") }
+        assertTrue(call.contains("\"email\":\"new@x.kz\"") && call.contains("\"role\":\"viewer\""), call)
+    }
+
+    @Test fun anotherRefusalIsReportedWithItsMessage() = runTest {
+        val r = rigWith(reject = { _, p, _ -> if (p.endsWith("/rpc/add_member_by_email")) "Only owners and admins can add members" else null }); r.research.loadOrgs(); until { r.research.experimentsLoaded }
+        assertEquals("error:Only owners and admins can add members", r.research.addMember("a@x.kz", "viewer"))
+        assertTrue(r.log().none { it.contains("invite-member") })
+    }
+
+    @Test fun aViewerCannotManageTheTeam() = runTest {
+        val r = rigWith(); r.research.loadOrgs(); until { r.research.experimentsLoaded }
+        r.research.pickOrg("o2")
+        assertTrue(!r.research.canManage)
     }
 }
