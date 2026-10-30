@@ -227,7 +227,8 @@ class MarathonTest {
 
     @Test fun playingASetDealsThatSetAndOnlyWhatIsStillMissing() = runTest {
         val a = app(stateWith("[10,7,0,0,0]"))
-        until { a.today?.setVotes?.isNotEmpty() == true }
+        // the first load is over only when `loading` drops: a set cannot start while it is still going
+        until { a.today?.setVotes?.isNotEmpty() == true && !a.loading }
         a.startSet(3)
         until { a.game.round.value != null }
         val r = a.game.round.value!!
@@ -239,7 +240,7 @@ class MarathonTest {
 
     @Test fun aLockedOrFinishedSetIsNotStarted() = runTest {
         val a = app(stateWith("[10,0,0,0,0]"))
-        until { a.today?.setVotes?.isNotEmpty() == true }
+        until { a.today?.setVotes?.isNotEmpty() == true && !a.loading }
         a.startSet(4) // set 3 is not done: locked
         a.startSet(2) // done
         kotlinx.coroutines.delay(200)
