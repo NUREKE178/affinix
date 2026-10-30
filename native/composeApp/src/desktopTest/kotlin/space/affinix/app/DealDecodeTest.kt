@@ -1,20 +1,19 @@
 package space.affinix.app
 
-import kotlinx.serialization.builtins.ListSerializer
 import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
 import space.affinix.app.net.ApiJson
-import space.affinix.app.net.Duel
+import space.affinix.app.net.parseDuels
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
 
 /**
- * deals.json holds what the website's own dealer (api/arena-deal.mjs) returns for 28 daily challenges, the 5 extra sets and 20 free rounds
- * (550 duels, every design family and question), generated with node. The app must be able to read all of it.
+ * deals.json holds the whole HTTP bodies the website's dealer handler (api/arena-deal.mjs) answers for 28 daily challenges, the 5 extra sets and 20 free rounds
+ * (550 duels, every design family and question), recorded by native/scripts/gen-deal-fixture.mjs. The app must be able to read all of it.
  */
 class DealDecodeTest {
     private val cases: JsonArray = ApiJson.parseToJsonElement(javaClass.getResource("/deals.json")!!.readText()).jsonArray
@@ -23,7 +22,7 @@ class DealDecodeTest {
         var duels = 0
         for (c in cases) {
             val o: JsonObject = c.jsonObject
-            val list = ApiJson.decodeFromString(ListSerializer(Duel.serializer()), o["v"].toString())
+            val list = parseDuels(o["v"].toString()) // the exact HTTP body of the dealer: {"duels":[...]}
             assertTrue(list.isNotEmpty(), o["k"]!!.jsonPrimitive.content)
             for (d in list) {
                 assertEquals(2, d.specimens.size, "${o["k"]} ${d.id}")
@@ -37,6 +36,6 @@ class DealDecodeTest {
 
     @Test fun aDailyChallengeHasTenDuels() {
         val daily = cases.filter { it.jsonObject["k"]!!.jsonPrimitive.content.startsWith("daily") }
-        assertTrue(daily.all { it.jsonObject["v"]!!.jsonArray.size == 10 })
+        assertTrue(daily.all { it.jsonObject["v"]!!.jsonObject["duels"]!!.jsonArray.size == 10 })
     }
 }
