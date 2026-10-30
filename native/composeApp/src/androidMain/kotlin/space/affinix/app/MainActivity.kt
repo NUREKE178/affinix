@@ -30,9 +30,10 @@ class MainActivity : ComponentActivity() {
             val model = remember { AppModel(Api(httpClient(), Config(), StoredSession(kv)), scope, kv) }
             val round by model.game.round.collectAsState()
             // Back leaves a round first, then goes back to the Play tab; only from there does it close the app.
-            BackHandler(enabled = model.signedIn && (round != null || model.messages.open != null || model.tab != Tab.Play)) {
+            BackHandler(enabled = model.signedIn && (round != null || model.mission.round != null || model.messages.open != null || model.tab != Tab.Play)) {
                 when {
                     round != null -> model.endRound()
+                    model.mission.round != null -> model.mission.end()
                     model.tab == Tab.Chats && model.messages.open != null -> model.messages.closeChat()
                     else -> model.tab = Tab.Play
                 }

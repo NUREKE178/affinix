@@ -114,6 +114,8 @@ fun HomeScreen(model: AppModel) {
 
         MarathonPlate(model)
 
+        MissionPlate(model)
+
         CrowdEntryCard(model)
 
         Plate(Modifier.fillMaxWidth()) {

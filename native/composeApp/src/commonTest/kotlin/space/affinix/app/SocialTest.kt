@@ -63,6 +63,8 @@ private class Rig(
     val search = space.affinix.app.store.SearchModel(api, scope, feed, people)
     var xp = 500L
     val crowd = space.affinix.app.store.CrowdModel(api, scope, { "me" }, { xp })
+    var adopted = 0
+    val mission = space.affinix.app.store.MissionModel(api, scope, { "me" }) { adopted++ }
     val app by lazy { space.affinix.app.store.AppModel(api, scope, space.affinix.app.net.MemoryKeyValueStore()) }
     fun log() = synchronized(seen) { seen.toList() }
 }
@@ -692,5 +694,109 @@ class CrowdTestTest {
         assertEquals(1, r.crowd.result!!.pairs.size)
         assertEquals(2400.0, r.crowd.result!!.avgMs)
         assertEquals("p_test", Regex("\"(p_test)\"").find(r.log().first { it.contains("/rpc/arena_test_results") })!!.groupValues[1])
+    }
+}
+
+
+class MissionTest {
+    private val queue = """{"available":2,"missionXp":24,"cap":300,"tests":[{"id":"t1","title":"Which logo?","dim":"trust","owner":{"id":"u2","name":"Dias","username":"dias","avatarUrl":null},
+        "items":[{"id":"i1","pos":0,"label":"Blue","path":null},{"id":"i2","pos":1,"label":null,"path":"u2/x.jpg"},{"id":"i3","pos":2,"label":"Green","path":null}],
+        "pairs":[["i1","i2"],["i1","i3"],["i2","i3"]],"done":0,"total":3}]}"""
+
+    private fun rig(vote: (String) -> String = { _ -> """{"results":[{"accepted":true,"xp":12,"bonus":0,"capped":false,"aVotes":7,"bVotes":3}],"missionXp":36,"status":"open","state":{"profile":{"xp":150}}}""" },
+                    reject: (String, String, String) -> String? = { _, _, _ -> null }) =
+        Rig({ _, path, _, body -> when {
+            path.endsWith("/rpc/arena_test_queue") -> queue
+            path.endsWith("/rpc/arena_test_vote") -> vote(body)
+            else -> "null"
+        } }, reject = reject)
+
+    private suspend fun started(r: Rig): space.affinix.app.store.MissionTest {
+        r.mission.loadQueue(); until { r.mission.queue != null }
+        val t = r.mission.queue!!.tests.single()
+        r.mission.start(t)
+        return t
+    }
+
+    @Test fun theQueueListsOtherPeoplesTestsWithTheirPairs() = runTest {
+        val r = rig(); r.mission.loadQueue(); until { r.mission.queue != null }
+        val q = r.mission.queue!!
+        assertEquals(2, q.available); assertEquals(24, q.missionXp); assertEquals(300, q.cap)
+        assertEquals("Dias", q.tests.single().owner?.name)
+        assertEquals(3, q.tests.single().pairs.size)
+        assertEquals("p_limit", Regex("\"(p_limit)\":3").find(r.log().first { it.contains("arena_test_queue") })!!.groupValues[1])
+    }
+
+    @Test fun aMissionAsksEveryPairOnceInSomeOrder() = runTest {
+        val r = rig(); started(r)
+        val round = r.mission.round!!
+        assertEquals(3, round.duels.size)
+        assertEquals(setOf("i1|i2", "i1|i3", "i2|i3"), round.duels.map { "${it.a}|${it.b}" }.toSet())
+    }
+
+    @Test fun anAnswerIsSentAtOnceAndThePaymentAndTheSplitComeBack() = runTest {
+        val r = rig(); started(r)
+        val duel = r.mission.round!!.duel!!
+        r.mission.vote(0)
+        assertEquals(space.affinix.app.store.Phase.Reveal, r.mission.round!!.phase)
+        until { r.mission.round!!.last?.pending == false }
+        val last = r.mission.round!!.last!!
+        assertEquals(12, last.xp)
+        val left = if (duel.swap) duel.b else duel.a
+        assertEquals(left, last.pick)
+        // the server counts for the lower id (7) and the higher (3): the screen needs them per option
+        assertEquals(if (duel.a < duel.b) 7 to 3 else 3 to 7, last.tally)
+        assertEquals(36, r.mission.round!!.missionXp)
+        assertTrue(r.adopted >= 1)
+        val call = r.log().first { it.contains("/rpc/arena_test_vote") }
+        assertTrue(call.contains("\"p_test\":\"t1\"") && call.contains("\"pick\":\"$left\"") && call.contains("\"p_day\":"), call)
+    }
+
+    @Test fun nextGoesOnAfterAnAcceptedAnswerAndTheLastOneEndsInASummary() = runTest {
+        val r = rig(); started(r)
+        repeat(3) { i ->
+            r.mission.vote(1); until { r.mission.round!!.last?.pending == false }
+            r.mission.next()
+            if (i < 2) assertEquals(space.affinix.app.store.Phase.Choose, r.mission.round!!.phase)
+        }
+        assertEquals(space.affinix.app.store.Phase.Summary, r.mission.round!!.phase)
+        assertEquals(36, r.mission.round!!.xp)
+    }
+
+    @Test fun anAnswerThatWasNotSentCanBeSentAgainAndBlocksNextUntilThen() = runTest {
+        var down = true
+        val r = rig(reject = { _, p, _ -> if (down && p.endsWith("/rpc/arena_test_vote")) "x" else null }); started(r)
+        r.mission.vote(0); until { r.mission.round!!.last?.pending == false }
+        assertEquals("generic", r.mission.round!!.last!!.error)
+        r.mission.next()
+        assertEquals(space.affinix.app.store.Phase.Reveal, r.mission.round!!.phase) // stays: send it again first
+        down = false
+        r.mission.retry(); until { r.mission.round!!.last?.pending == false && r.mission.round!!.last?.error == null }
+        r.mission.next()
+        assertEquals(1, r.mission.round!!.idx)
+    }
+
+    @Test fun aClosedTestEndsTheMission() = runTest {
+        val r = rig(reject = { _, p, _ -> if (p.endsWith("/rpc/arena_test_vote")) "closed|closed" else null }); started(r)
+        r.mission.vote(0); until { r.mission.round!!.last?.pending == false }
+        assertEquals("closed", r.mission.round!!.last!!.error)
+        r.mission.next()
+        assertEquals(space.affinix.app.store.Phase.Summary, r.mission.round!!.phase)
+    }
+
+    @Test fun aTestThatClosedAfterTheAnswerEndsTheMissionToo() = runTest {
+        val r = rig(vote = { """{"results":[{"accepted":true,"xp":12}],"missionXp":12,"status":"closed"}""" }); started(r)
+        r.mission.vote(0); until { r.mission.round!!.last?.pending == false }
+        r.mission.next()
+        assertEquals(space.affinix.app.store.Phase.Summary, r.mission.round!!.phase)
+    }
+
+    @Test fun reportingCallsTheSameRpcAndEndingReloadsTheQueue() = runTest {
+        val r = rig(); val t = started(r)
+        r.mission.report(t); until { r.mission.reported }
+        assertTrue(r.log().first { it.contains("/rpc/arena_test_report") }.contains("\"p_test\":\"t1\""))
+        r.mission.end()
+        until { r.log().count { it.contains("arena_test_queue") } == 2 }
+        assertNull(r.mission.round)
     }
 }

@@ -96,6 +96,8 @@ class AppModel(
         private set
     var crowd by mutableStateOf(CrowdModel(api, scope, { api.session?.userId }, { profile?.xp ?: 0L }))
         private set
+    var mission by mutableStateOf(MissionModel(api, scope, { api.session?.userId }, ::adopt))
+        private set
 
     /** a signed-out player's posts, friends and chats must not show for the next one */
     private fun freshSocial() {
@@ -105,6 +107,7 @@ class AppModel(
         notifications = NotificationsModel(api, scope, { api.session?.userId }, feed)
         search = SearchModel(api, scope, feed, people)
         crowd = CrowdModel(api, scope, { api.session?.userId }, { profile?.xp ?: 0L })
+        mission = MissionModel(api, scope, { api.session?.userId }, ::adopt)
     }
 
     val email get() = api.session?.email.orEmpty()

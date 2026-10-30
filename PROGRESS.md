@@ -4151,8 +4151,10 @@ What the native apps (Kotlin + Compose) got in this round, all on the website's 
   It does not install anything itself.
 - **Crowd tests (0022 RPCs):** create (pictures to `arena-tests`), list, results with the 95% Wilson verdict (no verdict under 30 duels), pause / reopen, delete.
   `ApiException` now carries the database `hint`, which the screens turn into the site's messages.
+- **Research missions (the players' side of crowd tests):** `MissionModel` (queue `arena_test_queue`, answers `arena_test_vote` one by one, report `arena_test_report`), `MissionScreen`;
+  offered on the Arena home once the day's ten duels are done. Tests: `MissionTest`.
 - Strings: `gen-strings.mjs` can take a whole subtree (`PREFIXES`), 573 keys x 3 languages.
-- Tests: 134 JVM tests (`ChatActionsTest`, `GlobalSearchTest`, `MarathonTest`, `TasteTest`, `PictureUploadTest`, `GoogleSignInTest`, `VersionsTest`, `CrowdTestTest` ...).
+- Tests: 142 JVM tests (`ChatActionsTest`, `GlobalSearchTest`, `MarathonTest`, `TasteTest`, `PictureUploadTest`, `GoogleSignInTest`, `VersionsTest`, `CrowdTestTest` ...).
 
-Still web-only: experiment builder, results, participants, reports, team, billing, admin, answering other people's crowd tests (missions), push notifications.
+Still web-only: experiment builder, results, participants, reports, team, billing, admin, push notifications.
 

@@ -65,4 +65,4 @@ If you change a string on the website, run `node native/scripts/gen-strings.mjs`
 - Google sign-in needs `http://127.0.0.1:**` and `space.affinix.app://auth` in Supabase, Auth, URL configuration, Redirect URLs. Picture picking and Google sign-in are covered by tests but have not been tried on a real phone.
 - The app only tells you that a newer release exists (it links to the download page); it does not install updates itself.
 - Chats ask the server every few seconds (no live socket, no "typing" or online dots); there are no push notifications.
-- Not in the apps yet: the experiment builder, results, participants, reports, team, billing and admin screens; answering other people's crowd tests (missions).
+- Not in the apps yet: the experiment builder, results, participants, reports, team, billing and admin screens.
