@@ -46,6 +46,8 @@ data class Round(
     val shownAt: Long = 0,
     val tallies: Map<String, Tally> = emptyMap(),
     val last: Result? = null,
+    /** 0 = the daily ten or a free round; 2..6 = an extra set of the marathon */
+    val set: Int = 0,
 ) {
     val duel: Duel? get() = duels.getOrNull(idx)
     val xp: Int get() = results.sumOf { it.xp }
@@ -77,8 +79,8 @@ class Game(
     private val flushLock = Mutex()
     val pendingCount get() = pending.size
 
-    fun start(mode: Mode, duels: List<Duel>) {
-        _round.value = if (duels.isEmpty()) null else Round(mode, today(), duels, shownAt = now())
+    fun start(mode: Mode, duels: List<Duel>, set: Int = 0) {
+        _round.value = if (duels.isEmpty()) null else Round(mode, today(), duels, shownAt = now(), set = set)
     }
 
     /** Fetches the crowd's counts for the whole round once, so the reveal can show them at once. */

@@ -52,6 +52,7 @@ import space.affinix.app.ui.LocalFonts
 import space.affinix.app.ui.LoginScreen
 import space.affinix.app.ui.ProfileScreen
 import space.affinix.app.ui.RankingsScreen
+import space.affinix.app.ui.SearchScreen
 import space.affinix.app.ui.Txt
 import space.affinix.app.ui.key
 import space.affinix.app.ui.plate
@@ -106,6 +107,7 @@ private fun MainShell(model: AppModel) {
                         Tab.Rankings -> RankingsScreen(model)
                         Tab.Profile -> ProfileScreen(model)
                         Tab.Notifications -> NotificationsScreen(model)
+                        Tab.Search -> SearchScreen(model)
                     }
                 }
             }

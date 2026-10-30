@@ -15,6 +15,14 @@ data class AuthorRow(
 )
 
 @Serializable
+data class PostHitRow(
+    val id: String,
+    @SerialName("author_id") val authorId: String,
+    val body: String = "",
+    @SerialName("created_at") val createdAt: String = "",
+)
+
+@Serializable
 data class CountRow(val count: Int = 0)
 
 @Serializable

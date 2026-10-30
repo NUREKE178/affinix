@@ -26,12 +26,13 @@ import space.affinix.app.net.KeyValueStore
 import space.affinix.app.net.Leaderboard
 import space.affinix.app.net.MyProfileRow
 import space.affinix.app.net.Profile
+import space.affinix.app.net.StateResponse
 import space.affinix.app.net.Tally
 import space.affinix.app.net.TallyQuery
 import space.affinix.app.net.WireVote
 import space.affinix.app.seasonOf
 
-enum class Tab { Play, Quests, Feed, Chats, People, Rankings, Profile, Notifications }
+enum class Tab { Play, Quests, Feed, Chats, People, Rankings, Profile, Notifications, Search }
 
 /** Everything the screens read. Plain Compose state, so a screen recomposes when a value here changes. */
 class AppModel(
@@ -47,6 +48,8 @@ class AppModel(
     var profile by mutableStateOf<Profile?>(null)
         private set
     var today by mutableStateOf<DayStats?>(null)
+    /** the recent days the server sent (the weekly theme adds up Monday to Sunday) */
+    var days by mutableStateOf<Map<String, DayStats>>(emptyMap())
         private set
     var loading by mutableStateOf(false)
         private set
@@ -87,6 +90,8 @@ class AppModel(
         private set
     var notifications by mutableStateOf(NotificationsModel(api, scope, { api.session?.userId }, feed))
         private set
+    var search by mutableStateOf(SearchModel(api, scope, feed, people))
+        private set
 
     /** a signed-out player's posts, friends and chats must not show for the next one */
     private fun freshSocial() {
@@ -94,6 +99,7 @@ class AppModel(
         people = PeopleModel(api, scope, { api.session?.userId }, feed)
         messages = MessagesModel(api, scope, { api.session?.userId }, feed)
         notifications = NotificationsModel(api, scope, { api.session?.userId }, feed)
+        search = SearchModel(api, scope, feed, people)
     }
 
     val email get() = api.session?.email.orEmpty()
@@ -144,8 +150,7 @@ class AppModel(
         scope.launch {
             loading = true
             try {
-                val st = api.state(localDay())
-                profile = st.profile; today = st.today
+                adopt(api.state(localDay()))
                 offline = false
                 ensureSlate()
                 loadSeen()
@@ -162,6 +167,14 @@ class AppModel(
         }
     }
 
+    /** every state the server sends keeps the profile, today and (when it carries them) the recent days that the weekly theme adds up */
+    private fun adopt(st: StateResponse) {
+        profile = st.profile
+        today = st.today ?: today
+        if (st.days.isNotEmpty()) days = st.days.associateBy { it.day }
+        st.today?.let { days = days + (it.day to it) }
+    }
+
     /** Today's three quests are stored on the server by whoever asks first (the website or this app) with the same rule, so both agree. */
     private suspend fun ensureSlate() {
         val uid = api.session?.userId ?: return
@@ -169,7 +182,7 @@ class AppModel(
         if ((today?.slate?.size ?: 0) >= 3) return
         runCatching {
             val res = api.submit(emptyList(), day, day to Rules.slateFor(uid, day))
-            res.state?.let { profile = it.profile; today = it.today ?: today }
+            res.state?.let { adopt(it) }
         }
     }
 
@@ -179,7 +192,7 @@ class AppModel(
     /** Claims a quest reward ("votes_15", "daily_set", "daily_clear"). Returns null when taken, or the strings key to show. */
     suspend fun claim(id: String): String? = try {
         val res = api.claim(localDay(), id)
-        if (res.ok) { res.state?.let { profile = it.profile; today = it.today ?: today }; null } else "arena.toast.claimRefused"
+        if (res.ok) { res.state?.let { adopt(it) }; null } else "arena.toast.claimRefused"
     } catch (e: CancellationException) { throw e } catch (e: Exception) { "app.noNetwork" }
 
     private suspend fun loadSeen() {
@@ -197,6 +210,74 @@ class AppModel(
 
     val dailyDone: Int get() = (today?.dailyVotes ?: 0).coerceAtMost(space.affinix.app.Rules.DAILY_SET_SIZE)
     val dailyComplete: Boolean get() = dailyDone >= space.affinix.app.Rules.DAILY_SET_SIZE
+
+    // ---- Stage 3: the marathon (extra sets of the day, theme of the week) ----------------------------------------------------
+
+    data class SetEntry(val n: Int, val votes: Int, val size: Int, val done: Boolean, val claimed: Boolean, val bonus: Int)
+    data class Theme(val family: String, val votes: Int, val goal: Int, val done: Boolean, val claimed: Boolean, val bonus: Int, val weekStart: String)
+
+    /** a server without migration 0023 sends day rows without the set counters: the marathon is not offered then */
+    val marathonReady: Boolean get() = today?.setVotes?.isNotEmpty() ?: true
+
+    val sets: List<SetEntry> get() = Rules.EXTRA_SETS.map { n ->
+        val v = (today?.setVotes?.getOrNull(n - 2) ?: 0).coerceAtMost(Rules.SET_SIZE)
+        SetEntry(n, v, Rules.SET_SIZE, v >= Rules.SET_SIZE, today?.claimed?.contains(Rules.setQuestId(n)) == true, Rules.SET_BONUS)
+    }
+
+    /** sets open one after another once the day's ten are done */
+    fun setOpen(n: Int): Boolean = dailyComplete && (n == 2 || sets.first { it.n == n - 1 }.done)
+
+    val theme: Theme get() {
+        val day = today?.day?.ifEmpty { null } ?: localDay()
+        val monday = Rules.weekStart(day)
+        val family = Rules.FAMILY_IDS[Rules.themeIndex(day, Rules.FAMILY_IDS.size)]
+        val all = days + (today?.let { mapOf(it.day to it) } ?: emptyMap())
+        var votes = 0; var claimed = false
+        for (i in 0 until 7) {
+            val d = all[Rules.addDays(monday, i)] ?: continue
+            votes += d.familyVotes[family] ?: 0
+            if (Rules.THEME_QUEST in d.claimed) claimed = true
+        }
+        return Theme(family, votes.coerceAtMost(Rules.THEME_GOAL), Rules.THEME_GOAL, votes >= Rules.THEME_GOAL, claimed, Rules.THEME_BONUS, monday)
+    }
+
+    /** this week's table among friends (arena_leaderboard with p_friends); null until loaded */
+    var race by mutableStateOf<Leaderboard?>(null)
+        private set
+    var raceFailed by mutableStateOf(false)
+        private set
+
+    fun loadRace() {
+        scope.launch {
+            raceFailed = false
+            try { race = api.leaderboard("week", friends = true) } catch (e: CancellationException) { throw e } catch (e: Exception) { raceFailed = true }
+        }
+    }
+
+    /** Plays extra set [n]: the duels of the set it still lacks (a set left half-way continues). */
+    fun startSet(n: Int) {
+        if (loading || n !in Rules.EXTRA_SETS || !setOpen(n)) return
+        val entry = sets.first { it.n == n }
+        if (entry.done) return
+        scope.launch {
+            loading = true; error = null
+            try {
+                val duels = api.dealSet(n, localDay(), seasonOf()).filter { "${it.pair}|${it.dim}" !in seen }.take(Rules.SET_SIZE - entry.votes)
+                if (duels.isEmpty()) { game.end(); return@launch }
+                game.start(Mode.Daily, duels, set = n)
+                scope.launch { game.loadTallies() }
+                duels.take(2).forEach { ensureImages(it) }
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: ApiException) {
+                error = "${text("app.dealFailed")} (${e.status}: ${e.message})"
+            } catch (e: Exception) {
+                error = "${text("app.noNetwork")} (${e::class.simpleName}: ${e.message?.take(100)})"
+            } finally {
+                loading = false
+            }
+        }
+    }
 
     // ---- rounds ------------------------------------------------------------------------
 
@@ -247,6 +328,8 @@ class AppModel(
                     throw e
                 } catch (e: Exception) {
                     imageFailed[k] = true
+                } catch (e: LinkageError) {
+                    imageFailed[k] = true // the picture decoder (Skia) could not start: show the placeholder instead of crashing
                 }
             }
         }
@@ -258,7 +341,7 @@ class AppModel(
         if (url.isNullOrBlank() || images.containsKey(url) || imageFailed[url] == true) return
         scope.launch {
             try { images[url] = api.fetchBytes(url).decodeToImageBitmap() }
-            catch (e: CancellationException) { throw e } catch (e: Exception) { imageFailed[url] = true }
+            catch (e: CancellationException) { throw e } catch (e: Exception) { imageFailed[url] = true } catch (e: LinkageError) { imageFailed[url] = true }
         }
     }
 
@@ -286,7 +369,7 @@ class AppModel(
     fun endRound() { scope.launch { game.flush() }; game.end(); refresh() }
 
     private suspend fun refreshAfterRound() {
-        runCatching { api.state(localDay()) }.getOrNull()?.let { profile = it.profile; today = it.today }
+        runCatching { api.state(localDay()) }.getOrNull()?.let { adopt(it) }
     }
 
     private var flushJob: Job? = null

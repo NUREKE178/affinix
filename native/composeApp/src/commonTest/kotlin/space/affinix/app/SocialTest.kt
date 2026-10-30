@@ -56,6 +56,7 @@ private class Rig(
     val people = PeopleModel(api, scope, { "me" }, feed)
     val messages = MessagesModel(api, scope, { "me" }, feed)
     val notifications = space.affinix.app.store.NotificationsModel(api, scope, { "me" }, feed)
+    val search = space.affinix.app.store.SearchModel(api, scope, feed, people)
     val app by lazy { space.affinix.app.store.AppModel(api, scope, space.affinix.app.net.MemoryKeyValueStore()) }
     fun log() = synchronized(seen) { seen.toList() }
 }
@@ -442,5 +443,54 @@ class ChatActionsTest {
         val r = rig(reject = { _, p, q -> if (p.endsWith("/messages") && q.contains("message_reactions")) "Could not find a relationship" else null }); open(r)
         assertEquals(3, r.messages.thread.size)
         assertTrue(r.log().any { it.contains("/messages?") && !it.contains("message_reactions") })
+    }
+}
+
+
+class GlobalSearchTest {
+    private fun rig(posts: String = """[{"id":"p1","author_id":"u2","body":"Which logo feels trustworthy?","created_at":"2026-10-30T09:12:36+00:00"}]""", failPosts: Boolean = false) =
+        Rig({ _, path, _, _ -> if (path.endsWith("/posts")) posts else if (path.endsWith("/profiles_public")) PROFILES else "[]" },
+            reject = { _, p, _ -> if (failPosts && p.endsWith("/posts")) "boom" else null })
+
+    @Test fun theTextIsMadeSafeForAPatternTheWayTheWebsiteDoesIt() {
+        val c = space.affinix.app.store.SearchModel.Companion
+        assertEquals("a b", c.cleanText("  a   b "))
+        assertEquals("a b c", c.cleanText("a*b%c"))
+        assertEquals("a\\_b", c.cleanText("a_b"))
+        assertEquals("#tag @me", c.cleanText("#tag @me"))
+        assertEquals(60, c.cleanText("x".repeat(100)).length)
+    }
+
+    @Test fun pagesAreMatchedByNameAndAllShownForEmptyText() {
+        val pages = listOf("Feed" to 1, "Friends" to 2, "Profile" to 3)
+        val c = space.affinix.app.store.SearchModel.Companion
+        assertEquals(listOf("Friends"), c.matchPages(pages, " frie ").map { it.first })
+        assertEquals(3, c.matchPages(pages, "").size)
+        assertTrue(c.matchPages(pages, "zzz").isEmpty())
+    }
+
+    @Test fun postsAndPeopleComeBackTogetherWithAuthors() = runTest {
+        val r = rig()
+        val res = r.search.run("logo")
+        assertEquals("Which logo feels trustworthy?", res.posts.single().body)
+        assertEquals("Dias", res.posts.single().author?.name)
+        assertEquals(0, res.failed)
+        val q = r.log().first { it.contains("/posts?") }
+        assertTrue(q.contains("body=ilike.%2Alogo%2A") || q.contains("body=ilike.*logo*"), q)
+        assertTrue(q.contains("limit=5"), q)
+    }
+
+    @Test fun aFailingGroupComesBackEmptyAndIsCounted() = runTest {
+        val r = rig(failPosts = true)
+        val res = r.search.run("dias")
+        assertTrue(res.posts.isEmpty())
+        assertEquals(1, res.failed)
+        assertTrue(res.people.isNotEmpty())
+    }
+
+    @Test fun nothingIsAskedForUnderTwoCharacters() = runTest {
+        val r = rig()
+        assertTrue(r.search.searchPosts("a").isEmpty())
+        assertTrue(r.log().none { it.contains("/posts?") })
     }
 }

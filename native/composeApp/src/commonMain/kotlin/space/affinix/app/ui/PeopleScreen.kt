@@ -41,7 +41,7 @@ fun SearchField(value: String, onChange: (String) -> Unit, placeholder: String, 
 }
 
 @Composable
-private fun PersonRow(model: AppModel, p: Person, trailing: @Composable () -> Unit) {
+internal fun PersonRow(model: AppModel, p: Person, trailing: @Composable () -> Unit) {
     Row(Modifier.fillMaxWidth().padding(vertical = 6.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
         Avatar(model, p, 44.dp)
         Column(Modifier.weight(1f)) {
@@ -55,7 +55,7 @@ private fun PersonRow(model: AppModel, p: Person, trailing: @Composable () -> Un
 
 /** The right-hand button(s) of a person, depending on how they relate to the viewer. */
 @Composable
-private fun Relation(model: AppModel, p: Person) {
+internal fun Relation(model: AppModel, p: Person) {
     val ppl = model.people
     val rel: Friendship? = ppl.relation(p.id)
     when {

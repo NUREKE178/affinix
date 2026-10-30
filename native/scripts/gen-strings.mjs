@@ -17,7 +17,7 @@ const KEYS = [
   "shell.notifications.title", "shell.notifications.empty", "shell.notifications.commentOn", "shell.notifications.friendRequest", "shell.notifications.friendAccepted",
   "arena.tabs.quests", "arena.quests.today", "arena.quests.resetNote", "arena.quests.claim", "arena.quests.claimed", "arena.quests.clearTitle", "arena.quests.clearBody",
   "arena.quest.votes", "arena.quest.families", "arena.quest.dims", "arena.quest.combo", "arena.quest.eye", "arena.quest.time",
-  "arena.tier.easy", "arena.tier.medium", "arena.tier.hard", "arena.toast.claimed", "arena.toast.claimRefused", "arena.lobby.dailyClaim",
+  "arena.tier.easy", "arena.tier.medium", "arena.tier.hard", "arena.toast.claimed", "arena.toast.claimRefused", "arena.lobby.dailyClaim", "arena.lobby.boardAll",
   "arena.badgeName.votes", "arena.badgeName.streak", "arena.badgeName.daily", "arena.badgeName.level",
   ...NAMED_BADGES.flatMap((b) => [`arena.badge.${b}.name`, `arena.badge.${b}.desc`]),
   "arena.profile.badges", "arena.rankings.visible", "arena.rankings.visibleHint", "arena.rankings.saveFailed", "arena.rankings.serverPending",
@@ -60,7 +60,7 @@ const KEYS = [
 ];
 
 // whole subtrees of the site's locale (every string under the prefix), for screens that use most of a section
-const PREFIXES = ["messages"];
+const PREFIXES = ["messages", "search", "arena.marathon"];
 const leaves = (o, base) => Object.entries(o).flatMap(([k, v]) => (typeof v === "string" ? [`${base}.${k}`] : v && typeof v === "object" ? leaves(v, `${base}.${k}`) : []));
 for (const p of PREFIXES) for (const k of leaves(get(ru, p), p)) if (!KEYS.includes(k)) KEYS.push(k);
 
