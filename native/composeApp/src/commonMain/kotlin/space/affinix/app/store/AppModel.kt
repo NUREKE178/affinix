@@ -222,9 +222,10 @@ class AppModel(
             } catch (e: CancellationException) {
                 throw e
             } catch (e: ApiException) {
-                error = e.message
+                error = "${text("app.dealFailed")} (${e.status}: ${e.message})"
             } catch (e: Exception) {
-                error = text("app.noNetwork")
+                // the kind of failure is shown so that "no connection" can be told apart from a blocked or slow server
+                error = "${text("app.noNetwork")} (${e::class.simpleName}: ${e.message?.take(100)})"
             } finally {
                 loading = false
             }

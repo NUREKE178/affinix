@@ -63,6 +63,7 @@ const EXTRA = {
   "app.language": { ru: "Язык", kk: "Тіл", en: "Language" },
   "app.profileTitle": { ru: "Мой профиль", kk: "Менің профилім", en: "My profile" },
   "app.markRead": { ru: "Прочитано", kk: "Оқылды", en: "Mark read" },
+  "app.dealFailed": { ru: "Сервер дуэлей ответил ошибкой", kk: "Дуэль серверінен қате келді", en: "The duel server answered with an error" },
   "app.noNetwork": { ru: "Нет связи с сервером. Проверьте интернет и повторите.", kk: "Серверге қосылу мүмкін болмады. Интернетті тексеріп, қайталаңыз.", en: "Can't reach the server. Check your connection and try again." },
   "app.imageFailed": { ru: "Не удалось загрузить картинку", kk: "Сурет жүктелмеді", en: "Couldn't load the picture" },
   "app.signedInAs": { ru: "Вы вошли как {email}", kk: "{email} ретінде кірдіңіз", en: "Signed in as {email}" },
