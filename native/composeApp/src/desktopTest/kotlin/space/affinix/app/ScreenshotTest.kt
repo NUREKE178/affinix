@@ -11,6 +11,7 @@ import androidx.compose.ui.unit.Density
 import io.ktor.client.HttpClient
 import io.ktor.client.engine.mock.MockEngine
 import io.ktor.client.engine.mock.respond
+import io.ktor.client.engine.mock.toByteArray
 import io.ktor.http.HttpHeaders
 import io.ktor.http.HttpStatusCode
 import io.ktor.http.headersOf
@@ -42,9 +43,15 @@ class ScreenshotTest {
     private val json = headersOf(HttpHeaders.ContentType, "application/json")
     private val outDir = File(System.getProperty("shots") ?: "build/shots").also { it.mkdirs() }
 
-    private fun model(signedIn: Boolean): AppModel {
+    private val dnaFixture = kotlinx.serialization.json.Json.parseToJsonElement(javaClass.getResource("/dna.json")!!.readText()) as kotlinx.serialization.json.JsonObject
+
+    /** [marathon]: the daily ten is done and set 2 too, set 3 is half way; [dna]: the player has 90 answers on record */
+    private fun model(signedIn: Boolean, marathon: Boolean = false, dna: Boolean = false): AppModel {
         val engine = MockEngine { req ->
             val body = when {
+                marathon && req.url.encodedPath.endsWith("arena_state") -> """{"profile":{"xp":2840,"level":8,"votes":331,"eyeCorrect":18,"eyeTotal":25,"streak":4,"bestCombo":9,"visible":true,"badges":["first_vote","votes_100"]},"today":{"day":"${localDay()}","votes":27,"dailyVotes":10,"setVotes":[10,4,0,0,0],"familyVotes":{"card":22,"mark":5},"maxCombo":7,"slate":["votes_15","fam_5","combo_6"],"claimed":["votes_15","daily_set","set_2"]},"days":[]}"""
+                dna && req.url.encodedPath.endsWith("arena_my_votes") -> if (String(req.body.toByteArray()).contains("\"${seasonOf()}\"")) """{"rows":[${(dnaFixture["votes"] as kotlinx.serialization.json.JsonArray).joinToString(",")}],"last":90,"more":false}""" else """{"rows":[],"last":0,"more":false}"""
+                dna && req.url.encodedPath.endsWith("arena-traits") -> """{"order":${dnaFixture["order"]},"traits":${dnaFixture["traits"]}}"""
                 req.url.encodedPath.endsWith("arena_state") -> """{"profile":{"xp":1240,"level":5,"votes":231,"eyeCorrect":18,"eyeTotal":25,"streak":4,"bestCombo":9,"visible":true,"badges":["first_vote","votes_100","streak_3","level_5","combo_8"]},"today":{"day":"2026-10-30","votes":16,"dailyVotes":4,"maxCombo":7,"eyeCorrect":2,"sec":0,"families":["mark","card","poster"],"dims":["trust","clarity"],"slate":["votes_15","fam_5","combo_6"],"claimed":["votes_15"]}}"""
                 req.url.encodedPath.endsWith("arena_my_votes") -> """{"rows":[],"last":0,"more":false}"""
                 req.url.encodedPath.endsWith("arena_leaderboard") -> """{"rows":[{"rank":1,"userId":"a","name":"Aigerim K.","xp":5120,"level":11,"isMe":false},{"rank":2,"userId":"b","name":"Dias","xp":4410,"level":10,"isMe":false},{"rank":3,"userId":"u1","name":"Me","xp":1240,"level":5,"isMe":true}],"me":{"rank":3,"xp":1240}}"""
@@ -135,6 +142,13 @@ class ScreenshotTest {
     @Test fun rankings() { val m = model(true); m.tab = Tab.Rankings; shoot("07-rankings-phone", 420, 820, m) }
 
     @Test fun profile() { val m = model(true); m.tab = Tab.Profile; shoot("08-profile-phone", 420, 1500, m) }
+
+    @Test fun marathon() { shoot("17-marathon-phone", 420, 1500, model(true, marathon = true)) { Thread.sleep(600) } }
+
+    @Test fun tasteDna() {
+        val m = model(true, dna = true); m.tab = Tab.Profile
+        shoot("18-dna-phone", 420, 2100, m) { Thread.sleep(900) }
+    }
 
     @Test fun feed() {
         val m = model(true); m.tab = Tab.Feed
