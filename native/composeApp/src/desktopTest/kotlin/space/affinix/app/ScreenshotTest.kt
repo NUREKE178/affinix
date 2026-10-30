@@ -48,6 +48,11 @@ class ScreenshotTest {
                 req.url.encodedPath.endsWith("arena_state") -> """{"profile":{"xp":1240,"level":5,"votes":231,"eyeCorrect":18,"eyeTotal":25,"streak":4,"bestCombo":9},"today":{"day":"2026-10-30","votes":4,"dailyVotes":4}}"""
                 req.url.encodedPath.endsWith("arena_my_votes") -> """{"rows":[],"last":0,"more":false}"""
                 req.url.encodedPath.endsWith("arena_leaderboard") -> """{"rows":[{"rank":1,"userId":"a","name":"Aigerim K.","xp":5120,"level":11,"isMe":false},{"rank":2,"userId":"b","name":"Dias","xp":4410,"level":10,"isMe":false},{"rank":3,"userId":"u1","name":"Me","xp":1240,"level":5,"isMe":true}],"me":{"rank":3,"xp":1240}}"""
+                req.url.encodedPath.endsWith("/posts") -> """[{"id":"p1","author_id":"u2","body":"Which logo feels more trustworthy for a bank? I keep going back and forth between the calm blue and the bold orange.","created_at":"2026-10-30T09:12:36+00:00","updated_at":"2026-10-30T09:12:36+00:00","post_likes":[{"count":12}],"post_comments":[{"count":2}]},{"id":"p2","author_id":"u1","body":"Қазақша пост: бүгінгі күн сынағы өте қызық болды!","created_at":"2026-10-29T08:00:00+00:00","updated_at":"2026-10-29T08:00:00+00:00","post_likes":[{"count":3}],"post_comments":[{"count":0}]}]"""
+                req.url.encodedPath.endsWith("/profiles_public") -> """[{"id":"u2","full_name":"Aigerim K.","username":"aigerim","role_title":"Brand designer"},{"id":"u1","full_name":"Me","username":"me"},{"id":"u3","full_name":"Dias","username":"dias"}]"""
+                req.url.encodedPath.endsWith("/post_likes") -> """[{"post_id":"p1"}]"""
+                req.url.encodedPath.endsWith("/post_saves") -> """[{"post_id":"p2"}]"""
+                req.url.encodedPath.endsWith("/post_comments") -> """[{"id":"c1","post_id":"p1","author_id":"u3","body":"Blue, but make the type bolder.","created_at":"2026-10-30T09:20:00+00:00"},{"id":"c2","post_id":"p1","author_id":"u1","body":"Agree, orange feels like a fintech.","created_at":"2026-10-30T09:25:00+00:00"}]"""
                 req.url.encodedPath.endsWith("arena_tallies") -> """[{"pair":"202610/poster/975-980","dim":"clarity","a":31,"b":12}]"""
                 else -> "{}"
             }
@@ -123,4 +128,9 @@ class ScreenshotTest {
     @Test fun rankings() { val m = model(true); m.tab = Tab.Rankings; shoot("07-rankings-phone", 420, 820, m) }
 
     @Test fun profile() { val m = model(true); m.tab = Tab.Profile; shoot("08-profile-phone", 420, 900, m) }
+
+    @Test fun feed() {
+        val m = model(true); m.tab = Tab.Feed
+        shoot("09-feed-phone", 420, 1500, m) { Thread.sleep(500); m.feed.posts.firstOrNull()?.let { m.feed.toggleComments(it) } }
+    }
 }

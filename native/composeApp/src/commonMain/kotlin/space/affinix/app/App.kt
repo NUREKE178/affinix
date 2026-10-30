@@ -4,6 +4,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.focusable
 import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -38,6 +39,8 @@ import space.affinix.app.store.Phase
 import space.affinix.app.store.Tab
 import space.affinix.app.ui.C
 import space.affinix.app.ui.DuelScreen
+import space.affinix.app.ui.FeedScreen
+import space.affinix.app.ui.Ico
 import space.affinix.app.ui.HomeScreen
 import space.affinix.app.ui.LocalFonts
 import space.affinix.app.ui.LoginScreen
@@ -84,6 +87,7 @@ private fun MainShell(model: AppModel) {
                 if (round != null) DuelScreen(model)
                 else when (model.tab) {
                     Tab.Play -> HomeScreen(model)
+                    Tab.Feed -> FeedScreen(model)
                     Tab.Rankings -> RankingsScreen(model)
                     Tab.Profile -> ProfileScreen(model)
                 }
@@ -97,15 +101,25 @@ private fun MainShell(model: AppModel) {
 private fun TabBar(model: AppModel) {
     Box(Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
         Row(Modifier.widthIn(max = 760.dp).fillMaxWidth().padding(horizontal = 12.dp, vertical = 10.dp).plate(18.dp).padding(6.dp)) {
-            for ((tab, label) in listOf(Tab.Play to t("arena.tabs.play"), Tab.Rankings to t("arena.tabs.rankings"), Tab.Profile to t("arena.tabs.profile"))) {
+            val tabs = listOf(
+                Triple(Tab.Play, "arena", t("arena.tabs.play")),
+                Triple(Tab.Feed, "globe", t("feed.title")),
+                Triple(Tab.Rankings, "trophy", t("arena.tabs.rankings")),
+                Triple(Tab.Profile, "user", t("arena.tabs.profile")),
+            )
+            for ((tab, icon, label) in tabs) {
                 val on = model.tab == tab
-                Box(
+                Column(
                     Modifier.weight(1f)
                         .then(if (on) Modifier.key(12.dp) else Modifier)
                         .clickable(remember { MutableInteractionSource() }, null, role = Role.Tab) { model.tab = tab }
-                        .padding(vertical = 12.dp),
-                    contentAlignment = Alignment.Center,
-                ) { Txt(label, 14, if (on) FontWeight.ExtraBold else FontWeight.Medium, if (on) C.g50 else C.g500, maxLines = 1) }
+                        .padding(vertical = 8.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.spacedBy(3.dp),
+                ) {
+                    Ico(icon, color = if (on) C.g50 else C.g500, size = 22.dp, filled = on)
+                    Txt(label, 11, if (on) FontWeight.ExtraBold else FontWeight.Medium, if (on) C.g50 else C.g500, maxLines = 1)
+                }
             }
         }
     }

@@ -33,6 +33,10 @@ const KEYS = [
   "auth.login.title", "auth.login.subtitle", "auth.login.noAccount", "auth.login.register", "auth.login.forgotPassword", "auth.login.submit", "auth.login.submitting",
   "auth.register.title", "auth.register.subtitle", "auth.register.haveAccount", "auth.register.login", "auth.register.submit", "auth.register.submitting",
   "auth.register.checkEmailTitle", "auth.register.checkEmailSent",
+  "feed.title", "feed.subtitle", "feed.composerPlaceholder", "feed.posting", "feed.publish", "feed.posted", "feed.postedCensored", "feed.deletePost", "feed.postDeleted",
+  "feed.confirmDeleteTitle", "feed.confirmDeleteBody", "feed.unknownAuthor", "feed.loadErrorTitle", "feed.loadErrorBody", "feed.emptyTitle", "feed.emptyBody",
+  "feed.profanityBlocked", "feed.like", "feed.comment", "feed.save", "feed.noComments", "feed.commentPlaceholder", "feed.commentSubmit", "feed.commentPostedCensored",
+  "feed.deleteComment", "feed.tabAll", "feed.tabMine", "feed.mineEmptyTitle", "feed.mineEmptyBody", "feed.loadMore", "feed.loadMoreFailed", "feed.edited",
   "auth.forgot.title", "auth.forgot.subtitle", "auth.forgot.back", "auth.forgot.submit", "auth.forgot.submitting", "auth.forgot.sentMessage",
 ];
 
@@ -45,6 +49,10 @@ const EXTRA = {
   "app.signedInAs": { ru: "Вы вошли как {email}", kk: "{email} ретінде кірдіңіз", en: "Signed in as {email}" },
   "app.xp": { ru: "XP", kk: "XP", en: "XP" },
   "app.streakDays": { ru: "дней подряд: {n}", kk: "қатарынан {n} күн", en: "{n}-day streak" },
+  "app.ago.now": { ru: "только что", kk: "жаңа ғана", en: "just now" },
+  "app.ago.min": { ru: "{n} мин назад", kk: "{n} мин бұрын", en: "{n} min ago" },
+  "app.ago.hour": { ru: "{n} ч назад", kk: "{n} сағ бұрын", en: "{n} h ago" },
+  "app.ago.day": { ru: "{n} дн назад", kk: "{n} күн бұрын", en: "{n} d ago" },
   "app.votes": { ru: "Дуэлей: {n}", kk: "Дуэль: {n}", en: "Duels: {n}" },
 };
 

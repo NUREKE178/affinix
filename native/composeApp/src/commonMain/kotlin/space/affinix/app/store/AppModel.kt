@@ -28,7 +28,7 @@ import space.affinix.app.net.TallyQuery
 import space.affinix.app.net.WireVote
 import space.affinix.app.seasonOf
 
-enum class Tab { Play, Rankings, Profile }
+enum class Tab { Play, Feed, Rankings, Profile }
 
 /** Everything the screens read. Plain Compose state, so a screen recomposes when a value here changes. */
 class AppModel(
@@ -71,6 +71,8 @@ class AppModel(
             override suspend fun submit(votes: List<WireVote>, day: String) { api.submit(votes, day) }
         },
     )
+
+    val feed = FeedModel(api, scope) { api.session?.userId }
 
     val email get() = api.session?.email.orEmpty()
     fun text(key: String, vararg vars: Pair<String, Any>) = tr(lang, key, *vars)
@@ -202,6 +204,16 @@ class AppModel(
                     imageFailed[k] = true
                 }
             }
+        }
+    }
+
+    /** A picture by URL (avatars, post photos), loaded once and kept in [images]. */
+    @OptIn(ExperimentalResourceApi::class)
+    fun ensureUrlImage(url: String?) {
+        if (url.isNullOrBlank() || images.containsKey(url) || imageFailed[url] == true) return
+        scope.launch {
+            try { images[url] = api.fetchBytes(url).decodeToImageBitmap() }
+            catch (e: CancellationException) { throw e } catch (e: Exception) { imageFailed[url] = true }
         }
     }
 

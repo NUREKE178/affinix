@@ -6,11 +6,13 @@ import io.ktor.client.request.get
 import io.ktor.client.request.header
 import io.ktor.client.request.parameter
 import io.ktor.client.request.post
+import io.ktor.client.request.request
 import io.ktor.client.request.setBody
 import io.ktor.client.statement.HttpResponse
 import io.ktor.client.statement.bodyAsText
 import io.ktor.http.ContentType
 import io.ktor.http.HttpHeaders
+import io.ktor.http.HttpMethod
 import io.ktor.http.contentType
 import io.ktor.http.isSuccess
 import kotlinx.coroutines.sync.Mutex
@@ -118,15 +120,18 @@ class Api(
 
     // ---- RPC -------------------------------------------------------------------
 
-    suspend fun rpcText(name: String, args: JsonElement = JsonObject(emptyMap())): String {
+    /** One authenticated call to Supabase (RPC or table). A token about to expire is refreshed first; a 401 is retried once with a fresh token. */
+    private suspend fun send(method: HttpMethod, url: String, query: List<Pair<String, String>> = emptyList(), body: String? = null, extra: Map<String, String> = emptyMap()): String {
         var s = fresh()
         var retried = false
         while (true) {
-            val r = http.post("${config.supabaseUrl}/rest/v1/rpc/$name") {
+            val r = http.request(url) {
+                this.method = method
+                query.forEach { parameter(it.first, it.second) }
                 header("apikey", config.anonKey)
                 header(HttpHeaders.Authorization, "Bearer ${s.accessToken}")
-                contentType(ContentType.Application.Json)
-                setBody(args.toString())
+                extra.forEach { header(it.key, it.value) }
+                if (body != null) { contentType(ContentType.Application.Json); setBody(body) }
             }
             if (r.status.value == 401 && !retried) { retried = true; s = fresh(force = true); continue }
             val text = r.bodyAsText()
@@ -134,6 +139,19 @@ class Api(
             return text
         }
     }
+
+    suspend fun rpcText(name: String, args: JsonElement = JsonObject(emptyMap())): String =
+        send(HttpMethod.Post, "${config.supabaseUrl}/rest/v1/rpc/$name", body = args.toString())
+
+    /** PostgREST table read: `restGet("posts", "select" to "*", "order" to "created_at.desc")`. Filters use PostgREST's own syntax (`"id" to "eq.5"`). */
+    suspend fun restGet(table: String, vararg query: Pair<String, String>): String =
+        send(HttpMethod.Get, "${config.supabaseUrl}/rest/v1/$table", query.toList())
+
+    suspend fun <T> restGet(table: String, ser: KSerializer<T>, vararg query: Pair<String, String>): T = ApiJson.decodeFromString(ser, restGet(table, *query))
+
+    /** insert (POST), update (PATCH) or delete (DELETE) on a table; [returning] true asks for the written rows back. */
+    suspend fun restWrite(method: HttpMethod, table: String, query: List<Pair<String, String>> = emptyList(), body: JsonElement? = null, returning: Boolean = false): String =
+        send(method, "${config.supabaseUrl}/rest/v1/$table", query, body?.toString(), mapOf("Prefer" to if (returning) "return=representation" else "return=minimal"))
 
     suspend fun <T> rpc(name: String, args: JsonElement, ser: KSerializer<T>): T = ApiJson.decodeFromString(ser, rpcText(name, args))
 
@@ -198,6 +216,13 @@ class Api(
         val text = r.bodyAsText()
         if (!r.status.isSuccess()) throw ApiException(r.status.value, errorOf(text, r.status.value))
         return ApiJson.decodeFromString(ListSerializer(Duel.serializer()), text)
+    }
+
+    /** Any public file (an avatar, a post picture), no login. */
+    suspend fun fetchBytes(url: String): ByteArray {
+        val r = http.get(url)
+        if (!r.status.isSuccess()) throw ApiException(r.status.value, "file ${r.status.value}")
+        return r.body()
     }
 
     /** URL of the PNG of one specimen (the family/index are the duel's `a` or `b`). */
