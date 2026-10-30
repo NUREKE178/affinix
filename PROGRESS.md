@@ -4116,3 +4116,18 @@ parity; this adds the native track under `native/`.
 - `release-apps.yml` (Electron + TWA) is legacy: manual only, and only when `legacy` is typed, because it would publish the same file names.
 - Copy changed in ru/kk/en: Linux archive instructions, no size claim for the APK, "fresh designs every day" instead of "updates itself" (the native app does not self-update).
 - `scripts/check-apps.mjs` now checks the native workflow and file names (38 checks), `test_download.mjs` adapted (all passes).
+
+### Native apps: Feed, People, Chats, Quests, Profile, Notifications (no migration)
+
+- **Screens added to the native app:** Feed (list, like, save, comments, composer with the site's moderation, All / Mine / Saved), People (search by name or @username,
+  friend requests, friends), Chats (list, thread, text messages, read ticks, unread badge), Quests (today's three, claims, "all quests" and daily-set bonuses),
+  Profile (edit name / @username / role / bio, show-me-in-rankings switch, the 23 awards), Notifications (the bell). Tab bar: Arena (Play / Quests / Rankings), Feed, Chats, Friends, Profile.
+- **Same backend as the site:** PostgREST tables (`posts`, `post_likes`, `post_saves`, `post_comments`, `notifications`, `friendships`, `conversations`, `messages`, `profiles`,
+  `profiles_public`) and RPCs (`send_friend_request`, `accept_friend_request`, `get_or_create_conversation`, `mark_conversation_read`, `my_unread_counts`, `arena_claim`,
+  `arena_set_visibility`). A generic authenticated client (`Api.restGet` / `restWrite`) refreshes the token and retries a 401 once.
+- **Exact ports:** `Prng.kt` (mulberry32 + FNV hash) and `Rules.pickSlate` give the same daily quests as the site (tested against values computed by the JS); `Moderation.kt` has the
+  site's stems and policy; icons are generated from `src/components/icons.js` (`native/scripts/gen-icons.mjs`); strings from the locale files (`gen-strings.mjs`, 274 keys x 3 languages).
+- **Chats are polled** (every 4 s while a chat is open, 12 s on the list, 30 s for the badge); the site uses a live socket. No photos, replies, reactions, edit/delete, typing or online dots yet.
+- **Tests:** 67 JVM unit tests (rules parity, game, API client, feed, moderation, time, people, messages, profile, quests, notifications) + 16 offscreen screenshots in CI (branch `native-shots`).
+- **Not in the app:** marketers' tools (experiments, builder, results, crowd tests, participants, reports), admin, team, billing, Google sign-in, image upload (posts, chat, avatar), extra daily sets 2-6
+  and the weekly theme, Taste DNA / styles, global search, push notifications, self-update.

@@ -3,10 +3,11 @@
 A real app, no browser engine inside: one Kotlin code base draws the screens itself (Skia) on **Windows, Linux and Android**.
 It talks to the same Supabase project and the same rules as the website, so XP, levels, rankings and answers are shared.
 
-What is in it (milestone 1, the Arena): sign in / sign up / reset password, today's Daily Challenge, free play, the duel console
-(two designs, reveal with the crowd's percentages, XP, combo, eye tests), round summary, rankings, profile, ru / kk / en.
-What is **not** in it yet: Feed, Messages, Marketers' tools, Settings, Google sign-in, push notifications. Those stay on the website
-(the older web-wrapper apps in `apps/` are still published until the native app has them all).
+What is in it: sign in / sign up / reset password; the **Arena** (Daily Challenge, free play, duel console with reveal and crowd percentages, XP and combo, eye tests, round summary,
+rankings, **daily quests** with claims); the **Feed** (posts, likes, saves, comments, composer with the site's word filter); **Friends** (search by name or @username, requests);
+**Chats** (text messages with friends, read ticks, unread badge); **Profile** (edit, rankings visibility, awards); **Notifications**; ru / kk / en.
+What is **not** in it yet: marketers' tools (experiments, builder, results, crowd tests, participants, reports), admin, team, billing, Google sign-in, photo upload (posts, chat, avatar),
+chat reactions / replies / editing and live delivery, extra daily sets and the weekly theme, Taste DNA, global search, push notifications, self-update.
 
 ## Layout
 
@@ -25,6 +26,7 @@ native/
   composeApp/src/commonTest   unit tests (rules parity with the JS, game logic, API client on a mock server)
   composeApp/src/desktopTest  offscreen screenshots of every screen
   scripts/gen-strings.mjs     regenerates Strings.kt from src/lib/locales/{ru,kk,en}.js
+  scripts/gen-icons.mjs       regenerates IconData.kt from src/components/icons.js (the site's own icon set)
 ```
 
 Duels are dealt by two Vercel functions that reuse the website's own sampler (`api/arena-deal.mjs`, `api/arena-specimen.mjs`), so a duel
