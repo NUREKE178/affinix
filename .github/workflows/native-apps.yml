@@ -149,6 +149,56 @@ jobs:
       - uses: actions/upload-artifact@v4
         with: { name: native-android, path: native/out/* }
 
+  # Starts the APK on a real Android emulator (API 34), checks that the app stays alive and shows its first screen, and keeps a screenshot.
+  # It is allowed to fail without failing the run (emulators are sometimes flaky); read its result before trusting the APK on a phone.
+  android-smoke:
+    name: Android emulator check
+    needs: package-android
+    runs-on: ubuntu-24.04
+    continue-on-error: true
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/download-artifact@v4
+        with: { name: native-android, path: apk }
+      - name: Enable KVM
+        run: |
+          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
+          sudo udevadm control --reload-rules
+          sudo udevadm trigger --name-match=kvm
+      - uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: 34
+          arch: x86_64
+          target: google_apis
+          disable-animations: true
+          script: |
+            adb install -r apk/Affinix-native.apk
+            adb logcat -c
+            adb shell am start -W -n space.affinix.app/.MainActivity
+            sleep 25
+            adb exec-out screencap -p > launch.png
+            adb logcat -d > logcat.txt
+            adb shell pidof space.affinix.app
+            test -z "$(grep -m1 'FATAL EXCEPTION' logcat.txt)"
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with: { name: native-android-emulator, path: "launch.png\nlogcat.txt", if-no-files-found: warn }
+      - name: Screenshot to the android-shots branch
+        if: always()
+        env:
+          TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          mkdir -p out && cp launch.png out/ 2>/dev/null || true
+          tail -n 120 logcat.txt > out/logcat-tail.txt 2>/dev/null || true
+          cd out
+          git init -q -b android-shots
+          git config user.name "native-ci"
+          git config user.email "ci@affinix.space"
+          git add -A
+          git commit -q -m "Emulator run of ${GITHUB_SHA}" || exit 0
+          git push -f "https://x-access-token:${TOKEN}@github.com/${GITHUB_REPOSITORY}.git" android-shots
+
   # Puts the screenshots on a branch of their own (replaced on every run) so they can be opened straight from GitHub: branch "native-shots".
   publish-shots:
     name: Screenshots branch
