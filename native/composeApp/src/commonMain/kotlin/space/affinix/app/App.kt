@@ -41,6 +41,7 @@ import space.affinix.app.ui.C
 import space.affinix.app.ui.DuelScreen
 import space.affinix.app.ui.ChatsListScreen
 import space.affinix.app.ui.FeedScreen
+import space.affinix.app.ui.NotificationsScreen
 import space.affinix.app.ui.PeopleScreen
 import space.affinix.app.ui.QuestsScreen
 import space.affinix.app.ui.Pill
@@ -72,7 +73,7 @@ private fun MainShell(model: AppModel) {
     val focus = remember { FocusRequester() }
     LaunchedEffect(round?.idx, round?.phase) { runCatching { focus.requestFocus() } }
     // the unread badge on the chats tab
-    LaunchedEffect(model.signedIn) { while (true) { model.messages.refresh(); kotlinx.coroutines.delay(30_000) } }
+    LaunchedEffect(model.signedIn) { while (true) { model.messages.refresh(); model.notifications.refresh(); kotlinx.coroutines.delay(30_000) } }
     Column(
         Modifier.fillMaxSize()
             .focusRequester(focus)
@@ -104,6 +105,7 @@ private fun MainShell(model: AppModel) {
                         Tab.People -> PeopleScreen(model)
                         Tab.Rankings -> RankingsScreen(model)
                         Tab.Profile -> ProfileScreen(model)
+                        Tab.Notifications -> NotificationsScreen(model)
                     }
                 }
             }

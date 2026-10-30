@@ -48,6 +48,7 @@ private class Rig(val handler: (method: String, path: String, query: String, bod
     val feed = FeedModel(api, scope) { "me" }
     val people = PeopleModel(api, scope, { "me" }, feed)
     val messages = MessagesModel(api, scope, { "me" }, feed)
+    val notifications = space.affinix.app.store.NotificationsModel(api, scope, { "me" }, feed)
     val app by lazy { space.affinix.app.store.AppModel(api, scope, space.affinix.app.net.MemoryKeyValueStore()) }
     fun log() = synchronized(seen) { seen.toList() }
 }
@@ -226,5 +227,39 @@ class ProfileTest {
         assertEquals(listOf("p2", "p1"), r.feed.posts.map { it.id })
         assertTrue(r.feed.posts.all { it.saved })
         assertTrue(!r.feed.hasMore)
+    }
+}
+
+class NotificationsTest {
+    private val rows = """[{"id":"n1","type":"comment","post_id":"p1","actor_id":"u2","is_read":false,"created_at":"2026-10-30T09:00:00+00:00","comment":{"body":"Nice work"}},
+        {"id":"n2","type":"friend_request","actor_id":"u3","is_read":true,"created_at":"2026-10-29T09:00:00+00:00","comment":null},
+        {"id":"n3","actor_id":"u2","is_read":false,"created_at":"2026-10-28T09:00:00+00:00"}]"""
+    private fun rig() = Rig({ _, path, _, _ -> if (path.endsWith("/notifications")) rows else if (path.endsWith("/profiles_public")) PROFILES else "[]" })
+
+    @Test fun theBellReadsMyNotificationsWithTheirActorsAndCounts() = runTest {
+        val r = rig()
+        r.notifications.refreshNow()
+        assertEquals(listOf("n1", "n2", "n3"), r.notifications.items.map { it.id })
+        assertEquals(listOf("comment", "friend_request", "comment"), r.notifications.items.map { it.type }) // a missing type is a comment, as on the website
+        assertEquals("Dias", r.notifications.items[0].actor.name); assertEquals("Nice work", r.notifications.items[0].commentBody)
+        assertEquals(2, r.notifications.unread)
+        assertTrue(r.log().first { it.contains("/notifications?") }.contains("recipient_id=eq.me"))
+    }
+
+    @Test fun oneCopyKeyPerKindLikeTheWebsite() {
+        val n = rig().notifications
+        assertEquals("shell.notifications.friendRequest", n.copyKey("friend_request"))
+        assertEquals("shell.notifications.friendAccepted", n.copyKey("friend_accept"))
+        assertEquals("shell.notifications.commentOn", n.copyKey("comment"))
+    }
+
+    @Test fun markingReadShowsAtOnceAndPatchesOnlyMyUnreadOnes() = runTest {
+        val r = rig()
+        r.notifications.refreshNow()
+        r.notifications.markAllRead()
+        assertEquals(0, r.notifications.unread)
+        until { r.log().any { it.startsWith("PATCH") } }
+        val patch = r.log().first { it.startsWith("PATCH") }
+        assertTrue(patch.contains("recipient_id=eq.me") && patch.contains("is_read=eq.false") && patch.contains("\"is_read\":true"), patch)
     }
 }

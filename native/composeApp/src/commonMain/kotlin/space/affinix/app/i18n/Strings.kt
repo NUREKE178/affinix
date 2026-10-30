@@ -2,6 +2,11 @@
 package space.affinix.app.i18n
 
 internal val STRINGS_RU: Map<String, String> = mapOf(
+    "shell.notifications.title" to "Уведомления",
+    "shell.notifications.empty" to "Пока нет уведомлений",
+    "shell.notifications.commentOn" to "{name} прокомментировал(а) ваш пост",
+    "shell.notifications.friendRequest" to "{name} отправил(а) вам запрос в друзья",
+    "shell.notifications.friendAccepted" to "{name} принял(а) ваш запрос в друзья",
     "arena.tabs.quests" to "Задания",
     "arena.quests.today" to "Задания на сегодня",
     "arena.quests.resetNote" to "Новые задания каждый день",
@@ -260,6 +265,7 @@ internal val STRINGS_RU: Map<String, String> = mapOf(
     "app.name" to "Affinix",
     "app.language" to "Язык",
     "app.profileTitle" to "Мой профиль",
+    "app.markRead" to "Прочитано",
     "app.noNetwork" to "Нет связи с сервером. Проверьте интернет и повторите.",
     "app.imageFailed" to "Не удалось загрузить картинку",
     "app.signedInAs" to "Вы вошли как {email}",
@@ -273,6 +279,11 @@ internal val STRINGS_RU: Map<String, String> = mapOf(
 )
 
 internal val STRINGS_KK: Map<String, String> = mapOf(
+    "shell.notifications.title" to "Хабарландырулар",
+    "shell.notifications.empty" to "Әзірге хабарландырулар жоқ",
+    "shell.notifications.commentOn" to "{name} сіздің жазбаңызға пікір қалдырды",
+    "shell.notifications.friendRequest" to "{name} сізге достыққа өтінім жіберді",
+    "shell.notifications.friendAccepted" to "{name} сіздің достық өтініміңізді қабылдады",
     "arena.tabs.quests" to "Тапсырмалар",
     "arena.quests.today" to "Бүгінгі тапсырмалар",
     "arena.quests.resetNote" to "Күн сайын жаңа тапсырмалар",
@@ -531,6 +542,7 @@ internal val STRINGS_KK: Map<String, String> = mapOf(
     "app.name" to "Affinix",
     "app.language" to "Тіл",
     "app.profileTitle" to "Менің профилім",
+    "app.markRead" to "Оқылды",
     "app.noNetwork" to "Серверге қосылу мүмкін болмады. Интернетті тексеріп, қайталаңыз.",
     "app.imageFailed" to "Сурет жүктелмеді",
     "app.signedInAs" to "{email} ретінде кірдіңіз",
@@ -544,6 +556,11 @@ internal val STRINGS_KK: Map<String, String> = mapOf(
 )
 
 internal val STRINGS_EN: Map<String, String> = mapOf(
+    "shell.notifications.title" to "Notifications",
+    "shell.notifications.empty" to "No notifications yet",
+    "shell.notifications.commentOn" to "{name} commented on your post",
+    "shell.notifications.friendRequest" to "{name} sent you a friend request",
+    "shell.notifications.friendAccepted" to "{name} accepted your friend request",
     "arena.tabs.quests" to "Quests",
     "arena.quests.today" to "Today's quests",
     "arena.quests.resetNote" to "New quests every day",
@@ -802,6 +819,7 @@ internal val STRINGS_EN: Map<String, String> = mapOf(
     "app.name" to "Affinix",
     "app.language" to "Language",
     "app.profileTitle" to "My profile",
+    "app.markRead" to "Mark read",
     "app.noNetwork" to "Can't reach the server. Check your connection and try again.",
     "app.imageFailed" to "Couldn't load the picture",
     "app.signedInAs" to "Signed in as {email}",

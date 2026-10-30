@@ -12,6 +12,7 @@ const RANKS = ["novice", "apprentice", "observer", "sharpEye", "tastemaker", "ar
 const NAMED_BADGES = Object.keys(ru.arena.badge);
 
 const KEYS = [
+  "shell.notifications.title", "shell.notifications.empty", "shell.notifications.commentOn", "shell.notifications.friendRequest", "shell.notifications.friendAccepted",
   "arena.tabs.quests", "arena.quests.today", "arena.quests.resetNote", "arena.quests.claim", "arena.quests.claimed", "arena.quests.clearTitle", "arena.quests.clearBody",
   "arena.quest.votes", "arena.quest.families", "arena.quest.dims", "arena.quest.combo", "arena.quest.eye", "arena.quest.time",
   "arena.tier.easy", "arena.tier.medium", "arena.tier.hard", "arena.toast.claimed", "arena.toast.claimRefused", "arena.lobby.dailyClaim",
@@ -61,6 +62,7 @@ const EXTRA = {
   "app.name": { ru: "Affinix", kk: "Affinix", en: "Affinix" },
   "app.language": { ru: "Язык", kk: "Тіл", en: "Language" },
   "app.profileTitle": { ru: "Мой профиль", kk: "Менің профилім", en: "My profile" },
+  "app.markRead": { ru: "Прочитано", kk: "Оқылды", en: "Mark read" },
   "app.noNetwork": { ru: "Нет связи с сервером. Проверьте интернет и повторите.", kk: "Серверге қосылу мүмкін болмады. Интернетті тексеріп, қайталаңыз.", en: "Can't reach the server. Check your connection and try again." },
   "app.imageFailed": { ru: "Не удалось загрузить картинку", kk: "Сурет жүктелмеді", en: "Couldn't load the picture" },
   "app.signedInAs": { ru: "Вы вошли как {email}", kk: "{email} ретінде кірдіңіз", en: "Signed in as {email}" },

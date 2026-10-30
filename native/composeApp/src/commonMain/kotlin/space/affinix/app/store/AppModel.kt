@@ -31,7 +31,7 @@ import space.affinix.app.net.TallyQuery
 import space.affinix.app.net.WireVote
 import space.affinix.app.seasonOf
 
-enum class Tab { Play, Quests, Feed, Chats, People, Rankings, Profile }
+enum class Tab { Play, Quests, Feed, Chats, People, Rankings, Profile, Notifications }
 
 /** Everything the screens read. Plain Compose state, so a screen recomposes when a value here changes. */
 class AppModel(
@@ -85,12 +85,15 @@ class AppModel(
         private set
     var messages by mutableStateOf(MessagesModel(api, scope, { api.session?.userId }, feed))
         private set
+    var notifications by mutableStateOf(NotificationsModel(api, scope, { api.session?.userId }, feed))
+        private set
 
     /** a signed-out player's posts, friends and chats must not show for the next one */
     private fun freshSocial() {
         feed = FeedModel(api, scope) { api.session?.userId }
         people = PeopleModel(api, scope, { api.session?.userId }, feed)
         messages = MessagesModel(api, scope, { api.session?.userId }, feed)
+        notifications = NotificationsModel(api, scope, { api.session?.userId }, feed)
     }
 
     val email get() = api.session?.email.orEmpty()

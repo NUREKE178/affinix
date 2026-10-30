@@ -32,6 +32,11 @@ fun LevelHeader(model: AppModel, modifier: Modifier = Modifier) {
                 Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     Txt("${t("arena.level")} ${prog.level}", 18, FontWeight.ExtraBold, C.g50)
                     Chip(t("arena.rank.${Rules.rankForLevel(prog.level)}"), Tone.Neutral)
+                    Box(Modifier.weight(1f))
+                    Box(contentAlignment = Alignment.TopEnd) {
+                        IcoAction("bell", { model.tab = space.affinix.app.store.Tab.Notifications }, active = model.notifications.unread > 0, filled = false)
+                        if (model.notifications.unread > 0) Chip("${model.notifications.unread}", Tone.Signal)
+                    }
                 }
                 Bar(prog.ratio)
                 Txt("${prog.into} / ${prog.span} ${t("app.xp")}", 12, FontWeight.Medium, C.g400)

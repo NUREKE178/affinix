@@ -114,3 +114,19 @@ data class Message(
     /** null = confirmed by the server; "sending" or "failed" = only on this device so far */
     val status: String? = null,
 )
+
+@Serializable
+data class CommentBodyRow(val body: String? = null)
+
+@Serializable
+data class NotificationRow(
+    val id: String,
+    val type: String? = null,
+    @SerialName("post_id") val postId: String? = null,
+    @SerialName("actor_id") val actorId: String? = null,
+    @SerialName("is_read") val isRead: Boolean = false,
+    @SerialName("created_at") val createdAt: String = "",
+    val comment: CommentBodyRow? = null,
+)
+
+data class Notice(val id: String, val type: String, val actor: Person, val commentBody: String?, val read: Boolean, val createdAt: String)

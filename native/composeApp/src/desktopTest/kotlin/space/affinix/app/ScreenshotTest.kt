@@ -54,6 +54,7 @@ class ScreenshotTest {
                 req.url.encodedPath.endsWith("/post_saves") -> """[{"post_id":"p2"}]"""
                 req.url.encodedPath.endsWith("/post_comments") -> """[{"id":"c1","post_id":"p1","author_id":"u3","body":"Blue, but make the type bolder.","created_at":"2026-10-30T09:20:00+00:00"},{"id":"c2","post_id":"p1","author_id":"u1","body":"Agree, orange feels like a fintech.","created_at":"2026-10-30T09:25:00+00:00"}]"""
                 req.url.encodedPath.endsWith("/profiles") -> """[{"full_name":"Nurlan K.","username":"nurlan","role_title":"Head of Research","bio":"I like clean marks and honest data."}]"""
+                req.url.encodedPath.endsWith("/notifications") -> """[{"id":"n1","type":"comment","post_id":"p1","actor_id":"u2","is_read":false,"created_at":"2026-10-30T09:00:00+00:00","comment":{"body":"Blue, but make the type bolder."}},{"id":"n2","type":"friend_request","actor_id":"u3","is_read":false,"created_at":"2026-10-29T09:00:00+00:00"},{"id":"n3","type":"friend_accept","actor_id":"u5","is_read":true,"created_at":"2026-10-25T09:00:00+00:00"}]"""
                 req.url.encodedPath.endsWith("/friendships") -> """[{"id":"f1","requester_id":"u1","addressee_id":"u2","status":"accepted","created_at":"2026-10-01T10:00:00+00:00"},{"id":"f2","requester_id":"u3","addressee_id":"u1","status":"pending","created_at":"2026-10-02T10:00:00+00:00"},{"id":"f3","requester_id":"u1","addressee_id":"u5","status":"pending","created_at":"2026-10-03T10:00:00+00:00"}]"""
                 req.url.encodedPath.endsWith("/conversations") -> """[{"id":"c1","user_a":"u1","user_b":"u2","last_message_body":"See you at the review tomorrow","last_message_at":"2026-10-30T09:00:00+00:00","last_message_sender_id":"u2"},{"id":"c2","user_a":"u3","user_b":"u1","last_message_body":"Thanks!","last_message_at":"2026-10-29T09:00:00+00:00","last_message_sender_id":"u1"}]"""
                 req.url.encodedPath.endsWith("my_unread_counts") -> """[{"conversation_id":"c1","unread":2}]"""
@@ -162,5 +163,15 @@ class ScreenshotTest {
     @Test fun quests() {
         val m = model(true); m.tab = Tab.Quests
         shoot("14-quests-phone", 420, 900, m)
+    }
+
+    @Test fun notifications() {
+        val m = model(true); m.tab = Tab.Notifications
+        shoot("15-notifications-phone", 420, 700, m)
+    }
+
+    @Test fun homeWithBell() {
+        val m = model(true)
+        shoot("16-home-bell-phone", 420, 900, m) { m.notifications.refresh(); Thread.sleep(500) }
     }
 }
