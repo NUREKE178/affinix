@@ -31,7 +31,12 @@ private val jsonH = headersOf(HttpHeaders.ContentType, "application/json")
 /** Real time wait for something a coroutine on another thread does (the mock engine answers on its own thread). */
 private suspend fun until(cond: () -> Boolean) = withContext(Dispatchers.Default) { withTimeout(5000) { while (!cond()) delay(10) } }
 
-private class Rig(val handler: (method: String, path: String, query: String, body: String) -> String, val failWrites: () -> Boolean = { false }) {
+private class Rig(
+    val handler: (method: String, path: String, query: String, body: String) -> String,
+    val failWrites: () -> Boolean = { false },
+    /** a short word the server refuses a call with (HTTP 400, {"message": word}); null = answer normally */
+    val reject: (method: String, path: String, query: String) -> String? = { _, _, _ -> null },
+) {
     val seen = mutableListOf<String>()
     val api: Api
     val scope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
@@ -40,7 +45,9 @@ private class Rig(val handler: (method: String, path: String, query: String, bod
             val body = String(req.body.toByteArray())
             val line = "${req.method.value} ${req.url.encodedPath}?${req.url.encodedQuery} $body"
             synchronized(seen) { seen += line }
-            if (failWrites() && req.method.value != "GET") respond("""{"message":"boom"}""", HttpStatusCode.InternalServerError, jsonH)
+            val refused = reject(req.method.value, req.url.encodedPath, req.url.encodedQuery)
+            if (refused != null) respond("""{"message":"$refused"}""", HttpStatusCode.BadRequest, jsonH)
+            else if (failWrites() && req.method.value != "GET") respond("""{"message":"boom"}""", HttpStatusCode.InternalServerError, jsonH)
             else respond(handler(req.method.value, req.url.encodedPath, req.url.encodedQuery, body), HttpStatusCode.OK, jsonH)
         }
         api = Api(HttpClient(engine), Config(supabaseUrl = "https://sb.test", anonKey = "anon", apiBase = "https://api.test"), MemorySessionStore(Session("a", "r", Long.MAX_VALUE / 4, "me", "me@x.kz")), nowSeconds = { 1000 })
@@ -261,5 +268,179 @@ class NotificationsTest {
         until { r.log().any { it.startsWith("PATCH") } }
         val patch = r.log().first { it.startsWith("PATCH") }
         assertTrue(patch.contains("recipient_id=eq.me") && patch.contains("is_read=eq.false") && patch.contains("\"is_read\":true"), patch)
+    }
+}
+
+
+/** now as the server writes it, so "within 48 hours" holds whatever day the tests run */
+private fun isoNow(minusMs: Long = 0): String {
+    val ms = Platform.nowMillis() - minusMs
+    val days = ms.floorDiv(86_400_000L); val (y, mo, d) = civil(days)
+    val s = (ms - days * 86_400_000L) / 1000
+    fun two(n: Long) = n.toString().padStart(2, '0')
+    return "$y-${two(mo.toLong())}-${two(d.toLong())}T${two(s / 3600)}:${two(s / 60 % 60)}:${two(s % 60)}+00:00"
+}
+
+class ChatActionsTest {
+    private val convs = """[{"id":"c1","user_a":"me","user_b":"u2","last_message_body":"mine","last_message_at":"__NOW__","last_message_sender_id":"me"},
+        {"id":"c2","user_a":"u3","user_b":"me","last_message_body":"hello","last_message_at":"2000-01-01T00:00:00+00:00","last_message_sender_id":"u3"}]"""
+    private fun thread(now: String = isoNow(), old: String = isoNow(49L * 3600 * 1000)) = """[
+        {"id":"m3","conversation_id":"c1","sender_id":"me","body":"mine","created_at":"$now","reply_to_id":"m2",
+         "reply":{"id":"m2","sender_id":"u2","body":"see you","attachment_path":null,"deleted_at":null},
+         "reactions":[{"user_id":"u2","emoji":"❤️"}]},
+        {"id":"m2","conversation_id":"c1","sender_id":"u2","body":"see you","created_at":"${isoNow(60_000)}","reactions":[]},
+        {"id":"m1","conversation_id":"c1","sender_id":"me","body":"old one","created_at":"$old","reactions":[]}]"""
+
+    private fun rig(
+        prefs: String = "[]",
+        reject: (String, String, String) -> String? = { _, _, _ -> null },
+    ) = Rig({ m, path, _, body ->
+        when {
+            path.endsWith("/conversations") -> convs.replace("__NOW__", isoNow())
+            path.endsWith("/conversation_prefs") -> prefs
+            path.endsWith("/rpc/my_unread_counts") -> "[]"
+            path.endsWith("/profiles_public") -> PROFILES
+            path.endsWith("/rpc/search_messages") -> """[{"message_id":"m2","conversation_id":"c1","sender_id":"u2","body":"see you","created_at":"${isoNow()}"}]"""
+            path.endsWith("/messages") && m == "GET" -> thread()
+            path.endsWith("/messages") && m == "POST" -> """[{"id":"${Regex("\"id\":\"([^\"]+)\"").find(body)!!.groupValues[1]}","conversation_id":"c1","sender_id":"me","body":"ok","created_at":"${isoNow()}","reply_to_id":"m2"}]"""
+            else -> "null"
+        }
+    }, reject = reject)
+
+    private suspend fun open(r: Rig) { r.messages.refreshNow(); r.messages.openChat(r.messages.conversations.first { it.id == "c1" }); until { r.messages.threadLoaded } }
+
+    @Test fun theThreadCarriesReactionsAndTheQuotedMessage() = runTest {
+        val r = rig(); open(r)
+        val m3 = r.messages.thread.first { it.id == "m3" }
+        assertEquals(listOf("❤️"), m3.reactions.map { it.emoji })
+        assertEquals("see you", m3.reply?.text)
+        assertEquals("u2", m3.reply?.senderId)
+        assertTrue(r.log().first { it.contains("/messages?") }.contains("message_reactions"))
+    }
+
+    @Test fun reactingShowsAtOnceAndCallsTheSameRpcAsTheWebsite() = runTest {
+        val r = rig(); open(r)
+        val m2 = r.messages.thread.first { it.id == "m2" }
+        r.messages.react(m2, "👍")
+        assertEquals(listOf("👍"), r.messages.thread.first { it.id == "m2" }.reactions.map { it.emoji })
+        until { r.log().any { it.contains("/rpc/react_to_message") } }
+        val call = r.log().first { it.contains("/rpc/react_to_message") }
+        assertTrue(call.contains("\"p_message_id\":\"m2\"") && call.contains("\"p_emoji\":\"👍\""), call)
+        // the same emoji again takes it back: the website sends null
+        r.messages.react(r.messages.thread.first { it.id == "m2" }, "👍")
+        assertTrue(r.messages.thread.first { it.id == "m2" }.reactions.isEmpty())
+        until { r.log().count { it.contains("/rpc/react_to_message") } == 2 }
+        assertTrue(r.log().last { it.contains("/rpc/react_to_message") }.contains("\"p_emoji\":null"))
+    }
+
+    @Test fun aRefusedReactionIsTakenBackAndTheReasonIsShown() = runTest {
+        val r = rig(reject = { _, p, _ -> if (p.endsWith("/rpc/react_to_message")) "not_friends" else null }); open(r)
+        r.messages.react(r.messages.thread.first { it.id == "m2" }, "🙏")
+        until { r.messages.notice != null }
+        assertEquals("messages.err.not_friends", r.messages.notice)
+        assertTrue(r.messages.thread.first { it.id == "m2" }.reactions.isEmpty())
+    }
+
+    @Test fun anUnknownEmojiNeverLeavesTheDevice() = runTest {
+        val r = rig(); open(r)
+        r.messages.react(r.messages.thread.first { it.id == "m2" }, "💩")
+        assertTrue(r.log().none { it.contains("/rpc/react_to_message") })
+    }
+
+    @Test fun editingChangesTheTextAndMarksItEdited() = runTest {
+        val r = rig(); open(r)
+        val m3 = r.messages.thread.first { it.id == "m3" }
+        assertTrue(r.messages.canEdit(m3))
+        r.messages.edit(m3, "  fixed  ")
+        assertEquals("fixed", r.messages.thread.first { it.id == "m3" }.body)
+        assertTrue(r.messages.thread.first { it.id == "m3" }.edited)
+        until { r.log().any { it.contains("/rpc/edit_message") } }
+        assertTrue(r.log().first { it.contains("/rpc/edit_message") }.contains("\"p_body\":\"fixed\""))
+    }
+
+    @Test fun aMessageOlderThan48HoursCannotBeEditedAndNothingIsSent() = runTest {
+        val r = rig(); open(r)
+        val old = r.messages.thread.first { it.id == "m1" }
+        assertTrue(!r.messages.canEdit(old))
+        r.messages.edit(old, "late")
+        assertEquals("messages.err.edit_expired", r.messages.notice)
+        assertEquals("old one", r.messages.thread.first { it.id == "m1" }.body)
+        assertTrue(r.log().none { it.contains("/rpc/edit_message") })
+    }
+
+    @Test fun otherPeoplesMessagesCannotBeEditedOrDeleted() = runTest {
+        val r = rig(); open(r)
+        val theirs = r.messages.thread.first { it.id == "m2" }
+        assertTrue(!r.messages.canEdit(theirs))
+        r.messages.edit(theirs, "x"); r.messages.delete(theirs)
+        assertTrue(r.log().none { it.contains("/rpc/edit_message") || it.contains("/rpc/delete_message") })
+    }
+
+    @Test fun deletingBlanksTheMessageAndAFailureBringsItBack() = runTest {
+        val r = rig(); open(r)
+        r.messages.delete(r.messages.thread.first { it.id == "m3" })
+        assertTrue(r.messages.thread.first { it.id == "m3" }.deleted)
+        assertEquals("", r.messages.thread.first { it.id == "m3" }.body)
+        until { r.log().any { it.contains("/rpc/delete_message") } }
+
+        val bad = rig(reject = { _, p, _ -> if (p.endsWith("/rpc/delete_message")) "not_found" else null }); open(bad)
+        bad.messages.delete(bad.messages.thread.first { it.id == "m3" })
+        until { bad.messages.notice != null }
+        assertTrue(!bad.messages.thread.first { it.id == "m3" }.deleted)
+        assertEquals("mine", bad.messages.thread.first { it.id == "m3" }.body)
+    }
+
+    @Test fun aReplyCarriesTheIdOfTheMessageItAnswers() = runTest {
+        val r = rig(); open(r)
+        r.messages.replyTo = r.messages.thread.first { it.id == "m2" }
+        r.messages.send("ok")
+        assertEquals("m2", r.messages.thread.last().replyToId)
+        assertEquals("see you", r.messages.thread.last().reply?.text)
+        assertNull(r.messages.replyTo)
+        until { r.messages.thread.none { it.status != null } }
+        assertTrue(r.log().first { it.startsWith("POST") && it.contains("/messages") }.contains("\"reply_to_id\":\"m2\""))
+        assertEquals("see you", r.messages.thread.last().reply?.text) // the quote survives the server's answer
+    }
+
+    @Test fun sendingWhileEditingEditsInsteadOfSendingANewMessage() = runTest {
+        val r = rig(); open(r)
+        r.messages.editing = r.messages.thread.first { it.id == "m3" }
+        r.messages.send("changed")
+        assertNull(r.messages.editing)
+        until { r.log().any { it.contains("/rpc/edit_message") } }
+        assertTrue(r.log().none { it.startsWith("POST") && it.contains("/rest/v1/messages") })
+    }
+
+    @Test fun pinnedChatsComeFirstAndMutedOnesAreMarked() = runTest {
+        val r = rig(prefs = """[{"conversation_id":"c2","pinned_at":"2026-10-01T00:00:00+00:00","muted":true}]""")
+        r.messages.refreshNow()
+        assertEquals(listOf("c2", "c1"), r.messages.conversations.map { it.id })
+        assertTrue(r.messages.conversations[0].pinned && r.messages.conversations[0].muted)
+    }
+
+    @Test fun pinningCallsTheRpcAndReordersAtOnce() = runTest {
+        val r = rig(); r.messages.refreshNow()
+        val c2 = r.messages.conversations.first { it.id == "c2" }
+        r.messages.setPref(c2, pinned = true)
+        assertEquals("c2", r.messages.conversations.first().id)
+        until { r.log().any { it.contains("/rpc/set_conversation_pref") } }
+        val call = r.log().first { it.contains("/rpc/set_conversation_pref") }
+        assertTrue(call.contains("\"p_pinned\":true") && call.contains("\"p_muted\":null"), call)
+    }
+
+    @Test fun searchFindsMessagesByTheirText() = runTest {
+        val r = rig(); r.messages.refreshNow()
+        r.messages.searchText("see")
+        until { r.messages.found.isNotEmpty() }
+        assertEquals("c1", r.messages.found.single().conversationId)
+        assertEquals("Dias", r.messages.found.single().other?.name)
+        r.messages.searchText("s")
+        assertTrue(r.messages.found.isEmpty()) // under two characters nothing is asked
+    }
+
+    @Test fun aDatabaseWithoutTheChatActionsStillShowsPlainMessages() = runTest {
+        val r = rig(reject = { _, p, q -> if (p.endsWith("/messages") && q.contains("message_reactions")) "Could not find a relationship" else null }); open(r)
+        assertEquals(3, r.messages.thread.size)
+        assertTrue(r.log().any { it.contains("/messages?") && !it.contains("message_reactions") })
     }
 }
