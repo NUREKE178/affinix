@@ -59,7 +59,7 @@ fun MissionPlate(model: AppModel) {
             q == null -> Txt(t("common.loading"), 13, color = C.g500)
             q.tests.isEmpty() -> {
                 Txt(t("crowd.mission.none"), 14, color = C.g400); Spacer(Modifier.height(10.dp))
-                KeyButton(t("crowd.mission.create"), { model.tab = space.affinix.app.store.Tab.Research }, compact = true)
+                KeyButton(t("crowd.mission.create"), { model.research.section = space.affinix.app.store.ResearchModel.Section.Crowd; model.tab = space.affinix.app.store.Tab.Research }, compact = true)
             }
             else -> {
                 Txt(t("crowd.mission.available", "n" to q.available, "cap" to q.cap), 13, color = C.g400)

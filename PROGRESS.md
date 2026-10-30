@@ -4163,7 +4163,7 @@ Still web-only: experiment builder, results, participants, reports, team, billin
 
 The first half of the marketers' tools, in the native apps (Kotlin + Compose), on the website's own tables, RPCs, edge functions and formulas.
 
-- **Research tab** (`ui/ResearchScreens.kt`, `store/ResearchModel.kt`, `net/Research.kt`): company picker (every company the person belongs to; `organization_members` -> `organizations`),
+- **Marketing tab** in the bottom bar (the site's own mobile label `shell.tabbar.marketers`; the screen is titled `shell.nav.marketers`, "For marketers" / Маркетологтарға, like the site's sidebar item; the site has no item called "Research" any more). `ui/ResearchScreens.kt`, `store/ResearchModel.kt`, `net/Research.kt`: company picker (every company the person belongs to; `organization_members` -> `organizations`),
   then four sections: Experiments, Participants, Crowd tests, Team. A person with no company sees the same empty state as the site.
 - **Experiments:** list with status, target and a public link (`https://affinix.space/#/research/<slug>`), publish (writes `public_slug`, `published_at`) and delete.
 - **Results:** `store/ResearchStats.kt` is a port of `src/lib/stats.js` (choice with the 95% Wilson interval, rating mean / median, yes-no, ranking, option distribution, price,
@@ -4177,9 +4177,10 @@ The first half of the marketers' tools, in the native apps (Kotlin + Compose), o
   (`DIMENSIONS`, each a question with the right role) and own questions (8 types, options for choice and price questions), target number of answers, random variant order.
   Same checks as the website (`validate`). Saved as a draft or published at once. Order of writes: `experiments`, pictures to `variant-assets/<company>/<experiment>/`,
   `experiment_variants`, `experiment_questions`, `experiment_question_options`; a failure deletes the experiment row (cascade) and removes the uploaded pictures.
-- **Strings:** `gen-strings.mjs` emits one file per language (`StringsRu/Kk/En.kt`, 768 keys x 3) because one file passed the JVM method size limit; the CI "strings are in sync" step diffs the `i18n/` folder.
+- **Entry points:** before this fix the screen could only be opened from the card on the Arena home (nothing in the bottom bar). The card and the mission screen's "create a test" button now open the Crowd tests section directly. Screenshot cases 28 / 29 render the bar in Kazakh and Russian (six tabs on a 420 px phone).
+- **Strings:** `gen-strings.mjs` emits one file per language (`StringsRu/Kk/En.kt`, 885 keys x 3) because one file passed the JVM method size limit; the CI "strings are in sync" step diffs the `i18n/` folder.
 - **Tests:** 165 JVM tests locally (without the Skia screenshots, which run only in CI): `ResearchStatsTest`, `ResearchModelTest` (18: loading, publish / delete, team, the builder with request order,
   bodies and clean-up), plus 27 screenshot cases in CI (research list / results / participants / team / builder).
 - **CI fix:** `MarathonTest.playingASetDealsThatSetAndOnlyWhatIsStillMissing` failed once in CI with a timeout. `refresh()` sets `today` and only afterwards finishes the slate and the seen-votes
   requests, and `startSet()` ignores a start while `loading`; the test waited for `today` only. Both set tests now wait for `!loading` as well (a real race in the test, not in the app).
-- **Not in the native apps yet:** editing, pausing or duplicating an existing experiment, reports (markdown / PDF), AI insights, the admin panel, creating a company, real billing.
+- **Not in the native apps yet:** the site's Styles page ("What people like", the main page of the marketers area), editing, pausing or duplicating an existing experiment, reports (markdown / PDF), AI insights, the admin panel, creating a company, real billing.

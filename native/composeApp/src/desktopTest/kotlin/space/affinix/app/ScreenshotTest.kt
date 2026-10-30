@@ -156,6 +156,10 @@ class ScreenshotTest {
 
     @Test fun researchList() { val m = model(true); m.tab = Tab.Research; shoot("19-research-phone", 420, 1300, m) { Thread.sleep(900) } }
 
+    // the bottom bar has six tabs now: the longest labels must still fit a 420 px phone
+    @Test fun marketersTabKazakh() { val m = model(true); m.changeLang(Lang.Kk); m.tab = Tab.Research; shoot("28-marketers-tab-kk-phone", 420, 900, m) { Thread.sleep(900) } }
+    @Test fun marketersTabRussian() { val m = model(true); m.changeLang(Lang.Ru); m.tab = Tab.Research; shoot("29-marketers-tab-ru-phone", 420, 900, m) { Thread.sleep(900) } }
+
     @Test fun researchExperimentResults() {
         val m = model(true); m.tab = Tab.Research
         shoot("24-experiment-results-phone", 420, 3600, m) { Thread.sleep(900); m.research.openExperiment("exp-0001"); Thread.sleep(900) }

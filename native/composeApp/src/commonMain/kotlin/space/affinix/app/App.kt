@@ -128,6 +128,7 @@ private fun TabBar(model: AppModel) {
                 Triple(Tab.Feed, "globe", t("feed.title")),
                 Triple(Tab.Chats, "chat", t("messages.title")),
                 Triple(Tab.People, "friends", t("friends.title")),
+                Triple(Tab.Research, "overview", t("shell.tabbar.marketers")),
                 Triple(Tab.Profile, "user", t("arena.tabs.profile")),
             )
             for ((tab, icon, label) in tabs) {

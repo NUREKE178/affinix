@@ -34,7 +34,7 @@ data class Member(val id: String, val userId: String, val role: String, val join
 
 /**
  * The marketers' side of the product (the website's Research, Participants and Team pages) over the same tables: the company the person belongs to, its experiments with
- * their results, the participants and the team. Experiments are built on the website; the app reads them, publishes a draft and deletes.
+ * their results, the participants and the team. The app builds a new experiment (the compact builder), publishes a draft and deletes; editing an existing one is on the website.
  */
 class ResearchModel(private val api: Api, private val scope: CoroutineScope, private val me: () -> String?) {
     enum class Section { Experiments, Participants, Crowd, Team }

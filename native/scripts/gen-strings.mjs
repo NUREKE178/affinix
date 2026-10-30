@@ -15,6 +15,7 @@ const get = (o, path) => path.split(".").reduce((a, k) => (a == null ? a : a[k])
 
 const KEYS = [
   "shell.notifications.title", "shell.notifications.empty", "shell.notifications.commentOn", "shell.notifications.friendRequest", "shell.notifications.friendAccepted",
+  "shell.nav.marketers", "shell.tabbar.marketers",
   "arena.tabs.quests", "arena.quests.today", "arena.quests.resetNote", "arena.quests.claim", "arena.quests.claimed", "arena.quests.clearTitle", "arena.quests.clearBody",
   "arena.quest.votes", "arena.quest.families", "arena.quest.dims", "arena.quest.combo", "arena.quest.eye", "arena.quest.time",
   "arena.tier.easy", "arena.tier.medium", "arena.tier.hard", "arena.toast.claimed", "arena.toast.claimRefused", "arena.lobby.dailyClaim", "arena.lobby.boardAll",
@@ -70,7 +71,6 @@ const EXTRA = {
   "app.name": { ru: "Affinix", kk: "Affinix", en: "Affinix" },
   "app.updateAvailable": { ru: "Вышла новая версия: {v}", kk: "Жаңа нұсқа шықты: {v}", en: "A new version is out: {v}" },
   "app.updateGet": { ru: "Скачать", kk: "Жүктеу", en: "Download" },
-  "research.title": { ru: "Исследования", kk: "Зерттеулер", en: "Research" },
   "research.actionFailed": { ru: "Не получилось. Проверьте права и интернет.", kk: "Болмады. Рұқсат пен интернетті тексеріңіз.", en: "That did not work. Check your permissions and connection." },
   "research.noCompany": { ru: "Вы пока не состоите ни в одной компании. Создайте её на сайте affinix.space.", kk: "Сіз әлі ешбір компанияда жоқсыз. Оны affinix.space сайтында құрыңыз.", en: "You are not in a company yet. Create one on affinix.space." },
   "research.buildOnWeb": { ru: "Редактировать готовый эксперимент пока можно только на сайте affinix.space.", kk: "Дайын тәжірибені өңдеуді әзірге тек affinix.space сайтында жасауға болады.", en: "Editing an existing experiment is only possible on affinix.space for now." },
