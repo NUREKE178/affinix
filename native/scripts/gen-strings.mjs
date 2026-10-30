@@ -11,11 +11,13 @@ const RANKS = ["novice", "apprentice", "observer", "sharpEye", "tastemaker", "ar
 
 const NAMED_BADGES = Object.keys(ru.arena.badge);
 
+const get = (o, path) => path.split(".").reduce((a, k) => (a == null ? a : a[k]), o);
+
 const KEYS = [
   "shell.notifications.title", "shell.notifications.empty", "shell.notifications.commentOn", "shell.notifications.friendRequest", "shell.notifications.friendAccepted",
   "arena.tabs.quests", "arena.quests.today", "arena.quests.resetNote", "arena.quests.claim", "arena.quests.claimed", "arena.quests.clearTitle", "arena.quests.clearBody",
   "arena.quest.votes", "arena.quest.families", "arena.quest.dims", "arena.quest.combo", "arena.quest.eye", "arena.quest.time",
-  "arena.tier.easy", "arena.tier.medium", "arena.tier.hard", "arena.toast.claimed", "arena.toast.claimRefused", "arena.lobby.dailyClaim",
+  "arena.tier.easy", "arena.tier.medium", "arena.tier.hard", "arena.toast.claimed", "arena.toast.claimRefused", "arena.lobby.dailyClaim", "arena.lobby.boardAll",
   "arena.badgeName.votes", "arena.badgeName.streak", "arena.badgeName.daily", "arena.badgeName.level",
   ...NAMED_BADGES.flatMap((b) => [`arena.badge.${b}.name`, `arena.badge.${b}.desc`]),
   "arena.profile.badges", "arena.rankings.visible", "arena.rankings.visibleHint", "arena.rankings.saveFailed", "arena.rankings.serverPending",
@@ -28,6 +30,7 @@ const KEYS = [
   "arena.tabs.play", "arena.tabs.rankings", "arena.tabs.profile",
   ...RANKS.map((r) => `arena.rank.${r}`),
   ...DIMS.map((d) => `arena.q.${d}`),
+  ...DIMS.map((d) => `builder.dimensions.${d}.label`),
   ...FAMILIES.map((f) => `arena.family.${f}`),
   "arena.console.progress", "arena.console.option", "arena.console.pick", "arena.console.skip", "arena.console.next", "arena.console.leave",
   "arena.console.flowBonus", "arena.console.pioneer", "arena.console.votes", "arena.console.stimWin", "arena.console.contrast", "arena.console.repeat",
@@ -48,7 +51,7 @@ const KEYS = [
   "feed.title", "feed.subtitle", "feed.composerPlaceholder", "feed.posting", "feed.publish", "feed.posted", "feed.postedCensored", "feed.deletePost", "feed.postDeleted",
   "feed.confirmDeleteTitle", "feed.confirmDeleteBody", "feed.unknownAuthor", "feed.loadErrorTitle", "feed.loadErrorBody", "feed.emptyTitle", "feed.emptyBody",
   "feed.profanityBlocked", "feed.like", "feed.comment", "feed.save", "feed.noComments", "feed.commentPlaceholder", "feed.commentSubmit", "feed.commentPostedCensored",
-  "feed.deleteComment", "feed.tabAll", "feed.tabMine", "feed.mineEmptyTitle", "feed.mineEmptyBody", "feed.loadMore", "feed.loadMoreFailed", "feed.edited",
+  "feed.deleteComment", "feed.tabAll", "feed.tabMine", "feed.mineEmptyTitle", "feed.mineEmptyBody", "feed.loadMore", "feed.loadMoreFailed", "feed.edited", "feed.addImage", "feed.removeImage",
   "friends.message", "friends.title", "friends.incomingTitle", "friends.outgoingTitle", "friends.friendsTitle", "friends.accept", "friends.decline", "friends.cancel",
   "friends.remove", "friends.addFriend", "friends.requestSent", "friends.requestAccepted", "friends.emptyTitle", "friends.emptyBody", "friends.loadErrorTitle", "friends.loadErrorBody",
   "people.searchPlaceholder", "people.searchHint", "people.noResultsTitle", "people.noResultsBody", "people.errorTitle", "people.errorBody", "people.retry", "people.you",
@@ -57,9 +60,18 @@ const KEYS = [
   "auth.forgot.title", "auth.forgot.subtitle", "auth.forgot.back", "auth.forgot.submit", "auth.forgot.submitting", "auth.forgot.sentMessage",
 ];
 
+// whole subtrees of the site's locale (every string under the prefix), for screens that use most of a section
+const PREFIXES = ["messages", "search", "arena.marathon", "arena.dna", "crowd", "auth.social", "arena.traits", "arena.archetype", "arena.share"];
+const leaves = (o, base) => Object.entries(o).flatMap(([k, v]) => (typeof v === "string" ? [`${base}.${k}`] : v && typeof v === "object" ? leaves(v, `${base}.${k}`) : []));
+for (const p of PREFIXES) for (const k of leaves(get(ru, p), p)) if (!KEYS.includes(k)) KEYS.push(k);
+
 // only the apps have these
 const EXTRA = {
   "app.name": { ru: "Affinix", kk: "Affinix", en: "Affinix" },
+  "app.updateAvailable": { ru: "Вышла новая версия: {v}", kk: "Жаңа нұсқа шықты: {v}", en: "A new version is out: {v}" },
+  "app.updateGet": { ru: "Скачать", kk: "Жүктеу", en: "Download" },
+  "app.changePhoto": { ru: "Сменить фото", kk: "Фотоны ауыстыру", en: "Change photo" },
+  "app.photoSaved": { ru: "Фото профиля обновлено", kk: "Профиль фотосы жаңартылды", en: "Profile photo updated" },
   "app.language": { ru: "Язык", kk: "Тіл", en: "Language" },
   "app.profileTitle": { ru: "Мой профиль", kk: "Менің профилім", en: "My profile" },
   "app.markRead": { ru: "Прочитано", kk: "Оқылды", en: "Mark read" },
@@ -76,7 +88,6 @@ const EXTRA = {
   "app.votes": { ru: "Дуэлей: {n}", kk: "Дуэль: {n}", en: "Duels: {n}" },
 };
 
-const get = (o, path) => path.split(".").reduce((a, k) => (a == null ? a : a[k]), o);
 const lit = (s) => '"' + String(s).replace(/\\/g, "\\\\").replace(/"/g, '\\"').replace(/\$/g, "\\$").replace(/\n/g, "\\n") + '"';
 
 let out = `// GENERATED by native/scripts/gen-strings.mjs from src/lib/locales/{ru,kk,en}.js. Do not edit by hand.\npackage space.affinix.app.i18n\n\n`;

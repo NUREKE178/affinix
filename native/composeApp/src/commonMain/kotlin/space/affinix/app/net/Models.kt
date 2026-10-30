@@ -75,6 +75,9 @@ data class DayStats(
     val dims: List<String> = emptyList(),
     val slate: List<String> = emptyList(),
     val claimed: List<String> = emptyList(),
+    /** answered duels of the extra sets 2..6 (migration 0023); empty on a server that does not have it */
+    val setVotes: List<Int> = emptyList(),
+    val familyVotes: Map<String, Int> = emptyMap(),
 ) {
     /** The day's value of the counter a quest of this kind watches. */
     fun metric(kind: String): Int = when (kind) {
@@ -86,7 +89,7 @@ data class DayStats(
 data class ClaimResponse(val ok: Boolean = false, val reason: String? = null, val state: StateResponse? = null, val newBadges: List<String> = emptyList())
 
 @Serializable
-data class StateResponse(val profile: Profile = Profile(), val today: DayStats? = null, val serverDay: String? = null)
+data class StateResponse(val profile: Profile = Profile(), val today: DayStats? = null, val serverDay: String? = null, val days: List<DayStats> = emptyList())
 
 @Serializable
 data class SubmitResponse(val state: StateResponse? = null, val newBadges: List<String> = emptyList())
@@ -156,4 +159,5 @@ data class MyProfileRow(
     val username: String? = null,
     @SerialName("role_title") val roleTitle: String? = null,
     val bio: String? = null,
+    @SerialName("avatar_url") val avatarUrl: String? = null,
 )

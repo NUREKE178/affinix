@@ -134,24 +134,39 @@ class FeedModel(private val api: Api, private val scope: CoroutineScope, private
     // ---- writing --------------------------------------------------------------------------------------------------------------------
 
     /** Returns null when published, or the string key to show (refused, or the server said no). */
-    suspend fun publish(text: String): String? {
+    suspend fun publish(text: String, image: space.affinix.app.ShrunkImage? = null): String? {
         val t = text.trim()
         if (t.isEmpty()) return null
         val v = Moderation.moderate(t)
         if (v.action == Moderation.Action.Block) return "feed.profanityBlocked"
+        var uploaded: String? = null
         return try {
-            api.restWrite(HttpMethod.Post, "posts", body = buildJsonObject { put("body", v.text) })
+            var imageUrl: String? = null
+            val uid = me()
+            if (image != null && uid != null) {
+                val path = "$uid/${space.affinix.app.Platform.uuid()}.${image.ext}"
+                api.uploadObject(POST_BUCKET, path, image.bytes, image.mime)
+                uploaded = path
+                imageUrl = api.publicObjectUrl(POST_BUCKET, path)
+            }
+            api.restWrite(HttpMethod.Post, "posts", body = buildJsonObject { put("body", v.text); if (imageUrl != null) put("image_url", imageUrl) })
             if (v.action == Moderation.Action.Censor) say("feed.postedCensored") else say("feed.posted")
             load()
             null
-        } catch (e: CancellationException) { throw e } catch (e: Exception) { "app.noNetwork" }
+        } catch (e: CancellationException) { throw e } catch (e: Exception) {
+            uploaded?.let { path -> runCatching { api.removeObjects(POST_BUCKET, listOf(path)) } } // the post did not happen: do not keep its picture
+            "app.noNetwork"
+        }
     }
 
     fun delete(p: Post) {
         scope.launch {
             val before = posts
             posts = posts.filter { it.id != p.id }
-            try { api.restWrite(HttpMethod.Delete, "posts", listOf("id" to "eq.${p.id}")); say("feed.postDeleted") }
+            try {
+                api.restWrite(HttpMethod.Delete, "posts", listOf("id" to "eq.${p.id}")); say("feed.postDeleted")
+                api.pathFromPublicUrl(POST_BUCKET, p.imageUrl)?.takeIf { it.startsWith("${me()}/") }?.let { path -> runCatching { api.removeObjects(POST_BUCKET, listOf(path)) } }
+            }
             catch (e: CancellationException) { throw e } catch (e: Exception) { posts = before; say("app.noNetwork") }
         }
     }
@@ -230,5 +245,5 @@ class FeedModel(private val api: Api, private val scope: CoroutineScope, private
         }
     }
 
-    companion object { const val PAGE = 30 }
+    companion object { const val PAGE = 30; const val POST_BUCKET = "post-images" }
 }

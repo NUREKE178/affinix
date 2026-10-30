@@ -14,7 +14,9 @@ import kotlinx.serialization.json.put
 import org.jetbrains.compose.resources.ExperimentalResourceApi
 import org.jetbrains.compose.resources.decodeToImageBitmap
 import space.affinix.app.Platform
+import space.affinix.app.BuildInfo
 import space.affinix.app.Rules
+import space.affinix.app.Versions
 import space.affinix.app.i18n.Lang
 import space.affinix.app.i18n.tr
 import space.affinix.app.localDay
@@ -26,12 +28,13 @@ import space.affinix.app.net.KeyValueStore
 import space.affinix.app.net.Leaderboard
 import space.affinix.app.net.MyProfileRow
 import space.affinix.app.net.Profile
+import space.affinix.app.net.StateResponse
 import space.affinix.app.net.Tally
 import space.affinix.app.net.TallyQuery
 import space.affinix.app.net.WireVote
 import space.affinix.app.seasonOf
 
-enum class Tab { Play, Quests, Feed, Chats, People, Rankings, Profile, Notifications }
+enum class Tab { Play, Quests, Feed, Chats, People, Rankings, Profile, Notifications, Search, Research }
 
 /** Everything the screens read. Plain Compose state, so a screen recomposes when a value here changes. */
 class AppModel(
@@ -47,6 +50,8 @@ class AppModel(
     var profile by mutableStateOf<Profile?>(null)
         private set
     var today by mutableStateOf<DayStats?>(null)
+    /** the recent days the server sent (the weekly theme adds up Monday to Sunday) */
+    var days by mutableStateOf<Map<String, DayStats>>(emptyMap())
         private set
     var loading by mutableStateOf(false)
         private set
@@ -87,6 +92,12 @@ class AppModel(
         private set
     var notifications by mutableStateOf(NotificationsModel(api, scope, { api.session?.userId }, feed))
         private set
+    var search by mutableStateOf(SearchModel(api, scope, feed, people))
+        private set
+    var crowd by mutableStateOf(CrowdModel(api, scope, { api.session?.userId }, { profile?.xp ?: 0L }))
+        private set
+    var mission by mutableStateOf(MissionModel(api, scope, { api.session?.userId }, ::adopt))
+        private set
 
     /** a signed-out player's posts, friends and chats must not show for the next one */
     private fun freshSocial() {
@@ -94,12 +105,28 @@ class AppModel(
         people = PeopleModel(api, scope, { api.session?.userId }, feed)
         messages = MessagesModel(api, scope, { api.session?.userId }, feed)
         notifications = NotificationsModel(api, scope, { api.session?.userId }, feed)
+        search = SearchModel(api, scope, feed, people)
+        crowd = CrowdModel(api, scope, { api.session?.userId }, { profile?.xp ?: 0L })
+        mission = MissionModel(api, scope, { api.session?.userId }, ::adopt)
     }
 
     val email get() = api.session?.email.orEmpty()
     fun text(key: String, vararg vars: Pair<String, Any>) = tr(lang, key, *vars)
 
-    init { if (signedIn) refresh() }
+    /** the version of a newer release when there is one (null otherwise); shown as a note with a link to the download page */
+    var newerVersion by mutableStateOf<String?>(null)
+        private set
+
+    fun checkForUpdate() {
+        scope.launch {
+            try {
+                val latest = Versions.newestNative(api.releaseTags())
+                newerVersion = latest?.takeIf { Versions.isNewer(it, BuildInfo.VERSION) }
+            } catch (e: CancellationException) { throw e } catch (e: Exception) { /* offline or rate limited: no note */ }
+        }
+    }
+
+    init { checkForUpdate(); if (signedIn) refresh() }
 
     fun changeLang(l: Lang) { lang = l; kv.put("lang", l.tag) }
 
@@ -111,6 +138,14 @@ class AppModel(
             val s = api.signUp(email, password)
             if (s == null) return@guard "CONFIRM"
         } else api.signIn(email, password)
+        signedIn = true
+        refresh()
+        null
+    }
+
+    /** Sign in with Google through the system browser (the same Supabase provider as the website). Null on success or when the player gave up, else the message to show. */
+    suspend fun googleSignIn(): String? = guard {
+        if (api.signInWithGoogle() == null) return@guard null
         signedIn = true
         refresh()
         null
@@ -144,8 +179,7 @@ class AppModel(
         scope.launch {
             loading = true
             try {
-                val st = api.state(localDay())
-                profile = st.profile; today = st.today
+                adopt(api.state(localDay()))
                 offline = false
                 ensureSlate()
                 loadSeen()
@@ -162,6 +196,14 @@ class AppModel(
         }
     }
 
+    /** every state the server sends keeps the profile, today and (when it carries them) the recent days that the weekly theme adds up */
+    private fun adopt(st: StateResponse) {
+        profile = st.profile
+        today = st.today ?: today
+        if (st.days.isNotEmpty()) days = st.days.associateBy { it.day }
+        st.today?.let { days = days + (it.day to it) }
+    }
+
     /** Today's three quests are stored on the server by whoever asks first (the website or this app) with the same rule, so both agree. */
     private suspend fun ensureSlate() {
         val uid = api.session?.userId ?: return
@@ -169,7 +211,7 @@ class AppModel(
         if ((today?.slate?.size ?: 0) >= 3) return
         runCatching {
             val res = api.submit(emptyList(), day, day to Rules.slateFor(uid, day))
-            res.state?.let { profile = it.profile; today = it.today ?: today }
+            res.state?.let { adopt(it) }
         }
     }
 
@@ -179,7 +221,7 @@ class AppModel(
     /** Claims a quest reward ("votes_15", "daily_set", "daily_clear"). Returns null when taken, or the strings key to show. */
     suspend fun claim(id: String): String? = try {
         val res = api.claim(localDay(), id)
-        if (res.ok) { res.state?.let { profile = it.profile; today = it.today ?: today }; null } else "arena.toast.claimRefused"
+        if (res.ok) { res.state?.let { adopt(it) }; null } else "arena.toast.claimRefused"
     } catch (e: CancellationException) { throw e } catch (e: Exception) { "app.noNetwork" }
 
     private suspend fun loadSeen() {
@@ -197,6 +239,74 @@ class AppModel(
 
     val dailyDone: Int get() = (today?.dailyVotes ?: 0).coerceAtMost(space.affinix.app.Rules.DAILY_SET_SIZE)
     val dailyComplete: Boolean get() = dailyDone >= space.affinix.app.Rules.DAILY_SET_SIZE
+
+    // ---- Stage 3: the marathon (extra sets of the day, theme of the week) ----------------------------------------------------
+
+    data class SetEntry(val n: Int, val votes: Int, val size: Int, val done: Boolean, val claimed: Boolean, val bonus: Int)
+    data class Theme(val family: String, val votes: Int, val goal: Int, val done: Boolean, val claimed: Boolean, val bonus: Int, val weekStart: String)
+
+    /** a server without migration 0023 sends day rows without the set counters: the marathon is not offered then */
+    val marathonReady: Boolean get() = today?.setVotes?.isNotEmpty() ?: true
+
+    val sets: List<SetEntry> get() = Rules.EXTRA_SETS.map { n ->
+        val v = (today?.setVotes?.getOrNull(n - 2) ?: 0).coerceAtMost(Rules.SET_SIZE)
+        SetEntry(n, v, Rules.SET_SIZE, v >= Rules.SET_SIZE, today?.claimed?.contains(Rules.setQuestId(n)) == true, Rules.SET_BONUS)
+    }
+
+    /** sets open one after another once the day's ten are done */
+    fun setOpen(n: Int): Boolean = dailyComplete && (n == 2 || sets.first { it.n == n - 1 }.done)
+
+    val theme: Theme get() {
+        val day = today?.day?.ifEmpty { null } ?: localDay()
+        val monday = Rules.weekStart(day)
+        val family = Rules.FAMILY_IDS[Rules.themeIndex(day, Rules.FAMILY_IDS.size)]
+        val all = days + (today?.let { mapOf(it.day to it) } ?: emptyMap())
+        var votes = 0; var claimed = false
+        for (i in 0 until 7) {
+            val d = all[Rules.addDays(monday, i)] ?: continue
+            votes += d.familyVotes[family] ?: 0
+            if (Rules.THEME_QUEST in d.claimed) claimed = true
+        }
+        return Theme(family, votes.coerceAtMost(Rules.THEME_GOAL), Rules.THEME_GOAL, votes >= Rules.THEME_GOAL, claimed, Rules.THEME_BONUS, monday)
+    }
+
+    /** this week's table among friends (arena_leaderboard with p_friends); null until loaded */
+    var race by mutableStateOf<Leaderboard?>(null)
+        private set
+    var raceFailed by mutableStateOf(false)
+        private set
+
+    fun loadRace() {
+        scope.launch {
+            raceFailed = false
+            try { race = api.leaderboard("week", friends = true) } catch (e: CancellationException) { throw e } catch (e: Exception) { raceFailed = true }
+        }
+    }
+
+    /** Plays extra set [n]: the duels of the set it still lacks (a set left half-way continues). */
+    fun startSet(n: Int) {
+        if (loading || n !in Rules.EXTRA_SETS || !setOpen(n)) return
+        val entry = sets.first { it.n == n }
+        if (entry.done) return
+        scope.launch {
+            loading = true; error = null
+            try {
+                val duels = api.dealSet(n, localDay(), seasonOf()).filter { "${it.pair}|${it.dim}" !in seen }.take(Rules.SET_SIZE - entry.votes)
+                if (duels.isEmpty()) { game.end(); return@launch }
+                game.start(Mode.Daily, duels, set = n)
+                scope.launch { game.loadTallies() }
+                duels.take(2).forEach { ensureImages(it) }
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: ApiException) {
+                error = "${text("app.dealFailed")} (${e.status}: ${e.message})"
+            } catch (e: Exception) {
+                error = "${text("app.noNetwork")} (${e::class.simpleName}: ${e.message?.take(100)})"
+            } finally {
+                loading = false
+            }
+        }
+    }
 
     // ---- rounds ------------------------------------------------------------------------
 
@@ -232,6 +342,8 @@ class AppModel(
         }
     }
 
+    private val AVATAR_BUCKET = "avatars"
+
     fun imageKey(d: Duel, index: Int) = "${d.season}/${d.family}/$index"
 
     @OptIn(ExperimentalResourceApi::class)
@@ -247,6 +359,8 @@ class AppModel(
                     throw e
                 } catch (e: Exception) {
                     imageFailed[k] = true
+                } catch (e: LinkageError) {
+                    imageFailed[k] = true // the picture decoder (Skia) could not start: show the placeholder instead of crashing
                 }
             }
         }
@@ -258,7 +372,7 @@ class AppModel(
         if (url.isNullOrBlank() || images.containsKey(url) || imageFailed[url] == true) return
         scope.launch {
             try { images[url] = api.fetchBytes(url).decodeToImageBitmap() }
-            catch (e: CancellationException) { throw e } catch (e: Exception) { imageFailed[url] = true }
+            catch (e: CancellationException) { throw e } catch (e: Exception) { imageFailed[url] = true } catch (e: LinkageError) { imageFailed[url] = true }
         }
     }
 
@@ -286,7 +400,7 @@ class AppModel(
     fun endRound() { scope.launch { game.flush() }; game.end(); refresh() }
 
     private suspend fun refreshAfterRound() {
-        runCatching { api.state(localDay()) }.getOrNull()?.let { profile = it.profile; today = it.today }
+        runCatching { api.state(localDay()) }.getOrNull()?.let { adopt(it) }
     }
 
     private var flushJob: Job? = null
@@ -295,15 +409,71 @@ class AppModel(
         flushJob = scope.launch { delay(3500); offline = !game.flush() }
     }
 
+    // ---- Taste DNA -----------------------------------------------------------------------------------------------------------------
+
+    /** how my picks lean along the seven taste axes (null until computed) */
+    var dna by mutableStateOf<Taste.Result?>(null)
+        private set
+    var dnaLoading by mutableStateOf(false)
+        private set
+    var dnaFailed by mutableStateOf(false)
+        private set
+    private var dnaForVotes = -1L
+    private val traitCache = HashMap<String, DoubleArray>()
+    private val pairRe = Regex("^(\\d{6})/([a-z]{2,12})/(\\d{1,4})-(\\d{1,4})$")
+
+    /** Reads this and last season's answers and the traits of the specimens (from the same generator as the website), and computes the DNA. Cheap to call again: it only works when the vote count changed. */
+    fun loadDna() {
+        val total = (profile?.votes ?: 0).toLong()
+        if (dnaLoading || (dna != null && dnaForVotes == total)) return
+        scope.launch {
+            dnaLoading = true; dnaFailed = false
+            try {
+                val season = seasonOf()
+                val rows = listOf(prevSeason(season), season).flatMap { api.myVoteRows(it) }
+                val answers = rows.mapNotNull { (pair, dim, pick) -> pairRe.matchEntire(pair)?.let { Triple(it.groupValues, dim, pick) } }
+                val need = answers.flatMap { (g, _, _) -> listOf(Triple(g[1], g[2], g[3].toInt()), Triple(g[1], g[2], g[4].toInt())) }
+                    .filter { "${it.first}/${it.second}/${it.third}" !in traitCache }.distinct()
+                for (chunk in need.chunked(2500)) for ((k, v) in api.traits(chunk)) traitCache[k] = v
+                val zero = DoubleArray(Taste.TRAITS.size)
+                dna = Taste.build(answers.map { (g, dim, pick) ->
+                    Taste.Answer(dim, pick, traitCache["${g[1]}/${g[2]}/${g[3].toInt()}"] ?: zero, traitCache["${g[1]}/${g[2]}/${g[4].toInt()}"] ?: zero)
+                })
+                dnaForVotes = total
+            } catch (e: CancellationException) { throw e } catch (e: Exception) { dnaFailed = true } finally { dnaLoading = false }
+        }
+    }
+
     // ---- my profile ------------------------------------------------------------------------------------------------------------------
 
     fun loadMyProfile() {
         val uid = api.session?.userId ?: return
         scope.launch {
             try {
-                myProfile = api.restGet("profiles", kotlinx.serialization.builtins.ListSerializer(MyProfileRow.serializer()), "select" to "full_name,username,role_title,bio", "id" to "eq.$uid").firstOrNull()
+                myProfile = api.restGet("profiles", kotlinx.serialization.builtins.ListSerializer(MyProfileRow.serializer()), "select" to "full_name,username,role_title,bio,avatar_url", "id" to "eq.$uid").firstOrNull()
             } catch (e: CancellationException) { throw e } catch (e: Exception) { /* the form just stays empty */ }
         }
+    }
+
+    var avatarBusy by mutableStateOf(false)
+        private set
+
+    /** Chooses a picture, shrinks it, uploads it to the avatars bucket (the player's own folder) and points the profile at it; the previous file is removed. Returns the locale key to show (success or why not), or null if cancelled. */
+    suspend fun changeAvatar(): String? {
+        val uid = api.session?.userId ?: return null
+        val (img, why) = space.affinix.app.ImageRules.chooseAndShrink(space.affinix.app.ImageRules.AVATAR_SIDE, space.affinix.app.ImageRules.AVATAR_BYTES)
+        if (img == null) return why
+        avatarBusy = true
+        return try {
+            val path = "$uid/${Platform.uuid()}.${img.ext}"
+            api.uploadObject(AVATAR_BUCKET, path, img.bytes, img.mime)
+            val url = api.publicObjectUrl(AVATAR_BUCKET, path)
+            val previous = myProfile?.avatarUrl
+            api.restWrite(io.ktor.http.HttpMethod.Patch, "profiles", listOf("id" to "eq.$uid"), kotlinx.serialization.json.buildJsonObject { put("avatar_url", url) })
+            myProfile = (myProfile ?: MyProfileRow()).copy(avatarUrl = url)
+            api.pathFromPublicUrl(AVATAR_BUCKET, previous)?.takeIf { it.startsWith("$uid/") }?.let { old -> runCatching { api.removeObjects(AVATAR_BUCKET, listOf(old)) } }
+            "app.photoSaved"
+        } catch (e: CancellationException) { throw e } catch (e: Exception) { "app.imageFailed" } finally { avatarBusy = false }
     }
 
     /** Same rule as the website: 3-30 of a-z, 0-9, _ (or empty). */
@@ -322,7 +492,7 @@ class AppModel(
                     put("role_title", role.trim()); put("bio", bio.trim())
                 },
             )
-            myProfile = MyProfileRow(name.trim(), u.ifEmpty { null }, role.trim(), bio.trim())
+            myProfile = MyProfileRow(name.trim(), u.ifEmpty { null }, role.trim(), bio.trim(), myProfile?.avatarUrl)
             null
         } catch (e: CancellationException) { throw e } catch (e: ApiException) {
             if (e.status == 409 || e.message.contains("duplicate", true) || e.message.contains("unique", true)) "profile.personal.usernameTaken" else "app.noNetwork"

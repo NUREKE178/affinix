@@ -90,4 +90,36 @@ object Rules {
 
     fun rankForLevel(level: Int): String = ranks.last { level >= it.first }.second
 
+
+    /** the questions of the Arena, in the order of the website's DIMENSION_IDS */
+    val DIMENSIONS = listOf("preference", "attention", "trust", "quality", "premium", "clarity", "purchaseIntent", "friendly", "modern", "natural", "energetic")
+
+    // ---- Stage 3: extra shared sets and the theme of the week (migration 0023, mirrored from src/lib/arena/rules.js) ----------------
+    val EXTRA_SETS = listOf(2, 3, 4, 5, 6)
+    const val SET_SIZE = DAILY_SET_SIZE
+    const val SET_BONUS = 40
+    const val THEME_GOAL = 60
+    const val THEME_BONUS = 150
+    const val THEME_QUEST = "week_theme"
+    fun setQuestId(n: Int) = "set_$n"
+
+    /** the order is part of the server's theme rotation (arena_theme_family) */
+    val FAMILY_IDS = listOf("mark", "palette", "button", "card", "pack", "poster", "appicon", "scene", "shot")
+
+    private fun dayNumber(day: String): Long {
+        val (y, m, d) = day.split("-").map { it.toInt() }
+        return space.affinix.app.daysFromCivil(y, m, d)
+    }
+
+    fun addDays(day: String, n: Int): String {
+        val (y, m, d) = space.affinix.app.civil(dayNumber(day) + n)
+        fun two(x: Int) = x.toString().padStart(2, '0')
+        return "$y-${two(m)}-${two(d)}"
+    }
+
+    /** the Monday of the week a day belongs to (1970-01-01 was a Thursday) */
+    fun weekStart(day: String): String = addDays(day, -(((dayNumber(day) + 3).mod(7L)).toInt()))
+
+    /** which of [count] families is the theme of the week the day falls in */
+    fun themeIndex(day: String, count: Int): Int = (dayNumber(weekStart(day)).floorDiv(7L)).mod(count.toLong()).toInt()
 }

@@ -11,6 +11,7 @@ import androidx.compose.ui.unit.Density
 import io.ktor.client.HttpClient
 import io.ktor.client.engine.mock.MockEngine
 import io.ktor.client.engine.mock.respond
+import io.ktor.client.engine.mock.toByteArray
 import io.ktor.http.HttpHeaders
 import io.ktor.http.HttpStatusCode
 import io.ktor.http.headersOf
@@ -42,9 +43,18 @@ class ScreenshotTest {
     private val json = headersOf(HttpHeaders.ContentType, "application/json")
     private val outDir = File(System.getProperty("shots") ?: "build/shots").also { it.mkdirs() }
 
-    private fun model(signedIn: Boolean): AppModel {
+    private val dnaFixture = kotlinx.serialization.json.Json.parseToJsonElement(javaClass.getResource("/dna.json")!!.readText()) as kotlinx.serialization.json.JsonObject
+
+    /** [marathon]: the daily ten is done and set 2 too, set 3 is half way; [dna]: the player has 90 answers on record */
+    private fun model(signedIn: Boolean, marathon: Boolean = false, dna: Boolean = false): AppModel {
         val engine = MockEngine { req ->
             val body = when {
+                req.url.encodedPath.endsWith("arena_test_mine") -> """[{"id":"t1","title":"Which logo for my coffee shop?","dim":"trust","status":"open","target":150,"votes":120,"voters":9,"items":[{"id":"i1","pos":0,"label":"Blue cup","wins":45,"games":60},{"id":"i2","pos":1,"label":"Orange bean","wins":20,"games":60},{"id":"i3","pos":2,"label":"Mono wordmark","wins":10,"games":60}]},{"id":"t2","title":"Slogan for the launch","dim":"preference","status":"closed","target":150,"votes":0,"voters":0,"items":[{"id":"i4","pos":0,"label":"Fresh start","wins":0,"games":0},{"id":"i5","pos":1,"label":"Own the morning","wins":0,"games":0}]}]"""
+                req.url.encodedPath.endsWith("arena_test_results") -> """{"test":{"id":"t1","title":"Which logo for my coffee shop?","dim":"trust","status":"open","target":150,"votes":120,"voters":9,"items":[{"id":"i1","pos":0,"label":"Blue cup","wins":45,"games":60},{"id":"i2","pos":1,"label":"Orange bean","wins":20,"games":60},{"id":"i3","pos":2,"label":"Mono wordmark","wins":10,"games":60}]},"pairs":[{"a":"i1","b":"i2","aVotes":18,"bVotes":7},{"a":"i1","b":"i3","aVotes":19,"bVotes":6}],"avgMs":2400}"""
+                req.url.encodedPath.endsWith("arena_test_queue") -> """{"available":2,"missionXp":24,"cap":300,"tests":[{"id":"q1","title":"Poster for a jazz night","dim":"attention","owner":{"id":"u3","name":"Dias","username":"dias"},"items":[{"id":"a1","pos":0,"label":"Neon","path":null},{"id":"a2","pos":1,"label":"Paper cut","path":null}],"pairs":[["a1","a2"]],"done":0,"total":1}]}"""
+                marathon && req.url.encodedPath.endsWith("arena_state") -> """{"profile":{"xp":2840,"level":8,"votes":331,"eyeCorrect":18,"eyeTotal":25,"streak":4,"bestCombo":9,"visible":true,"badges":["first_vote","votes_100"]},"today":{"day":"${localDay()}","votes":27,"dailyVotes":10,"setVotes":[10,4,0,0,0],"familyVotes":{"card":22,"mark":5},"maxCombo":7,"slate":["votes_15","fam_5","combo_6"],"claimed":["votes_15","daily_set","set_2"]},"days":[]}"""
+                dna && req.url.encodedPath.endsWith("arena_my_votes") -> if (String(req.body.toByteArray()).contains("\"${seasonOf()}\"")) """{"rows":[${(dnaFixture["votes"] as kotlinx.serialization.json.JsonArray).joinToString(",")}],"last":90,"more":false}""" else """{"rows":[],"last":0,"more":false}"""
+                dna && req.url.encodedPath.endsWith("arena-traits") -> """{"order":${dnaFixture["order"]},"traits":${dnaFixture["traits"]}}"""
                 req.url.encodedPath.endsWith("arena_state") -> """{"profile":{"xp":1240,"level":5,"votes":231,"eyeCorrect":18,"eyeTotal":25,"streak":4,"bestCombo":9,"visible":true,"badges":["first_vote","votes_100","streak_3","level_5","combo_8"]},"today":{"day":"2026-10-30","votes":16,"dailyVotes":4,"maxCombo":7,"eyeCorrect":2,"sec":0,"families":["mark","card","poster"],"dims":["trust","clarity"],"slate":["votes_15","fam_5","combo_6"],"claimed":["votes_15"]}}"""
                 req.url.encodedPath.endsWith("arena_my_votes") -> """{"rows":[],"last":0,"more":false}"""
                 req.url.encodedPath.endsWith("arena_leaderboard") -> """{"rows":[{"rank":1,"userId":"a","name":"Aigerim K.","xp":5120,"level":11,"isMe":false},{"rank":2,"userId":"b","name":"Dias","xp":4410,"level":10,"isMe":false},{"rank":3,"userId":"u1","name":"Me","xp":1240,"level":5,"isMe":true}],"me":{"rank":3,"xp":1240}}"""
@@ -57,8 +67,9 @@ class ScreenshotTest {
                 req.url.encodedPath.endsWith("/notifications") -> """[{"id":"n1","type":"comment","post_id":"p1","actor_id":"u2","is_read":false,"created_at":"2026-10-30T09:00:00+00:00","comment":{"body":"Blue, but make the type bolder."}},{"id":"n2","type":"friend_request","actor_id":"u3","is_read":false,"created_at":"2026-10-29T09:00:00+00:00"},{"id":"n3","type":"friend_accept","actor_id":"u5","is_read":true,"created_at":"2026-10-25T09:00:00+00:00"}]"""
                 req.url.encodedPath.endsWith("/friendships") -> """[{"id":"f1","requester_id":"u1","addressee_id":"u2","status":"accepted","created_at":"2026-10-01T10:00:00+00:00"},{"id":"f2","requester_id":"u3","addressee_id":"u1","status":"pending","created_at":"2026-10-02T10:00:00+00:00"},{"id":"f3","requester_id":"u1","addressee_id":"u5","status":"pending","created_at":"2026-10-03T10:00:00+00:00"}]"""
                 req.url.encodedPath.endsWith("/conversations") -> """[{"id":"c1","user_a":"u1","user_b":"u2","last_message_body":"See you at the review tomorrow","last_message_at":"2026-10-30T09:00:00+00:00","last_message_sender_id":"u2"},{"id":"c2","user_a":"u3","user_b":"u1","last_message_body":"Thanks!","last_message_at":"2026-10-29T09:00:00+00:00","last_message_sender_id":"u1"}]"""
+                req.url.encodedPath.endsWith("/conversation_prefs") -> """[{"conversation_id":"c2","pinned_at":"2026-10-20T09:00:00+00:00","muted":true}]"""
                 req.url.encodedPath.endsWith("my_unread_counts") -> """[{"conversation_id":"c1","unread":2}]"""
-                req.url.encodedPath.endsWith("/messages") -> """[{"id":"m3","conversation_id":"c1","sender_id":"u2","body":"See you at the review tomorrow","created_at":"2026-10-30T09:00:00+00:00"},{"id":"m2","conversation_id":"c1","sender_id":"u1","body":"Sent the new logo variants, the blue one is my favourite.","created_at":"2026-10-30T08:55:00+00:00","read_at":"2026-10-30T08:56:00+00:00"},{"id":"m1","conversation_id":"c1","sender_id":"u2","body":"Hi! Did you look at the poster test results?","created_at":"2026-10-30T08:50:00+00:00"}]"""
+                req.url.encodedPath.endsWith("/messages") -> """[{"id":"m3","conversation_id":"c1","sender_id":"u2","body":"See you at the review tomorrow","created_at":"2026-10-30T09:00:00+00:00"},{"id":"m2","conversation_id":"c1","sender_id":"u1","body":"Sent the new logo variants, the blue one is my favourite.","created_at":"2026-10-30T08:55:00+00:00","read_at":"2026-10-30T08:56:00+00:00","reply_to_id":"m1","reply":{"id":"m1","sender_id":"u2","body":"Hi! Did you look at the poster test results?","attachment_path":null,"deleted_at":null},"reactions":[{"user_id":"u2","emoji":"👍"},{"user_id":"u1","emoji":"❤️"}]},{"id":"m1","conversation_id":"c1","sender_id":"u2","body":"Hi! Did you look at the poster test results?","created_at":"2026-10-30T08:50:00+00:00"}]"""
                 req.url.encodedPath.endsWith("arena_tallies") -> """[{"pair":"202610/poster/975-980","dim":"clarity","a":31,"b":12}]"""
                 else -> "{}"
             }
@@ -134,6 +145,35 @@ class ScreenshotTest {
     @Test fun rankings() { val m = model(true); m.tab = Tab.Rankings; shoot("07-rankings-phone", 420, 820, m) }
 
     @Test fun profile() { val m = model(true); m.tab = Tab.Profile; shoot("08-profile-phone", 420, 1500, m) }
+
+    @Test fun marathon() { shoot("17-marathon-phone", 420, 1500, model(true, marathon = true)) { Thread.sleep(600) } }
+
+    @Test fun researchList() { val m = model(true); m.tab = Tab.Research; shoot("19-research-phone", 420, 1100, m) { Thread.sleep(600) } }
+
+    @Test fun researchResults() {
+        val m = model(true); m.tab = Tab.Research
+        shoot("20-research-results-phone", 420, 1500, m) { Thread.sleep(500); m.crowd.open("t1"); Thread.sleep(700) }
+    }
+
+    @Test fun researchCreate() {
+        val m = model(true); m.tab = Tab.Research
+        shoot("21-research-create-phone", 420, 1300, m) { Thread.sleep(400); m.crowd.view = space.affinix.app.store.CrowdModel.View.Create }
+    }
+
+    @Test fun missionHome() { shoot("22-mission-home-phone", 420, 1500, model(true, marathon = true)) { Thread.sleep(700) } }
+
+    @Test fun missionDuel() {
+        val m = model(true, marathon = true)
+        shoot("23-mission-duel-phone", 420, 900, m) {
+            Thread.sleep(700); m.mission.loadQueue(); Thread.sleep(600)
+            m.mission.queue?.tests?.firstOrNull()?.let { m.mission.start(it) }
+        }
+    }
+
+    @Test fun tasteDna() {
+        val m = model(true, dna = true); m.tab = Tab.Profile
+        shoot("18-dna-phone", 420, 2100, m) { Thread.sleep(900) }
+    }
 
     @Test fun feed() {
         val m = model(true); m.tab = Tab.Feed

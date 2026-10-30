@@ -52,6 +52,7 @@ import space.affinix.app.ui.LocalFonts
 import space.affinix.app.ui.LoginScreen
 import space.affinix.app.ui.ProfileScreen
 import space.affinix.app.ui.RankingsScreen
+import space.affinix.app.ui.SearchScreen
 import space.affinix.app.ui.Txt
 import space.affinix.app.ui.key
 import space.affinix.app.ui.plate
@@ -90,13 +91,15 @@ private fun MainShell(model: AppModel) {
                 }
             },
     ) {
-        val inThread = round == null && model.tab == Tab.Chats && model.messages.open != null
+        val mission = model.mission.round
+        val inThread = round == null && mission == null && model.tab == Tab.Chats && model.messages.open != null
         Box(Modifier.weight(1f).fillMaxWidth(), contentAlignment = Alignment.TopCenter) {
             if (inThread) {
                 Box(Modifier.widthIn(max = 760.dp).fillMaxWidth()) { ThreadScreen(model) }
             } else {
                 Column(Modifier.widthIn(max = 760.dp).fillMaxWidth().verticalScroll(rememberScrollState()).padding(horizontal = 16.dp, vertical = 16.dp)) {
                     if (round != null) DuelScreen(model)
+                    else if (mission != null) space.affinix.app.ui.MissionScreen(model, mission)
                     else when (model.tab) {
                         Tab.Play -> HomeScreen(model)
                         Tab.Quests -> QuestsScreen(model)
@@ -106,11 +109,13 @@ private fun MainShell(model: AppModel) {
                         Tab.Rankings -> RankingsScreen(model)
                         Tab.Profile -> ProfileScreen(model)
                         Tab.Notifications -> NotificationsScreen(model)
+                        Tab.Search -> SearchScreen(model)
+                        Tab.Research -> space.affinix.app.ui.ResearchScreen(model)
                     }
                 }
             }
         }
-        if (round == null && !inThread) TabBar(model)
+        if (round == null && mission == null && !inThread) TabBar(model)
     }
 }
 

@@ -61,3 +61,8 @@ If you change a string on the website, run `node native/scripts/gen-strings.mjs`
 - Nothing here has been run on a real Windows PC or a real phone by the author; CI builds the files, runs the tests and an Android emulator.
 - Desktop installers include a Java runtime, so they are large (about 120 MB).
 - The Windows installer is not code-signed (SmartScreen warns); the APK is signed with a one-off key unless you add the secrets.
+- Updating an APK needs the same signing key: add the `ANDROID_KEYSTORE_*` secrets (`bash scripts/android-key.sh`), otherwise uninstall the old build first.
+- Google sign-in needs `http://127.0.0.1:**` and `space.affinix.app://auth` in Supabase, Auth, URL configuration, Redirect URLs. Picture picking and Google sign-in are covered by tests but have not been tried on a real phone.
+- The app only tells you that a newer release exists (it links to the download page); it does not install updates itself.
+- Chats ask the server every few seconds (no live socket, no "typing" or online dots); there are no push notifications.
+- Not in the apps yet: the experiment builder, results, participants, reports, team, billing and admin screens.

@@ -26,6 +26,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import org.jetbrains.compose.resources.decodeToImageBitmap
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
@@ -74,22 +75,47 @@ internal fun TextArea(value: String, onChange: (String) -> Unit, placeholder: St
     }
 }
 
+/** The picture chosen for a post or message, small, with a way to take it off. */
+@OptIn(org.jetbrains.compose.resources.ExperimentalResourceApi::class)
+@Composable
+internal fun PickedPreview(img: space.affinix.app.ShrunkImage, onRemove: () -> Unit) {
+    val bmp = remember(img) { runCatching { img.bytes.decodeToImageBitmap() }.getOrNull() }
+    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+        Box(Modifier.size(72.dp).clip(RoundedCornerShape(10.dp)).background(C.g700)) {
+            if (bmp != null) Image(bmp, null, Modifier.size(72.dp), contentScale = ContentScale.Crop)
+        }
+        Txt(t("messages.removeImage"), 13, FontWeight.Medium, C.g400, Modifier.weight(1f))
+        IcoAction("close", onRemove)
+    }
+}
+
 @Composable
 private fun Composer(model: AppModel) {
     val feed = model.feed
     var text by remember { mutableStateOf("") }
     var error by remember { mutableStateOf<String?>(null) }
     var busy by remember { mutableStateOf(false) }
+    var image by remember { mutableStateOf<space.affinix.app.ShrunkImage?>(null) }
     val scope = rememberCoroutineScope()
     Plate(Modifier.fillMaxWidth(), pad = 14) {
         TextArea(text, { text = it; error = null }, t("feed.composerPlaceholder"))
+        image?.let { img ->
+            Spacer(Modifier.height(10.dp))
+            PickedPreview(img) { image = null }
+        }
         error?.let { Spacer(Modifier.height(8.dp)); Txt(t(it), 13, FontWeight.Medium, C.bad) }
         Spacer(Modifier.height(10.dp))
-        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
+        Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.SpaceBetween) {
+            IcoAction("image", {
+                scope.launch {
+                    val (img, why) = space.affinix.app.ImageRules.chooseAndShrink(space.affinix.app.ImageRules.POST_SIDE, space.affinix.app.ImageRules.POST_BYTES)
+                    if (img != null) { image = img; error = null } else if (why != null) error = why
+                }
+            }, active = image != null, filled = false)
             KeyButton(if (busy) t("feed.posting") else t("feed.publish"), {
                 if (!busy && text.isNotBlank()) {
                     busy = true
-                    scope.launch { val e = feed.publish(text); if (e == null) text = "" else error = e; busy = false }
+                    scope.launch { val e = feed.publish(text, image); if (e == null) { text = ""; image = null } else error = e; busy = false }
                 }
             }, lit = true, enabled = !busy && text.isNotBlank())
         }

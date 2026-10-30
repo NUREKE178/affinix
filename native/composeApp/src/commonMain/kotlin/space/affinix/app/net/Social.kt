@@ -15,6 +15,14 @@ data class AuthorRow(
 )
 
 @Serializable
+data class PostHitRow(
+    val id: String,
+    @SerialName("author_id") val authorId: String,
+    val body: String = "",
+    @SerialName("created_at") val createdAt: String = "",
+)
+
+@Serializable
 data class CountRow(val count: Int = 0)
 
 @Serializable
@@ -101,16 +109,50 @@ data class MessageRow(
     @SerialName("edited_at") val editedAt: String? = null,
     @SerialName("deleted_at") val deletedAt: String? = null,
     @SerialName("attachment_path") val attachmentPath: String? = null,
+    @SerialName("reply_to_id") val replyToId: String? = null,
+    val reactions: List<ReactionRow> = emptyList(),
+    val reply: ReplyRow? = null,
 )
+
+@Serializable
+data class ReactionRow(@SerialName("user_id") val userId: String, val emoji: String)
+
+@Serializable
+data class ReplyRow(
+    val id: String,
+    @SerialName("sender_id") val senderId: String,
+    val body: String? = null,
+    @SerialName("attachment_path") val attachmentPath: String? = null,
+    @SerialName("deleted_at") val deletedAt: String? = null,
+)
+
+@Serializable
+data class PrefRow(@SerialName("conversation_id") val conversationId: String, @SerialName("pinned_at") val pinnedAt: String? = null, val muted: Boolean = false)
+
+@Serializable
+data class FoundMessageRow(
+    @SerialName("message_id") val messageId: String,
+    @SerialName("conversation_id") val conversationId: String,
+    @SerialName("sender_id") val senderId: String,
+    val body: String = "",
+    @SerialName("created_at") val createdAt: String = "",
+)
+
+/** The message a reply points at (null body and image = it was deleted). */
+data class Quote(val id: String, val senderId: String, val text: String, val hasImage: Boolean, val deleted: Boolean)
+
+data class Reaction(val userId: String, val emoji: String)
 
 data class Conversation(
     val id: String, val other: Person, val lastBody: String?, val lastAt: String?, val lastSender: String?,
     val lastHasImage: Boolean, val lastDeleted: Boolean, val unread: Long,
+    val pinned: Boolean = false, val muted: Boolean = false,
 )
 
 data class Message(
     val id: String, val conversationId: String, val senderId: String, val body: String, val createdAt: String,
     val read: Boolean, val edited: Boolean, val deleted: Boolean, val hasImage: Boolean,
+    val reactions: List<Reaction> = emptyList(), val reply: Quote? = null, val replyToId: String? = null, val attachmentPath: String? = null,
     /** null = confirmed by the server; "sending" or "failed" = only on this device so far */
     val status: String? = null,
 )

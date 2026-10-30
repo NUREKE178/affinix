@@ -1,6 +1,7 @@
 package space.affinix.app.ui
 
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -40,6 +41,7 @@ fun LoginScreen(model: AppModel) {
     var email by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
     var busy by remember { mutableStateOf(false) }
+    var googleBusy by remember { mutableStateOf(false) }
     var message by remember { mutableStateOf<String?>(null) }
     var info by remember { mutableStateOf<String?>(null) }
     val scope = rememberCoroutineScope()
@@ -91,6 +93,23 @@ fun LoginScreen(model: AppModel) {
                         },
                         ::submit, Modifier.fillMaxWidth(), lit = true, enabled = !busy, big = true,
                     )
+                    if (mode != AuthMode.Forgot) {
+                        Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                            Box(Modifier.weight(1f).height(1.dp).background(C.g700))
+                            Txt(t("auth.social.or"), 12, color = C.g500)
+                            Box(Modifier.weight(1f).height(1.dp).background(C.g700))
+                        }
+                        KeyButton(
+                            if (googleBusy) t("auth.social.google") + "…" else t("auth.social.google"),
+                            {
+                                if (!googleBusy && !busy) {
+                                    googleBusy = true; message = null; info = null
+                                    scope.launch { message = model.googleSignIn(); googleBusy = false }
+                                }
+                            },
+                            Modifier.fillMaxWidth(), enabled = !googleBusy && !busy, big = true,
+                        )
+                    }
                 }
                 Spacer(Modifier.height(12.dp))
                 Column(Modifier.fillMaxWidth(), horizontalAlignment = Alignment.CenterHorizontally) {

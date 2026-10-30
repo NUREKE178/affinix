@@ -4131,3 +4131,30 @@ parity; this adds the native track under `native/`.
 - **Tests:** 67 JVM unit tests (rules parity, game, API client, feed, moderation, time, people, messages, profile, quests, notifications) + 16 offscreen screenshots in CI (branch `native-shots`).
 - **Not in the app:** marketers' tools (experiments, builder, results, crowd tests, participants, reports), admin, team, billing, Google sign-in, image upload (posts, chat, avatar), extra daily sets 2-6
   and the weekly theme, Taste DNA / styles, global search, push notifications, self-update.
+
+### Native apps: chat actions, search, marathon, Taste DNA, pictures, Google, crowd tests (migration: none)
+
+What the native apps (Kotlin + Compose) got in this round, all on the website's own tables, RPCs and rules:
+
+- **Chat (0024 RPCs):** reactions (6), replies with a quote, edit (48 h), delete for both, pin / mute, text search (`search_messages`), picture messages
+  (`message-images`, private bucket, signed links). A database without 0024 falls back to the plain read.
+- **Global search:** screens + people (`PeopleModel.runSearch`) + public posts (`ilike`), same text cleaning as `src/lib/globalSearch.js`.
+- **Marathon:** `DayStats.setVotes / familyVotes`, `StateResponse.days`; sets 2-6 via `api/arena-deal?kind=set`, theme of the week, claims (`set_n`, `week_theme`),
+  friends race (`arena_leaderboard` with `p_friends`). Ports of `weekStart / themeIndex / addDays` are tested against the JS values.
+- **Taste DNA:** `store/Taste.kt` is a port of `src/lib/arena/dna.js`. The specimens' traits come from the website's own generator through the new
+  `api/arena-traits.mjs` (POST, up to 3000 specimens). `native/scripts/gen-dna-fixture.mjs` records what dna.js says about 90 fixed answers; `TasteTest` must match to 1e-9.
+- **Pictures:** `Images` (expect/actual: system chooser + shrink, Skia on the desktop, `BitmapFactory` + EXIF on Android); storage REST in `Api`
+  (`uploadObject`, `signedUrls`, `removeObjects`); post, chat and avatar uploads. A post whose row is refused takes its file back.
+- **Google sign-in:** PKCE through the system browser (`Browser.authorize`): a loopback server on a computer, the app link `space.affinix.app://auth` on Android.
+  Needs the redirect URLs `http://127.0.0.1:**` and `space.affinix.app://auth` in Supabase (Auth, URL configuration).
+- **Update note:** the app knows its version (`BuildInfo`, generated from `-PappVersion`), reads the GitHub releases and shows a note with the download page.
+  It does not install anything itself.
+- **Crowd tests (0022 RPCs):** create (pictures to `arena-tests`), list, results with the 95% Wilson verdict (no verdict under 30 duels), pause / reopen, delete.
+  `ApiException` now carries the database `hint`, which the screens turn into the site's messages.
+- **Research missions (the players' side of crowd tests):** `MissionModel` (queue `arena_test_queue`, answers `arena_test_vote` one by one, report `arena_test_report`), `MissionScreen`;
+  offered on the Arena home once the day's ten duels are done. Tests: `MissionTest`.
+- Strings: `gen-strings.mjs` can take a whole subtree (`PREFIXES`), 573 keys x 3 languages.
+- Tests: 142 JVM tests (`ChatActionsTest`, `GlobalSearchTest`, `MarathonTest`, `TasteTest`, `PictureUploadTest`, `GoogleSignInTest`, `VersionsTest`, `CrowdTestTest` ...).
+
+Still web-only: experiment builder, results, participants, reports, team, billing, admin, push notifications.
+

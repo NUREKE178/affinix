@@ -8,6 +8,8 @@ expect object Platform {
     fun uuid(): String
     /** the device's language, e.g. "kk" */
     fun languageTag(): String
+    fun sha256(data: ByteArray): ByteArray
+    fun randomBytes(n: Int): ByteArray
 }
 
 /** Civil date (proleptic Gregorian) of a day number counted from 1970-01-01. */
@@ -65,4 +67,13 @@ fun epochOfIso(s: String): Long? {
         ms -= sign * (h * 60 + mi) * 60_000L
     }
     return ms
+}
+
+/** percent-encoding of a query value (RFC 3986 unreserved characters stay) */
+fun urlEncode(s: String): String = buildString {
+    for (b in s.encodeToByteArray()) {
+        val c = b.toInt() and 0xFF
+        if (c in 'A'.code..'Z'.code || c in 'a'.code..'z'.code || c in '0'.code..'9'.code || c == '-'.code || c == '_'.code || c == '.'.code || c == '~'.code) append(c.toChar())
+        else append('%').append("0123456789ABCDEF"[c shr 4]).append("0123456789ABCDEF"[c and 15])
+    }
 }
