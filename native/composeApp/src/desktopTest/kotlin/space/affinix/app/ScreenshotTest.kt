@@ -1,0 +1,126 @@
+package space.affinix.app
+
+import androidx.compose.ui.ExperimentalComposeUiApi
+import androidx.compose.ui.ImageComposeScene
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.graphics.Canvas
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.ImageBitmap
+import androidx.compose.ui.graphics.Paint
+import androidx.compose.ui.unit.Density
+import io.ktor.client.HttpClient
+import io.ktor.client.engine.mock.MockEngine
+import io.ktor.client.engine.mock.respond
+import io.ktor.http.HttpHeaders
+import io.ktor.http.HttpStatusCode
+import io.ktor.http.headersOf
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
+import org.jetbrains.skia.EncodedImageFormat
+import space.affinix.app.i18n.Lang
+import space.affinix.app.net.Api
+import space.affinix.app.net.Config
+import space.affinix.app.net.Duel
+import space.affinix.app.net.MemoryKeyValueStore
+import space.affinix.app.net.MemorySessionStore
+import space.affinix.app.net.Session
+import space.affinix.app.net.Specimen
+import space.affinix.app.store.AppModel
+import space.affinix.app.store.Mode
+import space.affinix.app.store.Tab
+import java.io.File
+import kotlin.test.Test
+import kotlin.test.assertTrue
+
+/**
+ * Renders the real screens offscreen (Skia, no window) with a fake server behind them and saves PNGs to build/shots, so every CI run
+ * produces pictures of the app. Each shot must also contain real content (not a blank canvas).
+ */
+@OptIn(ExperimentalComposeUiApi::class)
+class ScreenshotTest {
+    private val json = headersOf(HttpHeaders.ContentType, "application/json")
+    private val outDir = File(System.getProperty("shots") ?: "build/shots").also { it.mkdirs() }
+
+    private fun model(signedIn: Boolean): AppModel {
+        val engine = MockEngine { req ->
+            val body = when {
+                req.url.encodedPath.endsWith("arena_state") -> """{"profile":{"xp":1240,"level":5,"votes":231,"eyeCorrect":18,"eyeTotal":25,"streak":4,"bestCombo":9},"today":{"day":"2026-10-30","votes":4,"dailyVotes":4}}"""
+                req.url.encodedPath.endsWith("arena_my_votes") -> """{"rows":[],"last":0,"more":false}"""
+                req.url.encodedPath.endsWith("arena_leaderboard") -> """{"rows":[{"rank":1,"userId":"a","name":"Aigerim K.","xp":5120,"level":11,"isMe":false},{"rank":2,"userId":"b","name":"Dias","xp":4410,"level":10,"isMe":false},{"rank":3,"userId":"u1","name":"Me","xp":1240,"level":5,"isMe":true}],"me":{"rank":3,"xp":1240}}"""
+                req.url.encodedPath.endsWith("arena_tallies") -> """[{"pair":"202610/poster/975-980","dim":"clarity","a":31,"b":12}]"""
+                else -> "{}"
+            }
+            respond(body, HttpStatusCode.OK, json)
+        }
+        val session = if (signedIn) Session("a", "r", Long.MAX_VALUE / 4, "u1", "me@affinix.space") else null
+        val api = Api(HttpClient(engine), Config(), MemorySessionStore(session))
+        return AppModel(api, CoroutineScope(SupervisorJob() + Dispatchers.Default), MemoryKeyValueStore())
+    }
+
+    private fun swatch(a: Color, b: Color): ImageBitmap {
+        val bmp = ImageBitmap(480, 360)
+        val c = Canvas(bmp)
+        val p = Paint().apply { color = a }
+        c.drawRect(0f, 0f, 480f, 360f, p)
+        p.color = b
+        c.drawCircle(Offset(240f, 180f), 100f, p)
+        return bmp
+    }
+
+    private val duels = listOf(
+        Duel("d1", "202610", "poster", "clarity", 975, 980, "202610/poster/975-980", swap = true, objective = true, daily = true, truth = 1,
+            specimens = listOf(Specimen("grid / Fresh start", 4.7, 0.58), Specimen("grid / Өз қолыңмен", 7.3, 0.51))),
+        Duel("d2", "202610", "mark", "trust", 12, 40, "202610/mark/12-40", daily = true, specimens = listOf(Specimen("a"), Specimen("b"))),
+    )
+
+    private fun shoot(name: String, w: Int, h: Int, m: AppModel, settle: () -> Unit = {}) {
+        val scene = ImageComposeScene(width = w, height = h, density = Density(1f)) { App(m) }
+        try {
+            var t = 0L
+            fun frames(n: Int) { repeat(n) { Thread.sleep(30); t += 30_000_000L; scene.render(t) } }
+            frames(25)       // fonts and resources load asynchronously
+            settle(); frames(15)
+            val img = scene.render(t + 30_000_000L)
+            File(outDir, "$name.png").writeBytes(img.encodeToData(EncodedImageFormat.PNG)!!.bytes)
+            val px = org.jetbrains.skia.Bitmap().also { it.allocN32Pixels(img.width, img.height) }.also { img.readPixels(it) }
+            val bg = px.getColor(2, 2)
+            var other = 0
+            for (y in 0 until img.height step 3) for (x in 0 until img.width step 3) if (px.getColor(x, y) != bg) other++
+            assertTrue(other > 400, "$name looks empty ($other non-background samples)")
+        } finally { scene.close() }
+    }
+
+    private fun primeRound(m: AppModel) {
+        duels.forEachIndexed { i, d ->
+            m.images["${d.season}/${d.family}/${d.a}"] = swatch(if (i == 0) Color(0xFF223355) else Color(0xFF552233), Color(0xFFFF6A1F))
+            m.images["${d.season}/${d.family}/${d.b}"] = swatch(Color(0xFFEEEEEE), Color(0xFF111111))
+        }
+        m.game.start(Mode.Daily, duels)
+    }
+
+    @Test fun login() { shoot("01-login-phone", 420, 820, model(false)); shoot("01-login-desktop", 1000, 700, model(false)) }
+
+    @Test fun home() { shoot("02-home-phone", 420, 900, model(true)); shoot("02-home-desktop", 1000, 760, model(true)) }
+
+    @Test fun duelChoose() { val m = model(true); primeRound(m); shoot("03-duel-choose-phone", 420, 1100, m); shoot("03-duel-choose-desktop", 1000, 760, m) }
+
+    @Test fun duelReveal() {
+        val m = model(true); primeRound(m)
+        shoot("04-duel-reveal-phone", 420, 1300, m) { Thread.sleep(700); m.vote(0) }
+    }
+
+    @Test fun duelRevealKazakh() {
+        val m = model(true); m.changeLang(Lang.Kk); primeRound(m)
+        shoot("05-duel-reveal-kk-desktop", 1000, 900, m) { Thread.sleep(700); m.vote(1) }
+    }
+
+    @Test fun summary() {
+        val m = model(true); primeRound(m)
+        shoot("06-summary-phone", 420, 820, m) { repeat(2) { Thread.sleep(700); m.vote(0); m.game.next() } }
+    }
+
+    @Test fun rankings() { val m = model(true); m.tab = Tab.Rankings; shoot("07-rankings-phone", 420, 820, m) }
+
+    @Test fun profile() { val m = model(true); m.tab = Tab.Profile; shoot("08-profile-phone", 420, 900, m) }
+}

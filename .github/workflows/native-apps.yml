@@ -1,0 +1,255 @@
+# Builds and tests the NATIVE Affinix apps (Kotlin + Compose Multiplatform: no browser engine inside).
+#   test            unit tests + offscreen screenshots of every screen (artifact "native-screenshots": open the PNGs to see the app)
+#   package-linux   Affinix.deb + a tar.gz of the self-contained app folder
+#   package-windows Affinix.msi + Affinix.exe installers
+#   package-android Affinix-native.apk (signed: with your repository secrets ANDROID_KEYSTORE_* or a one-off key, like release-apps.yml)
+# Run it: Actions -> "Native apps" -> Run workflow (type a version, tick "release" to publish the files on the Download page), or push a change under native/.
+# A release gets the tag native-v<version> (not v*: the old release workflow is manual-only now, but the tags are kept apart anyway).
+# The old web-wrapper apps (release-apps.yml) stay until the native app has everything they have.
+name: Native apps
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "Version number (for example 0.1.0)"
+        required: false
+        default: "0.1.0"
+      release:
+        description: "Publish a GitHub release with the files (the site's Download page picks it up)"
+        type: boolean
+        default: false
+  push:
+    paths: ["native/**", ".github/workflows/native-apps.yml"]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: native-apps-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  APP_VERSION: ${{ inputs.version || '0.1.0' }}
+
+jobs:
+  test:
+    name: Tests and screenshots
+    runs-on: ubuntu-24.04
+    defaults: { run: { working-directory: native } }
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with: { distribution: temurin, java-version: "21" }
+      - uses: gradle/actions/setup-gradle@v4
+      - name: System libraries Skia needs
+        run: sudo apt-get update && sudo apt-get install -y --no-install-recommends libfontconfig1 libfreetype6 libgl1
+      - name: Strings are in sync with the website
+        run: |
+          node scripts/gen-strings.mjs
+          git diff --exit-code -- composeApp/src/commonMain/kotlin/space/affinix/app/i18n/Strings.kt
+      - name: Unit tests and screenshots
+        run: ./gradlew :composeApp:desktopTest --no-daemon
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: native-screenshots
+          path: native/composeApp/build/shots/*.png
+          if-no-files-found: warn
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: native-test-reports
+          path: native/composeApp/build/reports/tests
+          if-no-files-found: warn
+
+  package-linux:
+    name: Linux (.deb)
+    needs: test
+    runs-on: ubuntu-24.04
+    defaults: { run: { working-directory: native } }
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with: { distribution: temurin, java-version: "21" }
+      - uses: gradle/actions/setup-gradle@v4
+      - run: ./gradlew :composeApp:packageDeb :composeApp:createDistributable -PappVersion="$APP_VERSION" --no-daemon
+      - name: Collect
+        run: |
+          mkdir -p out
+          cp composeApp/build/compose/binaries/main/deb/*.deb out/Affinix-native.deb
+          tar -C composeApp/build/compose/binaries/main/app -czf out/Affinix-native-linux.tar.gz Affinix
+          ls -la out
+      - uses: actions/upload-artifact@v4
+        with: { name: native-linux, path: native/out/* }
+
+  package-windows:
+    name: Windows (.msi, .exe)
+    needs: test
+    runs-on: windows-2022
+    defaults: { run: { working-directory: native, shell: bash } }
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with: { distribution: temurin, java-version: "21" }
+      - uses: gradle/actions/setup-gradle@v4
+      - run: ./gradlew :composeApp:packageMsi :composeApp:packageExe -PappVersion="$APP_VERSION" --no-daemon
+      - name: Collect
+        run: |
+          mkdir -p out
+          cp composeApp/build/compose/binaries/main/msi/*.msi out/Affinix-native.msi
+          cp composeApp/build/compose/binaries/main/exe/*.exe out/Affinix-native-Setup.exe
+          ls -la out
+      - uses: actions/upload-artifact@v4
+        with: { name: native-windows, path: native/out/* }
+
+  package-android:
+    name: Android (.apk)
+    needs: test
+    runs-on: ubuntu-24.04
+    defaults: { run: { working-directory: native } }
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with: { distribution: temurin, java-version: "21" }
+      - uses: gradle/actions/setup-gradle@v4
+      - name: Signing key
+        env:
+          KS: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+          KS_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          KS_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+          KS_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+        run: |
+          if [ -n "$KS" ]; then
+            echo "$KS" | base64 -d > "$RUNNER_TEMP/release.jks"
+            ALIAS="${KS_ALIAS:-affinix}"
+            PW="$KS_PASSWORD"
+            KEYPW="${KS_KEY_PASSWORD:-$KS_PASSWORD}"
+            echo "Signing with the key from the repository secrets."
+          else
+            ALIAS=affinix
+            PW=$(openssl rand -hex 24)
+            KEYPW="$PW"
+            keytool -genkeypair -keystore "$RUNNER_TEMP/release.jks" -alias "$ALIAS" -keyalg RSA -keysize 2048 -validity 36500 \
+              -startdate "2020/01/01 00:00:00" -storepass "$PW" -keypass "$KEYPW" -dname "CN=Affinix, O=Nurlan Company, C=KZ"
+            echo "::notice::Signing with a one-off key (no ANDROID_KEYSTORE_* secrets): a phone will not update this APK in place."
+          fi
+          echo "::add-mask::$PW"
+          {
+            echo "ANDROID_KEYSTORE_PATH=$RUNNER_TEMP/release.jks"
+            echo "ANDROID_KEYSTORE_PASSWORD=$PW"
+            echo "ANDROID_KEY_ALIAS=$ALIAS"
+            echo "ANDROID_KEY_PASSWORD=$KEYPW"
+          } >> "$GITHUB_ENV"
+      - name: Build the APK
+        run: ./gradlew :composeApp:assembleRelease -PwithAndroid=true -PappVersion="$APP_VERSION" -PappVersionCode="$(( $(date +%s) / 60 ))" --no-daemon
+      - name: Name it and check it
+        run: |
+          mkdir -p out
+          cp "$(find composeApp/build/outputs/apk/release -name '*.apk' | head -1)" out/Affinix-native.apk
+          BT=$(find "$ANDROID_HOME/build-tools" -mindepth 1 -maxdepth 1 -type d | sort -V | tail -1)
+          "$BT/apksigner" verify --verbose --print-certs out/Affinix-native.apk
+          "$BT/aapt" dump badging out/Affinix-native.apk | grep -E "^package:|application-label:|sdkVersion|launchable" || true
+          ls -l out
+      - uses: actions/upload-artifact@v4
+        with: { name: native-android, path: native/out/* }
+
+  # Starts the APK on a real Android emulator (API 34), checks that the app stays alive and shows its first screen, and keeps a screenshot.
+  # It is allowed to fail without failing the run (emulators are sometimes flaky); read its result before trusting the APK on a phone.
+  android-smoke:
+    name: Android emulator check
+    needs: package-android
+    runs-on: ubuntu-24.04
+    continue-on-error: true
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/download-artifact@v4
+        with: { name: native-android, path: apk }
+      - name: Enable KVM
+        run: |
+          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
+          sudo udevadm control --reload-rules
+          sudo udevadm trigger --name-match=kvm
+      - uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: 34
+          arch: x86_64
+          target: google_apis
+          disable-animations: true
+          script: |
+            adb install -r apk/Affinix-native.apk
+            adb logcat -c
+            adb shell am start -W -n space.affinix.app/.MainActivity
+            sleep 25
+            adb exec-out screencap -p > launch.png
+            adb logcat -d > logcat.txt
+            adb shell pidof space.affinix.app
+            test -z "$(grep -m1 'FATAL EXCEPTION' logcat.txt)"
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with: { name: native-android-emulator, path: "launch.png\nlogcat.txt", if-no-files-found: warn }
+      - name: Screenshot to the android-shots branch
+        if: always()
+        env:
+          TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          mkdir -p out && cp launch.png out/ 2>/dev/null || true
+          tail -n 120 logcat.txt > out/logcat-tail.txt 2>/dev/null || true
+          cd out
+          git init -q -b android-shots
+          git config user.name "native-ci"
+          git config user.email "ci@affinix.space"
+          git add -A
+          git commit -q -m "Emulator run of ${GITHUB_SHA}" || exit 0
+          git push -f "https://x-access-token:${TOKEN}@github.com/${GITHUB_REPOSITORY}.git" android-shots
+
+  # Publishes the finished files as a GitHub release; the Download page reads it. The files get the names the page looks for.
+  publish-release:
+    name: Publish release
+    if: ${{ inputs.release }}
+    needs: [package-linux, package-windows, package-android]
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          path: dist
+          pattern: native-{linux,windows,android}
+      - name: Name the files and publish
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          mkdir -p out
+          cp dist/native-android/Affinix-native.apk out/Affinix.apk
+          cp dist/native-windows/Affinix-native-Setup.exe out/Affinix-Setup.exe
+          cp dist/native-windows/Affinix-native.msi out/Affinix.msi
+          cp dist/native-linux/Affinix-native.deb out/Affinix.deb
+          cp dist/native-linux/Affinix-native-linux.tar.gz out/Affinix-linux.tar.gz
+          (cd out && sha256sum Affinix* > SHA256SUMS.txt && cat SHA256SUMS.txt)
+          gh release create "native-v${APP_VERSION}" out/* --repo "$GITHUB_REPOSITORY" --target "$GITHUB_SHA" \
+            --title "Affinix ${APP_VERSION} (native apps)" \
+            --notes "Native apps (Kotlin + Compose, no browser engine). Windows: Affinix-Setup.exe or Affinix.msi. Linux: Affinix.deb, or Affinix-linux.tar.gz for any distribution. Android: Affinix.apk. Checksums: SHA256SUMS.txt. The installer is not code-signed yet, so Windows shows a SmartScreen warning."
+
+  # Puts the screenshots on a branch of their own (replaced on every run) so they can be opened straight from GitHub: branch "native-shots".
+  publish-shots:
+    name: Screenshots branch
+    needs: test
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/download-artifact@v4
+        with: { name: native-screenshots, path: shots }
+      - name: Push
+        working-directory: shots
+        env:
+          TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          git init -q -b native-shots
+          git config user.name "native-ci"
+          git config user.email "ci@affinix.space"
+          git add -A
+          git commit -q -m "Screenshots of ${GITHUB_SHA} (${GITHUB_REF_NAME})"
+          git push -f "https://x-access-token:${TOKEN}@github.com/${GITHUB_REPOSITORY}.git" native-shots

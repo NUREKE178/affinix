@@ -4083,3 +4083,36 @@ Real apps: Windows .exe, Linux AppImage + .deb, Android .apk, built by GitHub Ac
 First real run of "Release apps" (#1, manual, on `53e2158`): every job green in 2 min 52 s (Version, Check the app files, Windows installer, Linux AppImage + deb, Android apk, Asset links, Publish the release), 4 artifacts. So the Gradle project, the Electron builds and the release step work as written. Two follow-ups: (1) the Asset links job pushed `8da7da7` to `main` with the build's key fingerprint, as designed; it also exposed a stale fingerprint of the deleted sideload key (a local test of `update-assetlinks.mjs` had written it into the untracked files before the first commit): removed from both files; (2) the runner label is pinned to `ubuntu-24.04` (the run's own notice: `ubuntu-latest` moves to Ubuntu 26, whose preinstalled Android SDK / Java were not proven). Remaining warnings are only deprecations (actions on Node 20, `setup-java` v4), no effect on the result.
 
 Android download note (user's phone screenshot: Chrome's download window stuck on "Downloading…" with 501 KB of 501 KB): the APK is only about 0.5 MB, so the wait after 100% is Chrome / Google Play Protect checking an unfamiliar file, not the transfer. Nothing in the file or the release can change that for a sideloaded app; the Download page's Android note (`download.warn.android`, ru / kk / en) now says it, and how to continue (wait up to a minute, or open the file from the notification shade or the Downloads folder, then allow the install once).
+
+## Native apps (Kotlin + Compose Multiplatform), milestone 1 (no migration)
+
+The user asked for installable apps that are not a browser in disguise. The Electron / TWA wrappers (apps/) stay until the native app has
+parity; this adds the native track under `native/`.
+
+- **What exists:** the Arena as a real app on Windows, Linux and Android: login / sign-up / reset, Daily Challenge, free play, duel console
+  (reveal, crowd %, XP, combo, eye tests), summary, rankings, profile, ru/kk/en, Rubik, the Instrument theme. Not yet: Feed, Messages,
+  Marketers' tools, Settings, Google sign-in.
+- **Shared logic, one source of truth:** `Rules.kt` is a 1:1 port of `src/lib/arena/rules.js` (levels, ranks, XP, combo; tested against values computed by
+  the JS). Strings are generated from the site's locale files (`native/scripts/gen-strings.mjs`; CI fails if they drift). Duels come from two Vercel
+  functions that import the website's sampler: `api/arena-deal.mjs` and `api/arena-specimen.mjs` (PNG via resvg), plus a root `package.json`
+  that only installs `@resvg/resvg-js`, `.vercelignore`, and `src/package.json` (`"type": "module"`).
+- **Server:** unchanged. The app uses the existing GoTrue endpoints and the existing RPCs (`arena_state`, `arena_submit`, `arena_tallies`,
+  `arena_my_votes`, `arena_leaderboard`).
+- **Verification:** 23 JVM unit tests pass locally and in CI (rules parity, game state machine, API client incl. token refresh / 401 retry on a mock
+  engine). CI renders every screen offscreen and asserts it is not blank; the PNGs are pushed to the branch `native-shots`. CI builds a
+  `.deb`, an `.msi` + `.exe`, and a signed `.apk` and starts the APK on an Android emulator (branch `android-shots`).
+- **Sandbox facts:** Compose's runtime needs `androidx.*` from Google Maven, which the dev sandbox cannot reach, so UI tests and packaging only run
+  in CI (`-PnoGoogle=true` switches Google Maven off locally). The Android DSL lives in `native/composeApp/android.gradle` (Groovy) because a
+  Kotlin script applied from the module cannot see the AGP types.
+- **Not done / risks:** no real-device run on Windows or a phone; Windows installer unsigned; installers ship a JRE (~120 MB); Google sign-in
+  needs a system-browser OAuth flow and a Supabase redirect allow-list; the Vercel functions were only run locally with Node until the first deploy
+  (check `/api/arena-deal?kind=daily&day=YYYY-MM-DD&season=YYYYMM`).
+
+### Native apps on the Download page (no migration)
+
+- The Download page now looks for the native files: `Affinix-Setup.exe`, `Affinix.apk`, `Affinix.deb`, `Affinix-linux.tar.gz` (the Linux AppImage is gone with the
+  Electron app). `native-apps.yml` got a `publish-release` job (manual run, tick "release"): it names the artifacts like that, adds `Affinix.msi` and
+  `SHA256SUMS.txt`, and creates the release `native-v<version>`; the page picks the newest release that has each file.
+- `release-apps.yml` (Electron + TWA) is legacy: manual only, and only when `legacy` is typed, because it would publish the same file names.
+- Copy changed in ru/kk/en: Linux archive instructions, no size claim for the APK, "fresh designs every day" instead of "updates itself" (the native app does not self-update).
+- `scripts/check-apps.mjs` now checks the native workflow and file names (38 checks), `test_download.mjs` adapted (all passes).

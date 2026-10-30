@@ -11,7 +11,7 @@ import { canInstall, isStandalone, promptInstall, subscribeInstall, detectPlatfo
 import { navigate } from "../router.js";
 
 export const REPO = "NUREKE178/affinix";
-export const ASSETS = { windows: "Affinix-Setup.exe", android: "Affinix.apk", linux: "Affinix.AppImage", deb: "Affinix.deb" };
+export const ASSETS = { windows: "Affinix-Setup.exe", android: "Affinix.apk", linux: "Affinix-linux.tar.gz", deb: "Affinix.deb" };
 const RELEASES_API = `https://api.github.com/repos/${REPO}/releases?per_page=8`;
 const CACHE_KEY = "affinix_release_files";
 const CACHE_MS = 10 * 60 * 1000;
@@ -39,10 +39,10 @@ export async function fetchRelease(fetcher = fetch) {
         for (const [key, name] of Object.entries(ASSETS)) {
           if (files[key]) continue;
           const a = (r.assets ?? []).find((x) => x.name === name);
-          if (a) files[key] = { url: a.browser_download_url, size: a.size, version: String(r.tag_name ?? "").replace(/^v/, ""), published: r.published_at };
+          if (a) files[key] = { url: a.browser_download_url, size: a.size, version: String(r.tag_name ?? "").replace(/^(native-)?v/, ""), published: r.published_at };
         }
       }
-      if (list.length) data = { version: String(list[0].tag_name ?? "").replace(/^v/, ""), published: list[0].published_at, files };
+      if (list.length) data = { version: String(list[0].tag_name ?? "").replace(/^(native-)?v/, ""), published: list[0].published_at, files };
     } else if (res.status !== 404) {
       cacheable = false;
       data = { unknown: true, version: "", published: null, files: Object.fromEntries(Object.entries(ASSETS).map(([k, n]) => [k, { url: direct(n), size: 0, version: "", published: null }])) };
