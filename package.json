@@ -1,0 +1,8 @@
+{
+  "name": "affinix",
+  "private": true,
+  "description": "Affinix: the web app is plain ES modules (no build step); this file only exists so Vercel installs what the serverless functions in api/ need.",
+  "dependencies": {
+    "@resvg/resvg-js": "2.6.2"
+  }
+}

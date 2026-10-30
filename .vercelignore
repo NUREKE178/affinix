@@ -1,0 +1,6 @@
+native
+apps
+scripts
+supabase
+node_modules/.cache
+*.png.bak
