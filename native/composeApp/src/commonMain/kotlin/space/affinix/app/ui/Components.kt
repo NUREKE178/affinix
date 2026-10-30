@@ -63,7 +63,7 @@ fun Txt(
 
 /** A raised key. [lit] is the one orange primary action of a screen. */
 @Composable
-fun KeyButton(text: String, onClick: () -> Unit, modifier: Modifier = Modifier, lit: Boolean = false, enabled: Boolean = true, big: Boolean = false) {
+fun KeyButton(text: String, onClick: () -> Unit, modifier: Modifier = Modifier, lit: Boolean = false, enabled: Boolean = true, big: Boolean = false, compact: Boolean = false) {
     val src = remember { MutableInteractionSource() }
     val pressed by src.collectIsPressedAsState()
     val hovered by src.collectIsHoveredAsState()
@@ -73,9 +73,9 @@ fun KeyButton(text: String, onClick: () -> Unit, modifier: Modifier = Modifier, 
             .then(if (lit) Modifier.lit(12.dp, pressed) else Modifier.key(12.dp, pressed, hovered))
             .hoverable(src)
             .clickable(src, null, enabled = enabled, role = Role.Button, onClick = onClick)
-            .padding(horizontal = 18.dp, vertical = if (big) 15.dp else 11.dp),
+            .padding(horizontal = if (compact) 8.dp else 18.dp, vertical = if (big) 15.dp else 11.dp),
         contentAlignment = Alignment.Center,
-    ) { Txt(text, 15, FontWeight.Bold, if (lit) C.signalInk else C.g100, align = TextAlign.Center) }
+    ) { Txt(text, if (compact) 13 else 15, FontWeight.Bold, if (lit) C.signalInk else C.g100, align = TextAlign.Center, maxLines = 1) }
 }
 
 /** A text-only action (links under a form). */
@@ -145,8 +145,8 @@ fun Field(
 
 @Composable
 fun LangSwitch(current: Lang, onPick: (Lang) -> Unit, modifier: Modifier = Modifier) {
-    Row(modifier, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-        for (l in Lang.entries) KeyButton(l.label, { onPick(l) }, lit = l == current)
+    Row(modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+        for (l in Lang.entries) KeyButton(l.label, { onPick(l) }, Modifier.weight(1f), lit = l == current, compact = true)
     }
 }
 
