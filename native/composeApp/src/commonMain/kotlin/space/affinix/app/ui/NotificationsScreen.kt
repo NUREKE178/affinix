@@ -45,7 +45,6 @@ fun NotificationsScreen(model: AppModel) {
                             it.commentBody?.takeIf { b -> b.isNotBlank() }?.let { b -> Txt("«$b»", 13, color = C.g400, maxLines = 2) }
                             Txt(agoText(it.createdAt), 12, color = C.g500)
                         }
-                        if (!it.read) Chip("•", Tone.Signal)
                     }
                 }
             }

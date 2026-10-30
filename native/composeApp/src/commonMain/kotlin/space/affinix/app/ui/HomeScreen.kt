@@ -1,6 +1,7 @@
 package space.affinix.app.ui
 
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -8,6 +9,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
@@ -35,7 +37,7 @@ fun LevelHeader(model: AppModel, modifier: Modifier = Modifier) {
                     Box(Modifier.weight(1f))
                     Box(contentAlignment = Alignment.TopEnd) {
                         IcoAction("bell", { model.tab = space.affinix.app.store.Tab.Notifications }, active = model.notifications.unread > 0, filled = false)
-                        if (model.notifications.unread > 0) Chip("${model.notifications.unread}", Tone.Signal)
+                        if (model.notifications.unread > 0) Box(Modifier.padding(top = 2.dp).background(C.signal, Pill).padding(horizontal = 5.dp)) { Txt("${model.notifications.unread}", 10, FontWeight.ExtraBold, C.signalInk) }
                     }
                 }
                 Bar(prog.ratio)
