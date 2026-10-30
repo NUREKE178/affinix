@@ -220,12 +220,7 @@ class Api(
     private suspend fun decodeDuels(r: HttpResponse): List<Duel> {
         val text = r.bodyAsText()
         if (!r.status.isSuccess()) throw ApiException(r.status.value, errorOf(text, r.status.value))
-        return try {
-            ApiJson.decodeFromString(ListSerializer(Duel.serializer()), text)
-        } catch (e: kotlinx.serialization.SerializationException) {
-            // not the JSON the dealer sends (a web page, a platform error): say what came back instead of a vague network message
-            throw ApiException(r.status.value, "unexpected answer: " + text.replace(Regex("\\s+"), " ").take(120))
-        }
+        return parseDuels(text)
     }
 
     /** Any public file (an avatar, a post picture), no login. */
@@ -249,4 +244,15 @@ class Api(
         val o = ApiJson.parseToJsonElement(text) as JsonObject
         listOf("error_description", "msg", "message", "error").firstNotNullOfOrNull { (o[it] as? JsonPrimitive)?.content?.takeIf(String::isNotBlank) }
     }.getOrNull() ?: "HTTP $status"
+}
+
+/** The dealer answers `{"duels":[...]}`; a bare array is read too. Anything else is reported as what it is (a web page, a platform error). */
+fun parseDuels(text: String): List<Duel> = try {
+    val el = ApiJson.parseToJsonElement(text)
+    val arr = (el as? JsonObject)?.get("duels") ?: el
+    ApiJson.decodeFromJsonElement(ListSerializer(Duel.serializer()), arr)
+} catch (e: kotlinx.serialization.SerializationException) {
+    throw ApiException(200, "unexpected answer: " + text.replace(Regex("\\s+"), " ").take(120))
+} catch (e: IllegalArgumentException) {
+    throw ApiException(200, "unexpected answer: " + text.replace(Regex("\\s+"), " ").take(120))
 }

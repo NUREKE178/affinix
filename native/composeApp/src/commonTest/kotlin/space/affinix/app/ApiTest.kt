@@ -106,7 +106,7 @@ class ApiTest {
         var url = ""
         val engine = MockEngine { req ->
             url = req.url.toString(); assertEquals(HttpMethod.Get, req.method)
-            respond("""[{"id":"poster-975-980-clarity","season":"202610","family":"poster","dim":"clarity","a":975,"b":980,"pair":"202610/poster/975-980","swap":true,"objective":true,"repeat":false,"daily":true,"set":0,"pool":30,"truth":1,"specimens":[{"name":"x","contrast":4.7,"size":0.58},{"name":"y","contrast":7.3,"size":0.51}]}]""", HttpStatusCode.OK, json)
+            respond("""{"duels":[{"id":"poster-975-980-clarity","season":"202610","family":"poster","dim":"clarity","a":975,"b":980,"pair":"202610/poster/975-980","swap":true,"objective":true,"repeat":false,"daily":true,"set":0,"pool":30,"truth":1,"specimens":[{"name":"x","contrast":4.7,"size":0.58},{"name":"y","contrast":7.3,"size":0.51}]}]}""", HttpStatusCode.OK, json)
         }
         val api = Api(HttpClient(engine), config, MemorySessionStore())
         val d = api.dealDaily("2026-10-30", "202610").single()
@@ -127,5 +127,16 @@ class ApiTest {
         val api = Api(HttpClient(engine), config, MemorySessionStore())
         val e = assertFailsWith<ApiException> { api.dealDaily("2026-10-30", "202610") }
         assertTrue(e.message.startsWith("unexpected answer: <!doctype html>"), e.message)
+    }
+
+    @Test fun aBareArrayIsReadToo() {
+        val one = """{"id":"a-1-2-trust","season":"202610","family":"mark","dim":"trust","a":1,"b":2,"pair":"202610/mark/1-2","specimens":[{"name":"x"},{"name":"y"}]}"""
+        assertEquals(1, space.affinix.app.net.parseDuels("[$one]").size)
+        assertEquals(1, space.affinix.app.net.parseDuels("{\"duels\":[$one]}").size)
+    }
+
+    @Test fun anErrorObjectIsNotMistakenForDuels() {
+        val e = assertFailsWith<ApiException> { space.affinix.app.net.parseDuels("""{"error":"bad day or season"}""") }
+        assertTrue(e.message.startsWith("unexpected answer"), e.message)
     }
 }
