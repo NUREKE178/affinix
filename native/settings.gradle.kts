@@ -1,17 +1,20 @@
 rootProject.name = "affinix-native"
 
+// Google's Maven hosts the androidx libraries that Compose (desktop included) depends on. Only a sandbox that cannot reach it passes -PnoGoogle=true.
+val useGoogle = providers.gradleProperty("noGoogle").orNull != "true"
+
 pluginManagement {
+    val useGoogle = providers.gradleProperty("noGoogle").orNull != "true"
     repositories {
         gradlePluginPortal()
         mavenCentral()
-        // Google's Maven is only needed for the Android build (CI): -PwithAndroid=true
-        if (providers.gradleProperty("withAndroid").orNull == "true") google()
+        if (useGoogle) google()
     }
 }
 dependencyResolutionManagement {
     repositories {
         mavenCentral()
-        if (providers.gradleProperty("withAndroid").orNull == "true") google()
+        if (useGoogle) google()
     }
 }
 include(":composeApp")
