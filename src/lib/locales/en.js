@@ -117,20 +117,20 @@ export default {
     pending: "The ready-made installers are being prepared. Until they appear here you can install Affinix from the browser, it is the same app.",
     version: "Version {v} · {size} · {date}",
     warn: {
-      linux: "After downloading: make the file executable (right-click → Properties → Allow executing, or chmod +x Affinix.AppImage) and run it.",
+      linux: "After downloading, unpack the archive (tar -xzf Affinix-linux.tar.gz) and run Affinix/bin/Affinix.",
       deb: "On Debian, Ubuntu and Mint the .deb is easier to install: sudo apt install ./Affinix.deb",
       win: "Windows may show “Windows protected your PC”. The app is not signed with a paid certificate yet: choose More info → Run anyway.",
-      android: "The file is small (about 0.5 MB). If the download window keeps saying “Downloading…” after 100%, Chrome and Google Play Protect are checking it (up to a minute): wait, or open the file from the notification shade or the Downloads folder. Then Android will ask to allow installs from your browser: allow it once."
+      android: "If the download window keeps saying “Downloading…” after 100%, Chrome and Google Play Protect are checking it (up to a minute): wait, or open the file from the notification shade or the Downloads folder. Then Android will ask to allow installs from your browser: allow it once."
     },
     why: {
       t1: "Always in reach",
       b1: "Its own window and icon, opens straight into the Arena.",
       t2: "Same account",
       b2: "Your streak, taste and messages are everywhere.",
-      t3: "Updates itself",
-      b3: "You always see today's new designs."
+      t3: "Fresh designs every day",
+      b3: "New designs come from the server, so you do not have to update the app for them."
     },
-    linux: { name: "Linux", note: "Any distribution: AppImage or .deb (x64)", cta: "Download for Linux", ctaDeb: "Download .deb (Debian, Ubuntu)" },
+    linux: { name: "Linux", note: "Any distribution: an archive or a .deb (x64)", cta: "Download for Linux (archive)", ctaDeb: "Download .deb (Debian, Ubuntu)" },
     android: {
       name: "Android",
       note: "Android 7 and newer. Install file (.apk)",

@@ -1,4 +1,4 @@
-// Checks the app packaging without building anything (the real build runs in .github/workflows/release-apps.yml, which runs this first).
+// Checks the app packaging without building anything (the real build runs in .github/workflows/native-apps.yml; the older web-wrapper apps in apps/ are kept as a legacy path).
 //   node scripts/check-apps.mjs
 // What it proves: the file names the site's Download page looks for are the ones the build produces; the desktop app's link rules and
 // affinix:// handling behave; every Android resource the manifest names exists; the Digital Asset Links file matches the signing key.
@@ -19,12 +19,12 @@ const dl = read("src/pages/Download.js");
 const names = Object.fromEntries([...dl.matchAll(/(\w+):\s*"(Affinix[\w.-]*)"/g)].map((m) => [m[1], m[2]]));
 const wf = read(".github/workflows/release-apps.yml");
 const pkg = JSON.parse(read("apps/desktop/package.json"));
-check("Download page names the four files", names.windows === "Affinix-Setup.exe" && names.android === "Affinix.apk" && names.linux === "Affinix.AppImage" && names.deb === "Affinix.deb", JSON.stringify(names));
-check("the Windows installer is built under that name", pkg.build.nsis.artifactName === names.windows);
-check("the AppImage and the .deb are built under those names", pkg.build.appImage.artifactName === names.linux && pkg.build.deb.artifactName === names.deb);
-check("the Linux build makes both an AppImage and a .deb", pkg.build.linux.target.some((t) => t.target === "AppImage") && pkg.build.linux.target.some((t) => t.target === "deb") && /AppImage deb/.test(pkg.scripts["dist-linux"]));
-check("the workflow publishes all four files and the checksums", Object.values(names).every((n) => wf.includes(n)) && wf.includes("SHA256SUMS.txt"));
-check("the Android job renames the build to Affinix.apk", wf.includes("Affinix.apk") && wf.includes("app-release.apk"));
+const nwf = read(".github/workflows/native-apps.yml");
+check("Download page names the four files", names.windows === "Affinix-Setup.exe" && names.android === "Affinix.apk" && names.linux === "Affinix-linux.tar.gz" && names.deb === "Affinix.deb", JSON.stringify(names));
+check("the native workflow publishes all four files under those names, with checksums", Object.values(names).every((n) => nwf.includes(`out/${n}`)) && nwf.includes("SHA256SUMS.txt"));
+check("a native release gets a tag that the old release workflow does not react to", /native-v/.test(nwf) && !/tags:\s*\[\s*"native/.test(nwf));
+check("the old web-wrapper release workflow can no longer overwrite those names by accident", !/^\s*push:\s*$/m.test(wf) && /legacy/.test(wf));
+check("the Android build is signed from the environment (no key in the repository)", nwf.includes("ANDROID_KEYSTORE_PATH") && existsSync(join(ROOT, "native/composeApp/android.gradle")));
 check("the repository named in the Download page owns the update feed", dl.includes(`"${pkg.build.publish[0].owner}/${pkg.build.publish[0].repo}"`));
 check("the desktop package lists electron-updater as a runtime dependency", !!pkg.dependencies?.["electron-updater"] && !!pkg.devDependencies?.electron && !!pkg.devDependencies?.["electron-builder"]);
 check("the desktop lock file exists (the workflow runs npm ci)", existsSync(join(ROOT, "apps/desktop/package-lock.json")));

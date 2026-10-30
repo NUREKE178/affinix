@@ -1,3 +1,5 @@
+# LEGACY. The Download page now serves the NATIVE apps built by native-apps.yml (Kotlin + Compose). This workflow builds the older web-wrapper apps
+# (Electron, Trusted Web Activity) under the same file names, so it only runs by hand and only when you type  legacy  as the confirmation.
 # Builds the real Affinix apps and publishes them as a GitHub release; the Download page of the site reads that release:
 #   Affinix-Setup.exe  Windows installer          (Electron, built on a Windows machine)
 #   Affinix.AppImage   Linux, runs anywhere       (Electron)         + latest-linux.yml (self-update)
@@ -12,7 +14,7 @@
 #   ANDROID_KEYSTORE_BASE64 (the .jks file in base64), ANDROID_KEYSTORE_PASSWORD, ANDROID_KEY_ALIAS, ANDROID_KEY_PASSWORD (optional)
 # With your own key every release is signed the same way, so a phone updates the app in place. After each build the "Asset links" job publishes the
 # key's fingerprint in .well-known/assetlinks.json, which is what lets the app run full screen without a browser bar.
-name: Release apps
+name: Release apps (legacy web-wrapper apps)
 
 on:
   workflow_dispatch:
@@ -21,8 +23,9 @@ on:
         description: "Version number (for example 1.0.0)"
         required: true
         default: "1.0.0"
-  push:
-    tags: ["v*"]
+      legacy:
+        description: "Type  legacy  to confirm: this publishes the OLD web-wrapper apps (Electron / Trusted Web Activity) under the same file names as the native apps and would replace them on the Download page"
+        required: true
 
 permissions:
   contents: write
@@ -42,8 +45,10 @@ jobs:
     steps:
       - id: v
         env:
-          RAW: ${{ inputs.version || github.ref_name }}
+          RAW: ${{ inputs.version }}
+          LEGACY: ${{ inputs.legacy }}
         run: |
+          if [ "$LEGACY" != "legacy" ]; then echo "::error::Type 'legacy' in the confirmation field to run this old workflow."; exit 1; fi
           V="${RAW#v}"
           if ! echo "$V" | grep -Eq '^[0-9]+\.[0-9]+\.[0-9]+(-[0-9A-Za-z.]+)?$'; then echo "::error::'$RAW' is not a version like 1.2.3"; exit 1; fi
           {

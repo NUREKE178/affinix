@@ -3,7 +3,8 @@
 #   package-linux   Affinix.deb + a tar.gz of the self-contained app folder
 #   package-windows Affinix.msi + Affinix.exe installers
 #   package-android Affinix-native.apk (signed: with your repository secrets ANDROID_KEYSTORE_* or a one-off key, like release-apps.yml)
-# Run it: Actions -> "Native apps" -> Run workflow (optionally type a version), or push a change under native/.
+# Run it: Actions -> "Native apps" -> Run workflow (type a version, tick "release" to publish the files on the Download page), or push a change under native/.
+# A release gets the tag native-v<version> (not v*: the old release workflow is manual-only now, but the tags are kept apart anyway).
 # The old web-wrapper apps (release-apps.yml) stay until the native app has everything they have.
 name: Native apps
 
@@ -14,6 +15,10 @@ on:
         description: "Version number (for example 0.1.0)"
         required: false
         default: "0.1.0"
+      release:
+        description: "Publish a GitHub release with the files (the site's Download page picks it up)"
+        type: boolean
+        default: false
   push:
     paths: ["native/**", ".github/workflows/native-apps.yml"]
 
@@ -198,6 +203,34 @@ jobs:
           git add -A
           git commit -q -m "Emulator run of ${GITHUB_SHA}" || exit 0
           git push -f "https://x-access-token:${TOKEN}@github.com/${GITHUB_REPOSITORY}.git" android-shots
+
+  # Publishes the finished files as a GitHub release; the Download page reads it. The files get the names the page looks for.
+  publish-release:
+    name: Publish release
+    if: ${{ inputs.release }}
+    needs: [package-linux, package-windows, package-android]
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          path: dist
+          pattern: native-{linux,windows,android}
+      - name: Name the files and publish
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          mkdir -p out
+          cp dist/native-android/Affinix-native.apk out/Affinix.apk
+          cp dist/native-windows/Affinix-native-Setup.exe out/Affinix-Setup.exe
+          cp dist/native-windows/Affinix-native.msi out/Affinix.msi
+          cp dist/native-linux/Affinix-native.deb out/Affinix.deb
+          cp dist/native-linux/Affinix-native-linux.tar.gz out/Affinix-linux.tar.gz
+          (cd out && sha256sum Affinix* > SHA256SUMS.txt && cat SHA256SUMS.txt)
+          gh release create "native-v${APP_VERSION}" out/* --repo "$GITHUB_REPOSITORY" --target "$GITHUB_SHA" \
+            --title "Affinix ${APP_VERSION} (native apps)" \
+            --notes "Native apps (Kotlin + Compose, no browser engine). Windows: Affinix-Setup.exe or Affinix.msi. Linux: Affinix.deb, or Affinix-linux.tar.gz for any distribution. Android: Affinix.apk. Checksums: SHA256SUMS.txt. The installer is not code-signed yet, so Windows shows a SmartScreen warning."
 
   # Puts the screenshots on a branch of their own (replaced on every run) so they can be opened straight from GitHub: branch "native-shots".
   publish-shots:

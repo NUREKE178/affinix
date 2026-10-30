@@ -4107,3 +4107,12 @@ parity; this adds the native track under `native/`.
 - **Not done / risks:** no real-device run on Windows or a phone; Windows installer unsigned; installers ship a JRE (~120 MB); Google sign-in
   needs a system-browser OAuth flow and a Supabase redirect allow-list; the Vercel functions were only run locally with Node until the first deploy
   (check `/api/arena-deal?kind=daily&day=YYYY-MM-DD&season=YYYYMM`).
+
+### Native apps on the Download page (no migration)
+
+- The Download page now looks for the native files: `Affinix-Setup.exe`, `Affinix.apk`, `Affinix.deb`, `Affinix-linux.tar.gz` (the Linux AppImage is gone with the
+  Electron app). `native-apps.yml` got a `publish-release` job (manual run, tick "release"): it names the artifacts like that, adds `Affinix.msi` and
+  `SHA256SUMS.txt`, and creates the release `native-v<version>`; the page picks the newest release that has each file.
+- `release-apps.yml` (Electron + TWA) is legacy: manual only, and only when `legacy` is typed, because it would publish the same file names.
+- Copy changed in ru/kk/en: Linux archive instructions, no size claim for the APK, "fresh designs every day" instead of "updates itself" (the native app does not self-update).
+- `scripts/check-apps.mjs` now checks the native workflow and file names (38 checks), `test_download.mjs` adapted (all passes).
