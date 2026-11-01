@@ -37,9 +37,10 @@ data class Member(val id: String, val userId: String, val role: String, val join
  * their results, the participants and the team. The app builds a new experiment (the compact builder), publishes a draft and deletes; editing an existing one is on the website.
  */
 class ResearchModel(private val api: Api, private val scope: CoroutineScope, private val me: () -> String?) {
-    enum class Section { Experiments, Participants, Crowd, Team }
+    /** the order of the tabs: like the website, "Styles" is the first page of the marketers area */
+    enum class Section { Styles, Experiments, Participants, Crowd, Team }
 
-    var section by mutableStateOf(Section.Experiments)
+    var section by mutableStateOf(Section.Styles)
 
     // ---- companies ---------------------------------------------------------------------------------------------------------------
     var orgs by mutableStateOf<List<Org>>(emptyList())

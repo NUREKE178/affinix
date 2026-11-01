@@ -84,12 +84,13 @@ fun ResearchScreen(model: AppModel) {
         if (r.orgs.size > 1) CompanyPicker(r)
         else r.org?.let { Txt(it.name, 13, FontWeight.Bold, C.g400) }
         Segmented(
-            listOf(t("experiments.title"), t("participants.title"), t("crowd.mineTitle"), t("team.title")),
+            listOf(t("shell.nav.styles"), t("experiments.title"), t("participants.title"), t("crowd.mineTitle"), t("team.title")),
             r.section.ordinal, { r.section = Section.values()[it] },
         )
         r.notice?.let { Chip(t(it), Tone.Info) }
         when {
             r.section == Section.Crowd -> CrowdFlow(model)
+            r.section == Section.Styles -> StylesScreen(model)
             !r.orgsLoaded -> Txt(t("common.loading"), 14, color = C.g500)
             r.orgsFailed -> Plate(Modifier.fillMaxWidth()) {
                 Txt(t("research.actionFailed"), 14, color = C.g300); Spacer(Modifier.height(10.dp)); KeyButton(t("people.retry"), { r.loadOrgs() }, compact = true)
@@ -99,7 +100,7 @@ fun ResearchScreen(model: AppModel) {
                 Section.Experiments -> ExperimentsList(model)
                 Section.Participants -> ParticipantsList(model)
                 Section.Team -> TeamSection(model)
-                Section.Crowd -> Unit
+                Section.Crowd, Section.Styles -> Unit
             }
         }
     }
