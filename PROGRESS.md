@@ -4243,6 +4243,9 @@ The first half of the marketers' tools, in the native apps (Kotlin + Compose), o
   an error depending on how the server resolves the relation. Now `MessageRow.reply` is read leniently (`JsonElement`), the quote is taken from the loaded thread (or one extra `id=in.(...)` read for a message older than the page), a refused or undecodable
   embedded read falls back to a plain read (reactions then come from `message_reactions`; remembered for the session), and a first load that fails shows the real reason (`HTTP 400: ...`) with a Retry key (`MessagesModel.threadError / retryThread`)
   instead of the spinner. The notice line wraps instead of being cut. **The real cause is unconfirmed**: the screen will name it if it happens again.
+- **Message field** (`ui/ChatsScreen.kt` `ChatInput`, `ui/Components.kt` `RoundKey`): the old row squeezed a `TextArea` (min height 44 + 12 padding top and bottom, so a two-line placeholder) between an icon and a wide text "Send" key. Now: a rounded field that
+  takes the width the keys leave and grows to six lines, a round photo key on the left and a round lit send key (arrow icon, dimmed until there is something to send, a check while editing) on the right, both bottom-aligned; content descriptions for
+  accessibility. Seen in screenshot case 13 (thread).
 - **Strings:** `people.openProfile`, `people.profile.*`, `feed.noBio`, `friends.countLabel`, `arena.quests.streakTitle / dayOne / days`, and the app-only `messages.loadFailed`; 1115 keys x 3 languages.
 - **Tests:** `ProfileViewerTest` (8) and `ChatLoadingTest` (5); 207 JVM tests locally (without the Skia screenshots). Screenshot cases 38-41 (profile card in ru and kk, the chat that cannot load, rankings with faces); the mock server can now fail the messages read.
 - **Not in the app:** the website's owner / admin badge on the card (needs migration 0025's column in the lookup); removing a friend from the card (it is on the Friends page).
