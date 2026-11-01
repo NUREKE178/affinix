@@ -4184,3 +4184,19 @@ The first half of the marketers' tools, in the native apps (Kotlin + Compose), o
 - **CI fix:** `MarathonTest.playingASetDealsThatSetAndOnlyWhatIsStillMissing` failed once in CI with a timeout. `refresh()` sets `today` and only afterwards finishes the slate and the seen-votes
   requests, and `startSet()` ignores a start while `loading`; the test waited for `today` only. Both set tests now wait for `!loading` as well (a real race in the test, not in the app).
 - **Not in the native apps yet:** the site's Styles page ("What people like", the main page of the marketers area), editing, pausing or duplicating an existing experiment, reports (markdown / PDF), AI insights, the admin panel, creating a company, real billing.
+
+### Native apps: "What people love" (the Styles page) in the Marketing tab (migration: none, 0026 is used)
+
+- **Where:** the first section of the Marketing tab (the website's marketers area also opens on Styles). `store/StyleStats.kt` is a port of the maths of `src/lib/styleInsights.js`
+  (`traitLifts`, `recipeOf`, `wilsonLow`, `rankSpecimens`), `store/StylesModel.kt` loads and filters, `ui/StylesScreens.kt` draws it.
+- **Data:** `arena_style_report` (counts per specimen and question) and `arena_style_segments` (countries with at least 8 players) over the same RPCs as the site; the measured traits of up to 900
+  specimens come from the website's own generator through `/api/arena-traits` (the report's specimen keys are `family:index`). A server without migration 0026 gets the site's "not connected yet" message.
+- **Filters as on the site:** question (11), kind of design (9 families), which designs (all / today's drop / classics), month (this / last), audience (countries with enough players).
+- **Parity:** `native/scripts/gen-styles-fixture.mjs` runs the site's `styleInsights.js` over 420 specimen records with real traits and records lifts, recipe, both ranked lists and Wilson bounds
+  (`desktopTest/resources/styles.json`); `StylesTest` must match to 1e-9 and in list order. `StylesModelTest` (6) checks the requests, the family / question / classics / country filters, the
+  "migration missing" case and "too few answers".
+- **Not in the app:** CSV download (no file saving yet), country names (codes only), the white "all countries" mark on the portrait, the link to the experiments page.
+- **A note on the site:** its "chosen least often" list sorts specimens that lost more than they won by the *ascending* lower bound of the loss rate, so it lists the mildest losers first.
+  The app copies that order on purpose (parity); fixing it means changing `rankSpecimens` in `styleInsights.js`, then the fixture and the Kotlin port.
+- **Strings:** 939 keys x 3 languages (the `styles` subtree and `shell.nav.styles` were added). Screenshot cases 30 and 31 (English and Kazakh).
+- **Tests:** 176 JVM tests locally (without the Skia screenshots).

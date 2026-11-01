@@ -45,12 +45,22 @@ class ScreenshotTest {
 
     private val researchFixture = kotlinx.serialization.json.Json.parseToJsonElement(javaClass.getResource("/research.json")!!.readText()) as kotlinx.serialization.json.JsonObject
 
+    private val stylesFixture = kotlinx.serialization.json.Json.parseToJsonElement(javaClass.getResource("/styles.json")!!.readText()) as kotlinx.serialization.json.JsonObject
+    private val styleRecords = stylesFixture["entries"] as kotlinx.serialization.json.JsonArray
+
     private val dnaFixture = kotlinx.serialization.json.Json.parseToJsonElement(javaClass.getResource("/dna.json")!!.readText()) as kotlinx.serialization.json.JsonObject
 
     /** [marathon]: the daily ten is done and set 2 too, set 3 is half way; [dna]: the player has 90 answers on record */
-    private fun model(signedIn: Boolean, marathon: Boolean = false, dna: Boolean = false): AppModel {
+    private fun model(signedIn: Boolean, marathon: Boolean = false, dna: Boolean = false, styles: Boolean = false): AppModel {
         val engine = MockEngine { req ->
             val body = when {
+                styles && req.url.encodedPath.endsWith("arena_style_report") -> """{"season":"x","votes":9000,"voters":410,"rows":[${styleRecords.joinToString(",") { r -> val o = r as kotlinx.serialization.json.JsonObject; """["${(o["stim"] as kotlinx.serialization.json.JsonPrimitive).content}","preference",${o["wins"]},${o["losses"]}]""" }}]}"""
+                styles && req.url.encodedPath.endsWith("arena_style_segments") -> """{"countries":[{"code":"KZ","voters":41,"votes":2300},{"code":"RU","voters":22,"votes":900}],"rows":[]}"""
+                styles && req.url.encodedPath.endsWith("arena-traits") -> {
+                    val byStim = styleRecords.associate { r -> val o = r as kotlinx.serialization.json.JsonObject; (o["stim"] as kotlinx.serialization.json.JsonPrimitive).content to o["traits"].toString() }
+                    val items = kotlinx.serialization.json.Json.parseToJsonElement(String(req.body.toByteArray())).let { (it as kotlinx.serialization.json.JsonObject)["items"] as kotlinx.serialization.json.JsonArray }
+                    """{"order":["warm","bold","round","airy","vivid","rich","dark"],"traits":{${items.joinToString(",") { it0 -> val a = it0 as kotlinx.serialization.json.JsonArray; """"${(a[0] as kotlinx.serialization.json.JsonPrimitive).content}/${(a[1] as kotlinx.serialization.json.JsonPrimitive).content}/${(a[2] as kotlinx.serialization.json.JsonPrimitive).content}":${byStim.getValue("${(a[1] as kotlinx.serialization.json.JsonPrimitive).content}:${(a[2] as kotlinx.serialization.json.JsonPrimitive).content}")}""" }}}}"""
+                }
                 req.url.encodedPath.endsWith("/organization_members") && req.url.encodedQuery.contains("organization%3Aorganizations") -> """[{"role":"owner","organization":{"id":"org-1","name":"Acme Coffee","slug":"acme"}}]"""
                 req.url.encodedPath.endsWith("/organization_members") -> """[{"id":"m1","role":"owner","user_id":"u1","created_at":"2026-09-01T10:00:00+00:00","profile":{"full_name":"Nurlan K.","email":"nurlan@acme.kz"}},{"id":"m2","role":"researcher","user_id":"u3","created_at":"2026-10-01T10:00:00+00:00","profile":{"full_name":"Dias","email":"dias@acme.kz"}},{"id":"m3","role":"viewer","user_id":"u5","created_at":"2026-10-12T10:00:00+00:00","profile":{"full_name":"","email":"madina@acme.kz"}}]"""
                 req.url.encodedPath.endsWith("/experiments") -> """[${researchFixture["experiment"]},{"id":"exp-0002","organization_id":"org-1","name":"Poster draft","objective":"Which poster for the launch?","research_type":"ad_testing","status":"draft","created_at":"2026-10-20T10:00:00+00:00","updated_at":"2026-10-28T10:00:00+00:00","experiment_variants":[],"experiment_questions":[]}]"""
@@ -154,14 +164,31 @@ class ScreenshotTest {
 
     @Test fun marathon() { shoot("17-marathon-phone", 420, 1500, model(true, marathon = true)) { Thread.sleep(600) } }
 
-    @Test fun researchList() { val m = model(true); m.tab = Tab.Research; shoot("19-research-phone", 420, 1300, m) { Thread.sleep(900) } }
+    @Test fun researchList() { val m = model(true); m.tab = Tab.Research; m.research.section = space.affinix.app.store.ResearchModel.Section.Experiments; shoot("19-research-phone", 420, 1300, m) { Thread.sleep(900) } }
 
     // the bottom bar has six tabs now: the longest labels must still fit a 420 px phone
-    @Test fun marketersTabKazakh() { val m = model(true); m.changeLang(Lang.Kk); m.tab = Tab.Research; shoot("28-marketers-tab-kk-phone", 420, 900, m) { Thread.sleep(900) } }
-    @Test fun marketersTabRussian() { val m = model(true); m.changeLang(Lang.Ru); m.tab = Tab.Research; shoot("29-marketers-tab-ru-phone", 420, 900, m) { Thread.sleep(900) } }
+    @Test fun marketersTabKazakh() { val m = model(true); m.changeLang(Lang.Kk); m.tab = Tab.Research; m.research.section = space.affinix.app.store.ResearchModel.Section.Experiments; shoot("28-marketers-tab-kk-phone", 420, 900, m) { Thread.sleep(900) } }
+    @Test fun marketersTabRussian() { val m = model(true); m.changeLang(Lang.Ru); m.tab = Tab.Research; m.research.section = space.affinix.app.store.ResearchModel.Section.Experiments; shoot("29-marketers-tab-ru-phone", 420, 900, m) { Thread.sleep(900) } }
+
+    /** "What people love": the first page of the marketers area, with the fixture's 420 records behind it */
+    private fun stylesShot(name: String, lang: Lang?) {
+        val m = model(true, styles = true); lang?.let { m.changeLang(it) }; m.tab = Tab.Research
+        shoot(name, 420, 3000, m) {
+            val until = System.currentTimeMillis() + 8000
+            while (m.styles.status != space.affinix.app.store.StylesModel.Status.Ready && System.currentTimeMillis() < until) Thread.sleep(100)
+            // the specimen pictures come from the server in the app; here every one gets a coloured swatch
+            m.styles.view()?.ranked?.let { r ->
+                (r.best + r.worst).forEachIndexed { i, sp -> m.images[m.thumbKey(m.styles.season, sp.family, sp.index)] = swatch(Color(0xFF000000 or (0x2A3B55L + i * 0x0F1A07L).toLong()), Color(0xFFFF6A1F)) }
+            }
+            Thread.sleep(600)
+        }
+    }
+
+    @Test fun stylesPage() = stylesShot("30-styles-phone", null)
+    @Test fun stylesPageKazakh() = stylesShot("31-styles-kk-phone", Lang.Kk)
 
     @Test fun researchExperimentResults() {
-        val m = model(true); m.tab = Tab.Research
+        val m = model(true); m.tab = Tab.Research; m.research.section = space.affinix.app.store.ResearchModel.Section.Experiments
         shoot("24-experiment-results-phone", 420, 3600, m) { Thread.sleep(900); m.research.openExperiment("exp-0001"); Thread.sleep(900) }
     }
 

@@ -100,6 +100,8 @@ class AppModel(
         private set
     var research by mutableStateOf(ResearchModel(api, scope) { api.session?.userId })
         private set
+    var styles by mutableStateOf(StylesModel(api, scope))
+        private set
 
     /** a signed-out player's posts, friends and chats must not show for the next one */
     private fun freshSocial() {
@@ -111,6 +113,7 @@ class AppModel(
         crowd = CrowdModel(api, scope, { api.session?.userId }, { profile?.xp ?: 0L })
         mission = MissionModel(api, scope, { api.session?.userId }, ::adopt)
         research = ResearchModel(api, scope) { api.session?.userId }
+        styles = StylesModel(api, scope)
     }
 
     val email get() = api.session?.email.orEmpty()
@@ -366,6 +369,19 @@ class AppModel(
                     imageFailed[k] = true // the picture decoder (Skia) could not start: show the placeholder instead of crashing
                 }
             }
+        }
+    }
+
+    fun thumbKey(season: String, family: String, index: Int) = "$season/$family/$index@240"
+
+    /** A small picture of one specimen for the Styles page, kept in [images] under [thumbKey]. */
+    @OptIn(ExperimentalResourceApi::class)
+    fun ensureSpecimenThumb(season: String, family: String, index: Int) {
+        val k = thumbKey(season, family, index)
+        if (images.containsKey(k) || imageFailed[k] == true) return
+        scope.launch {
+            try { images[k] = api.specimenPng(season, family, index, 240).decodeToImageBitmap() }
+            catch (e: CancellationException) { throw e } catch (e: Exception) { imageFailed[k] = true } catch (e: LinkageError) { imageFailed[k] = true }
         }
     }
 
