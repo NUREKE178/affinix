@@ -30,7 +30,9 @@ import space.affinix.app.net.Specimen
 import space.affinix.app.store.AppModel
 import space.affinix.app.store.Mode
 import space.affinix.app.store.Tab
+import space.affinix.app.ui.Motion
 import java.io.File
+import kotlin.test.BeforeTest
 import kotlin.test.Test
 import kotlin.test.assertTrue
 
@@ -41,6 +43,9 @@ import kotlin.test.assertTrue
 @OptIn(ExperimentalComposeUiApi::class)
 class ScreenshotTest {
     private val json = headersOf(HttpHeaders.ContentType, "application/json")
+
+    /** a picture is of the finished screen: nothing is still sliding in when it is taken (MotionScreenshotTest checks that the motion itself works) */
+    @BeforeTest fun still() { Motion.enabled = false }
     private val outDir = File(System.getProperty("shots") ?: "build/shots").also { it.mkdirs() }
 
     private val researchFixture = kotlinx.serialization.json.Json.parseToJsonElement(javaClass.getResource("/research.json")!!.readText()) as kotlinx.serialization.json.JsonObject
@@ -51,9 +56,15 @@ class ScreenshotTest {
     private val dnaFixture = kotlinx.serialization.json.Json.parseToJsonElement(javaClass.getResource("/dna.json")!!.readText()) as kotlinx.serialization.json.JsonObject
 
     /** [marathon]: the daily ten is done and set 2 too, set 3 is half way; [dna]: the player has 90 answers on record */
-    private fun model(signedIn: Boolean, marathon: Boolean = false, dna: Boolean = false, styles: Boolean = false): AppModel {
+    private fun model(signedIn: Boolean, marathon: Boolean = false, dna: Boolean = false, styles: Boolean = false, admin: Boolean = false): AppModel {
         val engine = MockEngine { req ->
             val body = when {
+                admin && req.url.encodedPath.endsWith("/profiles") && req.url.encodedQuery.contains("is_admin") -> """[{"is_admin":true,"is_owner":true}]"""
+                admin && req.url.encodedPath.endsWith("admin_overview") -> """{"users":1240,"newUsers7d":86,"active7d":412,"admins":4,"companies":163,"experiments":240,"responses":18450,"posts":803,"comments":2104,"messages7d":6402,"friendships":960,"arenaPlayers":587,"testsOpen":12,"testsFlagged":2}"""
+                admin && req.url.encodedPath.endsWith("arena_admin_stats") -> """{"players":587,"votes":91000,"tests":31,"testVotes":4200,"days":[${(0 until 14).joinToString(",") { i -> "{\"day\":\"2026-10-${(18 + i).toString().padStart(2, '0')}\",\"players\":${40 + i * 7},\"votes\":${300 + (i * 97) % 500 + i * 20},\"missions\":${i},\"avgMinutes\":${(3 + i * 0.4)},\"over1h\":${i},\"over3h\":${i / 4}}" }}]}"""
+                admin && req.url.encodedPath.endsWith("admin_users") -> """[{"id":"u1","full_name":"Nurlan K.","username":"nurlan","email":"nurlan@affinix.space","avatar_url":null,"is_admin":true,"is_owner":true,"created_at":"2026-08-01T10:00:00+00:00","org_name":"Acme Coffee","org_role":"owner","posts":14,"xp":5120,"total":3},{"id":"u2","full_name":"Aigerim K.","username":"aigerim","email":"aigerim@acme.kz","avatar_url":null,"is_admin":true,"is_owner":false,"created_at":"2026-09-12T10:00:00+00:00","org_name":"Acme Coffee","org_role":"admin","posts":6,"xp":3410,"total":3},{"id":"u3","full_name":"Dias","username":"dias","email":"dias@acme.kz","avatar_url":null,"is_admin":false,"is_owner":false,"created_at":"2026-10-20T10:00:00+00:00","org_name":null,"org_role":null,"posts":1,"xp":240,"total":3}]"""
+                admin && req.url.encodedPath.endsWith("admin_audit_list") -> """[{"id":3,"action":"post_removed","created_at":"2026-10-31T10:00:00+00:00","actor_id":"u1","actor_name":"Nurlan K.","target_id":"u3","target_name":"Dias","meta":{"excerpt":"buy cheap watches now"}},{"id":2,"action":"admin_granted","created_at":"2026-10-20T10:00:00+00:00","actor_id":"u1","actor_name":"Nurlan K.","target_id":"u2","target_name":"Aigerim K.","meta":{}},{"id":1,"action":"owner_set","created_at":"2026-08-01T10:00:00+00:00","actor_id":null,"actor_name":null,"target_id":"u1","target_name":"Nurlan K.","meta":{}}]"""
+                admin && req.url.encodedPath.endsWith("arena_test_flagged") -> """[{"id":"t9","title":"Free money logo test","status":"flagged","note":null,"createdAt":"x","reports":3,"reasons":["spam","scam"],"owner":{"id":"u3","name":"Dias","username":"dias","avatarUrl":null},"items":[]}]"""
                 styles && req.url.encodedPath.endsWith("arena_style_report") -> """{"season":"x","votes":9000,"voters":410,"rows":[${styleRecords.joinToString(",") { r -> val o = r as kotlinx.serialization.json.JsonObject; """["${(o["stim"] as kotlinx.serialization.json.JsonPrimitive).content}","preference",${o["wins"]},${o["losses"]}]""" }}]}"""
                 styles && req.url.encodedPath.endsWith("arena_style_segments") -> """{"countries":[{"code":"KZ","voters":41,"votes":2300},{"code":"RU","voters":22,"votes":900}],"rows":[]}"""
                 styles && req.url.encodedPath.endsWith("arena-traits") -> {
@@ -191,6 +202,20 @@ class ScreenshotTest {
 
     @Test fun reportPage() = reportShot("32-report-phone", null)
     @Test fun reportPageKazakh() = reportShot("33-report-kk-phone", Lang.Kk)
+
+    private fun adminShot(name: String, tab: space.affinix.app.store.AdminModel.Tab, ready: (space.affinix.app.store.AdminModel) -> Boolean, lang: Lang? = null) {
+        val m = model(true, admin = true); lang?.let { m.changeLang(it) }; m.tab = Tab.Admin; m.admin.tab = tab
+        shoot(name, 420, 2500, m) {
+            val until = System.currentTimeMillis() + 8000
+            while (!ready(m.admin) && System.currentTimeMillis() < until) Thread.sleep(100)
+            Thread.sleep(500)
+        }
+    }
+
+    @Test fun adminOverview() = adminShot("34-admin-overview-phone", space.affinix.app.store.AdminModel.Tab.Overview, { it.stats != null })
+    @Test fun adminPeopleKazakh() = adminShot("35-admin-people-kk-phone", space.affinix.app.store.AdminModel.Tab.People, { it.peopleStatus == space.affinix.app.store.AdminModel.Status.Ready }, Lang.Kk)
+    @Test fun adminModeration() = adminShot("36-admin-moderation-phone", space.affinix.app.store.AdminModel.Tab.Moderation, { it.moderationStatus == space.affinix.app.store.AdminModel.Status.Ready })
+    @Test fun adminLog() = adminShot("37-admin-log-phone", space.affinix.app.store.AdminModel.Tab.Log, { it.logStatus == space.affinix.app.store.AdminModel.Status.Ready })
 
     @Test fun stylesPage() = stylesShot("30-styles-phone", null)
     @Test fun stylesPageKazakh() = stylesShot("31-styles-kk-phone", Lang.Kk)

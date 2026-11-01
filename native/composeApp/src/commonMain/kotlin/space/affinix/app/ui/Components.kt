@@ -29,7 +29,11 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.animation.core.Spring
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.spring
 import androidx.compose.ui.draw.alpha
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
@@ -70,8 +74,11 @@ fun KeyButton(text: String, onClick: () -> Unit, modifier: Modifier = Modifier, 
     val src = remember { MutableInteractionSource() }
     val pressed by src.collectIsPressedAsState()
     val hovered by src.collectIsHoveredAsState()
+    // a key gives way under the finger and springs back
+    val give by animateFloatAsState(if (pressed && Motion.enabled) .94f else 1f, spring(dampingRatio = Spring.DampingRatioMediumBouncy, stiffness = Spring.StiffnessMedium))
     Box(
         modifier
+            .graphicsLayer { scaleX = give; scaleY = give }
             .alpha(if (enabled) 1f else .45f)
             .then(if (lit) Modifier.lit(12.dp, pressed) else Modifier.key(12.dp, pressed, hovered))
             .hoverable(src)
@@ -91,7 +98,7 @@ fun LinkText(text: String, onClick: () -> Unit, modifier: Modifier = Modifier, c
 
 @Composable
 fun Plate(modifier: Modifier = Modifier, radius: Int = 16, pad: Int = 18, content: @Composable ColumnScope.() -> Unit) {
-    Column(modifier.plate(radius.dp).padding(pad.dp), content = content)
+    Column(modifier.enter().plate(radius.dp).padding(pad.dp), content = content)
 }
 
 @Composable
@@ -102,7 +109,7 @@ fun Well(modifier: Modifier = Modifier, radius: Int = 14, content: @Composable B
 @Composable
 fun Bar(ratio: Float, modifier: Modifier = Modifier) {
     Box(modifier.fillMaxWidth().height(8.dp).well(6.dp)) {
-        val r = ratio.coerceIn(0f, 1f)
+        val r = rememberGrow(ratio.coerceIn(0f, 1f)).coerceIn(0f, 1f)
         if (r > 0f) Box(Modifier.fillMaxWidth(r).height(8.dp).lit(6.dp))
     }
 }

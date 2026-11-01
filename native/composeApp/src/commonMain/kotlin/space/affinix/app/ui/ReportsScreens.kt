@@ -94,7 +94,7 @@ internal fun ReportsSection(model: AppModel) {
                     if (!exp.objective.isNullOrBlank()) { Spacer(Modifier.height(8.dp)); Txt(exp.objective, 13, color = C.g300) }
                     Spacer(Modifier.height(12.dp))
                     Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                        ReportTile(t("reports.participants"), "${summary.participantCount}", Modifier.weight(1f))
+                        ReportTile(t("reports.participants"), grouped(rememberCountUp(summary.participantCount)), Modifier.weight(1f))
                         ReportTile(t("reports.completionRate"), pct(summary.completion.rate), Modifier.weight(1f))
                         ReportTile(t("reports.avgTime"), minutes(summary.avgCompletionTimeMs), Modifier.weight(1f))
                     }

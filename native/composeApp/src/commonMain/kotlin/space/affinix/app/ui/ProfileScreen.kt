@@ -107,6 +107,18 @@ fun ProfileScreen(model: AppModel) {
     Column(Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(14.dp)) {
         LevelHeader(model)
         MyPhoto(model)
+        LaunchedEffect(Unit) { if (!model.admin.meLoaded) model.admin.loadMe() }
+        if (model.admin.isAdmin) Plate(Modifier.fillMaxWidth(), pad = 16) {
+            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                Ico("shield", color = C.signalHi, size = 22.dp)
+                Txt(t("admin.title"), 16, FontWeight.ExtraBold, C.g50, Modifier.weight(1f))
+                Chip(if (model.admin.isOwner) t("team.roles.owner") else t("team.roles.admin"), if (model.admin.isOwner) Tone.Signal else Tone.Info)
+            }
+            Spacer(Modifier.height(4.dp))
+            Txt(t("admin.subtitle"), 12, color = C.g400)
+            Spacer(Modifier.height(10.dp))
+            KeyButton(t("shell.workspace.admin"), { model.tab = space.affinix.app.store.Tab.Admin }, Modifier.fillMaxWidth())
+        }
         Plate(Modifier.fillMaxWidth()) {
             Txt(t("app.signedInAs", "email" to model.email), 13, color = C.g400)
             Spacer(Modifier.height(12.dp))

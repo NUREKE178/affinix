@@ -65,7 +65,7 @@ fun LoginScreen(model: AppModel) {
         Column(Modifier.verticalScroll(rememberScrollState()).padding(horizontal = 16.dp, vertical = 24.dp), horizontalAlignment = Alignment.CenterHorizontally) {
             Plate(Modifier.widthIn(max = 420.dp).fillMaxWidth(), radius = 22, pad = 26) {
                 Column(Modifier.fillMaxWidth(), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                    Image(painterResource(Res.drawable.logo), null, Modifier.size(64.dp))
+                    Image(painterResource(Res.drawable.logo), null, Modifier.size(64.dp).breathe())
                     Spacer(Modifier.height(6.dp))
                     Txt(
                         when (mode) { AuthMode.Login -> t("auth.login.title"); AuthMode.Register -> t("auth.register.title"); AuthMode.Forgot -> t("auth.forgot.title") },

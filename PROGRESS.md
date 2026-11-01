@@ -4214,3 +4214,18 @@ The first half of the marketers' tools, in the native apps (Kotlin + Compose), o
 - **Not in the app:** saving the report as a file (copy only), the website's exact `toLocaleDateString` (the app writes dd.MM.yyyy for ru / kk and M/d/yyyy for en).
 - **Strings:** the `reports`, `insights` and `insightsGen` subtrees, `shell.nav.reports`, and two app-only keys (`reports.copy`, `reports.copied`); 1009 keys x 3 languages. Screenshot cases 32 and 33.
 - **Tests:** 181 JVM tests locally (without the Skia screenshots): `InsightsTest` (3) and two `ResearchModelTest` cases (published experiments only, a failed load can be repeated).
+
+### Native apps: motion everywhere and the admin panel (migration: none, 0025 is used)
+
+- **Motion** (`ui/Motion.kt`, a handful of lines at the call sites): `Modifier.enter()` fades and lifts a block into place with a cascade (blocks composed within 280 ms of each other start 45 ms later each, at most nine steps) and is
+  built into every `Plate`; `Bar` and the style portrait grow from 0 (`rememberGrow`); numbers count up (`CountText`, `rememberCountUp`) on Home, the round summary, Styles, Reports and the admin counters; `KeyButton`
+  gives way under a press (spring); the tab bar's key slides to the new tab with an overshoot and the icon swells; screens crossfade (`Crossfade` in `App.kt`); the logo breathes (`Modifier.breathe`); a finished round throws `Confetti`.
+  `Motion.enabled` switches it all off: the screenshot tests do (a picture is of the finished screen), `MotionScreenshotTest` switches it on and checks that a card is mostly invisible at the first frame and fully drawn later.
+- **Admin panel** (`store/AdminModel.kt`, `ui/AdminScreens.kt`; Profile card -> `Tab.Admin`, shown when `profiles.is_admin`): Overview (`admin_overview`, an attention card that pulses when tests are flagged,
+  count-up groups, the 14-day Arena chart from `arena_admin_stats` with bars that grow in), People (`admin_users` with a 300 ms search pause and paging by 30; `admin_set_admin` for the owner only, with a confirmation),
+  Moderation (`arena_test_flagged` / `arena_test_moderate`; the newest posts and comments with removal through the table, as the site does) and Log (`admin_audit_list`).
+  Codes: a server without migration 0025 answers "updatePending", a non-administrator "noAccess"; a database without the `is_admin` column simply shows no panel.
+- **Tests:** `AdminTest` (13, a mock server answering as the database functions do) and `MotionScreenshotTest`; screenshot cases 34-37 (overview, people in Kazakh, moderation, log). 194 JVM tests locally (without the Skia ones).
+- **Strings:** the `admin` and `arena.admin` subtrees and `shell.workspace.admin`; 1103 keys x 3 languages.
+- **Not in the app:** avatars are initials until the picture loads (as elsewhere), no CSV, no admin-only "open in feed" link.
+- **Not verified:** the motion has not been watched on a real screen (the emulator check only launches the app); the admin panel has not been run against the real database.

@@ -111,10 +111,10 @@ private fun Filters(s: StylesModel) {
 private fun Ready(model: AppModel, s: StylesModel, v: StylesModel.View) {
     val d = s.data ?: return
     Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-        StatTile(t("styles.sum.answers"), "${v.duels}", Modifier.weight(1f)); StatTile(t("styles.sum.voters"), "${d.voters}", Modifier.weight(1f))
+        StatTile(t("styles.sum.answers"), grouped(rememberCountUp(v.duels)), Modifier.weight(1f)); StatTile(t("styles.sum.voters"), grouped(rememberCountUp(d.voters)), Modifier.weight(1f))
     }
     Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-        StatTile(t("styles.sum.specimens"), "${v.specimens}", Modifier.weight(1f)); StatTile(t("styles.sum.reliability"), t("styles.reliability.${v.reliability}"), Modifier.weight(1f))
+        StatTile(t("styles.sum.specimens"), grouped(rememberCountUp(v.specimens)), Modifier.weight(1f)); StatTile(t("styles.sum.reliability"), t("styles.reliability.${v.reliability}"), Modifier.weight(1f))
     }
     Plate(Modifier.fillMaxWidth(), pad = 14) {
         Txt(t("styles.recipe.title"), 11, FontWeight.Medium, C.g500)

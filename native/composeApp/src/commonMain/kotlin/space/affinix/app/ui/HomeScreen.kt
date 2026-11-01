@@ -34,7 +34,7 @@ fun LevelHeader(model: AppModel, modifier: Modifier = Modifier) {
     val prog = Rules.levelProgress(p?.xp ?: 0)
     Plate(modifier.fillMaxWidth(), pad = 16) {
         Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(14.dp)) {
-            Image(painterResource(Res.drawable.logo), null, Modifier.size(46.dp))
+            Image(painterResource(Res.drawable.logo), null, Modifier.size(46.dp).breathe())
             Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(6.dp)) {
                 Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     Txt("${t("arena.level")} ${prog.level}", 18, FontWeight.ExtraBold, C.g50)
@@ -54,9 +54,9 @@ fun LevelHeader(model: AppModel, modifier: Modifier = Modifier) {
 }
 
 @Composable
-private fun Stat(label: String, value: String, modifier: Modifier = Modifier) {
+private fun Stat(label: String, value: Int, modifier: Modifier = Modifier) {
     Plate(modifier, radius = 14, pad = 14) {
-        Txt(value, 22, FontWeight.ExtraBold, C.g50, maxLines = 1)
+        CountText(value, 22)
         Spacer(Modifier.height(2.dp))
         Txt(label, 12, FontWeight.Medium, C.g400, maxLines = 1)
     }
@@ -89,9 +89,9 @@ fun HomeScreen(model: AppModel) {
         }
 
         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-            Stat(t("app.xp"), "${p?.xp ?: 0}", Modifier.weight(1f))
-            Stat(t("arena.lobby.statStreak"), "${p?.streak ?: 0}", Modifier.weight(1f))
-            Stat(t("arena.lobby.statDuels"), "${model.today?.votes ?: 0}", Modifier.weight(1f))
+            Stat(t("app.xp"), (p?.xp ?: 0).toInt(), Modifier.weight(1f))
+            Stat(t("arena.lobby.statStreak"), p?.streak ?: 0, Modifier.weight(1f))
+            Stat(t("arena.lobby.statDuels"), model.today?.votes ?: 0, Modifier.weight(1f))
         }
 
         Plate(Modifier.fillMaxWidth()) {
