@@ -9,7 +9,8 @@ eye tests, round summary, rankings, friends race, **daily quests** with claims, 
 **Profile** (edit, picture, rankings visibility, awards); **Notifications**; **crowd tests** (create, results with the 95% verdict, pause, delete) and research missions; ru / kk / en.
 New in this round, the **Marketing** tab (screen "For marketers", the website's name of the area): the **Styles** page ("What people love": which style wins a question, from the Arena crowd), company picker, **reports** (the website's report of one experiment, rule-based, copyable as text), experiments (list, publish with a public link, delete), **results** (the website's own formulas, ported from `stats.js`),
 participants, team (roles, add by e-mail, remove), the crowd tests section and the **experiment builder** (variants with pictures, the ready-made measurement questions and your own, draft or publish).
-What is **not** in it yet: CSV download on the Styles page, saving a report as a file, editing / pausing / duplicating an experiment, the admin panel, creating a company, push notifications, live chat delivery, self-install of updates.
+The app is animated (cards rise in one after another, bars grow, numbers count up, the tab key slides, keys give way under a press, a finished round throws confetti; `ui/Motion.kt`). Administrators and the owner also get the **admin panel** (Profile -> Admin panel: overview, people, moderation, log), on the website's own database functions.
+What is **not** in it yet: CSV download on the Styles page, saving a report as a file, editing / pausing / duplicating an experiment, creating a company, push notifications, live chat delivery, self-install of updates.
 
 ## Layout
 
@@ -67,5 +68,5 @@ If you change a string on the website, run `node native/scripts/gen-strings.mjs`
 - Google sign-in needs `http://127.0.0.1:**` and `space.affinix.app://auth` in Supabase, Auth, URL configuration, Redirect URLs. Picture picking and Google sign-in are covered by tests but have not been tried on a real phone.
 - The app only tells you that a newer release exists (it links to the download page); it does not install updates itself.
 - Chats ask the server every few seconds (no live socket, no "typing" or online dots); there are no push notifications.
-- Not in the apps yet: CSV download on the Styles page, saving a report as a file, editing an existing experiment, the admin screen, creating a company and real billing (the site has none either).
+- Not in the apps yet: CSV download on the Styles page, saving a report as a file, editing an existing experiment, creating a company and real billing (the site has none either).
 - The Research tab has been checked by tests (the numbers equal what the website's `stats.js` gives, request bodies of the builder are asserted) and by screenshots in CI, not by a person on a real PC or phone.

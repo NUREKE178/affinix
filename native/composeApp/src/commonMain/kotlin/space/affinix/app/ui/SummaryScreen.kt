@@ -41,6 +41,7 @@ fun SummaryScreen(model: AppModel, r: Round) {
     val scope = androidx.compose.runtime.rememberCoroutineScope()
     var claimNote by androidx.compose.runtime.remember { androidx.compose.runtime.mutableStateOf<String?>(null) }
     Column(Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(14.dp)) {
+        androidx.compose.foundation.layout.Box(Modifier.fillMaxWidth()) {
         Plate(Modifier.fillMaxWidth(), radius = 18, pad = 22) {
             Txt(
                 when {
@@ -51,11 +52,13 @@ fun SummaryScreen(model: AppModel, r: Round) {
                 24, FontWeight.ExtraBold, C.g50, align = TextAlign.Start,
             )
             Spacer(Modifier.height(6.dp))
-            Txt("+${r.xp} ${t("app.xp")}", 40, FontWeight.ExtraBold, C.signalHi)
+            CountText(r.xp, 40, FontWeight.ExtraBold, C.signalHi, prefix = "+", suffix = " ${t("app.xp")}")
+        }
+        Confetti(Modifier.matchParentSize(), key = r)
         }
         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-            Tile(t("arena.summary.answers"), "$answered", t("arena.summary.answersHint", "n" to r.duels.size), Modifier.weight(1f))
-            Tile(t("arena.summary.combo"), "${r.bestCombo}", t("arena.summary.comboHint"), Modifier.weight(1f))
+            Tile(t("arena.summary.answers"), grouped(rememberCountUp(answered)), t("arena.summary.answersHint", "n" to r.duels.size), Modifier.weight(1f))
+            Tile(t("arena.summary.combo"), grouped(rememberCountUp(r.bestCombo, 700)), t("arena.summary.comboHint"), Modifier.weight(1f))
         }
         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
             Tile(t("arena.summary.eye"), if (eyeAll.isEmpty()) "–" else "$eyeOk/${eyeAll.size}", t("arena.summary.eyeHint"), Modifier.weight(1f))

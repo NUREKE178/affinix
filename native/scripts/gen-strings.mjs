@@ -15,7 +15,7 @@ const get = (o, path) => path.split(".").reduce((a, k) => (a == null ? a : a[k])
 
 const KEYS = [
   "shell.notifications.title", "shell.notifications.empty", "shell.notifications.commentOn", "shell.notifications.friendRequest", "shell.notifications.friendAccepted",
-  "shell.nav.marketers", "shell.tabbar.marketers", "shell.tabbar.messages", "shell.nav.styles", "shell.nav.reports",
+  "shell.nav.marketers", "shell.tabbar.marketers", "shell.tabbar.messages", "shell.nav.styles", "shell.nav.reports", "shell.workspace.admin",
   "arena.tabs.quests", "arena.quests.today", "arena.quests.resetNote", "arena.quests.claim", "arena.quests.claimed", "arena.quests.clearTitle", "arena.quests.clearBody",
   "arena.quest.votes", "arena.quest.families", "arena.quest.dims", "arena.quest.combo", "arena.quest.eye", "arena.quest.time",
   "arena.tier.easy", "arena.tier.medium", "arena.tier.hard", "arena.toast.claimed", "arena.toast.claimRefused", "arena.lobby.dailyClaim", "arena.lobby.boardAll",
@@ -62,7 +62,7 @@ const KEYS = [
 ];
 
 // whole subtrees of the site's locale (every string under the prefix), for screens that use most of a section
-const PREFIXES = ["messages", "search", "arena.marathon", "arena.dna", "crowd", "auth.social", "arena.traits", "arena.archetype", "arena.share", "experiments", "results", "participants", "team", "billing", "questionTypes", "stats", "common", "builder", "styles", "insightsGen", "insights", "reports"];
+const PREFIXES = ["messages", "search", "arena.marathon", "arena.dna", "crowd", "auth.social", "arena.traits", "arena.archetype", "arena.share", "experiments", "results", "participants", "team", "billing", "questionTypes", "stats", "common", "builder", "styles", "insightsGen", "insights", "reports", "admin", "arena.admin"];
 const leaves = (o, base) => Object.entries(o).flatMap(([k, v]) => (typeof v === "string" ? [`${base}.${k}`] : v && typeof v === "object" ? leaves(v, `${base}.${k}`) : []));
 for (const p of PREFIXES) for (const k of leaves(get(ru, p), p)) if (!KEYS.includes(k)) KEYS.push(k);
 

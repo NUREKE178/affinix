@@ -1,6 +1,22 @@
 package space.affinix.app
 
+import androidx.compose.animation.Crossfade
+import androidx.compose.animation.animateColorAsState
+import androidx.compose.animation.core.Spring
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.spring
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.offset
+import androidx.compose.foundation.layout.size
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.layout.onSizeChanged
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.unit.IntOffset
+import androidx.compose.ui.unit.IntSize
+import kotlin.math.roundToInt
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.focusable
 import androidx.compose.foundation.interaction.MutableInteractionSource
@@ -38,6 +54,7 @@ import space.affinix.app.store.AppModel
 import space.affinix.app.store.Phase
 import space.affinix.app.store.Tab
 import space.affinix.app.ui.C
+import space.affinix.app.ui.Motion
 import space.affinix.app.ui.DuelScreen
 import space.affinix.app.ui.ChatsListScreen
 import space.affinix.app.ui.FeedScreen
@@ -100,7 +117,8 @@ private fun MainShell(model: AppModel) {
                 Column(Modifier.widthIn(max = 760.dp).fillMaxWidth().verticalScroll(rememberScrollState()).padding(horizontal = 16.dp, vertical = 16.dp)) {
                     if (round != null) DuelScreen(model)
                     else if (mission != null) space.affinix.app.ui.MissionScreen(model, mission)
-                    else when (model.tab) {
+                    else Crossfade(model.tab, animationSpec = tween(if (Motion.enabled) 260 else 0), label = "screen") { tab ->
+                      when (tab) {
                         Tab.Play -> HomeScreen(model)
                         Tab.Quests -> QuestsScreen(model)
                         Tab.Feed -> FeedScreen(model)
@@ -111,6 +129,8 @@ private fun MainShell(model: AppModel) {
                         Tab.Notifications -> NotificationsScreen(model)
                         Tab.Search -> SearchScreen(model)
                         Tab.Research -> space.affinix.app.ui.ResearchScreen(model)
+                        Tab.Admin -> space.affinix.app.ui.AdminScreen(model)
+                      }
                     }
                 }
             }
@@ -121,31 +141,47 @@ private fun MainShell(model: AppModel) {
 
 @Composable
 private fun TabBar(model: AppModel) {
+    val tabs = listOf(
+        Triple(Tab.Play, "arena", t("arena.tabs.play")),
+        Triple(Tab.Feed, "globe", t("feed.title")),
+        Triple(Tab.Chats, "chat", t("shell.tabbar.messages")),
+        Triple(Tab.People, "friends", t("friends.title")),
+        Triple(Tab.Research, "overview", t("shell.tabbar.marketers")),
+        Triple(Tab.Profile, "user", t("arena.tabs.profile")),
+    )
+    fun isOn(tab: Tab) = model.tab == tab || (tab == Tab.Play && (model.tab == Tab.Rankings || model.tab == Tab.Quests)) || (tab == Tab.Profile && model.tab == Tab.Admin)
+    val index = tabs.indexOfFirst { isOn(it.first) }.coerceAtLeast(0)
+    // the raised key under the active tab slides (with a little overshoot) from one tab to the next
+    val pos by animateFloatAsState(index.toFloat(), if (Motion.enabled) spring(dampingRatio = .62f, stiffness = 380f) else tween(0), label = "tabKey")
+    val density = LocalDensity.current
+    var rowSize by remember { mutableStateOf(IntSize.Zero) }
     Box(Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
-        Row(Modifier.widthIn(max = 760.dp).fillMaxWidth().padding(horizontal = 12.dp, vertical = 10.dp).plate(18.dp).padding(6.dp)) {
-            val tabs = listOf(
-                Triple(Tab.Play, "arena", t("arena.tabs.play")),
-                Triple(Tab.Feed, "globe", t("feed.title")),
-                Triple(Tab.Chats, "chat", t("shell.tabbar.messages")),
-                Triple(Tab.People, "friends", t("friends.title")),
-                Triple(Tab.Research, "overview", t("shell.tabbar.marketers")),
-                Triple(Tab.Profile, "user", t("arena.tabs.profile")),
-            )
-            for ((tab, icon, label) in tabs) {
-                val on = model.tab == tab || (tab == Tab.Play && (model.tab == Tab.Rankings || model.tab == Tab.Quests))
-                Column(
-                    Modifier.weight(1f)
-                        .then(if (on) Modifier.key(12.dp) else Modifier)
-                        .clickable(remember { MutableInteractionSource() }, null, role = Role.Tab) { model.tab = tab }
-                        .padding(vertical = 8.dp),
-                    horizontalAlignment = Alignment.CenterHorizontally,
-                    verticalArrangement = Arrangement.spacedBy(3.dp),
-                ) {
-                    Box(contentAlignment = Alignment.TopEnd) {
-                        Ico(icon, color = if (on) C.g50 else C.g500, size = 22.dp)
-                        if (tab == Tab.Chats && model.messages.unreadTotal > 0) Box(Modifier.padding(start = 20.dp).background(C.signal, Pill).padding(horizontal = 5.dp)) { Txt("${model.messages.unreadTotal}", 10, FontWeight.ExtraBold, C.signalInk) }
+        Box(Modifier.widthIn(max = 760.dp).fillMaxWidth().padding(horizontal = 12.dp, vertical = 10.dp).plate(18.dp).padding(6.dp)) {
+            if (rowSize.width > 0) {
+                val itemW = rowSize.width / tabs.size
+                Box(
+                    Modifier.offset { IntOffset((pos * itemW).roundToInt(), 0) }
+                        .size(with(density) { itemW.toDp() }, with(density) { rowSize.height.toDp() }).key(12.dp),
+                )
+            }
+            Row(Modifier.fillMaxWidth().onSizeChanged { rowSize = it }) {
+                for ((tab, icon, label) in tabs) {
+                    val on = isOn(tab)
+                    val tint by animateColorAsState(if (on) C.g50 else C.g500, tween(if (Motion.enabled) 220 else 0), label = "tabTint")
+                    val lift by animateFloatAsState(if (on && Motion.enabled) 1.14f else 1f, spring(dampingRatio = Spring.DampingRatioMediumBouncy, stiffness = Spring.StiffnessLow), label = "tabLift")
+                    Column(
+                        Modifier.weight(1f)
+                            .clickable(remember { MutableInteractionSource() }, null, role = Role.Tab) { model.tab = tab }
+                            .padding(vertical = 8.dp),
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        verticalArrangement = Arrangement.spacedBy(3.dp),
+                    ) {
+                        Box(Modifier.graphicsLayer { scaleX = lift; scaleY = lift }, contentAlignment = Alignment.TopEnd) {
+                            Ico(icon, color = tint, size = 22.dp)
+                            if (tab == Tab.Chats && model.messages.unreadTotal > 0) Box(Modifier.padding(start = 20.dp).background(C.signal, Pill).padding(horizontal = 5.dp)) { Txt("${model.messages.unreadTotal}", 10, FontWeight.ExtraBold, C.signalInk) }
+                        }
+                        Txt(label, 11, if (on) FontWeight.ExtraBold else FontWeight.Medium, tint, maxLines = 1)
                     }
-                    Txt(label, 11, if (on) FontWeight.ExtraBold else FontWeight.Medium, if (on) C.g50 else C.g500, maxLines = 1)
                 }
             }
         }
