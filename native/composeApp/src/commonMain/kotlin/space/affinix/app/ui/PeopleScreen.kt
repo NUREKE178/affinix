@@ -33,7 +33,7 @@ fun SearchField(value: String, onChange: (String) -> Unit, placeholder: String, 
             if (value.isEmpty()) Txt(placeholder, 15, color = C.g600, maxLines = 1)
             BasicTextField(
                 value, onChange, singleLine = true, textStyle = ts(15, FontWeight.Medium, C.g50, LocalFonts.current.family), cursorBrush = SolidColor(C.signal),
-                keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search), modifier = Modifier.fillMaxWidth(),
+                keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search), modifier = Modifier.fillMaxWidth().trackTyping(),
             )
         }
         if (value.isNotEmpty()) IcoAction("close", { onChange("") })
@@ -97,7 +97,7 @@ fun PeopleScreen(model: AppModel) {
                         Txt(t("friends.loadErrorBody"), 13, color = C.g400); Spacer(Modifier.height(12.dp))
                         KeyButton(t("people.retry"), { ppl.load() })
                     }
-                    !ppl.loaded -> Txt(t("common.loading"), 14, color = C.g500)
+                    !ppl.loaded -> SkeletonList(4)
                     ppl.friends.isEmpty() && ppl.incoming.isEmpty() && ppl.outgoing.isEmpty() -> Plate(Modifier.fillMaxWidth()) {
                         Txt(t("friends.emptyTitle"), 16, FontWeight.Bold, C.g50); Spacer(Modifier.height(4.dp)); Txt(t("friends.emptyBody"), 13, color = C.g400)
                     }
@@ -116,7 +116,7 @@ fun PeopleScreen(model: AppModel) {
             ppl.searchFailed -> Plate(Modifier.fillMaxWidth()) {
                 Txt(t("people.errorTitle"), 16, FontWeight.Bold, C.g50); Spacer(Modifier.height(4.dp)); Txt(t("people.errorBody"), 13, color = C.g400)
             }
-            ppl.searching && ppl.results.isEmpty() -> Txt(t("common.loading"), 14, color = C.g500)
+            ppl.searching && ppl.results.isEmpty() -> SkeletonList(3)
             ppl.results.isEmpty() -> Plate(Modifier.fillMaxWidth()) {
                 Txt(t("people.noResultsTitle"), 16, FontWeight.Bold, C.g50); Spacer(Modifier.height(4.dp)); Txt(t("people.noResultsBody", "query" to q), 13, color = C.g400)
             }

@@ -71,7 +71,7 @@ fun Avatar(model: AppModel, person: Person, size: Dp = 40.dp, opens: Boolean = t
 internal fun TextArea(value: String, onChange: (String) -> Unit, placeholder: String, modifier: Modifier = Modifier, minHeight: Dp = 84.dp) {
     Box(modifier.fillMaxWidth().well(12.dp).padding(horizontal = 14.dp, vertical = 12.dp).heightIn(min = minHeight)) {
         if (value.isEmpty()) Txt(placeholder, 15, color = C.g600)
-        BasicTextField(value, onChange, textStyle = ts(15, FontWeight.Medium, C.g50, LocalFonts.current.family), cursorBrush = SolidColor(C.signal), modifier = Modifier.fillMaxWidth())
+        BasicTextField(value, onChange, textStyle = ts(15, FontWeight.Medium, C.g50, LocalFonts.current.family), cursorBrush = SolidColor(C.signal), modifier = Modifier.fillMaxWidth().trackTyping())
     }
 }
 
@@ -188,7 +188,7 @@ private fun CommentsBlock(model: AppModel, p: Post) {
     Spacer(Modifier.height(10.dp))
     Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
         when {
-            p.id in feed.commentsLoading && list.isEmpty() -> Txt(t("common.loading"), 13, color = C.g500)
+            p.id in feed.commentsLoading && list.isEmpty() -> LoadingState(compact = true)
             list.isEmpty() -> Txt(t("feed.noComments"), 13, color = C.g500)
             else -> list.forEach { CommentRowView(model, it, it.author.id == model.api.session?.userId) }
         }
@@ -208,6 +208,7 @@ fun FeedScreen(model: AppModel) {
     LaunchedEffect(Unit) { if (!feed.loaded && !feed.loading) feed.load() }
     Column(Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(14.dp)) {
         Txt(t("feed.title"), 24, FontWeight.ExtraBold, C.g50)
+        SwipeSections(feed.mode, 3) { feed.showMode(it) }
         Segmented(listOf(t("feed.tabAll"), t("feed.tabMine"), t("favorites.title")), feed.mode, { feed.showMode(it) })
         Composer(model)
         feed.notice?.let { Chip(t(it), Tone.Info) }
@@ -219,7 +220,7 @@ fun FeedScreen(model: AppModel) {
                 Spacer(Modifier.height(12.dp))
                 KeyButton(t("common.retry"), { feed.load() })
             }
-            !feed.loaded -> Txt(t("common.loading"), 14, color = C.g500)
+            !feed.loaded -> SkeletonPosts(3)
             feed.posts.isEmpty() -> Plate(Modifier.fillMaxWidth()) {
                 Txt(when (feed.mode) { 1 -> t("feed.mineEmptyTitle"); 2 -> t("favorites.emptyTitle"); else -> t("feed.emptyTitle") }, 16, FontWeight.Bold, C.g50)
                 Spacer(Modifier.height(4.dp))

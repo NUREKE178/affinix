@@ -44,11 +44,12 @@ internal fun AdminScreen(model: AppModel) {
         Txt(t("admin.subtitle"), 12, color = C.g500)
         a.notice?.let { Chip(t(it, "name" to a.noticeName), Tone.Info) }
         when {
-            !a.meLoaded -> Txt(t("common.loading"), 14, color = C.g500)
+            !a.meLoaded -> LoadingState()
             !a.isAdmin -> Plate(Modifier.fillMaxWidth()) {
                 Txt(t("admin.noAccessTitle"), 15, FontWeight.Bold, C.g50); Spacer(Modifier.height(4.dp)); Txt(t("admin.noAccessBody"), 13, color = C.g400)
             }
             else -> {
+                SwipeSections(a.tab.ordinal, Tab.values().size) { a.tab = Tab.values()[it] }
                 Segmented(Tab.values().map { t("admin.tabs.${it.name.lowercase()}") }, a.tab.ordinal, { a.tab = Tab.values()[it] })
                 when (a.tab) {
                     Tab.Overview -> OverviewTab(a)
@@ -80,7 +81,7 @@ private fun OverviewTab(a: AdminModel) {
     val o = a.overview
     when {
         a.overviewStatus == Status.Error -> AdminError(a.overviewError) { a.loadOverview() }
-        o == null -> Txt(t("common.loading"), 14, color = C.g500)
+        o == null -> LoadingState()
         else -> Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
             val flagged = o.testsFlagged
             Plate(Modifier.fillMaxWidth(), pad = 14) {
@@ -188,7 +189,7 @@ private fun PeopleTab(model: AppModel, a: AdminModel) {
         }
         when {
             a.peopleStatus == Status.Error -> AdminError(a.peopleError) { a.loadPeople() }
-            a.peopleStatus != Status.Ready -> Txt(t("common.loading"), 14, color = C.g500)
+            a.peopleStatus != Status.Ready -> SkeletonList(4)
             a.people.isEmpty() -> Plate(Modifier.fillMaxWidth()) { Txt(t("admin.people.emptyTitle"), 15, FontWeight.Bold, C.g50); Spacer(Modifier.height(4.dp)); Txt(t("admin.people.emptyBody"), 13, color = C.g400) }
             else -> {
                 a.people.forEach { p ->
@@ -264,7 +265,7 @@ private fun ModerationTab(model: AppModel, a: AdminModel) {
         }
         when {
             a.moderationStatus == Status.Error -> AdminError(a.moderationError) { a.loadModeration() }
-            a.moderationStatus != Status.Ready -> Txt(t("common.loading"), 14, color = C.g500)
+            a.moderationStatus != Status.Ready -> SkeletonList(4)
             else -> {
                 ContentList(model, t("admin.moderation.postsTitle"), a.posts) { confirm = it }
                 ContentList(model, t("admin.moderation.commentsTitle"), a.comments) { confirm = it }
@@ -306,7 +307,7 @@ private fun LogTab(a: AdminModel) {
     LaunchedEffect(Unit) { if (a.logStatus == Status.Idle) a.loadLog() }
     when {
         a.logStatus == Status.Error -> AdminError(a.logError) { a.loadLog() }
-        a.logStatus != Status.Ready -> Txt(t("common.loading"), 14, color = C.g500)
+        a.logStatus != Status.Ready -> SkeletonList(5, avatar = false)
         a.log.isEmpty() -> Plate(Modifier.fillMaxWidth()) { Txt(t("admin.log.emptyTitle"), 15, FontWeight.Bold, C.g50); Spacer(Modifier.height(4.dp)); Txt(t("admin.log.emptyBody"), 13, color = C.g400) }
         else -> Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
             a.log.forEach { r ->

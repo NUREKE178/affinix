@@ -56,7 +56,7 @@ fun MissionPlate(model: AppModel) {
             !model.dailyComplete -> Txt(t("crowd.mission.locked"), 14, color = C.g400)
             m.queueError == "pending" -> Txt(t("crowd.mission.unavailable"), 14, color = C.g400)
             m.queueError != null && q == null -> Txt(t("crowd.err.generic"), 14, color = C.g400)
-            q == null -> Txt(t("common.loading"), 13, color = C.g500)
+            q == null -> LoadingState()
             q.tests.isEmpty() -> {
                 Txt(t("crowd.mission.none"), 14, color = C.g400); Spacer(Modifier.height(10.dp))
                 KeyButton(t("crowd.mission.create"), { model.research.section = space.affinix.app.store.ResearchModel.Section.Crowd; model.tab = space.affinix.app.store.Tab.Research }, compact = true)
@@ -90,7 +90,7 @@ private fun OptionArt(model: AppModel, item: CrowdItem) {
     val bmp = url?.let { model.images[it] }
     Box(Modifier.fillMaxWidth().aspectRatio(1f).clip(RoundedCornerShape(12.dp)).background(C.g800), contentAlignment = Alignment.Center) {
         if (bmp != null) Image(bmp, null, Modifier.fillMaxWidth(), contentScale = ContentScale.Fit)
-        else if (item.path != null) Txt(t("common.loading"), 12, color = C.g500)
+        else if (item.path != null) Skeleton(Modifier.matchParentSize(), radius = 12.dp)
         else Txt(optionLabel(item), 22, FontWeight.ExtraBold, C.g50, align = TextAlign.Center, modifier = Modifier.padding(12.dp))
         if (item.path != null && !item.label.isNullOrBlank()) Box(Modifier.align(Alignment.BottomCenter).fillMaxWidth().background(C.canvas.copy(alpha = .7f)).padding(6.dp)) {
             Txt(item.label, 13, FontWeight.Bold, C.g50, align = TextAlign.Center, modifier = Modifier.fillMaxWidth())

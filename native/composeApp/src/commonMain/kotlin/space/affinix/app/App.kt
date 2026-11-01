@@ -53,7 +53,13 @@ import space.affinix.app.i18n.t
 import space.affinix.app.store.AppModel
 import space.affinix.app.store.Phase
 import space.affinix.app.store.Tab
+import space.affinix.app.ui.BootScreen
 import space.affinix.app.ui.C
+import space.affinix.app.ui.LoadBar
+import space.affinix.app.ui.LocalSwipeRegistry
+import space.affinix.app.ui.SwipeRegistry
+import space.affinix.app.ui.Typing
+import space.affinix.app.ui.swipeNavigate
 import space.affinix.app.ui.Motion
 import space.affinix.app.ui.DuelScreen
 import space.affinix.app.ui.ChatsListScreen
@@ -81,6 +87,7 @@ fun App(model: AppModel) {
     CompositionLocalProvider(LocalFonts provides fonts, LocalLang provides model.lang) {
         Box(Modifier.fillMaxSize().background(C.canvas)) {
             if (!model.signedIn) LoginScreen(model) else MainShell(model)
+            LoadBar(Modifier.align(Alignment.TopCenter)) // lit while any placeholder is on screen, as on the website
         }
     }
 }
@@ -92,7 +99,13 @@ private fun MainShell(model: AppModel) {
     LaunchedEffect(round?.idx, round?.phase, model.profileViewer.isOpen) { runCatching { focus.requestFocus() } }
     // the unread badge on the chats tab
     LaunchedEffect(model.signedIn) { while (true) { model.messages.refresh(); model.notifications.refresh(); kotlinx.coroutines.delay(30_000) } }
+    // nothing of its own to show yet (the first read of the player is on its way): the boot screen, as on the website
+    val booting = model.profile == null && model.loading && round == null && model.mission.round == null
+    val swipes = remember { SwipeRegistry() }
+    val barTabs = listOf(Tab.Play, Tab.Feed, Tab.Chats, Tab.People, Tab.Research, Tab.Profile)
+    fun barIndex(tab: Tab) = when (tab) { Tab.Rankings, Tab.Quests -> 0; Tab.Admin -> 5; else -> barTabs.indexOf(tab) }
     Box(Modifier.fillMaxSize()) {
+    if (booting) BootScreen(t("common.bootWorkspace")) else CompositionLocalProvider(LocalSwipeRegistry provides swipes) {
     Column(
         Modifier.fillMaxSize()
             .focusRequester(focus)
@@ -116,7 +129,14 @@ private fun MainShell(model: AppModel) {
     ) {
         val mission = model.mission.round
         val inThread = round == null && mission == null && model.tab == Tab.Chats && model.messages.open != null
-        Box(Modifier.weight(1f).fillMaxWidth(), contentAlignment = Alignment.TopCenter) {
+        Box(
+            // the keyboard is up (a text field has the focus): drags belong to the text, not to the tabs
+            Modifier.weight(1f).fillMaxWidth().swipeNavigate(enabled = !inThread && round == null && mission == null && !model.profileViewer.isOpen && !Typing.active) { dir ->
+                // a swipe goes to the next page inside the screen (the Arena's tabs, the sections ...) and, past its last page, to the next tab of the bar
+                swipes.target(dir) ?: barIndex(model.tab).takeIf { it >= 0 }?.let { barTabs.getOrNull(it + dir) }?.let { next -> { model.tab = next } }
+            },
+            contentAlignment = Alignment.TopCenter,
+        ) {
             if (inThread) {
                 Box(Modifier.widthIn(max = 760.dp).fillMaxWidth()) { ThreadScreen(model) }
             } else {
@@ -142,6 +162,7 @@ private fun MainShell(model: AppModel) {
             }
         }
         if (round == null && mission == null && !inThread) TabBar(model)
+    }
     }
     space.affinix.app.ui.ProfileViewerHost(model)
     }

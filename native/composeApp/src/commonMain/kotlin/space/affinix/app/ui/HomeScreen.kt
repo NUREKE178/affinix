@@ -127,7 +127,7 @@ fun HomeScreen(model: AppModel) {
         }
 
         model.error?.let { Txt(it, 13, FontWeight.Medium, C.bad) }
-        if (model.loading) Txt(t("common.loading"), 13, color = C.g500)
+        if (model.loading) LoadingState(compact = true)
     }
 }
 
@@ -135,7 +135,9 @@ fun HomeScreen(model: AppModel) {
 @Composable
 fun ArenaTabs(model: AppModel) {
     val parts = listOf(space.affinix.app.store.Tab.Play, space.affinix.app.store.Tab.Quests, space.affinix.app.store.Tab.Rankings)
-    Segmented(listOf(t("arena.tabs.play"), t("arena.tabs.quests"), t("arena.tabs.rankings")), parts.indexOf(model.tab).coerceAtLeast(0), { model.tab = parts[it] })
+    val at = parts.indexOf(model.tab).coerceAtLeast(0)
+    SwipeSections(at, parts.size) { model.tab = parts[it] }
+    Segmented(listOf(t("arena.tabs.play"), t("arena.tabs.quests"), t("arena.tabs.rankings")), at, { model.tab = parts[it] })
 }
 
 
@@ -215,7 +217,7 @@ private fun FriendsRace(model: AppModel) {
     val rows = model.race?.rows.orEmpty()
     val mine = rows.firstOrNull { it.isMe }
     when {
-        model.race == null && !model.raceFailed -> Txt(t("common.loading"), 13, color = C.g500)
+        model.race == null && !model.raceFailed -> LoadingState(compact = true)
         rows.size < 2 -> {
             Txt(t("arena.marathon.raceNone"), 13, color = C.g400)
             Spacer(Modifier.height(8.dp))

@@ -27,6 +27,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.composed
@@ -75,13 +76,16 @@ fun ProfileViewerHost(model: AppModel) {
     pv.person?.let { held[0] = Held(it, pv.arena, pv.detailsDone, pv.friendsCount, pv.isSelf) }
     val view = held[0] ?: return
     if (p <= 0f && !open) return
+    val scroll = rememberScrollState()
+    val cardPull = rememberPull()
+    var pull by androidx.compose.runtime.remember { androidx.compose.runtime.mutableFloatStateOf(0f) } // how far the card is dragged down (0 .. 1): the dim behind it lifts with it
     Box(
-        Modifier.fillMaxSize().graphicsLayer { alpha = p }.background(C.canvas.copy(alpha = .8f))
+        Modifier.fillMaxSize().graphicsLayer { alpha = p * (1f - .7f * pull) }.background(C.canvas.copy(alpha = .8f))
             .clickable(remember { MutableInteractionSource() }, null) { pv.close() },
         contentAlignment = Alignment.Center,
     ) {
         Column(
-            Modifier.widthIn(max = 400.dp).fillMaxWidth().padding(20.dp).verticalScroll(rememberScrollState())
+            Modifier.widthIn(max = 400.dp).fillMaxWidth().padding(20.dp).pullOffset(cardPull).verticalScroll(scroll).pullToDismiss(cardPull, scroll, { pull = it }) { pv.close() }
                 .graphicsLayer { translationY = (1f - p) * 36.dp.toPx(); val s = .94f + .06f * p; scaleX = s; scaleY = s }
                 .plate(20.dp).clip(RoundedCornerShape(20.dp))
                 .clickable(remember { MutableInteractionSource() }, null) { /* a tap on the card itself must not reach the scrim */ }
@@ -150,7 +154,7 @@ private fun ProfileActions(model: AppModel, p: Person) {
             Txt(t("friends.loadErrorTitle"), 13, color = C.g400, modifier = Modifier.weight(1f))
             KeyButton(t("common.retry"), { ppl.load() }, compact = true)
         }
-        !ppl.loaded -> Txt(t("common.loading"), 13, color = C.g500)
+        !ppl.loaded -> LoadingState(compact = true)
         else -> Relation(model, p, after = { model.profileViewer.close() })
     }
 }

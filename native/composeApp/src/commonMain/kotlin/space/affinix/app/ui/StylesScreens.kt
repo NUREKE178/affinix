@@ -59,7 +59,7 @@ internal fun StylesScreen(model: AppModel) {
         Txt(t("styles.subtitle"), 12, color = C.g500)
         Filters(s)
         when (s.status) {
-            Status.Idle, Status.Loading -> Txt(t("common.loading"), 14, color = C.g500)
+            Status.Idle, Status.Loading -> LoadingState()
             Status.Error -> Plate(Modifier.fillMaxWidth()) {
                 val pending = s.error == "updatePending"
                 Txt(t(if (pending) "styles.pendingTitle" else "styles.errorTitle"), 15, FontWeight.Bold, C.g50)

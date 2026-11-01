@@ -59,7 +59,7 @@ fun QuestsScreen(model: AppModel) {
         }
         failure?.let { Chip(t(it), Tone.Bad) }
         val claimed = day?.claimed.orEmpty()
-        if (model.quests.isEmpty()) Txt(t("common.loading"), 14, color = C.g500)
+        if (model.quests.isEmpty()) LoadingState()
         for (q in model.quests) {
             val have = day?.metric(q.kind) ?: 0
             val target = q.target

@@ -83,6 +83,7 @@ fun ResearchScreen(model: AppModel) {
         }
         if (r.orgs.size > 1) CompanyPicker(r)
         else r.org?.let { Txt(it.name, 13, FontWeight.Bold, C.g400) }
+        SwipeSections(r.section.ordinal, Section.values().size) { r.section = Section.values()[it] }
         Segmented(
             listOf(t("shell.nav.styles"), t("experiments.title"), t("participants.title"), t("shell.nav.reports"), t("crowd.mineTitle"), t("team.title")),
             r.section.ordinal, { r.section = Section.values()[it] },
@@ -91,7 +92,7 @@ fun ResearchScreen(model: AppModel) {
         when {
             r.section == Section.Crowd -> CrowdFlow(model)
             r.section == Section.Styles -> StylesScreen(model)
-            !r.orgsLoaded -> Txt(t("common.loading"), 14, color = C.g500)
+            !r.orgsLoaded -> LoadingState()
             r.orgsFailed -> Plate(Modifier.fillMaxWidth()) {
                 Txt(t("research.actionFailed"), 14, color = C.g300); Spacer(Modifier.height(10.dp)); KeyButton(t("people.retry"), { r.loadOrgs() }, compact = true)
             }
@@ -135,7 +136,7 @@ private fun ExperimentsList(model: AppModel) {
         r.experimentsFailed && r.experiments.isEmpty() -> Plate(Modifier.fillMaxWidth()) {
             Txt(t("research.actionFailed"), 14, color = C.g300); Spacer(Modifier.height(10.dp)); KeyButton(t("people.retry"), { r.loadExperiments() }, compact = true)
         }
-        !r.experimentsLoaded -> Txt(t("common.loading"), 14, color = C.g500)
+        !r.experimentsLoaded -> SkeletonList(3, avatar = false)
         shown.isEmpty() -> Plate(Modifier.fillMaxWidth()) {
             Txt(t("experiments.emptyTitle"), 16, FontWeight.Bold, C.g50); Spacer(Modifier.height(4.dp)); Txt(t("experiments.emptyBody"), 13, color = C.g400)
         }
@@ -203,7 +204,7 @@ private fun ExperimentResults(model: AppModel) {
             r.sessionsFailed && r.sessions.isEmpty() -> Plate(Modifier.fillMaxWidth()) {
                 Txt(t("results.participantsError"), 14, color = C.bad); Spacer(Modifier.height(10.dp)); KeyButton(t("common.retry"), { r.loadSessions() }, compact = true)
             }
-            !r.sessionsLoaded -> Txt(t("common.loading"), 14, color = C.g500)
+            !r.sessionsLoaded -> SkeletonList(4)
             else -> {
                 val done = remember(r.sessions) { ResearchStats.completed(r.sessions) }
                 val sum = remember(r.sessions, e) { ResearchStats.summary(e, r.sessions) }
@@ -299,7 +300,7 @@ private fun ParticipantsList(model: AppModel) {
     LaunchedEffect(r.activeOrgId) { r.loadOrgSessions(); r.loadExperiments() }
     val all = r.orgSessions
     val completed = all.count { it.status == "completed" }; val abandoned = all.count { it.status == "abandoned" }
-    if (!r.orgSessionsLoaded) { Txt(t("common.loading"), 14, color = C.g500); return }
+    if (!r.orgSessionsLoaded) { LoadingState(); return }
     if (r.orgSessionsFailed && all.isEmpty()) { Plate(Modifier.fillMaxWidth()) { Txt(t("research.actionFailed"), 14, color = C.g300); Spacer(Modifier.height(10.dp)); KeyButton(t("people.retry"), { r.loadOrgSessions() }, compact = true) }; return }
     Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
         Tile(t("participants.statTotal"), "${all.size}", null, Modifier.weight(1f)); Tile(t("participants.statCompleted"), "$completed", null, Modifier.weight(1f))
@@ -371,7 +372,7 @@ private fun TeamSection(model: AppModel) {
     }
     when {
         r.membersFailed && r.members.isEmpty() -> Txt(t("research.noMembers"), 13, color = C.g400)
-        !r.membersLoaded -> Txt(t("common.loading"), 14, color = C.g500)
+        !r.membersLoaded -> SkeletonList(3)
         else -> Plate(Modifier.fillMaxWidth(), pad = 12) {
             r.members.forEach { m ->
                 val mine = m.userId == model.api.session?.userId

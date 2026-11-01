@@ -29,7 +29,7 @@ fun NotificationsScreen(model: AppModel) {
             if (n.unread > 0) KeyButton(t("app.markRead"), n::markAllRead, compact = true)
         }
         when {
-            !n.loaded -> Txt(t("common.loading"), 14, color = C.g500)
+            !n.loaded -> SkeletonList(4)
             n.items.isEmpty() -> Plate(Modifier.fillMaxWidth()) { Txt(t("shell.notifications.empty"), 14, color = C.g400) }
             else -> Plate(Modifier.fillMaxWidth(), pad = 8) {
                 n.items.forEach { it ->
