@@ -84,7 +84,7 @@ fun ResearchScreen(model: AppModel) {
         if (r.orgs.size > 1) CompanyPicker(r)
         else r.org?.let { Txt(it.name, 13, FontWeight.Bold, C.g400) }
         Segmented(
-            listOf(t("shell.nav.styles"), t("experiments.title"), t("participants.title"), t("crowd.mineTitle"), t("team.title")),
+            listOf(t("shell.nav.styles"), t("experiments.title"), t("participants.title"), t("shell.nav.reports"), t("crowd.mineTitle"), t("team.title")),
             r.section.ordinal, { r.section = Section.values()[it] },
         )
         r.notice?.let { Chip(t(it), Tone.Info) }
@@ -99,6 +99,7 @@ fun ResearchScreen(model: AppModel) {
             else -> when (r.section) {
                 Section.Experiments -> ExperimentsList(model)
                 Section.Participants -> ParticipantsList(model)
+                Section.Reports -> ReportsSection(model)
                 Section.Team -> TeamSection(model)
                 Section.Crowd, Section.Styles -> Unit
             }

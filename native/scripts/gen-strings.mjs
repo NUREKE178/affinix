@@ -15,7 +15,7 @@ const get = (o, path) => path.split(".").reduce((a, k) => (a == null ? a : a[k])
 
 const KEYS = [
   "shell.notifications.title", "shell.notifications.empty", "shell.notifications.commentOn", "shell.notifications.friendRequest", "shell.notifications.friendAccepted",
-  "shell.nav.marketers", "shell.tabbar.marketers", "shell.tabbar.messages", "shell.nav.styles",
+  "shell.nav.marketers", "shell.tabbar.marketers", "shell.tabbar.messages", "shell.nav.styles", "shell.nav.reports",
   "arena.tabs.quests", "arena.quests.today", "arena.quests.resetNote", "arena.quests.claim", "arena.quests.claimed", "arena.quests.clearTitle", "arena.quests.clearBody",
   "arena.quest.votes", "arena.quest.families", "arena.quest.dims", "arena.quest.combo", "arena.quest.eye", "arena.quest.time",
   "arena.tier.easy", "arena.tier.medium", "arena.tier.hard", "arena.toast.claimed", "arena.toast.claimRefused", "arena.lobby.dailyClaim", "arena.lobby.boardAll",
@@ -62,13 +62,16 @@ const KEYS = [
 ];
 
 // whole subtrees of the site's locale (every string under the prefix), for screens that use most of a section
-const PREFIXES = ["messages", "search", "arena.marathon", "arena.dna", "crowd", "auth.social", "arena.traits", "arena.archetype", "arena.share", "experiments", "results", "participants", "team", "billing", "questionTypes", "stats", "common", "builder", "styles"];
+const PREFIXES = ["messages", "search", "arena.marathon", "arena.dna", "crowd", "auth.social", "arena.traits", "arena.archetype", "arena.share", "experiments", "results", "participants", "team", "billing", "questionTypes", "stats", "common", "builder", "styles", "insightsGen", "insights", "reports"];
 const leaves = (o, base) => Object.entries(o).flatMap(([k, v]) => (typeof v === "string" ? [`${base}.${k}`] : v && typeof v === "object" ? leaves(v, `${base}.${k}`) : []));
 for (const p of PREFIXES) for (const k of leaves(get(ru, p), p)) if (!KEYS.includes(k)) KEYS.push(k);
 
 // only the apps have these
 const EXTRA = {
   "app.name": { ru: "Affinix", kk: "Affinix", en: "Affinix" },
+  "reports.appSubtitle": { ru: "Итоги и выводы по одному эксперименту. Отчёт можно скопировать как текст.", kk: "Бір эксперимент бойынша нәтижелер мен қорытындылар. Есепті мәтін ретінде көшіруге болады.", en: "Results and conclusions for one experiment. You can copy the report as text." },
+  "reports.copy": { ru: "Скопировать отчёт", kk: "Есепті көшіру", en: "Copy report" },
+  "reports.copied": { ru: "Отчёт скопирован", kk: "Есеп көшірілді", en: "Report copied" },
   "app.updateAvailable": { ru: "Вышла новая версия: {v}", kk: "Жаңа нұсқа шықты: {v}", en: "A new version is out: {v}" },
   "app.updateGet": { ru: "Скачать", kk: "Жүктеу", en: "Download" },
   "research.actionFailed": { ru: "Не получилось. Проверьте права и интернет.", kk: "Болмады. Рұқсат пен интернетті тексеріңіз.", en: "That did not work. Check your permissions and connection." },

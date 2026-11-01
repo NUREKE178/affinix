@@ -874,6 +874,27 @@ class ResearchModelTest {
         assertTrue(q.contains("responses"), q)
     }
 
+    @Test fun aReportIsMadeOfPublishedExperimentsOnlyAndAsksForTheirAnswers() = runTest {
+        val r = rigWith(); r.research.loadOrgs(); until { r.research.experimentsLoaded }
+        assertEquals(listOf("e2"), r.research.reportOptions.map { it.id }) // e1 is a draft
+        assertEquals("e2", r.research.reportExperiment?.id)
+        r.research.loadReport(); until { r.research.reportLoaded }
+        assertTrue(!r.research.reportFailed)
+        assertTrue(r.log().any { it.contains("/participant_sessions?") && it.contains("experiment_id=eq.e2") && it.contains("responses") })
+        assertEquals(1, r.research.reportSessions.size)
+    }
+
+    @Test fun aFailedReportCanBeAskedAgain() = runTest {
+        var down = true
+        val r = rigWith(reject = { _, p, _ -> if (down && p.endsWith("/participant_sessions")) "boom" else null })
+        r.research.loadOrgs(); until { r.research.experimentsLoaded }
+        r.research.loadReport(); until { r.research.reportLoaded }
+        assertTrue(r.research.reportFailed)
+        down = false
+        r.research.loadReport(); until { r.research.reportLoaded && !r.research.reportFailed }
+        assertEquals(1, r.research.reportSessions.size)
+    }
+
     @Test fun theParticipantsOfTheCompanyCarryTheExperimentName() = runTest {
         val r = rigWith(); r.research.loadOrgs(); until { r.research.experimentsLoaded }
         r.research.loadOrgSessions(); until { r.research.orgSessionsLoaded }
