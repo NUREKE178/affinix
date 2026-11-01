@@ -66,13 +66,29 @@ class SwipeGestureTest {
         } finally { scene.close() }
     }
 
-    @Test fun aSwipeToTheLeftGoesToTheNextTabAndToTheRightBack() {
+    @Test fun aSwipeToTheLeftGoesToTheNextTab() {
         val m = model(); m.tab = Tab.People
         withApp(m) { f ->
-            f.drag(330f, 400f, 130f, 410f)
+            f.drag(330f, 700f, 130f, 710f)
             assertEquals(Tab.Research, m.tab, "swiped left from the friends")
-            f.drag(100f, 400f, 300f, 400f)
-            assertEquals(Tab.People, m.tab, "swiped right: back")
+        }
+    }
+
+    @Test fun aSwipeToTheRightGoesBack() {
+        val m = model(); m.tab = Tab.Chats
+        withApp(m) { f ->
+            f.drag(100f, 700f, 300f, 700f)
+            assertEquals(Tab.Feed, m.tab, "swiped right from the chats")
+        }
+    }
+
+    /** one swipe after the other, in both directions, over the middle of the bar (the Styles page, where the marketers' tab opens, has a strip that keeps its own drag, so it is not used here) */
+    @Test fun swipesGoBackAndForthAlongTheBar() {
+        val m = model(); m.tab = Tab.Chats
+        withApp(m) { f ->
+            f.drag(330f, 700f, 130f, 700f); assertEquals(Tab.People, m.tab, "Chats -> People")
+            f.drag(100f, 700f, 300f, 700f); assertEquals(Tab.Chats, m.tab, "People -> Chats")
+            f.drag(100f, 700f, 300f, 700f); assertEquals(Tab.Feed, m.tab, "Chats -> Feed")
         }
     }
 
