@@ -11,7 +11,6 @@ import androidx.compose.ui.unit.dp
 import space.affinix.app.ui.Bar
 import space.affinix.app.ui.Motion
 import space.affinix.app.ui.Plate
-import space.affinix.app.ui.Txt
 import kotlin.test.Test
 import kotlin.test.assertTrue
 
@@ -31,7 +30,7 @@ class MotionScreenshotTest {
         Motion.enabled = true
         try {
             val scene = ImageComposeScene(width = 420, height = 260, density = Density(1f)) {
-                Column(Modifier.padding(16.dp)) { Plate(Modifier.fillMaxWidth()) { Txt("Motion", 22); Bar(0.8f) } }
+                Column(Modifier.padding(16.dp)) { Plate(Modifier.fillMaxWidth()) { Bar(0.8f); Bar(0.5f) } }
             }
             try {
                 var t = 0L
