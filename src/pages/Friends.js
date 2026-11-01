@@ -5,7 +5,7 @@ import { FriendButton } from "../components/friendButton.js";
 import { PersonLink } from "../components/profileViewer.js";
 import { Icon } from "../components/icons.js";
 import { useT } from "../lib/i18n.js";
-import { useFriends, useFriendStatus, acceptFriendRequest, removeFriendship } from "../lib/friendsStore.js";
+import { useFriends, useFriendStatus, acceptFriendRequest, removeFriendship, invalidateFriends, friendErrorText } from "../lib/friendsStore.js";
 import { usePeopleSearch, cleanQuery, MIN_QUERY } from "../lib/people.js";
 import { openProfile } from "../lib/profileViewer.js";
 import { navigate } from "../router.js";
@@ -132,7 +132,7 @@ export function Friends() {
       await acceptFriendRequest(f.id);
       toast(t("friends.requestAccepted"), "emerald");
     } catch (err) {
-      toast(err.message ?? String(err), "rose");
+      toast(friendErrorText(err), "rose");
     } finally {
       setBusyId(null);
     }
@@ -144,7 +144,7 @@ export function Friends() {
       await removeFriendship(f.id);
       if (successKey) toast(t(successKey));
     } catch (err) {
-      toast(err.message ?? String(err), "rose");
+      toast(friendErrorText(err), "rose");
     } finally {
       setBusyId(null);
     }
@@ -154,7 +154,15 @@ export function Friends() {
 
   let body;
   if (searching) {
-    body = html`<${SearchResults} search=${search} query=${query} onRetry=${() => setRetryKey((n) => n + 1)} t=${t} />`;
+    body = html`
+      ${error && html`
+        <${Card} className="mb-3 flex items-center gap-3 px-4 py-3" role="alert" data-testid="friends-status-unknown">
+          <span class="flex-1 text-sm text-graphite-300">${t("friends.statusUnknown")}</span>
+          <${Button} size="sm" variant="secondary" onClick=${invalidateFriends}>${t("people.retry")}<//>
+        <//>
+      `}
+      <${SearchResults} search=${search} query=${query} onRetry=${() => setRetryKey((n) => n + 1)} t=${t} />
+    `;
   } else if (nothingLoadedYet) {
     body = html`
       <${Card} className="divide-y divide-graphite-800">

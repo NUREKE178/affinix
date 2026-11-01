@@ -13,6 +13,7 @@ import kotlinx.serialization.builtins.ListSerializer
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.put
 import space.affinix.app.net.Api
+import space.affinix.app.net.ApiException
 import space.affinix.app.net.AuthorRow
 import space.affinix.app.net.Friendship
 import space.affinix.app.net.FriendshipRow
@@ -54,7 +55,8 @@ class PeopleModel(private val api: Api, private val scope: CoroutineScope, priva
         failed = false
         try {
             val rows = api.restGet("friendships", ListSerializer(FriendshipRow.serializer()), "select" to "*", "or" to "(requester_id.eq.$uid,addressee_id.eq.$uid)")
-            val others = feed.authors(rows.map { if (it.requesterId == uid) it.addresseeId else it.requesterId })
+            // who is a friend must not depend on being able to read their names: a failed profile lookup leaves the relationships right
+            val others = try { feed.authors(rows.map { if (it.requesterId == uid) it.addresseeId else it.requesterId }) } catch (e: CancellationException) { throw e } catch (e: Exception) { emptyMap() }
             val mapped = rows.map {
                 val oid = if (it.requesterId == uid) it.addresseeId else it.requesterId
                 Friendship(it.id, others[oid] ?: Person(oid, null, null, null), it.status, it.requesterId == uid, it.createdAt)
@@ -71,7 +73,10 @@ class PeopleModel(private val api: Api, private val scope: CoroutineScope, priva
 
     private fun act(block: suspend () -> Unit) {
         scope.launch {
-            try { block(); loadNow() } catch (e: CancellationException) { throw e } catch (e: Exception) { say("app.noNetwork") }
+            try { block(); loadNow() } catch (e: CancellationException) { throw e } catch (e: Exception) {
+                say(errorKey(e))
+                loadNow() // the answer ("already friends" ...) usually means this screen was out of date: read the truth again
+            }
         }
     }
 
@@ -128,5 +133,22 @@ class PeopleModel(private val api: Api, private val scope: CoroutineScope, priva
         else -> 3
     }
 
-    companion object { const val MIN_QUERY = 2; const val MAX = 20 }
+    companion object {
+        const val MIN_QUERY = 2; const val MAX = 20
+
+        /** The sentence a friendship function of the database raised, as a string key; anything else is a connection problem. */
+        fun errorKey(e: Exception): String {
+            val m = (e as? ApiException)?.message.orEmpty().lowercase()
+            return when {
+                e !is ApiException -> "app.noNetwork"
+                "already friends" in m -> "friends.err.alreadyFriends"
+                "request already sent" in m -> "friends.err.alreadySent"
+                "yourself" in m -> "friends.err.self"
+                "user not found" in m -> "friends.err.notFound"
+                "not signed in" in m -> "friends.err.signedOut"
+                "not found or already handled" in m -> "friends.err.handled"
+                else -> "app.noNetwork"
+            }
+        }
+    }
 }

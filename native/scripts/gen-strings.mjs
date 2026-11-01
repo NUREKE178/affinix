@@ -56,6 +56,7 @@ const KEYS = [
   "friends.message", "friends.title", "friends.incomingTitle", "friends.outgoingTitle", "friends.friendsTitle", "friends.accept", "friends.decline", "friends.cancel",
   "friends.remove", "friends.addFriend", "friends.requestSent", "friends.requestAccepted", "friends.emptyTitle", "friends.emptyBody", "friends.loadErrorTitle", "friends.loadErrorBody",
   "people.openProfile", "people.profile.you", "people.profile.openMine", "people.profile.place", "people.profile.xpWeek", "people.profile.xpAll",
+  "friends.err.alreadyFriends", "friends.err.alreadySent", "friends.err.self", "friends.err.notFound", "friends.err.signedOut", "friends.err.handled",
   "feed.noBio", "friends.countLabel", "arena.quests.streakTitle", "arena.quests.dayOne", "arena.quests.days",
   "people.searchPlaceholder", "people.searchHint", "people.noResultsTitle", "people.noResultsBody", "people.errorTitle", "people.errorBody", "people.retry", "people.you",
   "messages.title", "messages.you", "messages.placeholder", "messages.send", "messages.back", "messages.noMessagesYet", "messages.failedRetry", "messages.noFriendsBody",

@@ -5,6 +5,7 @@ import { fetchAuthorsById } from "./postsStore.js";
 import { watchTables, debounce } from "./realtime.js";
 import { t as translate, getLocale } from "./i18n.js";
 import { toast } from "../components/ui.js";
+import { friendErrorKey } from "./rpcErrors.js";
 
 function mapFriendship(row, viewerId, profilesById) {
   const isRequester = row.requester_id === viewerId;
@@ -39,7 +40,9 @@ async function fetchMyFriendships() {
   if (error) throw error;
   const rows = data ?? [];
   const otherIds = [...new Set(rows.map((r) => (r.requester_id === userId ? r.addressee_id : r.requester_id)))];
-  const profilesById = await fetchAuthorsById(otherIds);
+  // Who is a friend must not depend on being able to read their names: if the profile lookup fails the relationships are still right (names fill in on the next load).
+  let profilesById = {};
+  try { profilesById = await fetchAuthorsById(otherIds); } catch { /* keep the relationships */ }
   const mapped = rows
     .map((row) => mapFriendship(row, userId, profilesById))
     .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
@@ -57,7 +60,7 @@ async function fetchMyFriendships() {
 export async function sendFriendRequest(targetId) {
   const sb = requireSupabase();
   const { error } = await sb.rpc("send_friend_request", { target_id: targetId });
-  if (error) throw error;
+  if (error) { load({ silent: true }); throw error; } // "already friends" means this tab was out of date: read the truth again
   invalidateFriends();
 }
 
@@ -66,7 +69,7 @@ export async function sendFriendRequest(targetId) {
 export async function acceptFriendRequest(friendshipId) {
   const sb = requireSupabase();
   const { error } = await sb.rpc("accept_friend_request", { p_friendship_id: friendshipId });
-  if (error) throw error;
+  if (error) { load({ silent: true }); throw error; }
   invalidateFriends();
 }
 
@@ -76,8 +79,14 @@ export async function acceptFriendRequest(friendshipId) {
 export async function removeFriendship(friendshipId) {
   const sb = requireSupabase();
   const { error } = await sb.from("friendships").delete().eq("id", friendshipId);
-  if (error) throw error;
+  if (error) { load({ silent: true }); throw error; }
   invalidateFriends();
+}
+
+/** A sentence for a toast: in the person's language for the errors the friendship functions raise, the raw text for anything else. */
+export function friendErrorText(err) {
+  const key = friendErrorKey(err);
+  return key ? translate(getLocale(), key) : err?.message ?? String(err);
 }
 
 /** For ANY profile, not just the viewer's own -- friends_count() (0017) is

@@ -4250,3 +4250,13 @@ The first half of the marketers' tools, in the native apps (Kotlin + Compose), o
 - **Tests:** `ProfileViewerTest` (8) and `ChatLoadingTest` (5); 207 JVM tests locally (without the Skia screenshots). Screenshot cases 38-41 (profile card in ru and kk, the chat that cannot load, rankings with faces); the mock server can now fail the messages read.
 - **Not in the app:** the website's owner / admin badge on the card (needs migration 0025's column in the lookup); removing a friend from the card (it is on the Friends page).
 - **Not verified:** the card and the chat fix have not been run on a real phone or against the real database.
+
+### Friend keys that tell the truth (website + native; migration: none)
+
+- **Report:** on the Friends page a search result showed "Add friend" next to someone who already was a friend; the click answered "You are already friends." (the database's English sentence). So the client's idea of the friendships and the server's differed.
+- **Cause found in the code (not the exact trigger):** the search view hid a failed friendships load (`error`), and `useFriendStatus` answers "none" for everybody then; `fetchMyFriendships` also failed as a whole when the profile lookup for the friends' names failed. Why this tab's list was empty or stale is
+  unconfirmed.
+- **Website:** `friendsStore.js` reads the friendships again (silent reload) when send / accept / remove fails, so "already friends" corrects the button at once; the profile lookup is optional (`try`/`catch`, names fill in later); `friendErrorText` shows the six sentences of migration 0017 in the person's language (`friends.err.*`,
+  `rpcErrors.friendErrorKey`); the search view shows a "couldn't check who is already your friend" notice with a retry when the load failed (`friends.statusUnknown`). `scripts/check-friend-errors.mjs` parses the `raise exception` sentences of 0017 and requires a key with text in ru / kk / en for each.
+- **Native:** `PeopleModel.act` used to say "no connection" for any failure; now `PeopleModel.errorKey` maps the same six sentences (`friends.err.*`, 1121 keys x 3 languages), and every failed action reads the friendships again; `loadNow` no longer fails as a whole when the names cannot be read.
+- **Tests:** `FriendErrorsTest` (4); 211 JVM tests locally (without the Skia screenshots). The website part has the contract script and an import check only, no browser run.
