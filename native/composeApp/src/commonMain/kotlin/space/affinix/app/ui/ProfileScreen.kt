@@ -90,7 +90,7 @@ private fun MyPhoto(model: AppModel) {
     var note by remember { mutableStateOf<String?>(null) }
     Plate(Modifier.fillMaxWidth(), pad = 14) {
         Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(14.dp)) {
-            Avatar(model, space.affinix.app.net.Person(model.api.session?.userId.orEmpty(), me?.fullName, me?.username, me?.avatarUrl), 64.dp)
+            Avatar(model, space.affinix.app.net.Person(model.api.session?.userId.orEmpty(), me?.fullName, me?.username, me?.avatarUrl), 64.dp, opens = false)
             Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(6.dp)) {
                 Txt(me?.fullName?.ifBlank { null } ?: model.email, 16, FontWeight.ExtraBold, C.g50, maxLines = 1)
                 KeyButton(if (model.avatarBusy) t("common.saving") else t("app.changePhoto"), { scope.launch { note = model.changeAvatar() } }, compact = true, enabled = !model.avatarBusy)

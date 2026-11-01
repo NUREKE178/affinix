@@ -104,6 +104,9 @@ class AppModel(
         private set
     var admin by mutableStateOf(AdminModel(api, scope) { api.session?.userId })
         private set
+    /** the one profile card of the app: tap a picture or a name anywhere and it opens */
+    var profileViewer by mutableStateOf(ProfileViewerModel(api, scope, { api.session?.userId }, feed))
+        private set
 
     /** a signed-out player's posts, friends and chats must not show for the next one */
     private fun freshSocial() {
@@ -117,6 +120,7 @@ class AppModel(
         research = ResearchModel(api, scope) { api.session?.userId }
         styles = StylesModel(api, scope)
         admin = AdminModel(api, scope) { api.session?.userId }
+        profileViewer = ProfileViewerModel(api, scope, { api.session?.userId }, feed)
     }
 
     val email get() = api.session?.email.orEmpty()

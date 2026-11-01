@@ -255,16 +255,23 @@ fun ThreadScreen(model: AppModel) {
         Row(Modifier.fillMaxWidth().padding(bottom = 8.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
             IcoAction("arrowLeft", { msg.closeChat() })
             Avatar(model, c.other, 38.dp)
-            Column(Modifier.weight(1f)) {
+            Column(Modifier.weight(1f).personTap(model, c.other)) {
                 Txt(c.other.name ?: t("feed.unknownAuthor"), 16, FontWeight.ExtraBold, C.g50, maxLines = 1)
                 c.other.username?.let { Txt("@$it", 12, color = C.g500, maxLines = 1) }
             }
             IcoAction("pin", { msg.setPref(c, pinned = !c.pinned) }, active = c.pinned, filled = false)
             IcoAction("bellOff", { msg.setPref(c, muted = !c.muted) }, active = c.muted, filled = false)
         }
-        msg.notice?.let { Chip(t(it), Tone.Info, Modifier.padding(bottom = 6.dp)) }
+        msg.notice?.let { Txt(t(it), 13, FontWeight.Medium, C.info, Modifier.padding(bottom = 6.dp)) }
         Box(Modifier.weight(1f).fillMaxWidth()) {
             when {
+                !msg.threadLoaded && msg.threadError != null -> Plate(Modifier.fillMaxWidth().padding(top = 8.dp), pad = 14) {
+                    Txt(t("messages.loadFailed"), 15, FontWeight.Bold, C.g50)
+                    Spacer(Modifier.height(4.dp))
+                    Txt(msg.threadError.orEmpty(), 11, color = C.g500)
+                    Spacer(Modifier.height(10.dp))
+                    KeyButton(t("common.retry"), { msg.retryThread() }, compact = true)
+                }
                 !msg.threadLoaded -> Txt(t("common.loading"), 14, color = C.g500)
                 msg.thread.isEmpty() -> Txt(t("messages.noMessagesYet"), 14, color = C.g500, align = androidx.compose.ui.text.style.TextAlign.Center, modifier = Modifier.fillMaxWidth().padding(24.dp))
                 else -> LazyColumn(Modifier.fillMaxSize(), reverseLayout = true, verticalArrangement = Arrangement.spacedBy(6.dp)) {

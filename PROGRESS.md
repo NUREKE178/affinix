@@ -4229,3 +4229,21 @@ The first half of the marketers' tools, in the native apps (Kotlin + Compose), o
 - **Strings:** the `admin` and `arena.admin` subtrees and `shell.workspace.admin`; 1103 keys x 3 languages.
 - **Not in the app:** avatars are initials until the picture loads (as elsewhere), no CSV, no admin-only "open in feed" link.
 - **Not verified:** the motion has not been watched on a real screen (the emulator check only launches the app); the admin panel has not been run against the real database.
+
+### Native apps: the profile card and a chat that cannot hang (migration: none)
+
+- **Profile card** (`store/ProfileViewerModel.kt`, `ui/ProfileViewer.kt`): the website's one global profile viewer. `Avatar` opens it by default (`opens = false` for the card's own picture and for one's own profile screen), `Modifier.personTap(model, person, arena)`
+  makes a name block tappable (hand cursor on the desktop, an accessibility label `people.openProfile`). Wired into: Feed (post and comment authors), chat list and thread header, People rows and search results, notifications (avatar), rankings (the
+  whole row, now with avatars; passes rank / level / XP / streak and which XP it is), the friends race on Home, admin people and moderation, team members.
+  The card shows what the caller knows at once, then looks up the full `profiles_public` row (bio, role, @username; remembered for a minute) and `friends_count(target_id)` (SECURITY DEFINER, works for anyone) in parallel; a failed lookup keeps the
+  caller's data, a failed count is simply not shown, an older lookup never overwrites a newer person. The Arena strip (rank, level, XP, streak) shows only when the caller supplied it (arena_profiles is own-row-only, as on the site).
+  Actions: yourself -> "This is you" + "My profile"; others -> the friend key states of `Relation` (add / sent / accept) and, for a friend, "Message" (closes the card and opens the chat). The actions wait for the friendships to load, so a friend is never
+  offered "Add friend". Rises and settles in (spring-free tween), closes by tapping outside, the x key, Esc (desktop; `onPreviewKeyEvent` in `MainShell`) and Back (Android `BackHandler`).
+- **Chat that hung** (user's screenshot: "Нет связи с сервером ..." and "Загрузка..." for ever): the thread read embedded the replied-to message with a self-join (`reply:messages!reply_to_id(...)`, also what the site does), whose answer can be an array or
+  an error depending on how the server resolves the relation. Now `MessageRow.reply` is read leniently (`JsonElement`), the quote is taken from the loaded thread (or one extra `id=in.(...)` read for a message older than the page), a refused or undecodable
+  embedded read falls back to a plain read (reactions then come from `message_reactions`; remembered for the session), and a first load that fails shows the real reason (`HTTP 400: ...`) with a Retry key (`MessagesModel.threadError / retryThread`)
+  instead of the spinner. The notice line wraps instead of being cut. **The real cause is unconfirmed**: the screen will name it if it happens again.
+- **Strings:** `people.openProfile`, `people.profile.*`, `feed.noBio`, `friends.countLabel`, `arena.quests.streakTitle / dayOne / days`, and the app-only `messages.loadFailed`; 1115 keys x 3 languages.
+- **Tests:** `ProfileViewerTest` (8) and `ChatLoadingTest` (5); 207 JVM tests locally (without the Skia screenshots). Screenshot cases 38-41 (profile card in ru and kk, the chat that cannot load, rankings with faces); the mock server can now fail the messages read.
+- **Not in the app:** the website's owner / admin badge on the card (needs migration 0025's column in the lookup); removing a friend from the card (it is on the Friends page).
+- **Not verified:** the card and the chat fix have not been run on a real phone or against the real database.

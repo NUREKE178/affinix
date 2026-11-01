@@ -89,14 +89,20 @@ fun App(model: AppModel) {
 private fun MainShell(model: AppModel) {
     val round by model.game.round.collectAsState()
     val focus = remember { FocusRequester() }
-    LaunchedEffect(round?.idx, round?.phase) { runCatching { focus.requestFocus() } }
+    LaunchedEffect(round?.idx, round?.phase, model.profileViewer.isOpen) { runCatching { focus.requestFocus() } }
     // the unread badge on the chats tab
     LaunchedEffect(model.signedIn) { while (true) { model.messages.refresh(); model.notifications.refresh(); kotlinx.coroutines.delay(30_000) } }
+    Box(Modifier.fillMaxSize()) {
     Column(
         Modifier.fillMaxSize()
             .focusRequester(focus)
             .focusable()
             .onPreviewKeyEvent { e ->
+                // an open profile card takes Esc (and nothing else gets through while it is up)
+                if (model.profileViewer.isOpen) {
+                    if (e.type == KeyEventType.KeyDown && e.key == Key.Escape) { model.profileViewer.close(); return@onPreviewKeyEvent true }
+                    return@onPreviewKeyEvent false
+                }
                 // desktop: ← / → choose the left / right design, Enter or Space goes on
                 val r = model.game.round.value
                 if (r == null || e.type != KeyEventType.KeyDown) return@onPreviewKeyEvent false
@@ -136,6 +142,8 @@ private fun MainShell(model: AppModel) {
             }
         }
         if (round == null && mission == null && !inThread) TabBar(model)
+    }
+    space.affinix.app.ui.ProfileViewerHost(model)
     }
 }
 

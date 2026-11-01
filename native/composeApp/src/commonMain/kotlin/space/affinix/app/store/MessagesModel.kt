@@ -8,7 +8,9 @@ import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import kotlinx.serialization.SerializationException
 import kotlinx.serialization.builtins.ListSerializer
+import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.put
 import space.affinix.app.Platform
@@ -19,6 +21,10 @@ import space.affinix.app.net.ConversationRow
 import space.affinix.app.net.Message
 import space.affinix.app.net.MessageRow
 import space.affinix.app.net.ApiException
+import space.affinix.app.net.ApiJson
+import space.affinix.app.net.ReactionOfRow
+import space.affinix.app.net.ReactionRow
+import space.affinix.app.net.ReplyRow
 import space.affinix.app.net.FoundMessageRow
 import space.affinix.app.net.Person
 import space.affinix.app.net.PrefRow
@@ -45,6 +51,9 @@ class MessagesModel(private val api: Api, private val scope: CoroutineScope, pri
     var threadLoaded by mutableStateOf(false)
         private set
     var hasOlder by mutableStateOf(false)
+        private set
+    /** what went wrong while the first page of the open chat was read (shown with a retry), null when nothing did */
+    var threadError by mutableStateOf<String?>(null)
         private set
     var notice by mutableStateOf<String?>(null)
     /** the message the next send answers, and the one being edited (the composer fills with its text) */
@@ -91,7 +100,7 @@ class MessagesModel(private val api: Api, private val scope: CoroutineScope, pri
     // ---- one chat -----------------------------------------------------------------------------------------------------------------------
 
     fun openChat(c: Conversation) {
-        open = c; thread = emptyList(); threadLoaded = false; hasOlder = false; replyTo = null; editing = null
+        open = c; thread = emptyList(); threadLoaded = false; threadError = null; hasOlder = false; replyTo = null; editing = null
         scope.launch { loadThread(); markRead() }
     }
 
@@ -108,13 +117,24 @@ class MessagesModel(private val api: Api, private val scope: CoroutineScope, pri
         }
     }
 
-    private fun map(r: MessageRow) = Message(
-        r.id, r.conversationId, r.senderId, r.body.orEmpty(), r.createdAt, r.readAt != null, r.editedAt != null, r.deletedAt != null, r.attachmentPath != null,
-        r.reactions.map { Reaction(it.userId, it.emoji) },
-        r.reply?.let { Quote(it.id, it.senderId, it.body.orEmpty(), it.attachmentPath != null, it.deletedAt != null) }, r.replyToId, r.attachmentPath,
-    )
+    private fun quoteOf(r: ReplyRow) = Quote(r.id, r.senderId, r.body.orEmpty(), r.attachmentPath != null, r.deletedAt != null)
 
-    /** an older database (before 0024) has no reactions table or reply relation: the plain read still works */
+    /**
+     * The quote of a reply: the embedded object when the server sent one, else the quoted message itself, found among the messages read with it (or in [extra], read
+     * separately when it is older than this page). Worked out here instead of by a self-join of the table, whose answer depends on how the server reads the relation.
+     */
+    private fun map(r: MessageRow, known: Map<String, MessageRow>, extra: Map<String, ReplyRow>): Message {
+        val embedded = (r.reply as? JsonObject)?.let { runCatching { ApiJson.decodeFromJsonElement(ReplyRow.serializer(), it) }.getOrNull() }
+        val quote = embedded?.let(::quoteOf) ?: r.replyToId?.let { id ->
+            known[id]?.let { k -> Quote(k.id, k.senderId, k.body.orEmpty(), k.attachmentPath != null, k.deletedAt != null) } ?: extra[id]?.let(::quoteOf)
+        }
+        return Message(
+            r.id, r.conversationId, r.senderId, r.body.orEmpty(), r.createdAt, r.readAt != null, r.editedAt != null, r.deletedAt != null, r.attachmentPath != null,
+            r.reactions.map { Reaction(it.userId, it.emoji) }, quote, r.replyToId, r.attachmentPath,
+        )
+    }
+
+    /** a database without the reactions table (before 0024), or one that answers the embedded read in a way that cannot be used: the plain read still works */
     private var plainOnly = false
 
     private suspend fun fetchThread(convId: String, before: String? = null): List<Message> {
@@ -123,10 +143,37 @@ class MessagesModel(private val api: Api, private val scope: CoroutineScope, pri
             if (before != null) q += "created_at" to "lt.$before"
             return q.toTypedArray()
         }
-        if (!plainOnly) try {
-            return api.restGet("messages", ListSerializer(MessageRow.serializer()), *query(FULL_SELECT)).map(::map).reversed()
-        } catch (e: ApiException) { if (e.status !in 400..404) throw e; plainOnly = true }
-        return api.restGet("messages", ListSerializer(MessageRow.serializer()), *query("*")).map(::map).reversed()
+        suspend fun plain() = api.restGet("messages", ListSerializer(MessageRow.serializer()), *query("*"))
+        var rows = if (plainOnly) plain() else try {
+            api.restGet("messages", ListSerializer(MessageRow.serializer()), *query(FULL_SELECT))
+        } catch (e: ApiException) {
+            if (e.status == 401) throw e
+            plainOnly = true; plain() // any other refusal of the embedded read (a missing table, an ambiguous relation ...) is not the end of the chat
+        } catch (e: SerializationException) {
+            plainOnly = true; plain()
+        }
+        if (plainOnly && rows.isNotEmpty()) {
+            // the reactions come from their own table then; if that cannot be read either, the messages are still shown
+            val byMessage = runCatching {
+                api.restGet("message_reactions", ListSerializer(ReactionOfRow.serializer()), "select" to "message_id,user_id,emoji", "message_id" to "in.(${rows.joinToString(",") { it.id }})")
+            }.getOrDefault(emptyList()).groupBy { it.messageId }
+            rows = rows.map { r -> r.copy(reactions = byMessage[r.id].orEmpty().map { ReactionRow(it.userId, it.emoji) }) }
+        }
+        val known = rows.associateBy { it.id }
+        val missing = rows.mapNotNull { it.replyToId }.filter { it !in known }.distinct()
+        val extra = if (missing.isEmpty()) emptyMap() else runCatching {
+            api.restGet("messages", ListSerializer(ReplyRow.serializer()), "select" to "id,sender_id,body,attachment_path,deleted_at", "id" to "in.(${missing.joinToString(",")})")
+        }.getOrDefault(emptyList()).associateBy { it.id }
+        return rows.map { map(it, known, extra) }.reversed()
+    }
+
+    private fun detailOf(e: Exception): String =
+        if (e is ApiException) "HTTP ${e.status}: ${e.message.orEmpty().take(140)}" else "${e::class.simpleName}: ${e.message.orEmpty().take(140)}"
+
+    /** the retry button of a chat that could not be read */
+    fun retryThread() {
+        threadError = null
+        scope.launch { loadThread() }
     }
 
     internal suspend fun loadThread() {
@@ -136,8 +183,8 @@ class MessagesModel(private val api: Api, private val scope: CoroutineScope, pri
             if (open?.id != c.id) return
             val keep = thread.filter { it.status != null && fresh.none { f -> f.id == it.id } } // still being sent / failed
             thread = (fresh + keep).sortedBy { epochOfIso(it.createdAt) ?: Long.MAX_VALUE }
-            hasOlder = fresh.size >= PAGE; threadLoaded = true
-        } catch (e: CancellationException) { throw e } catch (e: Exception) { if (!threadLoaded) say("app.noNetwork") }
+            hasOlder = fresh.size >= PAGE; threadLoaded = true; threadError = null
+        } catch (e: CancellationException) { throw e } catch (e: Exception) { if (!threadLoaded) threadError = detailOf(e) }
     }
 
     /** What the open chat does every few seconds: new messages, and a read mark for what arrived. */
@@ -217,7 +264,7 @@ class MessagesModel(private val api: Api, private val scope: CoroutineScope, pri
                 }, returning = true)
                 pendingImages.remove(id)
                 val row = kotlinx.serialization.json.Json { ignoreUnknownKeys = true; isLenient = true }.decodeFromString(ListSerializer(MessageRow.serializer()), written).firstOrNull()
-                thread = thread.map { if (it.id == id) (row?.let { r -> map(r).copy(reply = it.reply) } ?: it.copy(status = null)) else it }.sortedBy { epochOfIso(it.createdAt) ?: Long.MAX_VALUE }
+                thread = thread.map { if (it.id == id) (row?.let { r -> map(r, emptyMap(), emptyMap()).copy(reply = it.reply) } ?: it.copy(status = null)) else it }.sortedBy { epochOfIso(it.createdAt) ?: Long.MAX_VALUE }
                 conversations = conversations.map { if (it.id == convId) it.copy(lastBody = body.take(140), lastHasImage = uploaded != null, lastAt = row?.createdAt ?: it.lastAt, lastSender = me(), unread = 0) else it }
             } catch (e: CancellationException) { throw e } catch (e: Exception) {
                 thread = thread.map { if (it.id == id) it.copy(status = "failed") else it }
@@ -340,7 +387,7 @@ class MessagesModel(private val api: Api, private val scope: CoroutineScope, pri
         const val EDIT_WINDOW_MS = 48L * 3600 * 1000
         val REACTIONS = listOf("👍", "❤️", "😂", "😮", "😢", "🙏")
         private val KNOWN_ERRORS = setOf("edit_expired", "not_found", "deleted", "bad_text", "bad_emoji", "not_friends")
-        private const val FULL_SELECT = "*,reactions:message_reactions(user_id,emoji),reply:messages!reply_to_id(id,sender_id,body,attachment_path,deleted_at)"
+        private const val FULL_SELECT = "*,reactions:message_reactions(user_id,emoji)"
     }
 }
 

@@ -21,6 +21,8 @@ import space.affinix.app.net.Session
 import space.affinix.app.store.FeedModel
 import space.affinix.app.store.MessagesModel
 import space.affinix.app.store.PeopleModel
+import space.affinix.app.ui.arenaInfo
+import space.affinix.app.ui.person
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertNull
@@ -61,6 +63,7 @@ private class Rig(
     val messages = MessagesModel(api, scope, { "me" }, feed)
     val notifications = space.affinix.app.store.NotificationsModel(api, scope, { "me" }, feed)
     val search = space.affinix.app.store.SearchModel(api, scope, feed, people)
+    val viewer = space.affinix.app.store.ProfileViewerModel(api, scope, { "me" }, feed)
     var xp = 500L
     val crowd = space.affinix.app.store.CrowdModel(api, scope, { "me" }, { xp })
     val research = space.affinix.app.store.ResearchModel(api, scope) { "me" }
@@ -1019,5 +1022,179 @@ class ResearchModelTest {
         val r = rigWith(); r.research.loadOrgs(); until { r.research.experimentsLoaded }
         r.research.pickOrg("o2")
         assertTrue(!r.research.canManage)
+    }
+}
+
+
+/** The chat thread must open whatever way the server answers the embedded read (the bug of the phone screenshot: «Нет связи…» and a spinner for ever). */
+class ChatLoadingTest {
+    private val convs = """[{"id":"c1","user_a":"me","user_b":"u2","last_message_body":"mine","last_message_at":"__NOW__","last_message_sender_id":"me"}]"""
+    private fun rows(reply: String) = """[
+        {"id":"m3","conversation_id":"c1","sender_id":"me","body":"mine","created_at":"${isoNow()}","reply_to_id":"m2"$reply},
+        {"id":"m2","conversation_id":"c1","sender_id":"u2","body":"see you","created_at":"${isoNow(60_000)}"}]"""
+
+    private fun rig(
+        reply: String = "",
+        reject: (String, String, String) -> String? = { _, _, _ -> null },
+        extra: (String) -> String = { "[]" },
+        reactions: String = "[]",
+    ) = Rig({ m, path, query, _ ->
+        when {
+            path.endsWith("/conversations") -> convs.replace("__NOW__", isoNow())
+            path.endsWith("/profiles_public") -> PROFILES
+            path.endsWith("/message_reactions") -> reactions
+            path.endsWith("/messages") && m == "GET" -> if (query.contains("id=in.")) extra(query) else rows(reply)
+            else -> "[]"
+        }
+    }, reject = reject)
+
+    private suspend fun open(r: Rig) { r.messages.refreshNow(); r.messages.openChat(r.messages.conversations.first()) }
+
+    @Test fun aReplyEmbeddedAsAListInsteadOfOneMessageDoesNotBreakTheChat() = runTest {
+        val r = rig(reply = ""","reply":[{"id":"m2","sender_id":"u2","body":"see you"}]""")
+        open(r); until { r.messages.threadLoaded }
+        assertNull(r.messages.threadError)
+        assertEquals(listOf("m2", "m3"), r.messages.thread.map { it.id })
+        assertEquals("see you", r.messages.thread.last().reply?.text) // taken from the loaded thread instead
+    }
+
+    @Test fun aNullEmbeddedReplyStillGetsItsQuoteFromTheThread() = runTest {
+        val r = rig(reply = ""","reply":null""")
+        open(r); until { r.messages.threadLoaded }
+        assertEquals("u2", r.messages.thread.last().reply?.senderId)
+    }
+
+    @Test fun whenTheServerRefusesTheEmbeddedReadThePlainOneIsUsedAndReactionsComeSeparately() = runTest {
+        val r = rig(reject = { _, p, q -> if (p.endsWith("/messages") && q.contains("message_reactions")) "PGRST201" else null }, reactions = """[{"message_id":"m2","user_id":"me","emoji":"👍"}]""")
+        open(r); until { r.messages.threadLoaded }
+        assertNull(r.messages.threadError)
+        assertEquals(listOf("m2", "m3"), r.messages.thread.map { it.id })
+        assertEquals(listOf("👍"), r.messages.thread.first().reactions.map { it.emoji })
+        assertEquals("see you", r.messages.thread.last().reply?.text)
+        assertEquals(1, r.log().count { it.contains("/messages?") && it.contains("message_reactions") }) // tried once, then the plain read is remembered
+        r.messages.poll(); until { r.log().count { it.contains("/messages?") } >= 3 } // 1 embedded try + 1 plain + the poll's plain
+        assertEquals(1, r.log().count { it.contains("/messages?") && it.contains("message_reactions") })
+    }
+
+    @Test fun aQuotedMessageOlderThanThePageIsFetchedByItsId() = runTest {
+        val r = Rig({ m, path, query, _ ->
+            when {
+                path.endsWith("/conversations") -> convs.replace("__NOW__", isoNow())
+                path.endsWith("/profiles_public") -> PROFILES
+                path.endsWith("/messages") && m == "GET" ->
+                    if (query.contains("id=in.")) """[{"id":"m0","sender_id":"u2","body":"way back","attachment_path":null,"deleted_at":null}]"""
+                    else """[{"id":"m3","conversation_id":"c1","sender_id":"me","body":"mine","created_at":"${isoNow()}","reply_to_id":"m0"}]"""
+                else -> "[]"
+            }
+        })
+        open(r); until { r.messages.threadLoaded }
+        assertEquals("way back", r.messages.thread.single().reply?.text)
+        assertTrue(r.log().any { it.contains("id=in.%28m0%29") || it.contains("id=in.(m0)") }, r.log().toString())
+    }
+
+    @Test fun aFailedFirstLoadShowsTheRealReasonAndRetryRecovers() = runTest {
+        var down = true
+        val r = rig(reject = { _, p, _ -> if (down && p.endsWith("/messages")) "permission denied for table messages" else null })
+        open(r); until { r.messages.threadError != null }
+        assertTrue(!r.messages.threadLoaded)
+        assertTrue(r.messages.threadError!!.contains("HTTP 400") && r.messages.threadError!!.contains("permission denied"), r.messages.threadError)
+        down = false
+        r.messages.retryThread()
+        until { r.messages.threadLoaded }
+        assertNull(r.messages.threadError)
+        assertEquals(2, r.messages.thread.size)
+    }
+}
+
+
+class ProfileViewerTest {
+    private val full = """[{"id":"u2","full_name":"Dias Nur","username":"dias","avatar_url":null,"role_title":"Designer","bio":"I draw logos"},
+        {"id":"u3","full_name":"Aigerim","username":"aigerim","bio":null}]"""
+
+    private fun rig(count: String = "7", reject: (String, String, String) -> String? = { _, _, _ -> null }) = Rig({ _, path, _, _ ->
+        when {
+            path.endsWith("/profiles_public") -> full
+            path.endsWith("/rpc/friends_count") -> count
+            path.endsWith("/friendships") -> """[{"id":"f1","requester_id":"me","addressee_id":"u2","status":"accepted","created_at":"2026-10-01T10:00:00+00:00"}]"""
+            else -> "[]"
+        }
+    }, reject = reject)
+
+    @Test fun whatTheCallerKnowsIsShownAtOnceAndTheFullRowFillsTheRest() = runTest {
+        val r = rig(); val pv = r.viewer
+        pv.open(space.affinix.app.net.Person("u2", "Dias", null, null))
+        assertTrue(pv.isOpen); assertEquals("Dias", pv.person?.name); assertNull(pv.person?.bio); assertTrue(!pv.detailsDone)
+        until { pv.detailsDone && pv.friendsCount != null }
+        assertEquals("Dias Nur", pv.person?.name) // the authoritative row wins
+        assertEquals("dias", pv.person?.username); assertEquals("Designer", pv.person?.roleTitle); assertEquals("I draw logos", pv.person?.bio)
+        assertEquals(7, pv.friendsCount)
+        val call = r.log().first { it.contains("/rpc/friends_count") }
+        assertTrue(call.contains("\"target_id\":\"u2\""), call)
+    }
+
+    @Test fun theArenaStripComesFromTheCallerAndStaysWhileTheCardIsOpen() = runTest {
+        val pv = rig().viewer
+        pv.open(space.affinix.app.net.Person("u2", "Dias", null, null), space.affinix.app.store.ArenaInfo(rank = 3, level = 5, xp = 1200, streak = 4))
+        assertEquals(3, pv.arena?.rank); assertEquals(1200L, pv.arena?.xp); assertEquals(4, pv.arena?.streak)
+        until { pv.detailsDone }
+        assertEquals(5, pv.arena?.level)
+        pv.close()
+        assertNull(pv.person); assertNull(pv.arena); assertTrue(!pv.isOpen)
+    }
+
+    @Test fun aPersonSeenAMomentAgoIsShownCompleteWithoutAnotherLookup() = runTest {
+        val r = rig(); val pv = r.viewer
+        val u2 = space.affinix.app.net.Person("u2", "Dias", null, null)
+        pv.open(u2); until { pv.detailsDone }
+        pv.close()
+        pv.open(u2)
+        assertTrue(pv.detailsDone) // no empty moment
+        assertEquals("I draw logos", pv.person?.bio)
+        until { pv.friendsCount != null }
+        assertEquals(1, r.log().count { it.contains("/profiles_public?") }) // looked up once
+        assertEquals(2, r.log().count { it.contains("/rpc/friends_count") }) // a count is always fresh
+    }
+
+    @Test fun aFailedLookupKeepsWhatWeHaveAndNeverLeavesTheCardWaiting() = runTest {
+        val r = rig(reject = { _, p, _ -> if (p.endsWith("/profiles_public") || p.endsWith("/rpc/friends_count")) "boom" else null }); val pv = r.viewer
+        pv.open(space.affinix.app.net.Person("u2", "Dias", "dias", null))
+        until { pv.detailsDone }
+        assertEquals("Dias", pv.person?.name); assertEquals("dias", pv.person?.username)
+        assertNull(pv.friendsCount) // a count that cannot be read is not shown
+    }
+
+    @Test fun aPersonWithoutAnIdIsShownAsGivenAndNothingIsRequested() = runTest {
+        val r = rig(); val pv = r.viewer
+        pv.open(space.affinix.app.net.Person("", "Somebody", null, null))
+        assertTrue(pv.isOpen && pv.detailsDone)
+        kotlinx.coroutines.delay(100)
+        assertTrue(r.log().isEmpty(), r.log().toString())
+        pv.open(space.affinix.app.net.Person("", null, null, null)) // nothing to show: ignored
+        assertEquals("Somebody", pv.person?.name)
+    }
+
+    @Test fun theLastOpenedPersonWinsWhenLookupsOverlap() = runTest {
+        val pv = rig().viewer
+        pv.open(space.affinix.app.net.Person("u2", "Dias", null, null))
+        pv.open(space.affinix.app.net.Person("u3", "Aigerim", null, null))
+        until { pv.detailsDone }
+        kotlinx.coroutines.delay(100)
+        assertEquals("u3", pv.person?.id); assertEquals("Aigerim", pv.person?.name)
+    }
+
+    @Test fun yourOwnCardIsMarkedAsYours() = runTest {
+        val pv = rig().viewer
+        pv.open(space.affinix.app.net.Person("me", "Me", null, null)); assertTrue(pv.isSelf)
+        pv.open(space.affinix.app.net.Person("u2", "Dias", null, null)); assertTrue(!pv.isSelf)
+    }
+
+    @Test fun aRankingsRowBecomesAPersonAndAStripWithTheRightXpKind() {
+        val row = space.affinix.app.net.LeaderRow(rank = 2, userId = "u2", name = "Dias", username = "dias", xp = 900, level = 4, streak = 3)
+        val p = row.person(); val week = row.arenaInfo(allTime = false); val all = row.arenaInfo(allTime = true)
+        assertEquals("u2", p.id); assertEquals("Dias", p.name); assertEquals("dias", p.username)
+        assertEquals(2, week.rank); assertEquals(4, week.level); assertEquals(900L, week.xp); assertEquals(3, week.streak)
+        assertTrue(!week.allTime && all.allTime)
+        assertNull(row.copy(rank = 0).arenaInfo(false).rank) // no place yet
+        assertNull(row.copy(name = "").person().name)
     }
 }

@@ -46,12 +46,14 @@ fun RankingsScreen(model: AppModel) {
             }
             else -> Plate(Modifier.fillMaxWidth(), pad = 8) {
                 lb.rows.forEach { row ->
+                    val who = row.person(); val info = row.arenaInfo(model.leaderboardScope == "all")
                     Row(
-                        Modifier.fillMaxWidth().then(if (row.isMe) Modifier.well(12.dp) else Modifier).padding(horizontal = 10.dp, vertical = 11.dp),
+                        Modifier.fillMaxWidth().then(if (row.isMe) Modifier.well(12.dp) else Modifier).personTap(model, who, info).padding(horizontal = 10.dp, vertical = 9.dp),
                         verticalAlignment = Alignment.CenterVertically,
                         horizontalArrangement = Arrangement.spacedBy(10.dp),
                     ) {
                         Txt("${row.rank}", 15, FontWeight.ExtraBold, if (row.rank <= 3) C.signalHi else C.g400, Modifier.width(28.dp), align = TextAlign.Center)
+                        Avatar(model, who, 36.dp, opens = false)
                         Column(Modifier.weight(1f)) {
                             Txt(if (row.isMe) "${row.name.ifBlank { "–" }} · ${t("arena.rankings.you")}" else row.name.ifBlank { "–" }, 15, FontWeight.Bold, C.g50, maxLines = 1)
                             Txt("${t("arena.level")} ${row.level}", 12, color = C.g500)

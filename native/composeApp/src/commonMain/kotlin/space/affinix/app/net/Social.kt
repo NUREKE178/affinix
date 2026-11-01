@@ -2,6 +2,7 @@ package space.affinix.app.net
 
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
+import kotlinx.serialization.json.JsonElement
 
 /** Row shapes of the website's tables (PostgREST). Only the columns the app reads. */
 @Serializable
@@ -111,11 +112,16 @@ data class MessageRow(
     @SerialName("attachment_path") val attachmentPath: String? = null,
     @SerialName("reply_to_id") val replyToId: String? = null,
     val reactions: List<ReactionRow> = emptyList(),
-    val reply: ReplyRow? = null,
+    /** an embedded quote, when the server sends one: read leniently (on a table that points at itself the server may answer with a list instead of one message) */
+    val reply: JsonElement? = null,
 )
 
 @Serializable
 data class ReactionRow(@SerialName("user_id") val userId: String, val emoji: String)
+
+/** a reaction read from its own table (the fallback when the messages cannot be read together with them) */
+@Serializable
+data class ReactionOfRow(@SerialName("message_id") val messageId: String, @SerialName("user_id") val userId: String, val emoji: String)
 
 @Serializable
 data class ReplyRow(
