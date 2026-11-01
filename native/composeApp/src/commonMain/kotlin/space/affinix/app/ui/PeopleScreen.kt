@@ -44,7 +44,7 @@ fun SearchField(value: String, onChange: (String) -> Unit, placeholder: String, 
 internal fun PersonRow(model: AppModel, p: Person, trailing: @Composable () -> Unit) {
     Row(Modifier.fillMaxWidth().padding(vertical = 6.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
         Avatar(model, p, 44.dp)
-        Column(Modifier.weight(1f)) {
+        Column(Modifier.weight(1f).personTap(model, p)) {
             Txt(p.name ?: t("feed.unknownAuthor"), 15, FontWeight.ExtraBold, C.g50, maxLines = 1)
             val sub = listOfNotNull(p.username?.let { "@$it" }, p.roleTitle).joinToString(" · ")
             if (sub.isNotBlank()) Txt(sub, 12, color = C.g500, maxLines = 1)
@@ -55,12 +55,12 @@ internal fun PersonRow(model: AppModel, p: Person, trailing: @Composable () -> U
 
 /** The right-hand button(s) of a person, depending on how they relate to the viewer. */
 @Composable
-internal fun Relation(model: AppModel, p: Person) {
+internal fun Relation(model: AppModel, p: Person, after: () -> Unit = {}) {
     val ppl = model.people
     val rel: Friendship? = ppl.relation(p.id)
     when {
         rel == null -> KeyButton(t("friends.addFriend"), { ppl.send(p.id) }, compact = true)
-        rel.accepted -> KeyButton(t("friends.message"), { model.messages.openWith(p); model.tab = Tab.Chats }, lit = true, compact = true)
+        rel.accepted -> KeyButton(t("friends.message"), { model.messages.openWith(p); model.tab = Tab.Chats; after() }, lit = true, compact = true)
         rel.iRequested -> Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
             Chip(t("friends.requestSent"), Tone.Neutral); IcoAction("close", { ppl.remove(rel) })
         }

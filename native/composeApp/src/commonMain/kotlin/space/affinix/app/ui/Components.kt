@@ -38,6 +38,8 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
@@ -86,6 +88,29 @@ fun KeyButton(text: String, onClick: () -> Unit, modifier: Modifier = Modifier, 
             .padding(horizontal = if (compact) 8.dp else 18.dp, vertical = if (big) 15.dp else 11.dp),
         contentAlignment = Alignment.Center,
     ) { Txt(text, if (compact) 13 else 15, FontWeight.Bold, if (lit) C.signalInk else C.g100, align = TextAlign.Center, maxLines = 1) }
+}
+
+/** A round key with an icon (the send key and the photo key of a chat); [lit] is the one orange primary action, [active] tints the icon of a plain key. */
+@Composable
+fun RoundKey(
+    icon: String, onClick: () -> Unit, description: String, modifier: Modifier = Modifier,
+    lit: Boolean = false, enabled: Boolean = true, active: Boolean = false, size: androidx.compose.ui.unit.Dp = 44.dp,
+) {
+    val src = remember { MutableInteractionSource() }
+    val pressed by src.collectIsPressedAsState()
+    val hovered by src.collectIsHoveredAsState()
+    val give by animateFloatAsState(if (pressed && Motion.enabled) .9f else 1f, spring(dampingRatio = Spring.DampingRatioMediumBouncy, stiffness = Spring.StiffnessMedium))
+    Box(
+        modifier
+            .size(size)
+            .graphicsLayer { scaleX = give; scaleY = give }
+            .alpha(if (enabled) 1f else .4f)
+            .then(if (lit) Modifier.lit(size / 2, pressed) else Modifier.key(size / 2, pressed, hovered))
+            .hoverable(src)
+            .semantics { contentDescription = description }
+            .clickable(src, null, enabled = enabled, role = Role.Button, onClick = onClick),
+        contentAlignment = Alignment.Center,
+    ) { Ico(icon, color = if (lit) C.signalInk else if (active) C.signalHi else C.g300, size = 22.dp, filled = false) }
 }
 
 /** A text-only action (links under a form). */

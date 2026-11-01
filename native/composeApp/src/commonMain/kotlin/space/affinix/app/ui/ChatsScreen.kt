@@ -17,6 +17,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.layout.width
@@ -255,16 +256,23 @@ fun ThreadScreen(model: AppModel) {
         Row(Modifier.fillMaxWidth().padding(bottom = 8.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
             IcoAction("arrowLeft", { msg.closeChat() })
             Avatar(model, c.other, 38.dp)
-            Column(Modifier.weight(1f)) {
+            Column(Modifier.weight(1f).personTap(model, c.other)) {
                 Txt(c.other.name ?: t("feed.unknownAuthor"), 16, FontWeight.ExtraBold, C.g50, maxLines = 1)
                 c.other.username?.let { Txt("@$it", 12, color = C.g500, maxLines = 1) }
             }
             IcoAction("pin", { msg.setPref(c, pinned = !c.pinned) }, active = c.pinned, filled = false)
             IcoAction("bellOff", { msg.setPref(c, muted = !c.muted) }, active = c.muted, filled = false)
         }
-        msg.notice?.let { Chip(t(it), Tone.Info, Modifier.padding(bottom = 6.dp)) }
+        msg.notice?.let { Txt(t(it), 13, FontWeight.Medium, C.info, Modifier.padding(bottom = 6.dp)) }
         Box(Modifier.weight(1f).fillMaxWidth()) {
             when {
+                !msg.threadLoaded && msg.threadError != null -> Plate(Modifier.fillMaxWidth().padding(top = 8.dp), pad = 14) {
+                    Txt(t("messages.loadFailed"), 15, FontWeight.Bold, C.g50)
+                    Spacer(Modifier.height(4.dp))
+                    Txt(msg.threadError.orEmpty(), 11, color = C.g500)
+                    Spacer(Modifier.height(10.dp))
+                    KeyButton(t("common.retry"), { msg.retryThread() }, compact = true)
+                }
                 !msg.threadLoaded -> Txt(t("common.loading"), 14, color = C.g500)
                 msg.thread.isEmpty() -> Txt(t("messages.noMessagesYet"), 14, color = C.g500, align = androidx.compose.ui.text.style.TextAlign.Center, modifier = Modifier.fillMaxWidth().padding(24.dp))
                 else -> LazyColumn(Modifier.fillMaxSize(), reverseLayout = true, verticalArrangement = Arrangement.spacedBy(6.dp)) {
@@ -292,15 +300,28 @@ fun ThreadScreen(model: AppModel) {
         }
         image?.let { img -> Box(Modifier.padding(top = 8.dp)) { PickedPreview(img) { image = null } } }
         Row(Modifier.fillMaxWidth().padding(top = 8.dp), verticalAlignment = Alignment.Bottom, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            if (msg.editing == null) IcoAction("image", {
+            if (msg.editing == null) RoundKey("image", {
                 scope.launch {
                     val (img, why) = space.affinix.app.ImageRules.chooseAndShrink(space.affinix.app.ImageRules.CHAT_SIDE, space.affinix.app.ImageRules.CHAT_BYTES)
                     if (img != null) image = img else if (why != null) msg.say(why)
                 }
-            }, active = image != null, filled = false)
-            Box(Modifier.weight(1f)) { TextArea(draft, { draft = it }, if (image != null) t("messages.captionPlaceholder") else t("messages.placeholder"), minHeight = 44.dp) }
+            }, description = t("messages.photo"), active = image != null)
+            ChatInput(draft, { draft = it }, if (image != null) t("messages.captionPlaceholder") else t("messages.placeholder"), Modifier.weight(1f))
             val canSend = draft.isNotBlank() || image != null
-            KeyButton(if (msg.editing != null) t("messages.save") else t("messages.send"), { if (canSend) { msg.send(draft, image); draft = ""; image = null; selected = null } }, lit = true, enabled = canSend)
+            val editing = msg.editing != null
+            RoundKey(if (editing) "check" else "send", { if (canSend) { msg.send(draft, image); draft = ""; image = null; selected = null } }, description = t(if (editing) "messages.save" else "messages.send"), lit = true, enabled = canSend)
         }
+    }
+}
+
+/** The message field of a chat: a rounded field that takes all the width the keys leave and grows with the text (up to six lines, then it scrolls). */
+@Composable
+private fun ChatInput(value: String, onChange: (String) -> Unit, placeholder: String, modifier: Modifier = Modifier) {
+    Box(modifier.fillMaxWidth().heightIn(min = 44.dp).well(22.dp).padding(horizontal = 16.dp, vertical = 10.dp), contentAlignment = Alignment.CenterStart) {
+        if (value.isEmpty()) Txt(placeholder, 15, color = C.g600, maxLines = 1)
+        androidx.compose.foundation.text.BasicTextField(
+            value, onChange, maxLines = 6, textStyle = ts(15, FontWeight.Medium, C.g50, LocalFonts.current.family),
+            cursorBrush = androidx.compose.ui.graphics.SolidColor(C.signal), modifier = Modifier.fillMaxWidth(),
+        )
     }
 }

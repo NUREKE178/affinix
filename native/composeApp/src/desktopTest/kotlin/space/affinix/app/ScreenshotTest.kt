@@ -56,8 +56,9 @@ class ScreenshotTest {
     private val dnaFixture = kotlinx.serialization.json.Json.parseToJsonElement(javaClass.getResource("/dna.json")!!.readText()) as kotlinx.serialization.json.JsonObject
 
     /** [marathon]: the daily ten is done and set 2 too, set 3 is half way; [dna]: the player has 90 answers on record */
-    private fun model(signedIn: Boolean, marathon: Boolean = false, dna: Boolean = false, styles: Boolean = false, admin: Boolean = false): AppModel {
+    private fun model(signedIn: Boolean, marathon: Boolean = false, dna: Boolean = false, styles: Boolean = false, admin: Boolean = false, chatDown: Boolean = false): AppModel {
         val engine = MockEngine { req ->
+            if (chatDown && req.url.encodedPath.endsWith("/messages")) return@MockEngine respond("""{"message":"permission denied for table messages"}""", HttpStatusCode.BadRequest, json)
             val body = when {
                 admin && req.url.encodedPath.endsWith("/profiles") && req.url.encodedQuery.contains("is_admin") -> """[{"is_admin":true,"is_owner":true}]"""
                 admin && req.url.encodedPath.endsWith("admin_overview") -> """{"users":1240,"newUsers7d":86,"active7d":412,"admins":4,"companies":163,"experiments":240,"responses":18450,"posts":803,"comments":2104,"messages7d":6402,"friendships":960,"arenaPlayers":587,"testsOpen":12,"testsFlagged":2}"""
@@ -86,7 +87,8 @@ class ScreenshotTest {
                 req.url.encodedPath.endsWith("arena_my_votes") -> """{"rows":[],"last":0,"more":false}"""
                 req.url.encodedPath.endsWith("arena_leaderboard") -> """{"rows":[{"rank":1,"userId":"a","name":"Aigerim K.","xp":5120,"level":11,"isMe":false},{"rank":2,"userId":"b","name":"Dias","xp":4410,"level":10,"isMe":false},{"rank":3,"userId":"u1","name":"Me","xp":1240,"level":5,"isMe":true}],"me":{"rank":3,"xp":1240}}"""
                 req.url.encodedPath.endsWith("/posts") -> """[{"id":"p1","author_id":"u2","body":"Which logo feels more trustworthy for a bank? I keep going back and forth between the calm blue and the bold orange.","created_at":"2026-10-30T09:12:36+00:00","updated_at":"2026-10-30T09:12:36+00:00","post_likes":[{"count":12}],"post_comments":[{"count":2}]},{"id":"p2","author_id":"u1","body":"Қазақша пост: бүгінгі күн сынағы өте қызық болды!","created_at":"2026-10-29T08:00:00+00:00","updated_at":"2026-10-29T08:00:00+00:00","post_likes":[{"count":3}],"post_comments":[{"count":0}]}]"""
-                req.url.encodedPath.endsWith("/profiles_public") -> """[{"id":"u2","full_name":"Aigerim K.","username":"aigerim","role_title":"Brand designer"},{"id":"u1","full_name":"Me","username":"me"},{"id":"u3","full_name":"Dias","username":"dias"},{"id":"u5","full_name":"Madina S.","username":"madina"}]"""
+                req.url.encodedPath.endsWith("/profiles_public") -> """[{"id":"u2","full_name":"Aigerim K.","username":"aigerim","role_title":"Brand designer","bio":"I test every logo on real people before it ships."},{"id":"u1","full_name":"Me","username":"me"},{"id":"u3","full_name":"Dias","username":"dias"},{"id":"u5","full_name":"Madina S.","username":"madina"}]"""
+                req.url.encodedPath.endsWith("friends_count") -> "12"
                 req.url.encodedPath.endsWith("/post_likes") -> """[{"post_id":"p1"}]"""
                 req.url.encodedPath.endsWith("/post_saves") -> """[{"post_id":"p2"}]"""
                 req.url.encodedPath.endsWith("/post_comments") -> """[{"id":"c1","post_id":"p1","author_id":"u3","body":"Blue, but make the type bolder.","created_at":"2026-10-30T09:20:00+00:00"},{"id":"c2","post_id":"p1","author_id":"u1","body":"Agree, orange feels like a fintech.","created_at":"2026-10-30T09:25:00+00:00"}]"""
@@ -303,5 +305,30 @@ class ScreenshotTest {
     @Test fun homeWithBell() {
         val m = model(true)
         shoot("16-home-bell-phone", 420, 900, m) { m.notifications.refresh(); Thread.sleep(500) }
+    }
+
+    private fun profileShot(name: String, lang: Lang?) {
+        val m = model(true); lang?.let { m.changeLang(it) }; m.tab = Tab.Rankings
+        shoot(name, 420, 900, m) {
+            Thread.sleep(600)
+            m.profileViewer.open(space.affinix.app.net.Person("u2", "Aigerim K.", null, null), space.affinix.app.store.ArenaInfo(rank = 1, level = 11, xp = 5120, streak = 6))
+            Thread.sleep(700)
+        }
+    }
+
+    /** a person's card over the rankings: the strip of the Arena, the streak, the friend count, the bio, the message key (u2 is a friend of the player) */
+    @Test fun profileCard() = profileShot("38-profile-card-phone", null)
+    @Test fun profileCardKazakh() = profileShot("39-profile-card-kk-phone", Lang.Kk)
+
+    /** the chat that cannot be read: the real reason and a retry key instead of «Загрузка…» for ever */
+    @Test fun threadCannotLoad() {
+        val m = model(true, chatDown = true); m.tab = Tab.Chats
+        shoot("40-thread-error-phone", 420, 700, m) { Thread.sleep(500); m.messages.conversations.firstOrNull()?.let { m.messages.openChat(it) }; Thread.sleep(900) }
+    }
+
+    /** the rankings now have faces */
+    @Test fun rankingsWithFaces() {
+        val m = model(true); m.tab = Tab.Rankings
+        shoot("41-rankings-phone", 420, 900, m) { Thread.sleep(700) }
     }
 }

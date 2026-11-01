@@ -226,8 +226,10 @@ private fun FriendsRace(model: AppModel) {
             if (mine != null) Txt(if (mine.rank == 1) t("arena.marathon.raceLead") else t("arena.marathon.raceGap", "n" to (leader.xp - mine.xp), "name" to leader.name.ifBlank { t("feed.unknownAuthor") }), 13, color = C.g300)
             val list = rows.take(5).toMutableList().also { l -> if (mine != null && mine !in l) l += mine }
             list.forEach { r ->
-                Row(Modifier.fillMaxWidth().padding(vertical = 4.dp), horizontalArrangement = Arrangement.spacedBy(10.dp), verticalAlignment = Alignment.CenterVertically) {
+                val who = r.person()
+                Row(Modifier.fillMaxWidth().personTap(model, who, r.arenaInfo(allTime = false)).padding(vertical = 4.dp), horizontalArrangement = Arrangement.spacedBy(10.dp), verticalAlignment = Alignment.CenterVertically) {
                     Txt("${r.rank}", 14, FontWeight.ExtraBold, C.g500, Modifier.width(22.dp))
+                    Avatar(model, who, 28.dp, opens = false)
                     Txt(r.name.ifBlank { t("feed.unknownAuthor") } + if (r.isMe) " · ${t("arena.rankings.you")}" else "", 14, if (r.isMe) FontWeight.ExtraBold else FontWeight.Medium, if (r.isMe) C.signalHi else C.g100, Modifier.weight(1f), maxLines = 1)
                     Txt("${r.xp} ${t("app.xp")}", 13, FontWeight.Bold, C.g300)
                 }

@@ -55,13 +55,13 @@ fun agoText(iso: String): String {
     }
 }
 
-/** A round picture of a person, or their first letter on graphite while it loads (or when they have none). */
+/** A round picture of a person, or their first letter on graphite while it loads (or when they have none). A tap opens their profile card ([opens] = false for the picture of the card itself or of one's own profile). */
 @Composable
-fun Avatar(model: AppModel, person: Person, size: Dp = 40.dp) {
+fun Avatar(model: AppModel, person: Person, size: Dp = 40.dp, opens: Boolean = true, arena: space.affinix.app.store.ArenaInfo? = null) {
     val url = person.avatarUrl
     LaunchedEffect(url) { model.ensureUrlImage(url) }
     val bmp = url?.let { model.images[it] }
-    Box(Modifier.size(size).clip(CircleShape).background(C.g700), contentAlignment = Alignment.Center) {
+    Box(Modifier.size(size).clip(CircleShape).background(C.g700).then(if (opens) Modifier.personTap(model, person, arena) else Modifier), contentAlignment = Alignment.Center) {
         if (bmp != null) Image(bmp, null, Modifier.size(size), contentScale = ContentScale.Crop)
         else Txt((person.name ?: person.username ?: "?").trim().take(1).uppercase(), (size.value * .42f).toInt(), FontWeight.ExtraBold, C.g200)
     }
@@ -128,7 +128,7 @@ private fun CommentRowView(model: AppModel, c: Comment, mine: Boolean) {
         Avatar(model, c.author, 30.dp)
         Column(Modifier.weight(1f)) {
             Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                Txt(c.author.name ?: t("feed.unknownAuthor"), 13, FontWeight.Bold, C.g100, maxLines = 1, modifier = Modifier.weight(1f, fill = false))
+                Txt(c.author.name ?: t("feed.unknownAuthor"), 13, FontWeight.Bold, C.g100, maxLines = 1, modifier = Modifier.weight(1f, fill = false).personTap(model, c.author))
                 Txt(agoText(c.createdAt), 12, color = C.g500, maxLines = 1)
             }
             Txt(c.body, 14, color = C.g200)
@@ -146,7 +146,7 @@ private fun PostCard(model: AppModel, p: Post) {
     Plate(Modifier.fillMaxWidth(), pad = 14) {
         Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
             Avatar(model, p.author)
-            Column(Modifier.weight(1f)) {
+            Column(Modifier.weight(1f).personTap(model, p.author)) {
                 Txt(p.author.name ?: t("feed.unknownAuthor"), 15, FontWeight.ExtraBold, C.g50, maxLines = 1)
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     p.author.username?.let { Txt("@$it", 12, color = C.g500, maxLines = 1, modifier = Modifier.weight(1f, fill = false)) }

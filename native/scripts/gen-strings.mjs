@@ -55,6 +55,8 @@ const KEYS = [
   "feed.deleteComment", "feed.tabAll", "feed.tabMine", "feed.mineEmptyTitle", "feed.mineEmptyBody", "feed.loadMore", "feed.loadMoreFailed", "feed.edited", "feed.addImage", "feed.removeImage", "overview.statusActive", "overview.statusCompleted", "overview.statusDraft", "overview.statusPaused",
   "friends.message", "friends.title", "friends.incomingTitle", "friends.outgoingTitle", "friends.friendsTitle", "friends.accept", "friends.decline", "friends.cancel",
   "friends.remove", "friends.addFriend", "friends.requestSent", "friends.requestAccepted", "friends.emptyTitle", "friends.emptyBody", "friends.loadErrorTitle", "friends.loadErrorBody",
+  "people.openProfile", "people.profile.you", "people.profile.openMine", "people.profile.place", "people.profile.xpWeek", "people.profile.xpAll",
+  "feed.noBio", "friends.countLabel", "arena.quests.streakTitle", "arena.quests.dayOne", "arena.quests.days",
   "people.searchPlaceholder", "people.searchHint", "people.noResultsTitle", "people.noResultsBody", "people.errorTitle", "people.errorBody", "people.retry", "people.you",
   "messages.title", "messages.you", "messages.placeholder", "messages.send", "messages.back", "messages.noMessagesYet", "messages.failedRetry", "messages.noFriendsBody",
   "messages.goToFriends", "messages.photo", "messages.deletedMine", "messages.deletedTheirs", "messages.edited", "messages.startChat",
@@ -70,6 +72,7 @@ for (const p of PREFIXES) for (const k of leaves(get(ru, p), p)) if (!KEYS.inclu
 const EXTRA = {
   "app.name": { ru: "Affinix", kk: "Affinix", en: "Affinix" },
   "reports.appSubtitle": { ru: "Итоги и выводы по одному эксперименту. Отчёт можно скопировать как текст.", kk: "Бір эксперимент бойынша нәтижелер мен қорытындылар. Есепті мәтін ретінде көшіруге болады.", en: "Results and conclusions for one experiment. You can copy the report as text." },
+  "messages.loadFailed": { ru: "Не удалось загрузить сообщения", kk: "Хабарламаларды жүктеу мүмкін болмады", en: "Couldn't load the messages" },
   "reports.copy": { ru: "Скопировать отчёт", kk: "Есепті көшіру", en: "Copy report" },
   "reports.copied": { ru: "Отчёт скопирован", kk: "Есеп көшірілді", en: "Report copied" },
   "app.updateAvailable": { ru: "Вышла новая версия: {v}", kk: "Жаңа нұсқа шықты: {v}", en: "A new version is out: {v}" },
