@@ -968,6 +968,15 @@ export default {
     loadErrorTitle: "Couldn't load your friends",
     loadErrorBody: "Check your connection and try again.",
     countLabel: "{count} friends",
+    statusUnknown: "Couldn't check who is already your friend, so the buttons below may be wrong.",
+    err: {
+      alreadyFriends: "You are already friends.",
+      alreadySent: "Friend request already sent.",
+      self: "You can't add yourself as a friend.",
+      notFound: "User not found.",
+      signedOut: "Please sign in.",
+      handled: "Request not found or already handled.",
+    },
   },
 
   people: {

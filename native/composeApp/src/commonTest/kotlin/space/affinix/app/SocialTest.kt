@@ -1198,3 +1198,58 @@ class ProfileViewerTest {
         assertNull(row.copy(name = "").person().name)
     }
 }
+
+
+/** The friend keys must tell the truth: what the database said, in the person's language, and a screen that was out of date reads the friendships again. */
+class FriendErrorsTest {
+    private val accepted = """[{"id":"f1","requester_id":"me","addressee_id":"u2","status":"accepted","created_at":"2026-10-01T10:00:00+00:00"}]"""
+
+    @Test fun everySentenceTheDatabaseRaisesHasItsOwnKey() {
+        fun key(m: String) = PeopleModel.errorKey(space.affinix.app.net.ApiException(400, m))
+        assertEquals("friends.err.alreadyFriends", key("You are already friends."))
+        assertEquals("friends.err.alreadySent", key("Friend request already sent."))
+        assertEquals("friends.err.self", key("You cannot send a friend request to yourself."))
+        assertEquals("friends.err.notFound", key("User not found."))
+        assertEquals("friends.err.signedOut", key("Not signed in."))
+        assertEquals("friends.err.handled", key("Friend request not found or already handled."))
+        assertEquals("app.noNetwork", key("permission denied for table friendships")) // anything else is not explained as a friendship matter
+        assertEquals("app.noNetwork", PeopleModel.errorKey(RuntimeException("connection reset"))) // no answer at all = a connection problem
+    }
+
+    @Test fun alreadyFriendsIsExplainedAndTheOutOfDateListIsReadAgain() = runTest {
+        var stale = true
+        val r = Rig({ _, path, _, _ ->
+            when {
+                path.endsWith("/friendships") -> if (stale) "[]" else accepted
+                path.endsWith("/profiles_public") -> PROFILES
+                else -> "[]"
+            }
+        }, reject = { _, p, _ -> if (p.endsWith("/rpc/send_friend_request")) { stale = false; "You are already friends." } else null })
+        r.people.loadNow()
+        assertNull(r.people.relation("u2")) // the screen thinks they are strangers
+        r.people.send("u2")
+        until { r.people.notice != null }
+        assertEquals("friends.err.alreadyFriends", r.people.notice)
+        until { r.people.relation("u2")?.accepted == true } // and is corrected at once
+        assertEquals("Dias", r.people.friends.single().other.name)
+    }
+
+    @Test fun anUnexplainedServerErrorStaysAConnectionProblemButStillReadsAgain() = runTest {
+        val r = Rig({ _, path, _, _ -> if (path.endsWith("/friendships")) accepted else if (path.endsWith("/profiles_public")) PROFILES else "[]" },
+            reject = { _, p, _ -> if (p.endsWith("/rpc/send_friend_request")) "boom" else null })
+        r.people.send("u9")
+        until { r.people.notice != null }
+        assertEquals("app.noNetwork", r.people.notice)
+        until { r.log().any { it.contains("/friendships?") } }
+    }
+
+    @Test fun aFailedNameLookupDoesNotHideWhoIsAFriend() = runTest {
+        val r = Rig({ _, path, _, _ -> if (path.endsWith("/friendships")) accepted else "[]" },
+            reject = { _, p, _ -> if (p.endsWith("/profiles_public")) "permission denied" else null })
+        r.people.loadNow()
+        assertTrue(!r.people.failed)
+        assertEquals("u2", r.people.friends.single().other.id)
+        assertNull(r.people.friends.single().other.name) // names fill in on the next load
+        assertTrue(r.people.relation("u2")?.accepted == true)
+    }
+}

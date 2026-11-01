@@ -2,7 +2,7 @@ import { html, useState, useEffect, useRef } from "../lib/preact.js";
 import { Icon } from "./icons.js";
 import { toast } from "./ui.js";
 import { useT } from "../lib/i18n.js";
-import { useFriendStatus, sendFriendRequest, acceptFriendRequest, removeFriendship } from "../lib/friendsStore.js";
+import { useFriendStatus, sendFriendRequest, acceptFriendRequest, removeFriendship, friendErrorText } from "../lib/friendsStore.js";
 
 /** Add Friend / Request Sent / Accept Request / Friends -- one button whose
  * action and label both follow from useFriendStatus(), the same status the
@@ -48,7 +48,7 @@ export function FriendButton({ targetUserId, className = "" }) {
       else if (kind === "cancel" || kind === "remove") await removeFriendship(friendshipId);
       else if (kind === "accept") await acceptFriendRequest(friendshipId);
     } catch (err) {
-      toast(err.message ?? String(err), "rose");
+      toast(friendErrorText(err), "rose");
     } finally {
       setBusy(false);
       setConfirmingRemove(false);
