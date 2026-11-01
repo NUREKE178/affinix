@@ -184,6 +184,14 @@ class ScreenshotTest {
         }
     }
 
+    private fun reportShot(name: String, lang: Lang?) {
+        val m = model(true); lang?.let { m.changeLang(it) }; m.tab = Tab.Research
+        shoot(name, 420, 2300, m) { Thread.sleep(700); m.research.section = space.affinix.app.store.ResearchModel.Section.Reports; Thread.sleep(1200) }
+    }
+
+    @Test fun reportPage() = reportShot("32-report-phone", null)
+    @Test fun reportPageKazakh() = reportShot("33-report-kk-phone", Lang.Kk)
+
     @Test fun stylesPage() = stylesShot("30-styles-phone", null)
     @Test fun stylesPageKazakh() = stylesShot("31-styles-kk-phone", Lang.Kk)
 

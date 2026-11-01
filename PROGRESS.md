@@ -4200,3 +4200,17 @@ The first half of the marketers' tools, in the native apps (Kotlin + Compose), o
   The app copies that order on purpose (parity); fixing it means changing `rankSpecimens` in `styleInsights.js`, then the fixture and the Kotlin port.
 - **Strings:** 939 keys x 3 languages (the `styles` subtree and `shell.nav.styles` were added). Screenshot cases 30 and 31 (English and Kazakh).
 - **Tests:** 176 JVM tests locally (without the Skia screenshots).
+
+### Native apps: Reports in the Marketing tab (migration: none)
+
+- **Where:** the "Reports" section of the Marketing tab (the website's Reports page): pick a published (not draft) experiment, see its numbers, the variants compared, what happened / why it might have
+  / the recommendation with its confidence, the limits; "Copy report" puts the website's markdown report on the clipboard. `store/ResearchInsights.kt`, `ui/ReportsScreens.kt`,
+  `ResearchModel.reportOptions / loadReport`.
+- **Port:** `ResearchInsights.generate` is `generateInsights` of `src/lib/insights.js` (rule-based; every sentence traces to a number of `ResearchStats`), `markdown` is `buildMarkdownReport` of `src/pages/Reports.js`.
+  JavaScript's `toFixed` is reproduced with `BigDecimal` (exact value, ties to the larger), and `pts` keeps the site's English "pts" in every language.
+- **Parity:** `native/scripts/gen-insights-fixture.mjs` runs the site's own insights and markdown builder (with the browser-only `preact` import replaced by a stand-in through a Node loader hook) for
+  four situations (full sample, 14 sessions, none, randomised order) x ru / kk / en; `InsightsTest` compares every sentence and the whole markdown (but the date line) word for word.
+  `ExperimentRow` now reads `settings` (`randomizeVariantOrder`).
+- **Not in the app:** saving the report as a file (copy only), the website's exact `toLocaleDateString` (the app writes dd.MM.yyyy for ru / kk and M/d/yyyy for en).
+- **Strings:** the `reports`, `insights` and `insightsGen` subtrees, `shell.nav.reports`, and two app-only keys (`reports.copy`, `reports.copied`); 1009 keys x 3 languages. Screenshot cases 32 and 33.
+- **Tests:** 181 JVM tests locally (without the Skia screenshots): `InsightsTest` (3) and two `ResearchModelTest` cases (published experiments only, a failed load can be repeated).

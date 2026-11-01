@@ -38,7 +38,7 @@ data class Member(val id: String, val userId: String, val role: String, val join
  */
 class ResearchModel(private val api: Api, private val scope: CoroutineScope, private val me: () -> String?) {
     /** the order of the tabs: like the website, "Styles" is the first page of the marketers area */
-    enum class Section { Styles, Experiments, Participants, Crowd, Team }
+    enum class Section { Styles, Experiments, Participants, Reports, Crowd, Team }
 
     var section by mutableStateOf(Section.Styles)
 
@@ -159,6 +159,33 @@ class ResearchModel(private val api: Api, private val scope: CoroutineScope, pri
                 val rows = api.restGet("participant_sessions", ListSerializer(SessionRow.serializer()), "select" to "*,responses(*)", "experiment_id" to "eq.$id", "order" to "started_at.desc")
                 if (openId == id) { sessions = rows.map { it.toSession() }; sessionsLoaded = true; sessionsFailed = false }
             } catch (e: CancellationException) { throw e } catch (e: Exception) { if (openId == id) { sessionsFailed = true; sessionsLoaded = true } }
+        }
+    }
+
+    // ---- reports: one published experiment at a time --------------------------------------------------------------------------------
+    var reportId by mutableStateOf<String?>(null)
+        private set
+    var reportSessions by mutableStateOf<List<ParticipantSession>>(emptyList())
+        private set
+    var reportLoaded by mutableStateOf(false)
+        private set
+    var reportFailed by mutableStateOf(false)
+        private set
+
+    /** the experiments a report can be made of: everything but drafts, as on the website */
+    val reportOptions: List<Experiment> get() = experiments.filter { it.status != "draft" }
+    val reportExperiment: Experiment? get() = reportOptions.firstOrNull { it.id == reportId } ?: reportOptions.firstOrNull()
+
+    fun pickReport(id: String) { if (id == reportExperiment?.id && reportLoaded && !reportFailed) { reportId = id; return }; reportId = id; loadReport() }
+
+    fun loadReport() {
+        val id = reportExperiment?.id ?: return
+        reportLoaded = false; reportFailed = false; reportSessions = emptyList()
+        scope.launch {
+            try {
+                val rows = api.restGet("participant_sessions", ListSerializer(SessionRow.serializer()), "select" to "*,responses(*)", "experiment_id" to "eq.$id", "order" to "started_at.desc")
+                if (reportExperiment?.id == id) { reportSessions = rows.map { it.toSession() }; reportLoaded = true; reportFailed = false }
+            } catch (e: CancellationException) { throw e } catch (e: Exception) { if (reportExperiment?.id == id) { reportFailed = true; reportLoaded = true } }
         }
     }
 

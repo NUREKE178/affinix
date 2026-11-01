@@ -6,6 +6,7 @@ import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.contentOrNull
+import kotlinx.serialization.json.booleanOrNull
 import kotlinx.serialization.json.intOrNull
 
 // Rows of the website's research tables (PostgREST) and the shapes the app works with, mapped the way src/lib/experiments.js and participants.js map them.
@@ -39,7 +40,7 @@ data class ExperimentRow(
     val id: String, @SerialName("organization_id") val organizationId: String = "", val name: String = "", val description: String? = null, val objective: String? = null,
     val category: String? = null, val language: String? = null, @SerialName("research_type") val researchType: String? = null,
     @SerialName("target_audience") val targetAudience: String? = null, val status: String = "draft", @SerialName("public_slug") val publicSlug: String? = null,
-    @SerialName("participant_limit") val participantLimit: Int? = null, @SerialName("participant_settings") val participantSettings: JsonObject? = null,
+    @SerialName("participant_limit") val participantLimit: Int? = null, @SerialName("participant_settings") val participantSettings: JsonObject? = null, val settings: JsonObject? = null,
     @SerialName("created_at") val createdAt: String = "", @SerialName("updated_at") val updatedAt: String = "", @SerialName("published_at") val publishedAt: String? = null,
     @SerialName("experiment_variants") val variants: List<VariantRow> = emptyList(),
     @SerialName("experiment_questions") val questions: List<QuestionRow> = emptyList(),
@@ -52,6 +53,8 @@ data class Question(val id: String, val type: String, val appliesTo: String?, va
 data class Experiment(
     val id: String, val orgId: String, val name: String, val objective: String?, val researchType: String?, val status: String, val publicSlug: String?,
     val targetCount: Int, val createdAt: String, val updatedAt: String, val variants: List<Variant>, val questions: List<Question>,
+    /** settings.randomizeVariantOrder: the report says whether the order of the variants was randomised */
+    val randomizeVariants: Boolean = false,
 )
 
 /** the same mapping as mapExperiment: variants and questions in their order; the target is the participant limit unless the settings say otherwise */
@@ -61,6 +64,7 @@ fun ExperimentRow.toExperiment(): Experiment = Experiment(
     createdAt, updatedAt,
     variants.sortedBy { it.position }.map { Variant(it.id, it.label, it.name, it.description, it.assetUrl, it.color) },
     questions.sortedBy { it.position }.map { q -> Question(q.id, q.type, q.appliesTo, q.role, q.prompt, q.required, q.options.sortedBy { it.position }.map { it.label }.takeIf { it.isNotEmpty() }) },
+    (settings?.get("randomizeVariantOrder") as? JsonPrimitive)?.booleanOrNull == true,
 )
 
 @Serializable
