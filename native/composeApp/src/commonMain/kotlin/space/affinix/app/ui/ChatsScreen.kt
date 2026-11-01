@@ -70,7 +70,7 @@ fun ChatsListScreen(model: AppModel) {
                 Txt(t("friends.loadErrorBody"), 13, color = C.g400); Spacer(Modifier.height(12.dp))
                 KeyButton(t("people.retry"), { msg.refresh() })
             }
-            !msg.loaded -> Txt(t("common.loading"), 14, color = C.g500)
+            !msg.loaded -> SkeletonList(5)
             msg.conversations.isEmpty() -> Plate(Modifier.fillMaxWidth()) {
                 Txt(t("messages.startChat"), 16, FontWeight.Bold, C.g50); Spacer(Modifier.height(4.dp))
                 Txt(t("messages.noFriendsBody"), 13, color = C.g400); Spacer(Modifier.height(12.dp))
@@ -154,7 +154,7 @@ private fun AttachmentImage(model: AppModel, path: String) {
     val ratio = if (bmp != null && bmp.height > 0) bmp.width.toFloat() / bmp.height else 1.3f
     Box(Modifier.widthIn(max = 240.dp).fillMaxWidth().aspectRatio(ratio.coerceIn(.6f, 2f)).clip(RoundedCornerShape(10.dp)).background(C.g700).padding(bottom = 0.dp), contentAlignment = Alignment.Center) {
         if (bmp != null) Image(bmp, null, Modifier.matchParentSize(), contentScale = ContentScale.Crop)
-        else Txt(t("common.loading"), 12, color = C.g500)
+        else Skeleton(Modifier.matchParentSize(), radius = 10.dp)
     }
     Spacer(Modifier.height(6.dp))
 }
@@ -162,6 +162,8 @@ private fun AttachmentImage(model: AppModel, path: String) {
 @Composable
 private fun Bubble(model: AppModel, m: Message, selected: Boolean, onSelect: () -> Unit) {
     val mine = m.senderId == model.api.session?.userId
+    // dragged to the right a message answers itself (like in every messenger); a message that is still being sent or has been deleted cannot be answered
+    SwipeToReply(enabled = !m.deleted && m.status == null, onReply = { model.messages.replyTo = m; model.messages.editing = null }, modifier = Modifier.fillMaxWidth()) {
     Row(Modifier.fillMaxWidth(), horizontalArrangement = if (mine) Arrangement.End else Arrangement.Start) {
         Column(horizontalAlignment = if (mine) Alignment.End else Alignment.Start, modifier = Modifier.widthIn(max = 520.dp)) {
             val shape = 16.dp
@@ -198,6 +200,7 @@ private fun Bubble(model: AppModel, m: Message, selected: Boolean, onSelect: () 
             }
             if (selected) ActionPanel(model, m)
         }
+    }
     }
 }
 
@@ -273,7 +276,7 @@ fun ThreadScreen(model: AppModel) {
                     Spacer(Modifier.height(10.dp))
                     KeyButton(t("common.retry"), { msg.retryThread() }, compact = true)
                 }
-                !msg.threadLoaded -> Txt(t("common.loading"), 14, color = C.g500)
+                !msg.threadLoaded -> SkeletonBubbles()
                 msg.thread.isEmpty() -> Txt(t("messages.noMessagesYet"), 14, color = C.g500, align = androidx.compose.ui.text.style.TextAlign.Center, modifier = Modifier.fillMaxWidth().padding(24.dp))
                 else -> LazyColumn(Modifier.fillMaxSize(), reverseLayout = true, verticalArrangement = Arrangement.spacedBy(6.dp)) {
                     items(msg.thread.asReversed(), key = { it.id }) { m -> Bubble(model, m, selected == m.id) { selected = if (selected == m.id) null else m.id } }
@@ -321,7 +324,7 @@ private fun ChatInput(value: String, onChange: (String) -> Unit, placeholder: St
         if (value.isEmpty()) Txt(placeholder, 15, color = C.g600, maxLines = 1)
         androidx.compose.foundation.text.BasicTextField(
             value, onChange, maxLines = 6, textStyle = ts(15, FontWeight.Medium, C.g50, LocalFonts.current.family),
-            cursorBrush = androidx.compose.ui.graphics.SolidColor(C.signal), modifier = Modifier.fillMaxWidth(),
+            cursorBrush = androidx.compose.ui.graphics.SolidColor(C.signal), modifier = Modifier.fillMaxWidth().trackTyping(),
         )
     }
 }

@@ -126,7 +126,7 @@ private fun CrowdList(model: AppModel) {
                 Txt(t("crowd.loadError"), 16, FontWeight.Bold, C.g50); Spacer(Modifier.height(4.dp)); Txt(t(c.loadError!!), 13, color = C.g400)
                 Spacer(Modifier.height(10.dp)); KeyButton(t("people.retry"), { c.load() }, compact = true)
             }
-            !c.loaded -> Txt(t("common.loading"), 14, color = C.g500)
+            !c.loaded -> LoadingState()
             c.tests.isEmpty() -> Txt(t("crowd.heroTitle"), 14, color = C.g500)
             else -> c.tests.forEach { test -> TestCard(model, test) }
         }
@@ -252,7 +252,7 @@ private fun CrowdDetail(model: AppModel) {
             r == null && c.resultError != null -> Plate(Modifier.fillMaxWidth()) {
                 Txt(t("crowd.loadError"), 16, FontWeight.Bold, C.g50); Spacer(Modifier.height(4.dp)); Txt(t(c.resultError!!), 13, color = C.g400)
             }
-            r == null -> Txt(t("common.loading"), 14, color = C.g500)
+            r == null -> LoadingState()
             else -> {
                 val test = r.test
                 val v = CrowdVerdict.of(test)

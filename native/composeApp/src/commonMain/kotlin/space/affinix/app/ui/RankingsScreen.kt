@@ -38,7 +38,7 @@ fun RankingsScreen(model: AppModel) {
                 Spacer(Modifier.height(12.dp))
                 KeyButton(t("arena.rankings.retry"), { model.loadLeaderboard() })
             }
-            lb == null -> Txt(t("common.loading"), 14, color = C.g500)
+            lb == null -> SkeletonList(6)
             lb.rows.isEmpty() -> Plate(Modifier.fillMaxWidth()) {
                 Txt(t("arena.rankings.emptyTitle"), 16, FontWeight.Bold, C.g50)
                 Spacer(Modifier.height(4.dp))

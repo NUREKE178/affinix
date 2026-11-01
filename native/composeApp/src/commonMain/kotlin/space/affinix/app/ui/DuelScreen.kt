@@ -62,7 +62,7 @@ private fun SpecimenCard(
                 Image(bitmap, label, Modifier.fillMaxWidth().aspectRatio(bitmap.width.toFloat() / bitmap.height.toFloat()), contentScale = ContentScale.Fit)
             } else {
                 Box(Modifier.fillMaxWidth().aspectRatio(1.3f), contentAlignment = Alignment.Center) {
-                    Txt(if (failed) t("app.imageFailed") else t("common.loading"), 13, color = C.g500, align = TextAlign.Center)
+                    if (failed) Txt(t("app.imageFailed"), 13, color = C.g500, align = TextAlign.Center) else Skeleton(Modifier.matchParentSize(), radius = 12.dp)
                 }
             }
         }

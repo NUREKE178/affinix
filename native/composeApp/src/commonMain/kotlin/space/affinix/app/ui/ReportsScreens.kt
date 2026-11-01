@@ -74,7 +74,7 @@ internal fun ReportsSection(model: AppModel) {
             }
         }
         when {
-            !r.reportLoaded -> Txt(t("common.loadingAnswers"), 14, color = C.g500)
+            !r.reportLoaded -> LoadingState(t("common.loadingAnswers"))
             r.reportFailed -> Plate(Modifier.fillMaxWidth()) {
                 Txt(t("reports.participantsError"), 14, color = C.g300); Spacer(Modifier.height(10.dp)); KeyButton(t("common.retry"), { r.loadReport() }, compact = true)
             }

@@ -173,7 +173,7 @@ fun Field(
             visualTransformation = if (password) PasswordVisualTransformation() else VisualTransformation.None,
             keyboardOptions = KeyboardOptions(keyboardType = if (password) KeyboardType.Password else if (email) KeyboardType.Email else KeyboardType.Text, imeAction = if (imeDone) ImeAction.Done else ImeAction.Next),
             keyboardActions = KeyboardActions(onDone = { onDone() }),
-            modifier = Modifier.fillMaxWidth().well(12.dp).padding(horizontal = 14.dp, vertical = 13.dp),
+            modifier = Modifier.fillMaxWidth().well(12.dp).padding(horizontal = 14.dp, vertical = 13.dp).trackTyping(),
         )
     }
 }

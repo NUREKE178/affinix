@@ -101,7 +101,7 @@ fun DnaCard(model: AppModel) {
             d == null && model.dnaFailed -> {
                 Txt(t("app.noNetwork"), 13, color = C.g400); Spacer(Modifier.height(8.dp)); KeyButton(t("people.retry"), { model.loadDna() }, compact = true)
             }
-            d == null -> Txt(t("common.loading"), 13, color = C.g500)
+            d == null -> LoadingState(compact = true)
             d.all.n == 0 -> Txt(t("arena.dna.empty"), 13, color = C.g400)
             else -> {
                 FlowRow(horizontalArrangement = Arrangement.spacedBy(6.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {

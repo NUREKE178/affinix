@@ -56,8 +56,9 @@ class ScreenshotTest {
     private val dnaFixture = kotlinx.serialization.json.Json.parseToJsonElement(javaClass.getResource("/dna.json")!!.readText()) as kotlinx.serialization.json.JsonObject
 
     /** [marathon]: the daily ten is done and set 2 too, set 3 is half way; [dna]: the player has 90 answers on record */
-    private fun model(signedIn: Boolean, marathon: Boolean = false, dna: Boolean = false, styles: Boolean = false, admin: Boolean = false, chatDown: Boolean = false): AppModel {
+    private fun model(signedIn: Boolean, marathon: Boolean = false, dna: Boolean = false, styles: Boolean = false, admin: Boolean = false, chatDown: Boolean = false, hangPath: String? = null): AppModel {
         val engine = MockEngine { req ->
+            if (hangPath != null && req.url.encodedPath.endsWith(hangPath)) kotlinx.coroutines.delay(120_000) // this answer never comes in the picture: the screen shows what it shows while it waits
             if (chatDown && req.url.encodedPath.endsWith("/messages")) return@MockEngine respond("""{"message":"permission denied for table messages"}""", HttpStatusCode.BadRequest, json)
             val body = when {
                 admin && req.url.encodedPath.endsWith("/profiles") && req.url.encodedQuery.contains("is_admin") -> """[{"is_admin":true,"is_owner":true}]"""
@@ -330,5 +331,30 @@ class ScreenshotTest {
     @Test fun rankingsWithFaces() {
         val m = model(true); m.tab = Tab.Rankings
         shoot("41-rankings-phone", 420, 900, m) { Thread.sleep(700) }
+    }
+
+    /** the app has nothing of its own to show yet: the boot screen (the first read of the player never answers) */
+    @Test fun bootScreen() = shoot("42-boot-phone", 420, 820, model(true, hangPath = "arena_state")) { Thread.sleep(300) }
+
+    /** a list on its way: rows in the shape of the rows to come */
+    @Test fun friendsWhileLoading() {
+        val m = model(true, hangPath = "/friendships"); m.tab = Tab.People
+        shoot("43-people-loading-phone", 420, 700, m) { Thread.sleep(400) }
+    }
+
+    @Test fun feedWhileLoading() {
+        val m = model(true, hangPath = "/posts"); m.tab = Tab.Feed
+        shoot("44-feed-loading-phone", 420, 1000, m) { Thread.sleep(400) }
+    }
+
+    @Test fun chatWhileLoading() {
+        val m = model(true, hangPath = "/messages"); m.tab = Tab.Chats
+        shoot("45-thread-loading-phone", 420, 700, m) { Thread.sleep(500); m.messages.conversations.firstOrNull()?.let { m.messages.openChat(it) }; Thread.sleep(500) }
+    }
+
+    /** a whole page waiting: the ring turns around the mark */
+    @Test fun pageWhileLoading() {
+        val m = model(true, hangPath = "organization_members"); m.tab = Tab.Research
+        shoot("46-page-loading-phone", 420, 700, m) { Thread.sleep(500); m.research.section = space.affinix.app.store.ResearchModel.Section.Experiments; Thread.sleep(400) }
     }
 }
