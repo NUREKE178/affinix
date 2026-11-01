@@ -980,6 +980,7 @@ internal val STRINGS_KK: Map<String, String> = mapOf(
     "reports.md.nextExperimentSufficient" to "«Неліктен» екенін тереңірек түсіну үшін аудиторияны басқаша сегменттеумен немесе қосымша сұрақтармен (қабылданған сапа, әсер ету факторы) қайталап зерттеуді қарастырыңыз.",
     "reports.md.nextExperimentInsufficient" to "Бұл зерттеуге негізделген шешім қабылдамас бұрын көбірек жауап жинаңыз (кемінде {n}).",
     "app.name" to "Affinix",
+    "reports.appSubtitle" to "Бір эксперимент бойынша нәтижелер мен қорытындылар. Есепті мәтін ретінде көшіруге болады.",
     "reports.copy" to "Есепті көшіру",
     "reports.copied" to "Есеп көшірілді",
     "app.updateAvailable" to "Жаңа нұсқа шықты: {v}",

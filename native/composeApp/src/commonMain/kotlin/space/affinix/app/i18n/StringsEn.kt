@@ -980,6 +980,7 @@ internal val STRINGS_EN: Map<String, String> = mapOf(
     "reports.md.nextExperimentSufficient" to "Consider a follow-up study with different audience segmentation or additional questions (perceived quality, influence factor) to deepen the “why”.",
     "reports.md.nextExperimentInsufficient" to "Collect more responses (at least {n}) before making decisions based on this study.",
     "app.name" to "Affinix",
+    "reports.appSubtitle" to "Results and conclusions for one experiment. You can copy the report as text.",
     "reports.copy" to "Copy report",
     "reports.copied" to "Report copied",
     "app.updateAvailable" to "A new version is out: {v}",

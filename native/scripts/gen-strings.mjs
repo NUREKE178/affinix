@@ -69,6 +69,7 @@ for (const p of PREFIXES) for (const k of leaves(get(ru, p), p)) if (!KEYS.inclu
 // only the apps have these
 const EXTRA = {
   "app.name": { ru: "Affinix", kk: "Affinix", en: "Affinix" },
+  "reports.appSubtitle": { ru: "Итоги и выводы по одному эксперименту. Отчёт можно скопировать как текст.", kk: "Бір эксперимент бойынша нәтижелер мен қорытындылар. Есепті мәтін ретінде көшіруге болады.", en: "Results and conclusions for one experiment. You can copy the report as text." },
   "reports.copy": { ru: "Скопировать отчёт", kk: "Есепті көшіру", en: "Copy report" },
   "reports.copied": { ru: "Отчёт скопирован", kk: "Есеп көшірілді", en: "Report copied" },
   "app.updateAvailable": { ru: "Вышла новая версия: {v}", kk: "Жаңа нұсқа шықты: {v}", en: "A new version is out: {v}" },

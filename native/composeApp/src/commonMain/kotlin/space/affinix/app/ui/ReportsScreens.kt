@@ -59,7 +59,7 @@ internal fun ReportsSection(model: AppModel) {
     LaunchedEffect(exp?.id) { copied = false }
 
     Column(Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-        Txt(t("reports.subtitle"), 12, color = C.g500)
+        Txt(t("reports.appSubtitle"), 12, color = C.g500)
         if (exp == null) {
             Plate(Modifier.fillMaxWidth()) {
                 Txt(t("reports.emptyTitle"), 15, FontWeight.Bold, C.g50)
@@ -146,6 +146,6 @@ private fun ReportTile(label: String, value: String, modifier: Modifier = Modifi
     Plate(modifier, radius = 12, pad = 10) {
         Txt(label, 10, FontWeight.Medium, C.g400, maxLines = 2)
         Spacer(Modifier.height(3.dp))
-        Txt(value, 16, FontWeight.ExtraBold, C.g50, maxLines = 1)
+        Txt(value, 15, FontWeight.ExtraBold, C.g50, maxLines = 2)
     }
 }

@@ -980,6 +980,7 @@ internal val STRINGS_RU: Map<String, String> = mapOf(
     "reports.md.nextExperimentSufficient" to "Рассмотрите повторное исследование с иной сегментацией аудитории или дополнительными вопросами (воспринимаемое качество, фактор влияния), чтобы углубить понимание «почему».",
     "reports.md.nextExperimentInsufficient" to "Соберите больше ответов (минимум {n}) перед тем, как принимать решения на основе этого исследования.",
     "app.name" to "Affinix",
+    "reports.appSubtitle" to "Итоги и выводы по одному эксперименту. Отчёт можно скопировать как текст.",
     "reports.copy" to "Скопировать отчёт",
     "reports.copied" to "Отчёт скопирован",
     "app.updateAvailable" to "Вышла новая версия: {v}",
