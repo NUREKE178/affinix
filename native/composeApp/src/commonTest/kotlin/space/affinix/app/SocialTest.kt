@@ -137,7 +137,7 @@ class MessagesTest {
             path.endsWith("/profiles_public") -> PROFILES
             path.endsWith("/rpc/get_or_create_conversation") -> "\"c1\""
             path.endsWith("/messages") && m == "GET" -> thread
-            path.endsWith("/messages") && m == "POST" -> """[{"id":"${Regex("\"id\":\"([^\"]+)\"").find(body)!!.groupValues[1]}","conversation_id":"c1","sender_id":"me","body":"hello","created_at":"2026-10-30T09:05:00+00:00"}]"""
+            path.endsWith("/messages") && m == "POST" -> { Thread.sleep(250); /* the server takes a moment, so "sending" is still on screen when the test looks */ """[{"id":"${Regex("\"id\":\"([^\"]+)\"").find(body)!!.groupValues[1]}","conversation_id":"c1","sender_id":"me","body":"hello","created_at":"2026-10-30T09:05:00+00:00"}]""" }
             else -> "null"
         }
     }, fail)
