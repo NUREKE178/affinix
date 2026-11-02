@@ -194,10 +194,21 @@ fun Modifier.pagerSwipe(pager: Pager, enabled: Boolean, barIndex: (Tab) -> Int, 
     val targetNow by rememberUpdatedState(target)
     val barIndexNow by rememberUpdatedState(barIndex)
     val job = remember { arrayOfNulls<Job>(1) }
+    DisposableEffect(Unit) { SwipeTrace.add("pager in"); onDispose { SwipeTrace.add("pager out") } }
 
     this
         .onSizeChanged { pager.width = it.width }
+        .pointerInput("trace") {
+            awaitPointerEventScope {
+                while (true) {
+                    val e = awaitPointerEvent(androidx.compose.ui.input.pointer.PointerEventPass.Initial)
+                    if (e.type == androidx.compose.ui.input.pointer.PointerEventType.Press || e.type == androidx.compose.ui.input.pointer.PointerEventType.Release)
+                        SwipeTrace.add("ev ${e.type} ${e.changes.firstOrNull()?.position?.x?.toInt()}")
+                }
+            }
+        }
         .pointerInput(Unit) {
+            SwipeTrace.add("handler start")
             awaitEachGesture {
                 val down = awaitFirstDown(requireUnconsumed = false)
                 SwipeTrace.add("down ${down.position.x.toInt()},${down.position.y.toInt()} ${down.type} w=${size.width} pw=${pager.width}")

@@ -114,6 +114,7 @@ private fun MainShell(model: AppModel) {
     val booting = model.profile == null && model.loading && round == null && model.mission.round == null
     val swipes = remember { SwipeRegistry() }
     val pager = remember { Pager() }
+    LaunchedEffect(booting, model.tab) { space.affinix.app.ui.SwipeTrace.add("shell booting=$booting tab=${model.tab}") }
     // every page is one piece that can be carried: the page that is dragged in beside the current one is the very same composition that becomes the current page (nothing is
     // built again, nothing fades in a second time), and it keeps its own scroll position
     // the flag that says a swipe has just changed the tab is cleared here, two frames later, when the page and the bar have both read it (the bar's tab may not change at all: Play -> Quests)
