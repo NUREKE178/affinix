@@ -40,7 +40,6 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.draw.drawWithContent
 import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.input.key.Key
@@ -113,7 +112,6 @@ private fun MainShell(model: AppModel) {
     val booting = model.profile == null && model.loading && round == null && model.mission.round == null
     val swipes = remember { SwipeRegistry() }
     val pager = remember { Pager() }
-    LaunchedEffect(booting, model.tab) { space.affinix.app.ui.SwipeTrace.add("shell booting=$booting tab=${model.tab}") }
     // the flag that says a swipe has just changed the tab is cleared here, two frames later, when the page and the bar have both read it (the bar's tab may not change at all: Play -> Quests)
     LaunchedEffect(model.tab) { if (pager.committed) { androidx.compose.runtime.withFrameNanos { }; androidx.compose.runtime.withFrameNanos { }; pager.committed = false } }
     // the pages that are on the screen: the current one, the one that is dragged in beside it and, for a moment after a tap, the one that fades out. Every page is one composition that keeps
@@ -121,17 +119,7 @@ private fun MainShell(model: AppModel) {
     // because it already has a parent», which stopped the whole screen after the first swipe)
     val visible = remember { androidx.compose.runtime.mutableStateListOf(model.tab) }
     val shownOnce = remember { booleanArrayOf(false) }
-    Box(
-        Modifier.fillMaxSize().pointerInput("root-trace") {
-            awaitPointerEventScope {
-                while (true) {
-                    val e = awaitPointerEvent(androidx.compose.ui.input.pointer.PointerEventPass.Initial)
-                    if (e.type == androidx.compose.ui.input.pointer.PointerEventType.Press || e.type == androidx.compose.ui.input.pointer.PointerEventType.Release)
-                        space.affinix.app.ui.SwipeTrace.add("root ${e.type} ${e.changes.firstOrNull()?.position?.x?.toInt()},${e.changes.firstOrNull()?.position?.y?.toInt()}")
-                }
-            }
-        },
-    ) {
+    Box(Modifier.fillMaxSize()) {
     if (booting) BootScreen(t("common.bootWorkspace")) else CompositionLocalProvider(LocalSwipeRegistry provides swipes) {
     Column(
         Modifier.fillMaxSize()

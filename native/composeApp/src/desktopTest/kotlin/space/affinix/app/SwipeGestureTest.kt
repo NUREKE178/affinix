@@ -24,8 +24,6 @@ import space.affinix.app.net.Session
 import space.affinix.app.store.AppModel
 import space.affinix.app.store.Tab
 import space.affinix.app.ui.Motion
-import space.affinix.app.ui.SwipeTrace
-import space.affinix.app.ui.Typing
 import kotlin.test.BeforeTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -34,10 +32,7 @@ import kotlin.test.assertTrue
 /** Real touches on the real screen (the Skia window): a swipe changes the tab, chains out of the Arena's tabs, and leaves alone what is not a swipe. */
 @OptIn(ExperimentalComposeUiApi::class)
 class SwipeGestureTest {
-    @BeforeTest fun still() { Motion.enabled = false; SwipeTrace.clear() }
-
-    /** what the app was doing, for the message of a swipe that did not happen */
-    private fun AppModel.state() = "tab=$tab typing=${Typing.fields} viewer=${profileViewer.isOpen} round=${game.round.value != null} mission=${mission.round != null} thread=${messages.open != null} trace=[${SwipeTrace.text()}]"
+    @BeforeTest fun still() { Motion.enabled = false }
 
     private fun model(): AppModel {
         val engine = MockEngine { respond("{}", HttpStatusCode.OK, headersOf(HttpHeaders.ContentType, "application/json")) }
@@ -67,21 +62,8 @@ class SwipeGestureTest {
         }
     }
 
-    /** a swipe that has to happen; if it does not, wait a second and try once more, and say what each try did */
-    private fun swipeExpecting(f: Finger, m: AppModel, expect: Tab, label: String, x0: Float, y0: Float, x1: Float, y1: Float) {
-        f.drag(x0, y0, x1, y1)
-        if (m.tab == expect) return
-        val first = m.state()
-        f.frames(60)
-        SwipeTrace.add("--- retry")
-        f.drag(x0, y0, x1, y1)
-        assertEquals(expect, m.tab, "$label did not happen; first try: [$first]; after 60 frames and a second try: [${m.state()}]")
-    }
-
     private fun withApp(m: AppModel, block: (Finger) -> Unit) {
-        // TEMPORARY: an exception that kills the recomposer is otherwise lost (it only shows up in the next test that uses runTest)
-        val handler = kotlinx.coroutines.CoroutineExceptionHandler { _, e -> SwipeTrace.add("EXC " + e.stackTraceToString().take(2400).replace("\n", " ; ")) }
-        val scene = ImageComposeScene(width = 420, height = 900, density = Density(1f), coroutineContext = Dispatchers.Unconfined + handler) { App(m) }
+        val scene = ImageComposeScene(width = 420, height = 900, density = Density(1f)) { App(m) }
         try {
             val f = Finger(scene)
             f.frames(30) // fonts and resources load asynchronously
@@ -113,7 +95,7 @@ class SwipeGestureTest {
         val m = model(); m.tab = Tab.Chats
         withApp(m) { f ->
             f.drag(330f, 700f, 130f, 700f); assertEquals(Tab.People, m.tab, "Chats -> People")
-            swipeExpecting(f, m, Tab.Chats, "People -> Chats", 100f, 700f, 300f, 700f)
+            f.drag(100f, 700f, 300f, 700f); assertEquals(Tab.Chats, m.tab, "People -> Chats")
             f.drag(100f, 700f, 300f, 700f); assertEquals(Tab.Feed, m.tab, "Chats -> Feed")
         }
     }
@@ -130,7 +112,7 @@ class SwipeGestureTest {
         val m = model(); m.tab = Tab.Play
         withApp(m) { f ->
             f.drag(330f, 400f, 130f, 400f); assertEquals(Tab.Quests, m.tab, "Play -> Quests")
-            swipeExpecting(f, m, Tab.Rankings, "Quests -> Rankings", 330f, 400f, 130f, 400f)
+            f.drag(330f, 400f, 130f, 400f); assertEquals(Tab.Rankings, m.tab, "Quests -> Rankings")
             f.drag(330f, 400f, 130f, 400f); assertEquals(Tab.Feed, m.tab, "past the last Arena tab the bar goes on")
         }
     }
