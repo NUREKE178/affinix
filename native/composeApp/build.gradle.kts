@@ -111,3 +111,12 @@ val genBuildInfo by tasks.registering {
     }
 }
 kotlin.sourceSets.named("commonMain") { kotlin.srcDir(genBuildInfo.map { it.outputs.files.singleFile }) }
+
+// a failed test says why in the CI log (the message, the cause and where), not only on which line
+tasks.withType<Test>().configureEach {
+    testLogging {
+        exceptionFormat = org.gradle.api.tasks.testing.logging.TestExceptionFormat.FULL
+        showCauses = true
+        showStackTraces = true
+    }
+}
