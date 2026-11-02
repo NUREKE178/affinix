@@ -37,6 +37,9 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.draw.drawWithContent
+import androidx.compose.runtime.movableContentOf
 import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
@@ -60,6 +63,7 @@ import space.affinix.app.ui.BAR_TABS
 import space.affinix.app.ui.BottomBar
 import space.affinix.app.ui.LoadBar
 import space.affinix.app.ui.LocalPreviewTab
+import space.affinix.app.ui.LocalStill
 import space.affinix.app.ui.Pager
 import space.affinix.app.ui.SwipeTarget
 import space.affinix.app.ui.barIndexOf
@@ -110,9 +114,12 @@ private fun MainShell(model: AppModel) {
     val booting = model.profile == null && model.loading && round == null && model.mission.round == null
     val swipes = remember { SwipeRegistry() }
     val pager = remember { Pager() }
-    // the pages change without the cross-fade when a swipe has brought the next page in beside the current one (it is already there)
-    var paged by remember { androidx.compose.runtime.mutableStateOf(false) }
-    LaunchedEffect(pager.committed) { if (pager.committed) paged = true else { kotlinx.coroutines.delay(80); paged = false } }
+    // every page is one piece that can be carried: the page that is dragged in beside the current one is the very same composition that becomes the current page (nothing is
+    // built again, nothing fades in a second time), and it keeps its own scroll position
+    // the flag that says a swipe has just changed the tab is cleared here, two frames later, when the page and the bar have both read it (the bar's tab may not change at all: Play -> Quests)
+    LaunchedEffect(model.tab) { if (pager.committed) { androidx.compose.runtime.withFrameNanos { }; androidx.compose.runtime.withFrameNanos { }; pager.committed = false } }
+    val pages = remember(model) { HashMap<Tab, @Composable () -> Unit>() }
+    fun pageOf(tab: Tab): @Composable () -> Unit = pages.getOrPut(tab) { movableContentOf { Page(model, tab) } }
     Box(Modifier.fillMaxSize()) {
     if (booting) BootScreen(t("common.bootWorkspace")) else CompositionLocalProvider(LocalSwipeRegistry provides swipes) {
     Column(
@@ -153,19 +160,21 @@ private fun MainShell(model: AppModel) {
                 // a round is a full-screen flow: it fits the screen and keeps its actions at the bottom (no scrolling to reach «Next»)
                 Box(Modifier.fillMaxSize(), contentAlignment = Alignment.TopCenter) { Box(Modifier.widthIn(max = 760.dp).fillMaxSize().padding(horizontal = 16.dp, vertical = 16.dp)) { DuelScreen(model) } }
             } else {
-                // the page that is shown follows the finger ...
-                Box(Modifier.fillMaxSize().graphicsLayer { translationX = pager.dx; alpha = (1f - pager.dim) * pager.hold }, contentAlignment = Alignment.TopCenter) {
-                    Column(Modifier.widthIn(max = 760.dp).fillMaxWidth().verticalScroll(rememberScrollState()).padding(horizontal = 16.dp, vertical = 16.dp)) {
-                        if (mission != null) space.affinix.app.ui.MissionScreen(model, mission)
-                        else Crossfade(model.tab, animationSpec = tween(if (Motion.enabled && !paged) 260 else 0), label = "screen") { tab -> TabScreen(model, tab) }
+                // the page that is shown follows the finger (and, as it leaves, darkens a little: a cue of depth) ...
+                Box(
+                    Modifier.fillMaxSize().graphicsLayer { translationX = pager.dx; alpha = (1f - pager.dim) * pager.hold }
+                        .drawWithContent { drawContent(); if (pager.neighbor != null) drawRect(Color.Black.copy(alpha = .24f * pager.amount)) },
+                ) {
+                    if (mission != null) Box(Modifier.fillMaxSize(), contentAlignment = Alignment.TopCenter) {
+                        Column(Modifier.widthIn(max = 760.dp).fillMaxWidth().verticalScroll(rememberScrollState()).padding(horizontal = 16.dp, vertical = 16.dp)) { space.affinix.app.ui.MissionScreen(model, mission) }
                     }
+                    // a swipe has already brought the page in: it is put in at once, with no cross-fade (this reads the flag in the same composition that changes the tab)
+                    else Crossfade(model.tab, animationSpec = tween(if (Motion.enabled && !pager.committed) 260 else 0), label = "screen") { tab -> pageOf(tab)() }
                 }
                 // ... and the page that comes is drawn beside it, so that both are seen while the finger is down
                 pager.neighbor?.let { next ->
-                    Box(Modifier.fillMaxSize().graphicsLayer { translationX = pager.dx + pager.dir * pager.width }, contentAlignment = Alignment.TopCenter) {
-                        androidx.compose.runtime.CompositionLocalProvider(LocalSwipeRegistry provides null, LocalPreviewTab provides next) {
-                            Column(Modifier.widthIn(max = 760.dp).fillMaxWidth().verticalScroll(rememberScrollState()).padding(horizontal = 16.dp, vertical = 16.dp)) { TabScreen(model, next) }
-                        }
+                    Box(Modifier.fillMaxSize().graphicsLayer { translationX = pager.dx + pager.dir * pager.width }) {
+                        androidx.compose.runtime.CompositionLocalProvider(LocalSwipeRegistry provides null, LocalPreviewTab provides next, LocalStill provides true) { pageOf(next)() }
                     }
                 }
             }
@@ -174,6 +183,14 @@ private fun MainShell(model: AppModel) {
     }
     }
     space.affinix.app.ui.ProfileViewerHost(model)
+    }
+}
+
+/** A page of the shell: the screen of a tab on its own scroll, as one piece that can be carried from beside the current page to its place. */
+@Composable
+private fun Page(model: AppModel, tab: Tab) {
+    Box(Modifier.fillMaxSize(), contentAlignment = Alignment.TopCenter) {
+        Column(Modifier.widthIn(max = 760.dp).fillMaxWidth().verticalScroll(rememberScrollState()).padding(horizontal = 16.dp, vertical = 16.dp)) { TabScreen(model, tab) }
     }
 }
 

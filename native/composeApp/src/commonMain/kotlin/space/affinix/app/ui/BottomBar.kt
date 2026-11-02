@@ -100,7 +100,6 @@ fun BottomBar(model: AppModel, pager: Pager, modifier: Modifier = Modifier) {
     LaunchedEffect(current) {
         val to = current.coerceAtLeast(0).toFloat()
         if (pager.committed || !Motion.enabled) settled.snapTo(to) else settled.animateTo(to, tween(260, easing = FastOutSlowInEasing))
-        pager.committed = false
     }
     val pos = if (pager.neighborBar >= 0) settled.value + (pager.neighborBar - settled.value) * pager.amount else settled.value
 

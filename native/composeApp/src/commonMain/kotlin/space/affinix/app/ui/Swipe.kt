@@ -4,6 +4,7 @@ import androidx.compose.animation.core.CubicBezierEasing
 import androidx.compose.animation.core.FastOutLinearInEasing
 import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.animate
+import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.gestures.awaitEachGesture
 import androidx.compose.foundation.gestures.awaitFirstDown
@@ -27,6 +28,7 @@ import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.pointer.PointerType
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.input.pointer.util.VelocityTracker
 import androidx.compose.ui.layout.onSizeChanged
 import space.affinix.app.store.Tab
 import androidx.compose.ui.platform.LocalDensity
@@ -67,6 +69,17 @@ object SwipeRules {
         val far = abs(dx) > max(64f, widthDp * .2f)
         val quick = abs(dx) > 36f && abs(dx) / max(ms, 1L) > .45f
         return far || quick
+    }
+
+    /**
+     * Whether a swipe that is let go with the speed [v] (dp per second, signed like [dx]) finishes the way: the website's rules, and the place the page would reach in the next
+     * 120 ms at its own speed (so that a flick finishes and a drag that is brought back stays), but never when it is being taken back fast.
+     */
+    fun goes(dx: Float, v: Float, ms: Long, widthDp: Float, hasTarget: Boolean): Boolean {
+        if (!hasTarget) return false
+        val sign = if (dx < 0) -1f else 1f
+        if (v * sign < -300f) return false
+        return commits(dx, ms, widthDp, true) || abs(dx + v * .12f) > widthDp * .4f
     }
 
     /** which page a swipe of [dx] asks for: a swipe to the left (negative) goes to the next one (+1), to the right to the previous (-1) */
@@ -187,9 +200,12 @@ fun Modifier.pagerSwipe(pager: Pager, enabled: Boolean, barIndex: (Tab) -> Int, 
                 var goal: SwipeTarget? = null
                 var dxDp = 0f
                 var ms = 1L
+                val tracker = VelocityTracker()
+                tracker.addPosition(down.uptimeMillis, down.position)
                 while (true) {
                     val event = awaitPointerEvent()
                     val change = event.changes.firstOrNull { it.id == down.id } ?: break
+                    tracker.addPosition(change.uptimeMillis, change.position)
                     if (!locked && change.isConsumed) return@awaitEachGesture // a scroller, a strip or a field took it
                     dxDp = (change.position.x - down.position.x) / density
                     val dyDp = (change.position.y - down.position.y) / density
@@ -222,28 +238,34 @@ fun Modifier.pagerSwipe(pager: Pager, enabled: Boolean, barIndex: (Tab) -> Int, 
                 val startDx = pager.dx
                 val startDim = pager.dim
                 val dir = SwipeRules.direction(dxDp)
-                if (go != null && SwipeRules.commits(dxDp, ms, widthDp, true)) {
+                val vx = tracker.calculateVelocity().x // px per second
+                val width = pager.width.toFloat()
+                if (go != null && SwipeRules.goes(dxDp, vx / density, ms, widthDp, true)) {
                     job[0] = scope.launch {
                         if (beside != null) {
-                            // the pages finish the way: the neighbour arrives at the place of the current page, then the app says it is the current page
-                            if (Motion.enabled) animate(startDx, -dir * pager.width.toFloat(), animationSpec = tween(250, easing = FastOutSlowInEasing)) { v, _ -> pager.dx = v }
+                            // the pages carry on at the speed of the finger (a spring, not a fixed time), and the neighbour arrives at the place of the current page
+                            if (Motion.enabled) animate(startDx, -dir * width, initialVelocity = vx, animationSpec = spring(dampingRatio = 1f, stiffness = 380f)) { v, _ -> pager.dx = v.coerceIn(-width, width) }
                             pager.committed = true
                             go()
                             pager.reset()
                         } else {
-                            if (Motion.enabled) {
-                                animate(0f, 1f, animationSpec = tween(130, easing = FastOutLinearInEasing)) { p, _ ->
-                                    pager.dx = startDx + (-dir * 44f * density - startDx) * p; pager.hold = 1f - p; pager.dim = startDim * (1f - p)
-                                }
-                            }
+                            // nothing can be drawn beside: the new content is put in at once (no blank moment) and settles in from the side the finger went
+                            pager.committed = true
                             go()
-                            pager.dx = 0f; pager.dim = 0f; pager.hold = if (Motion.enabled) 0f else 1f
-                            if (Motion.enabled) animate(0f, 1f, animationSpec = tween(220)) { p, _ -> pager.hold = p }
+                            pager.dim = 0f
+                            if (Motion.enabled) {
+                                pager.dx = dir * 30f * density; pager.hold = .3f
+                                animate(0f, 1f, animationSpec = tween(240, easing = SettleEase)) { p, _ -> pager.dx = dir * 30f * density * (1f - p); pager.hold = .3f + .7f * p }
+                            }
+                            pager.reset()
                         }
                     }
                 } else {
                     job[0] = scope.launch {
-                        if (Motion.enabled) animate(0f, 1f, animationSpec = tween(240, easing = SettleEase)) { p, _ -> pager.dx = startDx * (1f - p); pager.dim = startDim * (1f - p) }
+                        if (Motion.enabled) animate(startDx, 0f, initialVelocity = vx, animationSpec = spring(dampingRatio = 1f, stiffness = 480f)) { v, _ ->
+                            pager.dx = if (startDx >= 0f) v.coerceAtLeast(0f) else v.coerceAtMost(0f)
+                            pager.dim = if (startDx != 0f) startDim * (pager.dx / startDx) else 0f
+                        }
                         pager.reset()
                     }
                 }

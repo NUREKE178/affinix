@@ -133,4 +133,18 @@ class SwipeTest {
         reg.set(arena, SwipeRegistry.Sections(index = 1, count = 3) { }) // pages that cannot be drawn beside (the feed's modes): nothing to preview
         assertNull(reg.target(1)!!.preview)
     }
+
+    @Test fun aFlickFinishesAndABroughtBackDragStays() {
+        // dragged left by 40 dp over 300 ms: not far, not quick on its own
+        assertTrue(!SwipeRules.goes(-40f, 0f, 300, 420f, true)) // let go at rest: it stays
+        assertTrue(!SwipeRules.goes(-40f, -600f, 300, 420f, true)) // a slow carry (40 + 72 = 112 dp in 120 ms) is not enough: it needs 0.4 of 420 = 168
+        assertTrue(SwipeRules.goes(-40f, -1200f, 300, 420f, true)) // a flick (40 + 144 = 184 > 168): it carries on
+    }
+
+    @Test fun theSpeedOfTheFingerCountsInBothDirections() {
+        assertTrue(SwipeRules.goes(-90f, -200f, 600, 420f, true)) // far enough (84) anyway
+        assertTrue(!SwipeRules.goes(-120f, 700f, 600, 420f, true)) // far, but taken back fast: stays
+        assertTrue(SwipeRules.goes(60f, 1000f, 300, 420f, true)) // to the right at speed: 60 + 120 = 180 > 168
+        assertTrue(!SwipeRules.goes(-300f, -900f, 100, 420f, false)) // no page: never
+    }
 }
