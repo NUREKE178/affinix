@@ -147,14 +147,21 @@ private fun ExperimentsList(model: AppModel) {
                     Chip(statusText(e.status), statusTone(e.status))
                 }
                 e.objective?.takeIf { it.isNotBlank() }?.let { Spacer(Modifier.height(4.dp)); Txt(it, 13, color = C.g400, maxLines = 3) }
-                Spacer(Modifier.height(8.dp))
-                Txt(listOf(researchTypeText(e.researchType), t("research.metaVariants", "n" to e.variants.size), t("research.metaQuestions", "n" to e.questions.size), t("experiments.updated", "when" to agoText(e.updatedAt))).filter { it.isNotBlank() }.joinToString(" · "), 12, color = C.g500)
                 Spacer(Modifier.height(10.dp))
-                FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                    if (e.status == "draft") KeyButton(t("experiments.publish"), { r.publish(e) }, lit = true, compact = true, enabled = r.busy != e.id)
-                    else KeyButton(t("experiments.results"), { r.openExperiment(e.id) }, lit = true, compact = true)
+                // what the experiment is, as small labels (not one long line), and when it changed
+                FlowRow(horizontalArrangement = Arrangement.spacedBy(6.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                    listOf(researchTypeText(e.researchType), t("research.metaVariants", "n" to e.variants.size), t("research.metaQuestions", "n" to e.questions.size)).filter { it.isNotBlank() }.forEach { Chip(it, Tone.Neutral) }
+                }
+                Spacer(Modifier.height(6.dp))
+                Txt(t("experiments.updated", "when" to agoText(e.updatedAt)), 12, color = C.g500)
+                Spacer(Modifier.height(12.dp))
+                // the orange key is the one of the screen («New experiment»): here the actions are plain keys and the dangerous one is told apart by its colour and its place
+                Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
+                    if (e.status == "draft") KeyButton(t("experiments.publish"), { r.publish(e) }, compact = true, enabled = r.busy != e.id)
+                    else KeyButton(t("experiments.results"), { r.openExperiment(e.id) }, compact = true)
                     if (e.status != "draft") r.publicLink(e)?.let { link -> KeyButton(t("research.copyLink"), { clipboard.setText(androidx.compose.ui.text.AnnotatedString(link)); r.notice = "experiments.linkCopied" }, compact = true) }
-                    KeyButton(t("experiments.delete"), { confirm = e }, compact = true, enabled = r.busy != e.id)
+                    Box(Modifier.weight(1f))
+                    KeyButton(t("experiments.delete"), { confirm = e }, compact = true, enabled = r.busy != e.id, danger = true)
                 }
                 if (confirm?.id == e.id) {
                     Spacer(Modifier.height(10.dp))
@@ -162,7 +169,7 @@ private fun ExperimentsList(model: AppModel) {
                     Txt(t("experiments.confirmDeleteBody"), 12, color = C.g400)
                     Spacer(Modifier.height(8.dp))
                     Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                        KeyButton(t("common.delete"), { r.delete(e); confirm = null }, lit = true, compact = true)
+                        KeyButton(t("common.delete"), { r.delete(e); confirm = null }, compact = true, danger = true)
                         KeyButton(t("common.cancel"), { confirm = null }, compact = true)
                     }
                 }

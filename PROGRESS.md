@@ -4275,3 +4275,17 @@ The first half of the marketers' tools, in the native apps (Kotlin + Compose), o
 - **Tests:** `SwipeTest` (10: the rules, the registry incl. a screen that fades out re-registering, the ellipsis split); 221 JVM tests locally (without Skia). Skia-only, run in CI: `SwipeGestureTest` (real touch events: tab swipes both ways, nothing before the first tab, the Arena chain Play -> Quests -> Rankings -> Feed, a scroll / a mouse / a screen-edge drag / a short drag do nothing, the profile card pulled down closes),
   `MotionScreenshotTest.theSpinnerTurnsAndASkeletonSweeps`, screenshot cases 42-46 (boot, friends / feed / chat while loading, a page while loading; the mock server can hang one endpoint with `hangPath`). The Skia native library cannot be loaded in the sandbox, so none of these has run outside CI.
 - **Not verified:** a finger on a real phone (the gesture feel: thresholds are the website's); the load bar and the boot screen in motion.
+
+### Native apps: a design audit of every screen and the first 10/10 pass (migration: none)
+
+- **How:** the 34 real CI screenshots were read screen by screen (`native-shots` branch) and the findings were turned into a shared layer, so that the fixes reach every screen and not one:
+  `ui/Design.kt` - the type scale `T` (Display 26 / Title 22 / Heading 17 / Body 15 / Small 13 / Micro 11), `ScreenHeader` (one title, subtitle and actions place for every screen: Feed, Friends, Messages, Quests, Profile), `SectionLabel`, `avatarTint` (a person without a picture gets a
+  tint that is always the same, so faces are told apart), `StatTile`, `MedalTile`, `LockedStage` (a part that is not open yet is a dimmed row with a lock and its progress, not a card of text), `ActionDock` (the actions of a full-screen flow at the bottom), `KeyButton(danger = true)`.
+- **Duel** (`DuelScreen.kt`, `App.kt`): a round is a full-screen flow that fits the window (no scrolling to reach «Next»): the progress and the question on top (with a hint line «Tap the one you prefer»), the two designs share the room that is left (side by side on a wide window), each whole card is the key (it gives a little under
+  the finger) with its number in a corner and, once answered, «Your pick» and the voters' share on the image; the actions are docked at the bottom.
+- **Summary:** a hero (a glow, +XP counting up to 58 sp, the level, rank and the progress to the next level), tiles, and «Done» / «Another round» docked at the bottom.
+- **Profile:** one card for who I am (picture, name, @username, role, level and progress, «Edit profile» and «Change photo»); the edit form opens only on demand; the figures are tiles (not a table); the badges are medals, the earned ones first; the e-mail is a small line above «Sign out».
+- **Other:** Messages has a real search field (it was a caption above an empty box); the locked Marathon and Research missions are `LockedStage` rows with the progress (4/10); an experiment's card shows its type, variants and questions as labels, has no orange key of its own (the one of the screen is «New experiment») and its «Delete» is red and
+  set apart; the duel screenshots are taken in a phone-sized window (820 px) so that CI shows that everything fits.
+- **Strings:** `arena.console.tapHint`, `app.editProfile`, `app.statsTitle`; 1124 keys x 3 languages.
+- **Left for the next passes:** the rankings podium, notifications grouped by day, full-screen picture viewer, the thread's date separators; the website has its own audit still to do.

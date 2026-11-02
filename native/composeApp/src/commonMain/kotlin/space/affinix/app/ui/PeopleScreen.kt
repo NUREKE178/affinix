@@ -84,7 +84,7 @@ fun PeopleScreen(model: AppModel) {
     val ppl = model.people
     LaunchedEffect(Unit) { if (!ppl.loaded) ppl.load() }
     Column(Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(14.dp)) {
-        Txt(t("friends.title"), 24, FontWeight.ExtraBold, C.g50)
+        ScreenHeader(t("friends.title"))
         SearchField(ppl.query, ppl::search, t("people.searchPlaceholder"))
         ppl.notice?.let { Chip(t(it), Tone.Info) }
         val q = ppl.clean(ppl.query)

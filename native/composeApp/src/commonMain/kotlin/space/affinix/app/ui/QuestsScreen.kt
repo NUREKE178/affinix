@@ -53,10 +53,7 @@ fun QuestsScreen(model: AppModel) {
     fun claim(id: String) { busy = true; failure = null; scope.launch { failure = model.claim(id); busy = false } }
     Column(Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(14.dp)) {
         ArenaTabs(model)
-        Column {
-            Txt(t("arena.quests.today"), 22, FontWeight.ExtraBold, C.g50)
-            Txt(t("arena.quests.resetNote"), 13, color = C.g500)
-        }
+        ScreenHeader(t("arena.quests.today"), t("arena.quests.resetNote"))
         failure?.let { Chip(t(it), Tone.Bad) }
         val claimed = day?.claimed.orEmpty()
         if (model.quests.isEmpty()) LoadingState()

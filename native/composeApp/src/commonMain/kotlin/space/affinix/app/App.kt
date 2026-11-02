@@ -139,10 +139,12 @@ private fun MainShell(model: AppModel) {
         ) {
             if (inThread) {
                 Box(Modifier.widthIn(max = 760.dp).fillMaxWidth()) { ThreadScreen(model) }
+            } else if (round != null) {
+                // a round is a full-screen flow: it fits the screen and keeps its actions at the bottom (no scrolling to reach «Next»)
+                Box(Modifier.widthIn(max = 760.dp).fillMaxSize().padding(horizontal = 16.dp, vertical = 16.dp)) { DuelScreen(model) }
             } else {
                 Column(Modifier.widthIn(max = 760.dp).fillMaxWidth().verticalScroll(rememberScrollState()).padding(horizontal = 16.dp, vertical = 16.dp)) {
-                    if (round != null) DuelScreen(model)
-                    else if (mission != null) space.affinix.app.ui.MissionScreen(model, mission)
+                    if (mission != null) space.affinix.app.ui.MissionScreen(model, mission)
                     else Crossfade(model.tab, animationSpec = tween(if (Motion.enabled) 260 else 0), label = "screen") { tab ->
                       when (tab) {
                         Tab.Play -> HomeScreen(model)

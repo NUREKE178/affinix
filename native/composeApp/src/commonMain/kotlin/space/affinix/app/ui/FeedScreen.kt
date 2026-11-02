@@ -61,9 +61,10 @@ fun Avatar(model: AppModel, person: Person, size: Dp = 40.dp, opens: Boolean = t
     val url = person.avatarUrl
     LaunchedEffect(url) { model.ensureUrlImage(url) }
     val bmp = url?.let { model.images[it] }
-    Box(Modifier.size(size).clip(CircleShape).background(C.g700).then(if (opens) Modifier.personTap(model, person, arena) else Modifier), contentAlignment = Alignment.Center) {
+    val tint = avatarTint(person.id.ifBlank { person.name ?: person.username ?: "?" })
+    Box(Modifier.size(size).clip(CircleShape).background(tint.first).then(if (opens) Modifier.personTap(model, person, arena) else Modifier), contentAlignment = Alignment.Center) {
         if (bmp != null) Image(bmp, null, Modifier.size(size), contentScale = ContentScale.Crop)
-        else Txt((person.name ?: person.username ?: "?").trim().take(1).uppercase(), (size.value * .42f).toInt(), FontWeight.ExtraBold, C.g200)
+        else Txt((person.name ?: person.username ?: "?").trim().take(1).uppercase(), (size.value * .42f).toInt(), FontWeight.ExtraBold, tint.second)
     }
 }
 
@@ -207,7 +208,7 @@ fun FeedScreen(model: AppModel) {
     val feed = model.feed
     LaunchedEffect(Unit) { if (!feed.loaded && !feed.loading) feed.load() }
     Column(Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(14.dp)) {
-        Txt(t("feed.title"), 24, FontWeight.ExtraBold, C.g50)
+        ScreenHeader(t("feed.title"), t("feed.subtitle"))
         SwipeSections(feed.mode, 3) { feed.showMode(it) }
         Segmented(listOf(t("feed.tabAll"), t("feed.tabMine"), t("favorites.title")), feed.mode, { feed.showMode(it) })
         Composer(model)

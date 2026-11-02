@@ -1,6 +1,7 @@
 package space.affinix.app.ui
 
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
@@ -10,6 +11,16 @@ import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxHeight
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.interaction.collectIsPressedAsState
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.animation.core.Spring
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.spring
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -36,42 +47,49 @@ import space.affinix.app.store.Phase
 import space.affinix.app.store.Result
 import space.affinix.app.store.Round
 
-/** One of the two designs of a duel. [pct] is the share of earlier voters who chose it (shown once you have answered). */
+/**
+ * One of the two designs of a duel: a card that fills the room it is given, whole of it the key to press (it gives a little under the finger), with its number in a corner and,
+ * once answered, what the earlier voters thought. [pct] is the share of them who chose it.
+ */
 @Composable
 private fun SpecimenCard(
     bitmap: ImageBitmap?,
     failed: Boolean,
-    label: String,
+    number: Int,
     onClick: (() -> Unit)?,
     picked: Boolean,
     pct: Int?,
     note: String?,
     modifier: Modifier = Modifier,
 ) {
-    val shape = RoundedCornerShape(16.dp)
-    Column(modifier, verticalArrangement = Arrangement.spacedBy(8.dp)) {
-        Box(
-            Modifier.fillMaxWidth()
-                .then(if (onClick != null) Modifier.clickable(remember { MutableInteractionSource() }, null, role = Role.Button, onClick = onClick) else Modifier)
-                .well(16.dp)
-                .border(if (picked) 2.dp else 0.dp, if (picked) C.signal else Color.Transparent, shape)
-                .padding(10.dp),
-            contentAlignment = Alignment.Center,
-        ) {
-            if (bitmap != null) {
-                Image(bitmap, label, Modifier.fillMaxWidth().aspectRatio(bitmap.width.toFloat() / bitmap.height.toFloat()), contentScale = ContentScale.Fit)
-            } else {
-                Box(Modifier.fillMaxWidth().aspectRatio(1.3f), contentAlignment = Alignment.Center) {
-                    if (failed) Txt(t("app.imageFailed"), 13, color = C.g500, align = TextAlign.Center) else Skeleton(Modifier.matchParentSize(), radius = 12.dp)
-                }
+    val shape = RoundedCornerShape(18.dp)
+    val src = remember { MutableInteractionSource() }
+    val pressed by src.collectIsPressedAsState()
+    val give by animateFloatAsState(if (pressed && Motion.enabled) .985f else 1f, spring(dampingRatio = Spring.DampingRatioMediumBouncy, stiffness = Spring.StiffnessMedium), label = "specimen")
+    Box(
+        modifier.graphicsLayer { scaleX = give; scaleY = give }
+            .well(18.dp).clip(shape)
+            .then(if (onClick != null) Modifier.clickable(src, null, role = Role.Button, onClick = onClick) else Modifier)
+            .border(if (picked) 2.dp else 1.dp, if (picked) C.signal else C.hair, shape)
+            .padding(8.dp),
+        contentAlignment = Alignment.Center,
+    ) {
+        if (bitmap != null) Image(bitmap, t("arena.console.option", "n" to number), Modifier.fillMaxSize(), contentScale = ContentScale.Fit)
+        else if (failed) Txt(t("app.imageFailed"), 13, color = C.g500, align = TextAlign.Center)
+        else Skeleton(Modifier.fillMaxSize(), radius = 12.dp)
+        Box(Modifier.align(Alignment.TopStart).padding(2.dp).size(30.dp).clip(CircleShape).background(C.canvas.copy(alpha = .8f)), contentAlignment = Alignment.Center) {
+            Txt("$number", 14, FontWeight.ExtraBold, if (picked) C.signalHi else C.g100)
+        }
+        if (picked || pct != null || note != null) {
+            Row(
+                Modifier.align(Alignment.BottomStart).padding(2.dp).clip(Pill).background(C.canvas.copy(alpha = .8f)).padding(4.dp),
+                horizontalArrangement = Arrangement.spacedBy(6.dp), verticalAlignment = Alignment.CenterVertically,
+            ) {
+                if (picked) Chip(t("arena.console.pick"), Tone.Signal)
+                if (pct != null) Chip(t("arena.console.stimWin", "pct" to pct), Tone.Neutral)
+                note?.let { Chip(it, Tone.Neutral) }
             }
         }
-        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            Txt(label, 13, FontWeight.Bold, C.g400)
-            if (picked) Chip(t("arena.console.pick"), Tone.Signal)
-            if (pct != null) Chip(t("arena.console.stimWin", "pct" to pct), Tone.Neutral)
-        }
-        note?.let { Txt(it, 12, FontWeight.Medium, C.g500) }
     }
 }
 
@@ -90,20 +108,24 @@ fun DuelScreen(model: AppModel) {
     if (r.phase == Phase.Summary) { SummaryScreen(model, r); return }
     val duel = r.duel ?: return
     androidx.compose.runtime.LaunchedEffect(duel.id) { model.ensureImages(duel) }
+    val revealed = r.phase == Phase.Reveal
+    val last = r.last
 
-    Column(Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(14.dp)) {
+    // the whole round fits the screen: the progress and the question above, the two designs sharing what is left, the actions docked at the bottom
+    Column(Modifier.fillMaxSize(), verticalArrangement = Arrangement.spacedBy(12.dp)) {
         Header(model, r)
-        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
-            Chip(t("arena.family.${duel.family}"), Tone.Info)
-            if (duel.objective) Chip(t("arena.console.eyeTag"), Tone.Warn)
-            if (duel.daily) Chip(t("arena.console.dailyTag"), Tone.Neutral)
-            if (duel.repeat) Chip(t("arena.console.repeat"), Tone.Neutral)
+        Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
+                Chip(t("arena.family.${duel.family}"), Tone.Info)
+                if (duel.objective) Chip(t("arena.console.eyeTag"), Tone.Warn)
+                if (duel.daily) Chip(t("arena.console.dailyTag"), Tone.Neutral)
+                if (duel.repeat) Chip(t("arena.console.repeat"), Tone.Neutral)
+            }
+            Txt(t("arena.q.${duel.dim}"), T.Title, FontWeight.ExtraBold, C.g50)
+            if (!revealed) Txt(t("arena.console.tapHint"), T.Small, color = C.g500)
         }
-        Txt(t("arena.q.${duel.dim}"), 22, FontWeight.ExtraBold, C.g50)
 
-        val revealed = r.phase == Phase.Reveal
-        val last = r.last
-        BoxWithConstraints(Modifier.fillMaxWidth()) {
+        BoxWithConstraints(Modifier.weight(1f).fillMaxWidth()) {
             val wide = maxWidth >= 640.dp
             @Composable
             fun Side(side: Int, m: Modifier) {
@@ -113,7 +135,7 @@ fun DuelScreen(model: AppModel) {
                 SpecimenCard(
                     bitmap = model.images[key],
                     failed = model.imageFailed[key] == true,
-                    label = t("arena.console.option", "n" to (side + 1)),
+                    number = side + 1,
                     onClick = if (!revealed) ({ model.vote(side) }) else null,
                     picked = revealed && last?.side == side,
                     pct = if (revealed && last != null) pctOf(last, canonical) else null,
@@ -121,19 +143,18 @@ fun DuelScreen(model: AppModel) {
                     modifier = m,
                 )
             }
-            if (wide) Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(16.dp)) { Side(0, Modifier.weight(1f)); Side(1, Modifier.weight(1f)) }
-            else Column(Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(14.dp)) { Side(0, Modifier.fillMaxWidth()); Side(1, Modifier.fillMaxWidth()) }
+            if (wide) Row(Modifier.fillMaxSize(), horizontalArrangement = Arrangement.spacedBy(16.dp)) { Side(0, Modifier.weight(1f).fillMaxHeight()); Side(1, Modifier.weight(1f).fillMaxHeight()) }
+            else Column(Modifier.fillMaxSize(), verticalArrangement = Arrangement.spacedBy(12.dp)) { Side(0, Modifier.weight(1f).fillMaxWidth()); Side(1, Modifier.weight(1f).fillMaxWidth()) }
         }
 
         if (revealed && last != null) Reveal(last)
 
-        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp), verticalAlignment = Alignment.CenterVertically) {
-            if (!revealed) {
-                KeyButton(t("arena.console.skip"), model::skip, Modifier.weight(1f))
-            } else {
-                KeyButton(t("arena.console.next"), model::next, Modifier.weight(1f), lit = true, big = true)
+        ActionDock {
+            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp), verticalAlignment = Alignment.CenterVertically) {
+                if (!revealed) KeyButton(t("arena.console.skip"), model::skip, Modifier.weight(1f))
+                else KeyButton(t("arena.console.next"), model::next, Modifier.weight(1f), lit = true, big = true)
+                KeyButton(t("arena.console.leave"), model::endRound)
             }
-            KeyButton(t("arena.console.leave"), model::endRound)
         }
     }
 }
@@ -152,7 +173,7 @@ private fun Header(model: AppModel, r: Round) {
 
 @Composable
 private fun Reveal(r: Result) {
-    Plate(Modifier.fillMaxWidth(), radius = 14, pad = 14) {
+    Plate(Modifier.fillMaxWidth(), radius = 14, pad = 12) {
         Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
             Txt(if (r.xp > 0) "+${r.xp} ${t("app.xp")}" else t("arena.console.repeat"), 20, FontWeight.ExtraBold, if (r.xp > 0) C.g50 else C.g400)
             if (r.bonus > 0) Chip(t("arena.console.flowBonus", "n" to r.bonus), Tone.Signal)

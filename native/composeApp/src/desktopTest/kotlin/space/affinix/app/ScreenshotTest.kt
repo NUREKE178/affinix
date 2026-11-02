@@ -155,11 +155,11 @@ class ScreenshotTest {
 
     @Test fun home() { shoot("02-home-phone", 420, 900, model(true)); shoot("02-home-desktop", 1000, 760, model(true)) }
 
-    @Test fun duelChoose() { val m = model(true); primeRound(m); shoot("03-duel-choose-phone", 420, 1100, m); shoot("03-duel-choose-desktop", 1000, 760, m) }
+    @Test fun duelChoose() { val m = model(true); primeRound(m); shoot("03-duel-choose-phone", 420, 820, m); shoot("03-duel-choose-desktop", 1000, 760, m) }
 
     @Test fun duelReveal() {
         val m = model(true); primeRound(m)
-        shoot("04-duel-reveal-phone", 420, 1300, m) { Thread.sleep(700); m.vote(0) }
+        shoot("04-duel-reveal-phone", 420, 820, m) { Thread.sleep(700); m.vote(0) }
     }
 
     @Test fun duelRevealKazakh() {
