@@ -50,9 +50,12 @@ private object Stagger {
     }
 }
 
+/** True inside a page that is drawn beside the current one while it is dragged in: its blocks are all in place at once (they must not start fading in while they are already on the screen). */
+val LocalStill = androidx.compose.runtime.staticCompositionLocalOf { false }
+
 /** Fades and slides a block up into place when it first appears; [index] pins its place in the cascade (default: in order of appearance). */
 fun Modifier.enter(index: Int? = null, rise: Dp = 16.dp): Modifier = composed {
-    val on = Motion.enabled
+    val on = Motion.enabled && !LocalStill.current
     val step = remember { index ?: Stagger.next() }
     val a = remember { Animatable(if (on) 0f else 1f) }
     LaunchedEffect(Unit) {
@@ -77,7 +80,7 @@ fun Modifier.breathe(amount: Float = .06f, periodMs: Int = 2600): Modifier = com
 /** 0 -> [target] on first showing, and smoothly to any later target; the finished value at once when motion is off. */
 @Composable
 fun rememberGrow(target: Float, durationMs: Int = 800): Float {
-    val on = Motion.enabled
+    val on = Motion.enabled && !LocalStill.current
     val a = remember { Animatable(if (on) 0f else target) }
     LaunchedEffect(target) { if (on) a.animateTo(target, tween(durationMs, easing = FastOutSlowInEasing)) else a.snapTo(target) }
     return a.value
