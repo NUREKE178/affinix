@@ -79,7 +79,9 @@ class SwipeGestureTest {
     }
 
     private fun withApp(m: AppModel, block: (Finger) -> Unit) {
-        val scene = ImageComposeScene(width = 420, height = 900, density = Density(1f)) { App(m) }
+        // TEMPORARY: an exception that kills the recomposer is otherwise lost (it only shows up in the next test that uses runTest)
+        val handler = kotlinx.coroutines.CoroutineExceptionHandler { _, e -> SwipeTrace.add("EXC " + e.stackTraceToString().take(2400).replace("\n", " ; ")) }
+        val scene = ImageComposeScene(width = 420, height = 900, density = Density(1f), coroutineContext = Dispatchers.Unconfined + handler) { App(m) }
         try {
             val f = Finger(scene)
             f.frames(30) // fonts and resources load asynchronously
