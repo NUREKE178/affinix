@@ -357,4 +357,10 @@ class ScreenshotTest {
         val m = model(true, hangPath = "organization_members"); m.tab = Tab.Research
         shoot("46-page-loading-phone", 420, 700, m) { Thread.sleep(500); m.research.section = space.affinix.app.store.ResearchModel.Section.Experiments; Thread.sleep(400) }
     }
+
+    /** the bottom bar must show every label in full on every width: the longest one is «Маркетинг» (ru, kk) */
+    @Test fun bottomBarRussian320() { val m = model(true); m.changeLang(Lang.Ru); m.tab = Tab.Research; shoot("47-bar-ru-320", 320, 560, m) { Thread.sleep(300) } }
+    @Test fun bottomBarRussian360() { val m = model(true); m.changeLang(Lang.Ru); m.tab = Tab.Chats; shoot("47-bar-ru-360", 360, 560, m) { Thread.sleep(300) } }
+    @Test fun bottomBarKazakh412() { val m = model(true); m.changeLang(Lang.Kk); m.tab = Tab.Research; shoot("47-bar-kk-412", 412, 560, m) { Thread.sleep(300) } }
+    @Test fun bottomBarEnglish360() { val m = model(true); m.tab = Tab.Profile; shoot("47-bar-en-360", 360, 560, m) { Thread.sleep(300) } }
 }

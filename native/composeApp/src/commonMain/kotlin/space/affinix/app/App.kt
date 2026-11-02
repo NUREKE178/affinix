@@ -37,6 +37,7 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
@@ -55,11 +56,17 @@ import space.affinix.app.store.Phase
 import space.affinix.app.store.Tab
 import space.affinix.app.ui.BootScreen
 import space.affinix.app.ui.C
+import space.affinix.app.ui.BAR_TABS
+import space.affinix.app.ui.BottomBar
 import space.affinix.app.ui.LoadBar
+import space.affinix.app.ui.LocalPreviewTab
+import space.affinix.app.ui.Pager
+import space.affinix.app.ui.SwipeTarget
+import space.affinix.app.ui.barIndexOf
+import space.affinix.app.ui.pagerSwipe
 import space.affinix.app.ui.LocalSwipeRegistry
 import space.affinix.app.ui.SwipeRegistry
 import space.affinix.app.ui.Typing
-import space.affinix.app.ui.swipeNavigate
 import space.affinix.app.ui.Motion
 import space.affinix.app.ui.DuelScreen
 import space.affinix.app.ui.ChatsListScreen
@@ -102,8 +109,10 @@ private fun MainShell(model: AppModel) {
     // nothing of its own to show yet (the first read of the player is on its way): the boot screen, as on the website
     val booting = model.profile == null && model.loading && round == null && model.mission.round == null
     val swipes = remember { SwipeRegistry() }
-    val barTabs = listOf(Tab.Play, Tab.Feed, Tab.Chats, Tab.People, Tab.Research, Tab.Profile)
-    fun barIndex(tab: Tab) = when (tab) { Tab.Rankings, Tab.Quests -> 0; Tab.Admin -> 5; else -> barTabs.indexOf(tab) }
+    val pager = remember { Pager() }
+    // the pages change without the cross-fade when a swipe has brought the next page in beside the current one (it is already there)
+    var paged by remember { androidx.compose.runtime.mutableStateOf(false) }
+    LaunchedEffect(pager.committed) { if (pager.committed) paged = true else { kotlinx.coroutines.delay(80); paged = false } }
     Box(Modifier.fillMaxSize()) {
     if (booting) BootScreen(t("common.bootWorkspace")) else CompositionLocalProvider(LocalSwipeRegistry provides swipes) {
     Column(
@@ -131,90 +140,57 @@ private fun MainShell(model: AppModel) {
         val inThread = round == null && mission == null && model.tab == Tab.Chats && model.messages.open != null
         Box(
             // the keyboard is up (a text field has the focus): drags belong to the text, not to the tabs
-            Modifier.weight(1f).fillMaxWidth().swipeNavigate(enabled = !inThread && round == null && mission == null && !model.profileViewer.isOpen && !Typing.active) { dir ->
+            Modifier.weight(1f).fillMaxWidth().clipToBounds().pagerSwipe(
+                pager, enabled = !inThread && round == null && mission == null && !model.profileViewer.isOpen && !Typing.active, barIndex = ::barIndexOf,
+            ) { dir ->
                 // a swipe goes to the next page inside the screen (the Arena's tabs, the sections ...) and, past its last page, to the next tab of the bar
-                swipes.target(dir) ?: barIndex(model.tab).takeIf { it >= 0 }?.let { barTabs.getOrNull(it + dir) }?.let { next -> { model.tab = next } }
+                swipes.target(dir) ?: barIndexOf(model.tab).takeIf { it >= 0 }?.let { BAR_TABS.getOrNull(it + dir)?.first }?.let { next -> SwipeTarget(next) { model.tab = next } }
             },
-            contentAlignment = Alignment.TopCenter,
         ) {
             if (inThread) {
-                Box(Modifier.widthIn(max = 760.dp).fillMaxWidth()) { ThreadScreen(model) }
+                Box(Modifier.fillMaxSize(), contentAlignment = Alignment.TopCenter) { Box(Modifier.widthIn(max = 760.dp).fillMaxWidth()) { ThreadScreen(model) } }
             } else if (round != null) {
                 // a round is a full-screen flow: it fits the screen and keeps its actions at the bottom (no scrolling to reach «Next»)
-                Box(Modifier.widthIn(max = 760.dp).fillMaxSize().padding(horizontal = 16.dp, vertical = 16.dp)) { DuelScreen(model) }
+                Box(Modifier.fillMaxSize(), contentAlignment = Alignment.TopCenter) { Box(Modifier.widthIn(max = 760.dp).fillMaxSize().padding(horizontal = 16.dp, vertical = 16.dp)) { DuelScreen(model) } }
             } else {
-                Column(Modifier.widthIn(max = 760.dp).fillMaxWidth().verticalScroll(rememberScrollState()).padding(horizontal = 16.dp, vertical = 16.dp)) {
-                    if (mission != null) space.affinix.app.ui.MissionScreen(model, mission)
-                    else Crossfade(model.tab, animationSpec = tween(if (Motion.enabled) 260 else 0), label = "screen") { tab ->
-                      when (tab) {
-                        Tab.Play -> HomeScreen(model)
-                        Tab.Quests -> QuestsScreen(model)
-                        Tab.Feed -> FeedScreen(model)
-                        Tab.Chats -> ChatsListScreen(model)
-                        Tab.People -> PeopleScreen(model)
-                        Tab.Rankings -> RankingsScreen(model)
-                        Tab.Profile -> ProfileScreen(model)
-                        Tab.Notifications -> NotificationsScreen(model)
-                        Tab.Search -> SearchScreen(model)
-                        Tab.Research -> space.affinix.app.ui.ResearchScreen(model)
-                        Tab.Admin -> space.affinix.app.ui.AdminScreen(model)
-                      }
+                // the page that is shown follows the finger ...
+                Box(Modifier.fillMaxSize().graphicsLayer { translationX = pager.dx; alpha = (1f - pager.dim) * pager.hold }, contentAlignment = Alignment.TopCenter) {
+                    Column(Modifier.widthIn(max = 760.dp).fillMaxWidth().verticalScroll(rememberScrollState()).padding(horizontal = 16.dp, vertical = 16.dp)) {
+                        if (mission != null) space.affinix.app.ui.MissionScreen(model, mission)
+                        else Crossfade(model.tab, animationSpec = tween(if (Motion.enabled && !paged) 260 else 0), label = "screen") { tab -> TabScreen(model, tab) }
+                    }
+                }
+                // ... and the page that comes is drawn beside it, so that both are seen while the finger is down
+                pager.neighbor?.let { next ->
+                    Box(Modifier.fillMaxSize().graphicsLayer { translationX = pager.dx + pager.dir * pager.width }, contentAlignment = Alignment.TopCenter) {
+                        androidx.compose.runtime.CompositionLocalProvider(LocalSwipeRegistry provides null, LocalPreviewTab provides next) {
+                            Column(Modifier.widthIn(max = 760.dp).fillMaxWidth().verticalScroll(rememberScrollState()).padding(horizontal = 16.dp, vertical = 16.dp)) { TabScreen(model, next) }
+                        }
                     }
                 }
             }
         }
-        if (round == null && mission == null && !inThread) TabBar(model)
+        if (round == null && mission == null && !inThread) BottomBar(model, pager)
     }
     }
     space.affinix.app.ui.ProfileViewerHost(model)
     }
 }
 
+/** The screen of a tab. */
 @Composable
-private fun TabBar(model: AppModel) {
-    val tabs = listOf(
-        Triple(Tab.Play, "arena", t("arena.tabs.play")),
-        Triple(Tab.Feed, "globe", t("feed.title")),
-        Triple(Tab.Chats, "chat", t("shell.tabbar.messages")),
-        Triple(Tab.People, "friends", t("friends.title")),
-        Triple(Tab.Research, "overview", t("shell.tabbar.marketers")),
-        Triple(Tab.Profile, "user", t("arena.tabs.profile")),
-    )
-    fun isOn(tab: Tab) = model.tab == tab || (tab == Tab.Play && (model.tab == Tab.Rankings || model.tab == Tab.Quests)) || (tab == Tab.Profile && model.tab == Tab.Admin)
-    val index = tabs.indexOfFirst { isOn(it.first) }.coerceAtLeast(0)
-    // the raised key under the active tab slides (with a little overshoot) from one tab to the next
-    val pos by animateFloatAsState(index.toFloat(), if (Motion.enabled) spring(dampingRatio = .62f, stiffness = 380f) else tween(0), label = "tabKey")
-    val density = LocalDensity.current
-    var rowSize by remember { mutableStateOf(IntSize.Zero) }
-    Box(Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
-        Box(Modifier.widthIn(max = 760.dp).fillMaxWidth().padding(horizontal = 12.dp, vertical = 10.dp).plate(18.dp).padding(6.dp)) {
-            if (rowSize.width > 0) {
-                val itemW = rowSize.width / tabs.size
-                Box(
-                    Modifier.offset { IntOffset((pos * itemW).roundToInt(), 0) }
-                        .size(with(density) { itemW.toDp() }, with(density) { rowSize.height.toDp() }).key(12.dp),
-                )
-            }
-            Row(Modifier.fillMaxWidth().onSizeChanged { rowSize = it }) {
-                for ((tab, icon, label) in tabs) {
-                    val on = isOn(tab)
-                    val tint by animateColorAsState(if (on) C.g50 else C.g500, tween(if (Motion.enabled) 220 else 0), label = "tabTint")
-                    val lift by animateFloatAsState(if (on && Motion.enabled) 1.14f else 1f, spring(dampingRatio = Spring.DampingRatioMediumBouncy, stiffness = Spring.StiffnessLow), label = "tabLift")
-                    Column(
-                        Modifier.weight(1f)
-                            .clickable(remember { MutableInteractionSource() }, null, role = Role.Tab) { model.tab = tab }
-                            .padding(vertical = 8.dp),
-                        horizontalAlignment = Alignment.CenterHorizontally,
-                        verticalArrangement = Arrangement.spacedBy(3.dp),
-                    ) {
-                        Box(Modifier.graphicsLayer { scaleX = lift; scaleY = lift }, contentAlignment = Alignment.TopEnd) {
-                            Ico(icon, color = tint, size = 22.dp)
-                            if (tab == Tab.Chats && model.messages.unreadTotal > 0) Box(Modifier.padding(start = 20.dp).background(C.signal, Pill).padding(horizontal = 5.dp)) { Txt("${model.messages.unreadTotal}", 10, FontWeight.ExtraBold, C.signalInk) }
-                        }
-                        Txt(label, 11, if (on) FontWeight.ExtraBold else FontWeight.Medium, tint, maxLines = 1)
-                    }
-                }
-            }
-        }
+private fun TabScreen(model: AppModel, tab: Tab) {
+    when (tab) {
+        Tab.Play -> HomeScreen(model)
+        Tab.Quests -> QuestsScreen(model)
+        Tab.Feed -> FeedScreen(model)
+        Tab.Chats -> ChatsListScreen(model)
+        Tab.People -> PeopleScreen(model)
+        Tab.Rankings -> RankingsScreen(model)
+        Tab.Profile -> ProfileScreen(model)
+        Tab.Notifications -> NotificationsScreen(model)
+        Tab.Search -> SearchScreen(model)
+        Tab.Research -> space.affinix.app.ui.ResearchScreen(model)
+        Tab.Admin -> space.affinix.app.ui.AdminScreen(model)
     }
 }

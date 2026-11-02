@@ -2,6 +2,7 @@ package space.affinix.app.ui
 
 import androidx.compose.animation.core.CubicBezierEasing
 import androidx.compose.animation.core.FastOutLinearInEasing
+import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.animate
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.gestures.awaitEachGesture
@@ -26,6 +27,8 @@ import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.pointer.PointerType
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.layout.onSizeChanged
+import space.affinix.app.store.Tab
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.foundation.ScrollState
 import androidx.compose.ui.unit.dp
@@ -82,9 +85,18 @@ object SwipeRules {
     fun dismisses(dy: Float, ms: Long) = dy > 90f || (dy > 36f && dy / max(ms, 1L) > .5f)
 }
 
+/**
+ * Where a swipe goes: the action, and the page that comes next to this one while the finger drags (a tab of the app, or null when there is nothing that can be drawn beside
+ * the current page: then the page only stretches, slides out and fades).
+ */
+class SwipeTarget(val preview: Tab?, val action: () -> Unit) {
+    operator fun invoke() = action()
+}
+
 /** The pages a screen has inside itself (the tabs of the Arena, the sections of the marketers' tab ...) registered by the screen, so that one gesture handler above can use them. */
 class SwipeRegistry {
-    class Sections(val index: Int, val count: Int, val go: (Int) -> Unit)
+    /** [preview] says which tab a page [index] is, when it is one (so that it can be drawn beside the current page while it is dragged in). */
+    class Sections(val index: Int, val count: Int, val preview: ((Int) -> Tab?)? = null, val go: (Int) -> Unit)
 
     private val entries = ArrayList<Pair<Any, Sections>>()
 
@@ -97,54 +109,82 @@ class SwipeRegistry {
     fun remove(owner: Any) { entries.removeAll { it.first === owner } }
 
     /** what a swipe in direction [dir] (+1 next, -1 previous) does inside the newest registered screen, or null when it has no such page */
-    fun target(dir: Int): (() -> Unit)? {
+    fun target(dir: Int): SwipeTarget? {
         val s = entries.lastOrNull()?.second ?: return null
         val to = s.index + dir
-        return if (to in 0 until s.count) ({ s.go(to) }) else null
+        return if (to in 0 until s.count) SwipeTarget(s.preview?.invoke(to)) { s.go(to) } else null
     }
 }
 
 val LocalSwipeRegistry = staticCompositionLocalOf<SwipeRegistry?> { null }
 
+/** The tab a page that is drawn beside the current one stands for (null on the current page itself): the Arena's own tabs light the right part while they are dragged. */
+val LocalPreviewTab = staticCompositionLocalOf<Tab?> { null }
+
 /** A screen that has pages inside itself says so: [index] of [count], and how to go to another. A swipe past the last page goes on to the next tab of the bar. */
 @Composable
-fun SwipeSections(index: Int, count: Int, go: (Int) -> Unit) {
+fun SwipeSections(index: Int, count: Int, preview: ((Int) -> Tab?)? = null, go: (Int) -> Unit) {
     val reg = LocalSwipeRegistry.current ?: return
     val owner = remember { Any() }
     val goNow by rememberUpdatedState(go)
-    DisposableEffect(index, count) { reg.set(owner, SwipeRegistry.Sections(index, count) { goNow(it) }); onDispose { } }
+    DisposableEffect(index, count) { reg.set(owner, SwipeRegistry.Sections(index, count, preview) { goNow(it) }); onDispose { } }
     DisposableEffect(Unit) { onDispose { reg.remove(owner) } }
 }
 
 private val SettleEase = CubicBezierEasing(.22f, .9f, .3f, 1f)
 
 /**
- * Swiping the content sideways goes to the next / previous page (the website's swipeTabs.js): the content follows the finger with some resistance, and slides out when the
- * swipe is far or quick enough; where there is no page the content stretches a little and springs back. Only touch counts (not a mouse), the screen edges are left to the
- * system, and a drag that a scroller, a strip or a field has already taken is not touched.
- * [target] answers which action a swipe in a direction (+1 next, -1 previous) has, or null.
+ * The state of a swipe between pages, shared by what moves (the shell, which draws the current page and the one that comes beside it) and what follows (the bottom bar, whose
+ * lit place moves with the finger). Nothing in it is drawn by itself.
  */
-fun Modifier.swipeNavigate(enabled: Boolean, target: (dir: Int) -> (() -> Unit)?): Modifier = composed {
+class Pager {
+    /** how far the current page has moved (px) */
+    var dx by mutableFloatStateOf(0f)
+    var width by mutableIntStateOf(0)
+    /** +1: the next page is coming (the finger goes left); -1: the previous */
+    var dir by mutableIntStateOf(0)
+    /** the page that comes beside the current one, when it can be drawn */
+    var neighbor by mutableStateOf<Tab?>(null)
+    /** its place in the bottom bar */
+    var neighborBar by mutableIntStateOf(-1)
+    /** how transparent the current page is, and a factor for its opacity: only used where there is no neighbour to draw */
+    var dim by mutableFloatStateOf(0f)
+    var hold by mutableFloatStateOf(1f)
+    /** set just before a swipe changes the tab, so that the bar puts its lit place at the new tab at once instead of travelling there again */
+    var committed by mutableStateOf(false)
+
+    /** how much of the way to the neighbour has been gone (0 .. 1) */
+    val amount: Float get() = if (width > 0) (kotlin.math.abs(dx) / width).coerceIn(0f, 1f) else 0f
+
+    fun reset() { dx = 0f; dim = 0f; hold = 1f; neighbor = null; neighborBar = -1; dir = 0 }
+}
+
+/**
+ * Swiping the content sideways goes to the next / previous page, the way a pager does (the website's swipeTabs rules and WhatsApp's feel): the current page follows the finger
+ * and the next one comes in beside it, so both are seen at once; let go far or quick enough and the pages finish the way, otherwise they come back. Where nothing can be drawn
+ * beside the page (the modes of the feed, the sections ...) it follows with some resistance, slides out and fades instead. Only touch counts (not a mouse), the screen edges are
+ * left to the system, and a drag that a scroller, a strip or a field has already taken is not touched.
+ * [target] answers which page a swipe in a direction (+1 next, -1 previous) goes to, or null; [barIndex] is the place of a tab in the bottom bar.
+ */
+fun Modifier.pagerSwipe(pager: Pager, enabled: Boolean, barIndex: (Tab) -> Int, target: (dir: Int) -> SwipeTarget?): Modifier = composed {
     if (!enabled) return@composed this
     val density = LocalDensity.current.density
     val scope = rememberCoroutineScope()
     val targetNow by rememberUpdatedState(target)
-    var shift by remember { mutableFloatStateOf(0f) }  // px
-    var dim by remember { mutableFloatStateOf(0f) }
-    var hold by remember { mutableFloatStateOf(1f) }
+    val barIndexNow by rememberUpdatedState(barIndex)
     val job = remember { arrayOfNulls<Job>(1) }
 
     this
-        .graphicsLayer { translationX = shift; alpha = (1f - dim) * hold }
+        .onSizeChanged { pager.width = it.width }
         .pointerInput(Unit) {
             awaitEachGesture {
                 val down = awaitFirstDown(requireUnconsumed = false)
                 if (down.type != PointerType.Touch) return@awaitEachGesture
                 if (down.position.x < SwipeRules.EDGE * density || down.position.x > size.width - SwipeRules.EDGE * density) return@awaitEachGesture
                 job[0]?.cancel(); job[0] = null
-                shift = 0f; dim = 0f; hold = 1f
+                pager.reset()
                 var locked = false
-                var action: (() -> Unit)? = null
+                var goal: SwipeTarget? = null
                 var dxDp = 0f
                 var ms = 1L
                 while (true) {
@@ -160,33 +200,51 @@ fun Modifier.swipeNavigate(enabled: Boolean, target: (dir: Int) -> (() -> Unit)?
                         if (!SwipeRules.locks(dxDp, dyDp)) continue
                         locked = true
                     }
-                    action = targetNow(SwipeRules.direction(dxDp))
-                    shift = SwipeRules.follow(dxDp, action != null) * density
-                    dim = SwipeRules.fade(dxDp, action != null)
+                    val dir = SwipeRules.direction(dxDp)
+                    goal = targetNow(dir)
+                    pager.dir = dir
+                    val beside = goal?.preview
+                    if (beside != null) {
+                        pager.neighbor = beside; pager.neighborBar = barIndexNow(beside)
+                        pager.dx = (change.position.x - down.position.x).coerceIn(-pager.width.toFloat(), pager.width.toFloat())
+                        pager.dim = 0f
+                    } else {
+                        pager.neighbor = null; pager.neighborBar = -1
+                        pager.dx = SwipeRules.follow(dxDp, goal != null) * density
+                        pager.dim = SwipeRules.fade(dxDp, goal != null)
+                    }
                     change.consume()
                 }
                 if (!locked) return@awaitEachGesture
                 val widthDp = size.width / density
-                val go = action
-                val startShift = shift
-                val startDim = dim
+                val go = goal
+                val beside = go?.preview
+                val startDx = pager.dx
+                val startDim = pager.dim
                 val dir = SwipeRules.direction(dxDp)
                 if (go != null && SwipeRules.commits(dxDp, ms, widthDp, true)) {
                     job[0] = scope.launch {
-                        if (Motion.enabled) {
-                            // out: slide a little further in the direction of the swipe and fade; then the page changes and the new one fades in
-                            animate(0f, 1f, animationSpec = tween(130, easing = FastOutLinearInEasing)) { p, _ ->
-                                shift = startShift + (-dir * 44f * density - startShift) * p; hold = 1f - p; dim = startDim * (1f - p)
+                        if (beside != null) {
+                            // the pages finish the way: the neighbour arrives at the place of the current page, then the app says it is the current page
+                            if (Motion.enabled) animate(startDx, -dir * pager.width.toFloat(), animationSpec = tween(250, easing = FastOutSlowInEasing)) { v, _ -> pager.dx = v }
+                            pager.committed = true
+                            go()
+                            pager.reset()
+                        } else {
+                            if (Motion.enabled) {
+                                animate(0f, 1f, animationSpec = tween(130, easing = FastOutLinearInEasing)) { p, _ ->
+                                    pager.dx = startDx + (-dir * 44f * density - startDx) * p; pager.hold = 1f - p; pager.dim = startDim * (1f - p)
+                                }
                             }
+                            go()
+                            pager.dx = 0f; pager.dim = 0f; pager.hold = if (Motion.enabled) 0f else 1f
+                            if (Motion.enabled) animate(0f, 1f, animationSpec = tween(220)) { p, _ -> pager.hold = p }
                         }
-                        go()
-                        shift = 0f; dim = 0f; hold = if (Motion.enabled) 0f else 1f
-                        if (Motion.enabled) animate(0f, 1f, animationSpec = tween(220)) { p, _ -> hold = p }
                     }
                 } else {
                     job[0] = scope.launch {
-                        if (Motion.enabled) animate(0f, 1f, animationSpec = tween(240, easing = SettleEase)) { p, _ -> shift = startShift * (1f - p); dim = startDim * (1f - p) }
-                        shift = 0f; dim = 0f
+                        if (Motion.enabled) animate(0f, 1f, animationSpec = tween(240, easing = SettleEase)) { p, _ -> pager.dx = startDx * (1f - p); pager.dim = startDim * (1f - p) }
+                        pager.reset()
                     }
                 }
             }

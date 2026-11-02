@@ -141,8 +141,8 @@ fun HomeScreen(model: AppModel) {
 @Composable
 fun ArenaTabs(model: AppModel) {
     val parts = listOf(space.affinix.app.store.Tab.Play, space.affinix.app.store.Tab.Quests, space.affinix.app.store.Tab.Rankings)
-    val at = parts.indexOf(model.tab).coerceAtLeast(0)
-    SwipeSections(at, parts.size) { model.tab = parts[it] }
+    val at = parts.indexOf(LocalPreviewTab.current ?: model.tab).coerceAtLeast(0)
+    SwipeSections(at, parts.size, preview = { parts[it] }) { model.tab = parts[it] }
     Segmented(listOf(t("arena.tabs.play"), t("arena.tabs.quests"), t("arena.tabs.rankings")), at, { model.tab = parts[it] })
 }
 
