@@ -29,7 +29,9 @@ import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.pointer.PointerType
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.input.pointer.util.VelocityTracker
+import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.layout.onSizeChanged
+import androidx.compose.ui.layout.positionInRoot
 import space.affinix.app.store.Tab
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.foundation.ScrollState
@@ -195,9 +197,14 @@ fun Modifier.pagerSwipe(pager: Pager, enabled: Boolean, barIndex: (Tab) -> Int, 
     val barIndexNow by rememberUpdatedState(barIndex)
     val job = remember { arrayOfNulls<Job>(1) }
     DisposableEffect(Unit) { SwipeTrace.add("pager in"); onDispose { SwipeTrace.add("pager out") } }
+    val lastBox = remember { arrayOfNulls<String>(1) }
 
     this
         .onSizeChanged { pager.width = it.width }
+        .onGloballyPositioned { c ->
+            val r = "${c.size.width}x${c.size.height}@${c.positionInRoot().x.toInt()},${c.positionInRoot().y.toInt()}"
+            if (lastBox[0] != r) { lastBox[0] = r; SwipeTrace.add("box $r") }
+        }
         .pointerInput("trace") {
             awaitPointerEventScope {
                 while (true) {

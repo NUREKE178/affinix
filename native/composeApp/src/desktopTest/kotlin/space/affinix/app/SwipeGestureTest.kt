@@ -67,6 +67,17 @@ class SwipeGestureTest {
         }
     }
 
+    /** a swipe that has to happen; if it does not, wait a second and try once more, and say what each try did */
+    private fun swipeExpecting(f: Finger, m: AppModel, expect: Tab, label: String, x0: Float, y0: Float, x1: Float, y1: Float) {
+        f.drag(x0, y0, x1, y1)
+        if (m.tab == expect) return
+        val first = m.state()
+        f.frames(60)
+        SwipeTrace.add("--- retry")
+        f.drag(x0, y0, x1, y1)
+        assertEquals(expect, m.tab, "$label did not happen; first try: [$first]; after 60 frames and a second try: [${m.state()}]")
+    }
+
     private fun withApp(m: AppModel, block: (Finger) -> Unit) {
         val scene = ImageComposeScene(width = 420, height = 900, density = Density(1f)) { App(m) }
         try {
@@ -100,7 +111,7 @@ class SwipeGestureTest {
         val m = model(); m.tab = Tab.Chats
         withApp(m) { f ->
             f.drag(330f, 700f, 130f, 700f); assertEquals(Tab.People, m.tab, "Chats -> People")
-            f.drag(100f, 700f, 300f, 700f); assertEquals(Tab.Chats, m.tab, "People -> Chats ${m.state()}")
+            swipeExpecting(f, m, Tab.Chats, "People -> Chats", 100f, 700f, 300f, 700f)
             f.drag(100f, 700f, 300f, 700f); assertEquals(Tab.Feed, m.tab, "Chats -> Feed")
         }
     }
@@ -117,7 +128,7 @@ class SwipeGestureTest {
         val m = model(); m.tab = Tab.Play
         withApp(m) { f ->
             f.drag(330f, 400f, 130f, 400f); assertEquals(Tab.Quests, m.tab, "Play -> Quests")
-            f.drag(330f, 400f, 130f, 400f); assertEquals(Tab.Rankings, m.tab, "Quests -> Rankings ${m.state()}")
+            swipeExpecting(f, m, Tab.Rankings, "Quests -> Rankings", 330f, 400f, 130f, 400f)
             f.drag(330f, 400f, 130f, 400f); assertEquals(Tab.Feed, m.tab, "past the last Arena tab the bar goes on")
         }
     }

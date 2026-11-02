@@ -42,6 +42,7 @@ import androidx.compose.ui.draw.drawWithContent
 import androidx.compose.runtime.movableContentOf
 import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.input.key.Key
@@ -121,7 +122,17 @@ private fun MainShell(model: AppModel) {
     LaunchedEffect(model.tab) { if (pager.committed) { androidx.compose.runtime.withFrameNanos { }; androidx.compose.runtime.withFrameNanos { }; pager.committed = false } }
     val pages = remember(model) { HashMap<Tab, @Composable () -> Unit>() }
     fun pageOf(tab: Tab): @Composable () -> Unit = pages.getOrPut(tab) { movableContentOf { Page(model, tab) } }
-    Box(Modifier.fillMaxSize()) {
+    Box(
+        Modifier.fillMaxSize().pointerInput("root-trace") {
+            awaitPointerEventScope {
+                while (true) {
+                    val e = awaitPointerEvent(androidx.compose.ui.input.pointer.PointerEventPass.Initial)
+                    if (e.type == androidx.compose.ui.input.pointer.PointerEventType.Press || e.type == androidx.compose.ui.input.pointer.PointerEventType.Release)
+                        space.affinix.app.ui.SwipeTrace.add("root ${e.type} ${e.changes.firstOrNull()?.position?.x?.toInt()},${e.changes.firstOrNull()?.position?.y?.toInt()}")
+                }
+            }
+        },
+    ) {
     if (booting) BootScreen(t("common.bootWorkspace")) else CompositionLocalProvider(LocalSwipeRegistry provides swipes) {
     Column(
         Modifier.fillMaxSize()
