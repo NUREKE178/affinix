@@ -24,6 +24,8 @@ import space.affinix.app.net.Session
 import space.affinix.app.store.AppModel
 import space.affinix.app.store.Tab
 import space.affinix.app.ui.Motion
+import space.affinix.app.ui.SwipeTrace
+import space.affinix.app.ui.Typing
 import kotlin.test.BeforeTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -32,7 +34,10 @@ import kotlin.test.assertTrue
 /** Real touches on the real screen (the Skia window): a swipe changes the tab, chains out of the Arena's tabs, and leaves alone what is not a swipe. */
 @OptIn(ExperimentalComposeUiApi::class)
 class SwipeGestureTest {
-    @BeforeTest fun still() { Motion.enabled = false }
+    @BeforeTest fun still() { Motion.enabled = false; SwipeTrace.clear() }
+
+    /** what the app was doing, for the message of a swipe that did not happen */
+    private fun AppModel.state() = "tab=$tab typing=${Typing.fields} viewer=${profileViewer.isOpen} round=${game.round.value != null} mission=${mission.round != null} thread=${messages.open != null} trace=[${SwipeTrace.text()}]"
 
     private fun model(): AppModel {
         val engine = MockEngine { respond("{}", HttpStatusCode.OK, headersOf(HttpHeaders.ContentType, "application/json")) }
@@ -95,7 +100,7 @@ class SwipeGestureTest {
         val m = model(); m.tab = Tab.Chats
         withApp(m) { f ->
             f.drag(330f, 700f, 130f, 700f); assertEquals(Tab.People, m.tab, "Chats -> People")
-            f.drag(100f, 700f, 300f, 700f); assertEquals(Tab.Chats, m.tab, "People -> Chats")
+            f.drag(100f, 700f, 300f, 700f); assertEquals(Tab.Chats, m.tab, "People -> Chats ${m.state()}")
             f.drag(100f, 700f, 300f, 700f); assertEquals(Tab.Feed, m.tab, "Chats -> Feed")
         }
     }
@@ -112,7 +117,7 @@ class SwipeGestureTest {
         val m = model(); m.tab = Tab.Play
         withApp(m) { f ->
             f.drag(330f, 400f, 130f, 400f); assertEquals(Tab.Quests, m.tab, "Play -> Quests")
-            f.drag(330f, 400f, 130f, 400f); assertEquals(Tab.Rankings, m.tab, "Quests -> Rankings")
+            f.drag(330f, 400f, 130f, 400f); assertEquals(Tab.Rankings, m.tab, "Quests -> Rankings ${m.state()}")
             f.drag(330f, 400f, 130f, 400f); assertEquals(Tab.Feed, m.tab, "past the last Arena tab the bar goes on")
         }
     }

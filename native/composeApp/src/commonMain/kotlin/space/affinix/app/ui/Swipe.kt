@@ -146,6 +146,14 @@ fun SwipeSections(index: Int, count: Int, preview: ((Int) -> Tab?)? = null, go: 
 
 private val SettleEase = CubicBezierEasing(.22f, .9f, .3f, 1f)
 
+/** TEMPORARY: what the pager's gesture did, read by the CI test when a swipe does not happen. */
+object SwipeTrace {
+    val lines = ArrayList<String>()
+    fun add(s: String) { synchronized(lines) { if (lines.size < 400) lines += s } }
+    fun clear() { synchronized(lines) { lines.clear() } }
+    fun text(): String = synchronized(lines) { lines.joinToString(" | ") }
+}
+
 /**
  * The state of a swipe between pages, shared by what moves (the shell, which draws the current page and the one that comes beside it) and what follows (the bottom bar, whose
  * lit place moves with the finger). Nothing in it is drawn by itself.
@@ -192,8 +200,9 @@ fun Modifier.pagerSwipe(pager: Pager, enabled: Boolean, barIndex: (Tab) -> Int, 
         .pointerInput(Unit) {
             awaitEachGesture {
                 val down = awaitFirstDown(requireUnconsumed = false)
+                SwipeTrace.add("down ${down.position.x.toInt()},${down.position.y.toInt()} ${down.type} w=${size.width} pw=${pager.width}")
                 if (down.type != PointerType.Touch) return@awaitEachGesture
-                if (down.position.x < SwipeRules.EDGE * density || down.position.x > size.width - SwipeRules.EDGE * density) return@awaitEachGesture
+                if (down.position.x < SwipeRules.EDGE * density || down.position.x > size.width - SwipeRules.EDGE * density) { SwipeTrace.add("edge"); return@awaitEachGesture }
                 job[0]?.cancel(); job[0] = null
                 pager.reset()
                 var locked = false
@@ -206,15 +215,16 @@ fun Modifier.pagerSwipe(pager: Pager, enabled: Boolean, barIndex: (Tab) -> Int, 
                     val event = awaitPointerEvent()
                     val change = event.changes.firstOrNull { it.id == down.id } ?: break
                     tracker.addPosition(change.uptimeMillis, change.position)
-                    if (!locked && change.isConsumed) return@awaitEachGesture // a scroller, a strip or a field took it
+                    if (!locked && change.isConsumed) { SwipeTrace.add("consumed"); return@awaitEachGesture } // a scroller, a strip or a field took it
                     dxDp = (change.position.x - down.position.x) / density
                     val dyDp = (change.position.y - down.position.y) / density
                     ms = change.uptimeMillis - down.uptimeMillis
                     if (!change.pressed) break
                     if (!locked) {
-                        if (SwipeRules.gaveUp(dxDp, dyDp)) return@awaitEachGesture
+                        if (SwipeRules.gaveUp(dxDp, dyDp)) { SwipeTrace.add("gaveUp"); return@awaitEachGesture }
                         if (!SwipeRules.locks(dxDp, dyDp)) continue
                         locked = true
+                        SwipeTrace.add("locked")
                     }
                     val dir = SwipeRules.direction(dxDp)
                     goal = targetNow(dir)
@@ -231,7 +241,7 @@ fun Modifier.pagerSwipe(pager: Pager, enabled: Boolean, barIndex: (Tab) -> Int, 
                     }
                     change.consume()
                 }
-                if (!locked) return@awaitEachGesture
+                if (!locked) { SwipeTrace.add("never locked"); return@awaitEachGesture }
                 val widthDp = size.width / density
                 val go = goal
                 val beside = go?.preview
@@ -240,8 +250,11 @@ fun Modifier.pagerSwipe(pager: Pager, enabled: Boolean, barIndex: (Tab) -> Int, 
                 val dir = SwipeRules.direction(dxDp)
                 val vx = tracker.calculateVelocity().x // px per second
                 val width = pager.width.toFloat()
+                SwipeTrace.add("release dx=${dxDp.toInt()} vx=${vx.toInt()} ms=$ms goal=${go?.preview} goes=${go != null && SwipeRules.goes(dxDp, vx / density, ms, widthDp, true)}")
                 if (go != null && SwipeRules.goes(dxDp, vx / density, ms, widthDp, true)) {
                     job[0] = scope.launch {
+                      try {
+                        SwipeTrace.add("commit start")
                         if (beside != null) {
                             // the pages carry on at the speed of the finger (a spring, not a fixed time), and the neighbour arrives at the place of the current page
                             if (Motion.enabled) animate(startDx, -dir * width, initialVelocity = vx, animationSpec = spring(dampingRatio = 1f, stiffness = 380f)) { v, _ -> pager.dx = v.coerceIn(-width, width) }
@@ -259,6 +272,8 @@ fun Modifier.pagerSwipe(pager: Pager, enabled: Boolean, barIndex: (Tab) -> Int, 
                             }
                             pager.reset()
                         }
+                        SwipeTrace.add("commit done")
+                      } catch (e: Throwable) { SwipeTrace.add("commit threw $e"); throw e }
                     }
                 } else {
                     job[0] = scope.launch {
