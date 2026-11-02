@@ -1,6 +1,10 @@
 package space.affinix.app
 
+import space.affinix.app.store.Tab
+import space.affinix.app.ui.BAR_TABS
 import space.affinix.app.ui.SwipeRegistry
+import space.affinix.app.ui.barIndexOf
+import space.affinix.app.ui.fitSp
 import space.affinix.app.ui.SwipeRules
 import space.affinix.app.ui.splitEllipsis
 import kotlin.test.Test
@@ -97,5 +101,36 @@ class SwipeTest {
         assertEquals("Opening your workspace" to true, splitEllipsis("Opening your workspace … "))
         assertEquals("Done" to false, splitEllipsis("Done"))
         assertEquals("A…B" to false, splitEllipsis("A…B")) // only a trailing one
+    }
+
+    @Test fun theLabelsOfTheBarAreFittedNotCut() {
+        val sizes = listOf(11f, 10.5f, 10f, 9.5f, 9f, 8.5f, 8f)
+        // a label of 9 letters that is 5.6 px wide per letter at 10 sp: 56 px at 10, 61.6 at 11
+        fun widest(sp: Float) = 9 * (sp * .56f)
+        assertEquals(11f, fitSp(sizes, 70f) { widest(it) })
+        assertEquals(10f, fitSp(sizes, 52f) { widest(it) })
+        assertEquals(9f, fitSp(sizes, 46f) { widest(it) })
+        assertEquals(8f, fitSp(sizes, 10f) { widest(it) }) // when nothing fits, the smallest (never a size that is skipped for being too big)
+        assertEquals(10.5f, fitSp(sizes, 53f) { widest(it) }) // 10.5 sp -> 52.9
+    }
+
+    @Test fun everyScreenHasItsPlaceInTheBarOrNone() {
+        assertEquals(6, BAR_TABS.size)
+        assertEquals(listOf(Tab.Play, Tab.Feed, Tab.Chats, Tab.People, Tab.Research, Tab.Profile), BAR_TABS.map { it.first })
+        assertEquals(0, barIndexOf(Tab.Play)); assertEquals(0, barIndexOf(Tab.Quests)); assertEquals(0, barIndexOf(Tab.Rankings)) // the Arena is one tab
+        assertEquals(5, barIndexOf(Tab.Profile)); assertEquals(5, barIndexOf(Tab.Admin)) // the admin panel opens from the profile
+        assertEquals(-1, barIndexOf(Tab.Notifications)); assertEquals(-1, barIndexOf(Tab.Search)) // the bell and the search are not tabs
+    }
+
+    @Test fun theArenasPagesAreDrawnBesideEachOtherWhileTheyAreDragged() {
+        val reg = SwipeRegistry()
+        val arena = Any()
+        val parts = listOf(Tab.Play, Tab.Quests, Tab.Rankings)
+        reg.set(arena, SwipeRegistry.Sections(index = 0, count = 3, preview = { parts[it] }) { })
+        assertEquals(Tab.Quests, reg.target(1)!!.preview)
+        reg.set(arena, SwipeRegistry.Sections(index = 1, count = 3, preview = { parts[it] }) { })
+        assertEquals(Tab.Play, reg.target(-1)!!.preview); assertEquals(Tab.Rankings, reg.target(1)!!.preview)
+        reg.set(arena, SwipeRegistry.Sections(index = 1, count = 3) { }) // pages that cannot be drawn beside (the feed's modes): nothing to preview
+        assertNull(reg.target(1)!!.preview)
     }
 }

@@ -43,6 +43,14 @@ class SwipeGestureTest {
     private class Finger(val scene: ImageComposeScene) {
         var nanos = 0L
         fun frames(n: Int) { repeat(n) { Thread.sleep(16); nanos += 16_000_000L; scene.render(nanos) } }
+        /** presses and moves without letting go, then writes what is on the screen */
+        fun holdAndShoot(name: String, x0: Float, y0: Float, x1: Float, y1: Float) {
+            send(PointerEventType.Press, x0, y0, PointerType.Touch); frames(1)
+            for (i in 1..10) { send(PointerEventType.Move, x0 + (x1 - x0) * i / 10, y0 + (y1 - y0) * i / 10, PointerType.Touch); frames(2) }
+            frames(8)
+            val img = scene.render(nanos + 16_000_000L)
+            java.io.File(System.getProperty("shots") ?: "build/shots").also { it.mkdirs() }.resolve("$name.png").writeBytes(img.encodeToData(org.jetbrains.skia.EncodedImageFormat.PNG)!!.bytes)
+        }
         private fun send(type: PointerEventType, x: Float, y: Float, pointer: PointerType) =
             scene.sendPointerEvent(type, Offset(x, y), timeMillis = nanos / 1_000_000L, type = pointer)
 
@@ -126,6 +134,15 @@ class SwipeGestureTest {
             assertTrue(m.profileViewer.isOpen)
             f.drag(210f, 440f, 215f, 700f)
             assertTrue(!m.profileViewer.isOpen, "pulled down far enough: the card is gone")
+        }
+    }
+
+    /** the pager: halfway through a swipe both pages are on the screen, side by side (the picture shows it) */
+    @Test fun halfwayThroughASwipeBothPagesAreSeen() {
+        val m = model(); m.tab = Tab.Chats
+        withApp(m) { f ->
+            f.holdAndShoot("48-pager-mid-phone", 330f, 600f, 150f, 604f)
+            assertEquals(Tab.Chats, m.tab, "nothing has changed until the finger is lifted")
         }
     }
 }

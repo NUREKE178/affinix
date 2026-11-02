@@ -72,7 +72,7 @@ fun Txt(
 
 /** A raised key. [lit] is the one orange primary action of a screen. */
 @Composable
-fun KeyButton(text: String, onClick: () -> Unit, modifier: Modifier = Modifier, lit: Boolean = false, enabled: Boolean = true, big: Boolean = false, compact: Boolean = false) {
+fun KeyButton(text: String, onClick: () -> Unit, modifier: Modifier = Modifier, lit: Boolean = false, enabled: Boolean = true, big: Boolean = false, compact: Boolean = false, danger: Boolean = false) {
     val src = remember { MutableInteractionSource() }
     val pressed by src.collectIsPressedAsState()
     val hovered by src.collectIsHoveredAsState()
@@ -87,7 +87,7 @@ fun KeyButton(text: String, onClick: () -> Unit, modifier: Modifier = Modifier, 
             .clickable(src, null, enabled = enabled, role = Role.Button, onClick = onClick)
             .padding(horizontal = if (compact) 8.dp else 18.dp, vertical = if (big) 15.dp else 11.dp),
         contentAlignment = Alignment.Center,
-    ) { Txt(text, if (compact) 13 else 15, FontWeight.Bold, if (lit) C.signalInk else C.g100, align = TextAlign.Center, maxLines = 1) }
+    ) { Txt(text, if (compact) 13 else 15, FontWeight.Bold, if (lit) C.signalInk else if (danger) C.bad else C.g100, align = TextAlign.Center, maxLines = 1) }
 }
 
 /** A round key with an icon (the send key and the photo key of a chat); [lit] is the one orange primary action, [active] tints the icon of a plain key. */

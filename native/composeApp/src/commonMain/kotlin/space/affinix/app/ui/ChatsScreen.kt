@@ -61,9 +61,9 @@ fun ChatsListScreen(model: AppModel) {
         if (q.isEmpty()) msg.conversations else msg.conversations.filter { (it.other.name ?: "").lowercase().contains(q) || (it.other.username ?: "").lowercase().contains(q) }
     }
     Column(Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(14.dp)) {
-        Txt(t("messages.title"), 24, FontWeight.ExtraBold, C.g50)
+        ScreenHeader(t("messages.title"))
         msg.notice?.let { Chip(t(it), Tone.Info) }
-        if (msg.loaded && msg.conversations.isNotEmpty()) Field(query, { query = it }, t("messages.search"))
+        if (msg.loaded && msg.conversations.isNotEmpty()) SearchField(query, { query = it }, t("messages.search"))
         when {
             msg.failed && !msg.loaded -> Plate(Modifier.fillMaxWidth()) {
                 Txt(t("friends.loadErrorTitle"), 16, FontWeight.Bold, C.g50); Spacer(Modifier.height(4.dp))

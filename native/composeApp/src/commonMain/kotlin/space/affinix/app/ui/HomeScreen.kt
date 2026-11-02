@@ -28,6 +28,16 @@ import space.affinix.app.res.Res
 import space.affinix.app.res.logo
 import space.affinix.app.store.AppModel
 
+/** The search and the bell, with the number of what has not been read yet. */
+@Composable
+fun ArenaActions(model: AppModel) {
+    IcoAction("search", { model.tab = space.affinix.app.store.Tab.Search }, filled = false)
+    Box(contentAlignment = Alignment.TopEnd) {
+        IcoAction("bell", { model.tab = space.affinix.app.store.Tab.Notifications }, active = model.notifications.unread > 0, filled = false)
+        if (model.notifications.unread > 0) Box(Modifier.padding(top = 2.dp).background(C.signal, Pill).padding(horizontal = 5.dp)) { Txt("${model.notifications.unread}", 10, FontWeight.ExtraBold, C.signalInk) }
+    }
+}
+
 @Composable
 fun LevelHeader(model: AppModel, modifier: Modifier = Modifier) {
     val p = model.profile
@@ -40,11 +50,7 @@ fun LevelHeader(model: AppModel, modifier: Modifier = Modifier) {
                     Txt("${t("arena.level")} ${prog.level}", 18, FontWeight.ExtraBold, C.g50)
                     Chip(t("arena.rank.${Rules.rankForLevel(prog.level)}"), Tone.Neutral)
                     Box(Modifier.weight(1f))
-                    IcoAction("search", { model.tab = space.affinix.app.store.Tab.Search }, filled = false)
-                    Box(contentAlignment = Alignment.TopEnd) {
-                        IcoAction("bell", { model.tab = space.affinix.app.store.Tab.Notifications }, active = model.notifications.unread > 0, filled = false)
-                        if (model.notifications.unread > 0) Box(Modifier.padding(top = 2.dp).background(C.signal, Pill).padding(horizontal = 5.dp)) { Txt("${model.notifications.unread}", 10, FontWeight.ExtraBold, C.signalInk) }
-                    }
+                    ArenaActions(model)
                 }
                 Bar(prog.ratio)
                 Txt("${prog.into} / ${prog.span} ${t("app.xp")}", 12, FontWeight.Medium, C.g400)
@@ -135,8 +141,8 @@ fun HomeScreen(model: AppModel) {
 @Composable
 fun ArenaTabs(model: AppModel) {
     val parts = listOf(space.affinix.app.store.Tab.Play, space.affinix.app.store.Tab.Quests, space.affinix.app.store.Tab.Rankings)
-    val at = parts.indexOf(model.tab).coerceAtLeast(0)
-    SwipeSections(at, parts.size) { model.tab = parts[it] }
+    val at = parts.indexOf(LocalPreviewTab.current ?: model.tab).coerceAtLeast(0)
+    SwipeSections(at, parts.size, preview = { parts[it] }) { model.tab = parts[it] }
     Segmented(listOf(t("arena.tabs.play"), t("arena.tabs.quests"), t("arena.tabs.rankings")), at, { model.tab = parts[it] })
 }
 
@@ -147,6 +153,7 @@ private fun MarathonPlate(model: AppModel) {
     LaunchedEffect(model.dailyComplete, model.marathonReady) { if (model.dailyComplete && model.marathonReady) model.loadRace() }
     var claimNote by androidx.compose.runtime.remember { androidx.compose.runtime.mutableStateOf<String?>(null) }
     val scope = androidx.compose.runtime.rememberCoroutineScope()
+    if (!model.dailyComplete) { LockedStage("trophy", t("arena.marathon.stage3"), t("arena.marathon.locked"), "${model.dailyDone}/${Rules.DAILY_SET_SIZE}"); return }
     Plate(Modifier.fillMaxWidth()) {
         Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             Ico("trophy", color = C.signalHi, size = 20.dp)

@@ -45,6 +45,7 @@ private fun optionLabel(item: CrowdItem): String = item.label?.takeIf { it.isNot
 fun MissionPlate(model: AppModel) {
     val m = model.mission
     LaunchedEffect(model.dailyComplete) { if (model.dailyComplete) m.loadQueue() }
+    if (!model.dailyComplete) { LockedStage("results", t("crowd.mission.stage2"), t("crowd.mission.locked"), "${model.dailyDone}/${space.affinix.app.Rules.DAILY_SET_SIZE}"); return }
     Plate(Modifier.fillMaxWidth()) {
         Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             Ico("results", color = C.signalHi, size = 20.dp)

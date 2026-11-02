@@ -72,6 +72,9 @@ for (const p of PREFIXES) for (const k of leaves(get(ru, p), p)) if (!KEYS.inclu
 // only the apps have these
 const EXTRA = {
   "app.name": { ru: "Affinix", kk: "Affinix", en: "Affinix" },
+  "arena.console.tapHint": { ru: "Нажмите на вариант, который нравится больше", kk: "Көбірек ұнайтын нұсқаны таңдаңыз", en: "Tap the one you prefer" },
+  "app.editProfile": { ru: "Редактировать профиль", kk: "Профильді өңдеу", en: "Edit profile" },
+  "app.statsTitle": { ru: "Статистика", kk: "Статистика", en: "Stats" },
   "reports.appSubtitle": { ru: "Итоги и выводы по одному эксперименту. Отчёт можно скопировать как текст.", kk: "Бір эксперимент бойынша нәтижелер мен қорытындылар. Есепті мәтін ретінде көшіруге болады.", en: "Results and conclusions for one experiment. You can copy the report as text." },
   "messages.loadFailed": { ru: "Не удалось загрузить сообщения", kk: "Хабарламаларды жүктеу мүмкін болмады", en: "Couldn't load the messages" },
   "reports.copy": { ru: "Скопировать отчёт", kk: "Есепті көшіру", en: "Copy report" },
