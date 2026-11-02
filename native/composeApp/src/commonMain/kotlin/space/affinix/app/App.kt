@@ -1,6 +1,5 @@
 package space.affinix.app
 
-import androidx.compose.animation.Crossfade
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.animateFloatAsState
@@ -39,7 +38,6 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.draw.drawWithContent
-import androidx.compose.runtime.movableContentOf
 import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.pointer.pointerInput
@@ -116,12 +114,13 @@ private fun MainShell(model: AppModel) {
     val swipes = remember { SwipeRegistry() }
     val pager = remember { Pager() }
     LaunchedEffect(booting, model.tab) { space.affinix.app.ui.SwipeTrace.add("shell booting=$booting tab=${model.tab}") }
-    // every page is one piece that can be carried: the page that is dragged in beside the current one is the very same composition that becomes the current page (nothing is
-    // built again, nothing fades in a second time), and it keeps its own scroll position
     // the flag that says a swipe has just changed the tab is cleared here, two frames later, when the page and the bar have both read it (the bar's tab may not change at all: Play -> Quests)
     LaunchedEffect(model.tab) { if (pager.committed) { androidx.compose.runtime.withFrameNanos { }; androidx.compose.runtime.withFrameNanos { }; pager.committed = false } }
-    val pages = remember(model) { HashMap<Tab, @Composable () -> Unit>() }
-    fun pageOf(tab: Tab): @Composable () -> Unit = pages.getOrPut(tab) { movableContentOf { Page(model, tab) } }
+    // the pages that are on the screen: the current one, the one that is dragged in beside it and, for a moment after a tap, the one that fades out. Every page is one composition that keeps
+    // its place under its own key, so when the page beside becomes the current one nothing is moved or built again (the runtime refused to move a composition: «Cannot insert LayoutNode ...
+    // because it already has a parent», which stopped the whole screen after the first swipe)
+    val visible = remember { androidx.compose.runtime.mutableStateListOf(model.tab) }
+    val shownOnce = remember { booleanArrayOf(false) }
     Box(
         Modifier.fillMaxSize().pointerInput("root-trace") {
             awaitPointerEventScope {
@@ -172,21 +171,25 @@ private fun MainShell(model: AppModel) {
                 // a round is a full-screen flow: it fits the screen and keeps its actions at the bottom (no scrolling to reach «Next»)
                 Box(Modifier.fillMaxSize(), contentAlignment = Alignment.TopCenter) { Box(Modifier.widthIn(max = 760.dp).fillMaxSize().padding(horizontal = 16.dp, vertical = 16.dp)) { DuelScreen(model) } }
             } else {
-                // the page that is shown follows the finger (and, as it leaves, darkens a little: a cue of depth) ...
-                Box(
-                    Modifier.fillMaxSize().graphicsLayer { translationX = pager.dx; alpha = (1f - pager.dim) * pager.hold }
-                        .drawWithContent { drawContent(); if (pager.neighbor != null) drawRect(Color.Black.copy(alpha = .24f * pager.amount)) },
-                ) {
+                // the page that is shown follows the finger ...
+                Box(Modifier.fillMaxSize()) {
                     if (mission != null) Box(Modifier.fillMaxSize(), contentAlignment = Alignment.TopCenter) {
                         Column(Modifier.widthIn(max = 760.dp).fillMaxWidth().verticalScroll(rememberScrollState()).padding(horizontal = 16.dp, vertical = 16.dp)) { space.affinix.app.ui.MissionScreen(model, mission) }
                     }
-                    // a swipe has already brought the page in: it is put in at once, with no cross-fade (this reads the flag in the same composition that changes the tab)
-                    else Crossfade(model.tab, animationSpec = tween(if (Motion.enabled && !pager.committed) 260 else 0), label = "screen") { tab -> pageOf(tab)() }
-                }
-                // ... and the page that comes is drawn beside it, so that both are seen while the finger is down
-                pager.neighbor?.let { next ->
-                    Box(Modifier.fillMaxSize().graphicsLayer { translationX = pager.dx + pager.dir * pager.width }) {
-                        androidx.compose.runtime.CompositionLocalProvider(LocalSwipeRegistry provides null, LocalPreviewTab provides next, LocalStill provides true) { pageOf(next)() }
+                    else {
+                        // the first page the screen shows is there at once; a page that a tap brings fades in over the one that leaves
+                        val firstShow = !shownOnce[0]
+                        androidx.compose.runtime.SideEffect { shownOnce[0] = true }
+                        pager.neighbor?.let { if (it !in visible) visible.add(it) }
+                        if (model.tab !in visible) visible.add(model.tab)
+                        // a swipe has already brought the page in (or there is no motion): only the wanted pages stay, at once, with no cross-fade
+                        if (pager.committed || !Motion.enabled) visible.retainAll { it == model.tab || it == pager.neighbor }
+                        // ... and the page that comes is drawn beside it (it is later in the list, so on top), so that both are seen while the finger is down
+                        for (tab in visible.toList()) androidx.compose.runtime.key(tab) {
+                            PageLayer(model, tab, swipes, pager, startFull = firstShow || tab == pager.neighbor || !Motion.enabled) { gone ->
+                                if (gone != model.tab && gone != pager.neighbor) visible.remove(gone)
+                            }
+                        }
                     }
                 }
             }
@@ -198,7 +201,43 @@ private fun MainShell(model: AppModel) {
     }
 }
 
-/** A page of the shell: the screen of a tab on its own scroll, as one piece that can be carried from beside the current page to its place. */
+/**
+ * One page on the screen. Its role is read from the state: the current page (follows the finger), the page beside it (comes in from the side; its blocks are all in place at once, and it
+ * does not take part in the swipes of the screen), or a page that is leaving after a tap (fades out where it is). A page keeps its composition when its role changes.
+ */
+@Composable
+private fun PageLayer(model: AppModel, tab: Tab, swipes: SwipeRegistry, pager: Pager, startFull: Boolean, onGone: (Tab) -> Unit) {
+    val isCurrent = tab == model.tab
+    val isBeside = !isCurrent && tab == pager.neighbor
+    val role = if (isCurrent) 2 else if (isBeside) 1 else 0
+    val before = remember { intArrayOf(role) }
+    val roleBefore = before[0]
+    androidx.compose.runtime.SideEffect { before[0] = role }
+    // dragged in beside the current page and then not wanted (the swipe was brought back): it is gone at once, from where it is, not faded
+    if (role == 0 && roleBefore == 1) { androidx.compose.runtime.SideEffect { onGone(tab) }; return }
+    val fadeIn = remember { androidx.compose.animation.core.Animatable(if (startFull) 1f else 0f) }
+    val instant = pager.committed || !Motion.enabled
+    LaunchedEffect(role != 0, instant) {
+        val to = if (role != 0) 1f else 0f
+        if (instant) fadeIn.snapTo(to) else fadeIn.animateTo(to, tween(260))
+        if (to == 0f) onGone(tab)
+    }
+    Box(
+        Modifier.fillMaxSize()
+            .graphicsLayer {
+                alpha = fadeIn.value * (if (isCurrent) (1f - pager.dim) * pager.hold else 1f)
+                translationX = if (isCurrent) pager.dx else if (isBeside) pager.dx + pager.dir * pager.width else 0f
+            }
+            // the page that leaves darkens a little: a cue of depth
+            .drawWithContent { drawContent(); if (isCurrent && pager.neighbor != null) drawRect(Color.Black.copy(alpha = .24f * pager.amount)) },
+    ) {
+        CompositionLocalProvider(LocalSwipeRegistry provides (if (isCurrent) swipes else null), LocalPreviewTab provides (if (isCurrent) null else tab), LocalStill provides !isCurrent) {
+            Page(model, tab)
+        }
+    }
+}
+
+/** A page of the shell: the screen of a tab on its own scroll. */
 @Composable
 private fun Page(model: AppModel, tab: Tab) {
     Box(Modifier.fillMaxSize(), contentAlignment = Alignment.TopCenter) {
