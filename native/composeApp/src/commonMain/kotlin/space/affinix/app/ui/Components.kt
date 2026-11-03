@@ -100,6 +100,7 @@ fun RoundKey(
     val pressed by src.collectIsPressedAsState()
     val hovered by src.collectIsHoveredAsState()
     val give by animateFloatAsState(if (pressed && Motion.enabled) .9f else 1f, spring(dampingRatio = Spring.DampingRatioMediumBouncy, stiffness = Spring.StiffnessMedium))
+    val pulse = androidx.compose.runtime.remember { androidx.compose.runtime.mutableIntStateOf(0) } // the icon plays its gesture on every tap
     Box(
         modifier
             .size(size)
@@ -108,9 +109,9 @@ fun RoundKey(
             .then(if (lit) Modifier.lit(size / 2, pressed) else Modifier.key(size / 2, pressed, hovered))
             .hoverable(src)
             .semantics { contentDescription = description }
-            .clickable(src, null, enabled = enabled, role = Role.Button, onClick = onClick),
+            .clickable(src, null, enabled = enabled, role = Role.Button) { pulse.intValue++; onClick() },
         contentAlignment = Alignment.Center,
-    ) { Ico(icon, color = if (lit) C.signalInk else if (active) C.signalHi else C.g300, size = 22.dp, filled = false) }
+    ) { Ico(icon, color = if (lit) C.signalInk else if (active) C.signalHi else C.g300, size = 22.dp, filled = false, pulse = pulse.intValue) }
 }
 
 /** A text-only action (links under a form). */
@@ -182,26 +183,6 @@ fun Field(
 fun LangSwitch(current: Lang, onPick: (Lang) -> Unit, modifier: Modifier = Modifier) {
     Row(modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
         for (l in Lang.entries) KeyButton(l.label, { onPick(l) }, Modifier.weight(1f), lit = l == current, compact = true)
-    }
-}
-
-/** A two- or three-way segmented control; the selected key sits "pressed in". */
-@Composable
-fun Segmented(labels: List<String>, selected: Int, onPick: (Int) -> Unit, modifier: Modifier = Modifier) {
-    // up to three labels share the row; with more the labels keep their own width and the row scrolls sideways, so none is cut off
-    val scrolls = labels.size >= 4
-    Row(
-        modifier.fillMaxWidth().well(14.dp).then(if (scrolls) Modifier.horizontalScroll(rememberScrollState()) else Modifier).padding(4.dp),
-        horizontalArrangement = Arrangement.spacedBy(4.dp),
-    ) {
-        labels.forEachIndexed { i, label ->
-            val on = i == selected
-            Box(
-                (if (scrolls) Modifier else Modifier.weight(1f)).then(if (on) Modifier.key(10.dp, down = false) else Modifier)
-                    .clickable(remember { MutableInteractionSource() }, null, role = Role.Tab) { onPick(i) }.padding(vertical = 10.dp, horizontal = if (scrolls) 14.dp else 0.dp),
-                contentAlignment = Alignment.Center,
-            ) { Txt(label, 14, if (on) FontWeight.Bold else FontWeight.Medium, if (on) C.g50 else C.g400, maxLines = 1) }
-        }
     }
 }
 

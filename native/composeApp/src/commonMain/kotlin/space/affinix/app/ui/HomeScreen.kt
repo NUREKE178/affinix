@@ -143,7 +143,19 @@ fun ArenaTabs(model: AppModel) {
     val parts = listOf(space.affinix.app.store.Tab.Play, space.affinix.app.store.Tab.Quests, space.affinix.app.store.Tab.Rankings)
     val at = parts.indexOf(LocalPreviewTab.current ?: model.tab).coerceAtLeast(0)
     SwipeSections(at, parts.size, preview = { parts[it] }) { model.tab = parts[it] }
-    Segmented(listOf(t("arena.tabs.play"), t("arena.tabs.quests"), t("arena.tabs.rankings")), at, { model.tab = parts[it] })
+    val labels = listOf(t("arena.tabs.play"), t("arena.tabs.quests"), t("arena.tabs.rankings"))
+    val glide = LocalKeyGlide.current
+    val pager = LocalPager.current
+    if (glide == null || pager == null) { Segmented(labels, at, { model.tab = parts[it] }); return }
+    // ONE key for the three parts, as on the website: it rests under the part that is current (the page that leaves and the page that comes both draw it in the same place), follows the
+    // finger while a page is dragged in, and glides when a part is tapped
+    val settled = parts.indexOf(model.tab).let { if (it >= 0) it else at }
+    fun keyNow(): KeyEdges {
+        val rest = glide.edges(settled)
+        val b = pager.neighbor?.let { parts.indexOf(it) } ?: -1
+        return if (b >= 0 && b != settled && glide.q >= 1f && pager.amount > 0f) KeyGeometry.between(KeyEdges.at(settled), KeyEdges.at(b), pager.amount) else rest
+    }
+    Segmented(labels, at, { model.tab = parts[it] }, keyAt = ::keyNow, beforePick = { i -> if (i != settled) glide.launchTo(i, keyNow()) })
 }
 
 

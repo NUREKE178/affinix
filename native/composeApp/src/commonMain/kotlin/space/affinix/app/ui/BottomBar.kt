@@ -117,18 +117,19 @@ fun BottomBar(model: AppModel, pager: Pager, modifier: Modifier = Modifier) {
             }
             Row(Modifier.fillMaxSize()) {
                 BAR_TABS.forEachIndexed { i, (tab, icon) ->
+                    val pulse = rememberPulse(current == i)
                     // how near the lit pill is to this tab (1 under it, 0 a tab away): the colours follow it, so they change with the finger too
                     val near = (1f - abs(pos - i)).coerceIn(0f, 1f).let { if (current < 0) 0f else it }
                     val c = lerp(C.g400, C.g50, near)
                     Column(
                         Modifier.weight(1f).fillMaxHeight()
-                            .clickable(remember { MutableInteractionSource() }, null, role = Role.Tab) { model.tab = tab }
+                            .clickable(remember { MutableInteractionSource() }, null, role = Role.Tab) { pulse.intValue++; model.tab = tab }
                             .padding(top = 6.dp),
                         horizontalAlignment = Alignment.CenterHorizontally,
                     ) {
                         Box(Modifier.height(30.dp).fillMaxWidth(), contentAlignment = Alignment.Center) {
                             Box(contentAlignment = Alignment.TopEnd) {
-                                Ico(icon, color = c, size = 22.dp)
+                                Ico(icon, color = c, size = 22.dp, pulse = pulse.intValue)
                                 if (tab == Tab.Chats && model.messages.unreadTotal > 0) {
                                     Box(
                                         Modifier.offset(x = 9.dp, y = (-5).dp).defaultMinSize(minWidth = 16.dp, minHeight = 16.dp).clip(Pill).background(C.signal)
