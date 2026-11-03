@@ -1,6 +1,10 @@
 package space.affinix.app
 
 import androidx.compose.ui.ExperimentalComposeUiApi
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.padding
+import androidx.compose.ui.unit.dp
 import androidx.compose.ui.ImageComposeScene
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Canvas
@@ -363,4 +367,32 @@ class ScreenshotTest {
     @Test fun bottomBarRussian360() { val m = model(true); m.changeLang(Lang.Ru); m.tab = Tab.Chats; shoot("47-bar-ru-360", 360, 560, m) { Thread.sleep(300) } }
     @Test fun bottomBarKazakh412() { val m = model(true); m.changeLang(Lang.Kk); m.tab = Tab.Research; shoot("47-bar-kk-412", 412, 560, m) { Thread.sleep(300) } }
     @Test fun bottomBarEnglish360() { val m = model(true); m.tab = Tab.Profile; shoot("47-bar-en-360", 360, 560, m) { Thread.sleep(300) } }
+
+    /** the Play tab lit: the hexagon with the bolt, and the strip of the Arena with its key under «Play» */
+    @Test fun bottomBarPlayEnglish360() { val m = model(true); m.tab = Tab.Play; shoot("47-bar-play-en-360", 360, 560, m) { Thread.sleep(300) } }
+
+    /** the gesture of each icon caught at five moments (rest, 20 %, 40 %, 60 %, 80 % of the way): the rows are the icons, the columns the moments (picture 50) */
+    @Test fun iconGestures() {
+        val names = listOf("arena", "globe", "chat", "friends", "overview", "user", "bell", "heart", "bookmark", "comment", "settings", "trophy", "flame", "search", "bolt", "send")
+        val moments = listOf(1f, .2f, .4f, .6f, .8f)
+        val scene = ImageComposeScene(width = 300, height = 24 + names.size * 40, density = Density(1f)) {
+            androidx.compose.foundation.layout.Column(
+                androidx.compose.ui.Modifier.fillMaxSize().background(space.affinix.app.ui.C.rail).padding(12.dp),
+                verticalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(10.dp),
+            ) {
+                for (n in names) androidx.compose.foundation.layout.Row(horizontalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(30.dp)) {
+                    for (p in moments) space.affinix.app.ui.IcoAt(n, p, size = 30.dp)
+                }
+            }
+        }
+        try {
+            val img = scene.render(0L)
+            File(outDir, "50-icon-gestures.png").writeBytes(img.encodeToData(EncodedImageFormat.PNG)!!.bytes)
+            val px = org.jetbrains.skia.Bitmap().also { it.allocN32Pixels(img.width, img.height) }.also { img.readPixels(it) }
+            val bg = px.getColor(2, 2)
+            var other = 0
+            for (y in 0 until img.height step 2) for (x in 0 until img.width step 2) if (px.getColor(x, y) != bg) other++
+            assertTrue(other > 800, "the icon sheet looks empty ($other non-background samples)")
+        } finally { scene.close() }
+    }
 }

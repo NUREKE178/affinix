@@ -225,10 +225,8 @@ internal val ICONS: Map<String, List<IcShape>> = mapOf(
         IcShape("M14 11a5 5 0 0 0-7.5-.5l-3 3a5 5 0 0 0 7 7l1.7-1.7", 0, true, 2f, false),
     ),
     "arena" to listOf(
-        IcShape("M4.6 5.6h4a2.4 2.4 0 0 1 2.4 2.4v8.2a2.4 2.4 0 0 1 -2.4 2.4h-4a2.4 2.4 0 0 1 -2.4 -2.4v-8.2a2.4 2.4 0 0 1 2.4 -2.4z", 1, true, 2f, false),
-        IcShape("M5.45 11.4a1.15 1.15 0 1 0 2.3 0a1.15 1.15 0 1 0 -2.3 0z", 2, false, 2f, false),
-        IcShape("M15.4 5.6h4a2.4 2.4 0 0 1 2.4 2.4v8.2a2.4 2.4 0 0 1 -2.4 2.4h-4a2.4 2.4 0 0 1 -2.4 -2.4v-8.2a2.4 2.4 0 0 1 2.4 -2.4z", 1, true, 2f, false),
-        IcShape("M18.5 8.2l-2.7 4h1.8l-.6 3.4 2.9-4.2h-1.9z", 0, true, 2f, false),
+        IcShape("M12 2.2l8.2 4.7v10.2L12 21.8l-8.2-4.7V6.9z", 1, true, 2f, false),
+        IcShape("M13.6 5.6L7.8 13.2h3.7l-1 5.2 6-8h-3.7z", 2, false, 2f, false),
     ),
     "flame" to listOf(
         IcShape("M12 2.8c.6 3 4.6 4.8 4.6 9.2a4.6 4.6 0 0 1-9.2 0c0-1.9.9-3.1 1.9-4.1.2 1.3.9 2 1.6 2.3.1-2.3.3-4.6 1.1-7.4z", 1, true, 2f, false),

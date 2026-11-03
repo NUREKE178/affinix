@@ -54,6 +54,9 @@ class SwipeGestureTest {
         private fun send(type: PointerEventType, x: Float, y: Float, pointer: PointerType) =
             scene.sendPointerEvent(type, Offset(x, y), timeMillis = nanos / 1_000_000L, type = pointer)
 
+        /** a quick touch: down and up in the same place */
+        fun tap(x: Float, y: Float) { send(PointerEventType.Press, x, y, PointerType.Touch); frames(2); send(PointerEventType.Release, x, y, PointerType.Touch); frames(8) }
+
         /** presses at (x0, y0), moves in small steps to (x1, y1) and lets go */
         fun drag(x0: Float, y0: Float, x1: Float, y1: Float, pointer: PointerType = PointerType.Touch, steps: Int = 10) {
             send(PointerEventType.Press, x0, y0, pointer); frames(1)
@@ -125,6 +128,22 @@ class SwipeGestureTest {
             f.drag(8f, 400f, 250f, 400f); assertEquals(Tab.People, m.tab, "from the screen edge the system's own back gesture takes it")
             f.drag(330f, 400f, 300f, 402f); assertEquals(Tab.People, m.tab, "a short drag is not far enough")
         }
+    }
+
+    /** the strip of the Arena (Play / Quests / Rankings): a tap on a part goes there (the 420 px window: three labels of 124 px with 4 px between, 16 px of margin) */
+    @Test fun aTapOnAPartOfTheStripGoesThere() {
+        val m = model(); m.tab = Tab.Play
+        withApp(m) { f ->
+            f.tap(338f, 40f); assertEquals(Tab.Rankings, m.tab, "tapped «Rankings»")
+            f.tap(82f, 40f); assertEquals(Tab.Play, m.tab, "tapped «Play»")
+            f.tap(210f, 40f); assertEquals(Tab.Quests, m.tab, "tapped «Quests»")
+        }
+    }
+
+    /** halfway through a swipe from Play to Quests: both pages are on the screen and the key of the strip is between the two labels on both of them (picture 49) */
+    @Test fun theKeyOfTheStripFollowsTheFinger() {
+        val m = model(); m.tab = Tab.Play
+        withApp(m) { f -> f.holdAndShoot("49-arena-strip-mid-phone", 330f, 400f, 130f, 400f); assertEquals(Tab.Play, m.tab, "the finger is still down") }
     }
 
     @Test fun theProfileCardIsPulledDownToClose() {

@@ -112,6 +112,8 @@ private fun MainShell(model: AppModel) {
     val booting = model.profile == null && model.loading && round == null && model.mission.round == null
     val swipes = remember { SwipeRegistry() }
     val pager = remember { Pager() }
+    val keyScope = androidx.compose.runtime.rememberCoroutineScope()
+    val keyGlide = remember { space.affinix.app.ui.KeyGlide(keyScope, 0) }
     // the flag that says a swipe has just changed the tab is cleared here, two frames later, when the page and the bar have both read it (the bar's tab may not change at all: Play -> Quests)
     LaunchedEffect(model.tab) { if (pager.committed) { androidx.compose.runtime.withFrameNanos { }; androidx.compose.runtime.withFrameNanos { }; pager.committed = false } }
     // the pages that are on the screen: the current one, the one that is dragged in beside it and, for a moment after a tap, the one that fades out. Every page is one composition that keeps
@@ -120,7 +122,7 @@ private fun MainShell(model: AppModel) {
     val visible = remember { androidx.compose.runtime.mutableStateListOf(model.tab) }
     val shownOnce = remember { booleanArrayOf(false) }
     Box(Modifier.fillMaxSize()) {
-    if (booting) BootScreen(t("common.bootWorkspace")) else CompositionLocalProvider(LocalSwipeRegistry provides swipes) {
+    if (booting) BootScreen(t("common.bootWorkspace")) else CompositionLocalProvider(LocalSwipeRegistry provides swipes, space.affinix.app.ui.LocalPager provides pager, space.affinix.app.ui.LocalKeyGlide provides keyGlide) {
     Column(
         Modifier.fillMaxSize()
             .focusRequester(focus)
