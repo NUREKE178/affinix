@@ -50,6 +50,9 @@ class MessagesModel(private val api: Api, private val scope: CoroutineScope, pri
         private set
     var threadLoaded by mutableStateOf(false)
         private set
+    /** the first message of the other person that was not read when this chat was opened: the line «New messages» stands before it (null = nothing new, or not known yet) */
+    var newFromId by mutableStateOf<String?>(null)
+        private set
     var hasOlder by mutableStateOf(false)
         private set
     /** what went wrong while the first page of the open chat was read (shown with a retry), null when nothing did */
@@ -100,11 +103,11 @@ class MessagesModel(private val api: Api, private val scope: CoroutineScope, pri
     // ---- one chat -----------------------------------------------------------------------------------------------------------------------
 
     fun openChat(c: Conversation) {
-        open = c; thread = emptyList(); threadLoaded = false; threadError = null; hasOlder = false; replyTo = null; editing = null
+        open = c; thread = emptyList(); threadLoaded = false; newFromId = null; threadError = null; hasOlder = false; replyTo = null; editing = null
         scope.launch { loadThread(); markRead() }
     }
 
-    fun closeChat() { open = null; thread = emptyList(); replyTo = null; editing = null; refresh() }
+    fun closeChat() { open = null; thread = emptyList(); newFromId = null; replyTo = null; editing = null; refresh() }
 
     /** Starts (or finds) the chat with a friend and opens it. */
     fun openWith(p: Person) {
@@ -181,6 +184,8 @@ class MessagesModel(private val api: Api, private val scope: CoroutineScope, pri
         try {
             val fresh = fetchThread(c.id)
             if (open?.id != c.id) return
+            // the line «New messages» is decided once, by the first reading of the chat (what arrives later, while it is open, is read at once)
+            if (!threadLoaded) newFromId = fresh.firstOrNull { it.senderId != me() && !it.read }?.id
             val keep = thread.filter { it.status != null && fresh.none { f -> f.id == it.id } } // still being sent / failed
             thread = (fresh + keep).sortedBy { epochOfIso(it.createdAt) ?: Long.MAX_VALUE }
             hasOlder = fresh.size >= PAGE; threadLoaded = true; threadError = null

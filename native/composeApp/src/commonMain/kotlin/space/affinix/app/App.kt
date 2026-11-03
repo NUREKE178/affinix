@@ -105,7 +105,7 @@ fun App(model: AppModel) {
 private fun MainShell(model: AppModel) {
     val round by model.game.round.collectAsState()
     val focus = remember { FocusRequester() }
-    LaunchedEffect(round?.idx, round?.phase, model.profileViewer.isOpen) { runCatching { focus.requestFocus() } }
+    LaunchedEffect(round?.idx, round?.phase, model.profileViewer.isOpen, model.imageViewer.isOpen) { runCatching { focus.requestFocus() } }
     // the unread badge on the chats tab
     LaunchedEffect(model.signedIn) { while (true) { model.messages.refresh(); model.notifications.refresh(); kotlinx.coroutines.delay(30_000) } }
     // nothing of its own to show yet (the first read of the player is on its way): the boot screen, as on the website
@@ -128,6 +128,15 @@ private fun MainShell(model: AppModel) {
             .focusRequester(focus)
             .focusable()
             .onPreviewKeyEvent { e ->
+                // an open picture takes Esc and the arrows (and nothing else gets through while it is up)
+                if (model.imageViewer.isOpen) {
+                    if (e.type == KeyEventType.KeyDown) when (e.key) {
+                        Key.Escape -> { model.imageViewer.close(); return@onPreviewKeyEvent true }
+                        Key.DirectionLeft -> { model.imageViewer.go(-1); return@onPreviewKeyEvent true }
+                        Key.DirectionRight -> { model.imageViewer.go(1); return@onPreviewKeyEvent true }
+                    }
+                    return@onPreviewKeyEvent false
+                }
                 // an open profile card takes Esc (and nothing else gets through while it is up)
                 if (model.profileViewer.isOpen) {
                     if (e.type == KeyEventType.KeyDown && e.key == Key.Escape) { model.profileViewer.close(); return@onPreviewKeyEvent true }
@@ -149,7 +158,7 @@ private fun MainShell(model: AppModel) {
         Box(
             // the keyboard is up (a text field has the focus): drags belong to the text, not to the tabs
             Modifier.weight(1f).fillMaxWidth().clipToBounds().pagerSwipe(
-                pager, enabled = !inThread && round == null && mission == null && !model.profileViewer.isOpen && !Typing.active, barIndex = ::barIndexOf,
+                pager, enabled = !inThread && round == null && mission == null && !model.profileViewer.isOpen && !model.imageViewer.isOpen && !Typing.active, barIndex = ::barIndexOf,
             ) { dir ->
                 // a swipe goes to the next page inside the screen (the Arena's tabs, the sections ...) and, past its last page, to the next tab of the bar
                 swipes.target(dir) ?: barIndexOf(model.tab).takeIf { it >= 0 }?.let { BAR_TABS.getOrNull(it + dir)?.first }?.let { next -> SwipeTarget(next) { model.tab = next } }
@@ -188,6 +197,7 @@ private fun MainShell(model: AppModel) {
     }
     }
     space.affinix.app.ui.ProfileViewerHost(model)
+    space.affinix.app.ui.ImageViewerHost(model)
     }
 }
 

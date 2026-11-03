@@ -164,6 +164,35 @@ class MessagesTest {
         assertEquals(0L, r.messages.conversations[0].unread)
     }
 
+    @Test fun theLineNewMessagesStandsBeforeTheFirstOneThatWasNotReadWhenTheChatOpenedAndStaysThere() = runTest {
+        val r = rig()
+        r.messages.refreshNow()
+        r.messages.openChat(r.messages.conversations[0])
+        until { r.messages.threadLoaded }
+        assertEquals("m2", r.messages.newFromId) // m2 is the other person's and unread; m1 is mine
+        r.messages.poll(); Thread.sleep(150) // the next reading of the chat (now everything is marked read) does not move the line
+        assertEquals("m2", r.messages.newFromId)
+        r.messages.closeChat()
+        assertNull(r.messages.newFromId)
+    }
+
+    @Test fun aChatWhereEverythingWasReadHasNoNewLine() = runTest {
+        val allRead = """[{"id":"m2","conversation_id":"c1","sender_id":"u2","body":"see you","created_at":"2026-10-30T09:00:00+00:00","read_at":"2026-10-30T09:01:00+00:00"}]"""
+        val r = Rig({ m, path, _, _ ->
+            when {
+                path.endsWith("/conversations") -> convs
+                path.endsWith("/rpc/my_unread_counts") -> "[]"
+                path.endsWith("/profiles_public") -> PROFILES
+                path.endsWith("/messages") && m == "GET" -> allRead
+                else -> "null"
+            }
+        })
+        r.messages.refreshNow()
+        r.messages.openChat(r.messages.conversations[0])
+        until { r.messages.threadLoaded }
+        assertNull(r.messages.newFromId)
+    }
+
     @Test fun aSentMessageShowsAtOnceThenIsConfirmedByTheServer() = runTest {
         val r = rig()
         r.messages.refreshNow(); r.messages.openChat(r.messages.conversations[0]); until { r.messages.threadLoaded }

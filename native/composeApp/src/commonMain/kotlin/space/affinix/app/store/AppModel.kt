@@ -107,6 +107,8 @@ class AppModel(
     /** the one profile card of the app: tap a picture or a name anywhere and it opens */
     var profileViewer by mutableStateOf(ProfileViewerModel(api, scope, { api.session?.userId }, feed))
         private set
+    /** the one full-screen picture viewer of the app: a tap on a picture of a chat or of a post opens it */
+    val imageViewer = ImageViewerModel()
 
     /** a signed-out player's posts, friends and chats must not show for the next one */
     private fun freshSocial() {
@@ -121,6 +123,7 @@ class AppModel(
         styles = StylesModel(api, scope)
         admin = AdminModel(api, scope) { api.session?.userId }
         profileViewer = ProfileViewerModel(api, scope, { api.session?.userId }, feed)
+        imageViewer.close()
     }
 
     val email get() = api.session?.email.orEmpty()

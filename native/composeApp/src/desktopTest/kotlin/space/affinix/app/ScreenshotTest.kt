@@ -60,11 +60,27 @@ class ScreenshotTest {
     private val dnaFixture = kotlinx.serialization.json.Json.parseToJsonElement(javaClass.getResource("/dna.json")!!.readText()) as kotlinx.serialization.json.JsonObject
 
     /** [marathon]: the daily ten is done and set 2 too, set 3 is half way; [dna]: the player has 90 answers on record */
-    private fun model(signedIn: Boolean, marathon: Boolean = false, dna: Boolean = false, styles: Boolean = false, admin: Boolean = false, chatDown: Boolean = false, hangPath: String? = null): AppModel {
+    private fun model(signedIn: Boolean, marathon: Boolean = false, dna: Boolean = false, styles: Boolean = false, admin: Boolean = false, chatDown: Boolean = false, hangPath: String? = null, days: Boolean = false): AppModel {
         val engine = MockEngine { req ->
             if (hangPath != null && req.url.encodedPath.endsWith(hangPath)) kotlinx.coroutines.delay(120_000) // this answer never comes in the picture: the screen shows what it shows while it waits
             if (chatDown && req.url.encodedPath.endsWith("/messages")) return@MockEngine respond("""{"message":"permission denied for table messages"}""", HttpStatusCode.BadRequest, json)
             val body = when {
+                // [days]: everything dated relative to now, so that the day groups, the day pills and the «New messages» line show up whenever the picture is taken
+                days && req.url.encodedPath.endsWith("/notifications") -> """[
+                    {"id":"n1","type":"friend_request","actor_id":"u3","is_read":false,"created_at":"${isoAgo(0, 9, 12)}"},
+                    {"id":"n2","type":"comment","post_id":"p1","actor_id":"u2","is_read":false,"created_at":"${isoAgo(0, 8, 41)}","comment":{"body":"Blue, but make the type bolder."}},
+                    {"id":"n3","type":"friend_accept","actor_id":"u5","is_read":true,"created_at":"${isoAgo(1, 21, 12)}"},
+                    {"id":"n4","type":"comment","post_id":"p1","actor_id":"u3","is_read":true,"created_at":"${isoAgo(1, 18, 30)}","comment":{"body":"Great palette"}},
+                    {"id":"n5","type":"comment","post_id":"p1","actor_id":"u5","is_read":true,"created_at":"${isoAgo(3, 11, 8)}","comment":{"body":"Same here."}},
+                    {"id":"n6","type":"friend_accept","actor_id":"u2","is_read":true,"created_at":"${isoAgo(20, 10, 0)}"}]"""
+                days && req.url.encodedPath.endsWith("/messages") -> """[
+                    {"id":"m6","conversation_id":"c1","sender_id":"u2","body":"Friends race starts tomorrow.","created_at":"${isoAgo(0, 9, 12)}"},
+                    {"id":"m5","conversation_id":"c1","sender_id":"u2","body":"Want to race this week?","created_at":"${isoAgo(0, 9, 12)}"},
+                    {"id":"m4","conversation_id":"c1","sender_id":"u1","body":"Ha, the orange one? Same here.","created_at":"${isoAgo(1, 21, 30)}","read_at":"${isoAgo(1, 21, 31)}"},
+                    {"id":"m3","conversation_id":"c1","sender_id":"u2","body":"Posters. I picked the left one every time.","created_at":"${isoAgo(1, 21, 10)}","read_at":"${isoAgo(1, 21, 11)}"},
+                    {"id":"m2","conversation_id":"c1","sender_id":"u1","body":"Not yet, which family is it?","created_at":"${isoAgo(12, 19, 5)}","read_at":"${isoAgo(12, 19, 6)}"},
+                    {"id":"m1","conversation_id":"c1","sender_id":"u2","body":"Did you see the new duel set?","created_at":"${isoAgo(12, 19, 2)}","read_at":"${isoAgo(12, 19, 3)}"}]"""
+                days && req.url.encodedPath.endsWith("arena_leaderboard") -> """{"rows":[{"rank":1,"userId":"a","name":"Aigerim K.","xp":5120,"level":11,"isMe":false},{"rank":2,"userId":"b","name":"Dias","xp":4410,"level":10,"isMe":false},{"rank":3,"userId":"c","name":"Madina S.","xp":3900,"level":9,"isMe":false},{"rank":4,"userId":"d","name":"Timur N.","xp":3120,"level":8,"isMe":false},{"rank":5,"userId":"u1","name":"Me","xp":2480,"level":7,"isMe":true},{"rank":6,"userId":"e","name":"Zhanna O.","xp":1900,"level":6,"isMe":false},{"rank":7,"userId":"f","name":"Marat B.","xp":1210,"level":5,"isMe":false}],"me":{"rank":5,"xp":2480}}"""
                 admin && req.url.encodedPath.endsWith("/profiles") && req.url.encodedQuery.contains("is_admin") -> """[{"is_admin":true,"is_owner":true}]"""
                 admin && req.url.encodedPath.endsWith("admin_overview") -> """{"users":1240,"newUsers7d":86,"active7d":412,"admins":4,"companies":163,"experiments":240,"responses":18450,"posts":803,"comments":2104,"messages7d":6402,"friendships":960,"arenaPlayers":587,"testsOpen":12,"testsFlagged":2}"""
                 admin && req.url.encodedPath.endsWith("arena_admin_stats") -> """{"players":587,"votes":91000,"tests":31,"testVotes":4200,"days":[${(0 until 14).joinToString(",") { i -> "{\"day\":\"2026-10-${(18 + i).toString().padStart(2, '0')}\",\"players\":${40 + i * 7},\"votes\":${300 + (i * 97) % 500 + i * 20},\"missions\":${i},\"avgMinutes\":${(3 + i * 0.4)},\"over1h\":${i},\"over3h\":${i / 4}}" }}]}"""
@@ -112,6 +128,17 @@ class ScreenshotTest {
         val session = if (signedIn) Session("a", "r", Long.MAX_VALUE / 4, "u1", "me@affinix.space") else null
         val api = Api(HttpClient(engine), Config(), MemorySessionStore(session))
         return AppModel(api, CoroutineScope(SupervisorJob() + Dispatchers.Default), MemoryKeyValueStore())
+    }
+
+    /** an ISO moment [daysAgo] days back, at [hour]:[minute] of the player's own clock (so «yesterday» is yesterday for them whenever the picture is taken) */
+    private fun isoAgo(daysAgo: Int, hour: Int, minute: Int): String {
+        val tz = space.affinix.app.Platform.tzOffsetMinutes()
+        val day = (space.affinix.app.Platform.nowMillis() + tz * 60_000L).floorDiv(86_400_000L) - daysAgo
+        val ms = day * 86_400_000L + (hour * 60L + minute) * 60_000L - tz * 60_000L
+        val d = ms.floorDiv(86_400_000L); val (y, mo, dd) = space.affinix.app.civil(d)
+        val sec = (ms - d * 86_400_000L) / 1000
+        fun two(n: Long) = n.toString().padStart(2, '0')
+        return "$y-${two(mo.toLong())}-${two(dd.toLong())}T${two(sec / 3600)}:${two(sec / 60 % 60)}:${two(sec % 60)}+00:00"
     }
 
     private fun swatch(a: Color, b: Color): ImageBitmap {
@@ -394,5 +421,31 @@ class ScreenshotTest {
             for (y in 0 until img.height step 2) for (x in 0 until img.width step 2) if (px.getColor(x, y) != bg) other++
             assertTrue(other > 800, "the icon sheet looks empty ($other non-background samples)")
         } finally { scene.close() }
+    }
+
+    // ---- 0.12.0: the podium, the bell by day, the chat with day pills, the picture viewer -----------------------------------------------
+
+    @Test fun rankingsPodium() { val m = model(true, days = true); m.tab = Tab.Rankings; shoot("51-rankings-podium-phone", 420, 900, m) { Thread.sleep(700) } }
+
+    @Test fun rankingsPodiumKazakh() { val m = model(true, days = true); m.changeLang(Lang.Kk); m.tab = Tab.Rankings; shoot("51-rankings-podium-kk-phone", 420, 900, m) { Thread.sleep(700) } }
+
+    @Test fun notificationsByDay() { val m = model(true, days = true); m.tab = Tab.Notifications; shoot("52-notifications-days-phone", 420, 980, m) { Thread.sleep(700) } }
+
+    @Test fun notificationsByDayKazakh() { val m = model(true, days = true); m.changeLang(Lang.Kk); m.tab = Tab.Notifications; shoot("52-notifications-days-kk-phone", 420, 980, m) { Thread.sleep(700) } }
+
+    @Test fun threadWithDayPills() {
+        val m = model(true, days = true); m.tab = Tab.Chats
+        shoot("53-thread-days-phone", 420, 820, m) { Thread.sleep(500); m.messages.conversations.firstOrNull()?.let { m.messages.openChat(it) }; Thread.sleep(800) }
+    }
+
+    @Test fun pictureViewer() {
+        val m = model(true)
+        m.images["mem://a"] = swatch(Color(0xFFFF8438), Color(0xFF7A2E6A))
+        m.images["mem://b"] = swatch(Color(0xFF2DD4BF), Color(0xFF1F2A5A))
+        val pics = listOf(
+            space.affinix.app.store.Pic("p1", "mem://a", null, "Aigerim K.", isoAgo(1, 21, 11), "Posters. I picked the left one every time."),
+            space.affinix.app.store.Pic("p2", "mem://b", null, "Aigerim K.", isoAgo(1, 21, 12), "The teal one is the runner-up."),
+        )
+        shoot("54-viewer-phone", 420, 820, m) { Thread.sleep(300); m.imageViewer.open(pics, "p1"); Thread.sleep(600) }
     }
 }

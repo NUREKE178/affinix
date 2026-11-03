@@ -1,6 +1,7 @@
 package space.affinix.app.ui
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -37,6 +38,7 @@ import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.delay
 import space.affinix.app.Platform
 import space.affinix.app.epochOfIso
+import space.affinix.app.localDay
 import space.affinix.app.i18n.t
 import space.affinix.app.net.Message
 import space.affinix.app.net.Quote
@@ -147,21 +149,37 @@ private fun QuoteBar(model: AppModel, q: Quote, mine: Boolean) {
 
 /** The picture of a message: the bucket is private, so the link is signed first and the picture is then loaded like any other. */
 @Composable
-private fun AttachmentImage(model: AppModel, path: String) {
+private fun AttachmentImage(model: AppModel, path: String, onOpen: () -> Unit) {
     var url by remember(path) { mutableStateOf<String?>(null) }
     LaunchedEffect(path) { url = model.messages.attachmentUrl(path); model.ensureUrlImage(url) }
     val bmp = url?.let { model.images[it] }
     val ratio = if (bmp != null && bmp.height > 0) bmp.width.toFloat() / bmp.height else 1.3f
-    Box(Modifier.widthIn(max = 240.dp).fillMaxWidth().aspectRatio(ratio.coerceIn(.6f, 2f)).clip(RoundedCornerShape(10.dp)).background(C.g700).padding(bottom = 0.dp), contentAlignment = Alignment.Center) {
+    Box(
+        Modifier.widthIn(max = 240.dp).fillMaxWidth().aspectRatio(ratio.coerceIn(.6f, 2f)).clip(RoundedCornerShape(10.dp)).background(C.g700)
+            .clickable(remember { MutableInteractionSource() }, null, role = Role.Button, onClickLabel = t("viewer.open"), onClick = onOpen),
+        contentAlignment = Alignment.Center,
+    ) {
         if (bmp != null) Image(bmp, null, Modifier.matchParentSize(), contentScale = ContentScale.Crop)
         else Skeleton(Modifier.matchParentSize(), radius = 10.dp)
     }
     Spacer(Modifier.height(6.dp))
 }
 
+/** Opens the viewer on the picture of [m], with every other picture of the chat that is on the screen beside it. */
+private fun openPictures(model: AppModel, m: Message, you: String) {
+    val msg = model.messages
+    val me = model.api.session?.userId
+    val name = msg.open?.other?.name.orEmpty()
+    val pics = msg.thread.filter { it.attachmentPath != null && !it.deleted }.map {
+        space.affinix.app.store.Pic(it.id, null, it.attachmentPath, if (it.senderId == me) you else name, it.createdAt, it.body, it.id)
+    }
+    model.imageViewer.open(pics, m.id)
+}
+
 @Composable
 private fun Bubble(model: AppModel, m: Message, selected: Boolean, onSelect: () -> Unit) {
     val mine = m.senderId == model.api.session?.userId
+    val you = t("messages.you")
     // dragged to the right a message answers itself (like in every messenger); a message that is still being sent or has been deleted cannot be answered
     SwipeToReply(enabled = !m.deleted && m.status == null, onReply = { model.messages.replyTo = m; model.messages.editing = null }, modifier = Modifier.fillMaxWidth()) {
     Row(Modifier.fillMaxWidth(), horizontalArrangement = if (mine) Arrangement.End else Arrangement.Start) {
@@ -174,7 +192,7 @@ private fun Bubble(model: AppModel, m: Message, selected: Boolean, onSelect: () 
             ) {
                 m.reply?.takeIf { !m.deleted }?.let { QuoteBar(model, it, mine) }
                 if (m.reply == null && m.replyToId != null && !m.deleted) Txt(t("messages.quoteMissing"), 12, color = if (mine) C.signalInk.copy(alpha = .7f) else C.g500)
-                if (m.attachmentPath != null && !m.deleted) AttachmentImage(model, m.attachmentPath)
+                if (m.attachmentPath != null && !m.deleted) AttachmentImage(model, m.attachmentPath) { openPictures(model, m, you) }
                 val text = when {
                     m.deleted -> if (mine) t("messages.deletedMine") else t("messages.deletedTheirs")
                     m.hasImage && m.body.isBlank() -> if (m.attachmentPath == null) t("messages.photo") else ""
@@ -278,9 +296,19 @@ fun ThreadScreen(model: AppModel) {
                 }
                 !msg.threadLoaded -> SkeletonBubbles()
                 msg.thread.isEmpty() -> Txt(t("messages.noMessagesYet"), 14, color = C.g500, align = androidx.compose.ui.text.style.TextAlign.Center, modifier = Modifier.fillMaxWidth().padding(24.dp))
-                else -> LazyColumn(Modifier.fillMaxSize(), reverseLayout = true, verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                    items(msg.thread.asReversed(), key = { it.id }) { m -> Bubble(model, m, selected == m.id) { selected = if (selected == m.id) null else m.id } }
-                    if (msg.hasOlder) item { Box(Modifier.fillMaxWidth().padding(8.dp), contentAlignment = Alignment.Center) { KeyButton(t("feed.loadMore"), { msg.loadOlder() }, compact = true) } }
+                else -> {
+                    // the messages with a pill before the first one of each day and, once, the line «New messages»; regrouped when the chat changes or the day does
+                    val rows = remember(msg.thread, msg.newFromId, localDay()) { threadRows(msg.thread, msg.newFromId, Platform.nowMillis(), Platform.tzOffsetMinutes()) }
+                    LazyColumn(Modifier.fillMaxSize(), reverseLayout = true, verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                        items(rows.asReversed(), key = { it.key }) { r ->
+                            when (r) {
+                                is ThreadRow.Day -> DayPill(dayLabelText(r.label))
+                                ThreadRow.NewMessages -> NewMessagesLine()
+                                is ThreadRow.Msg -> Bubble(model, r.m, selected == r.m.id) { selected = if (selected == r.m.id) null else r.m.id }
+                            }
+                        }
+                        if (msg.hasOlder) item { Box(Modifier.fillMaxWidth().padding(8.dp), contentAlignment = Alignment.Center) { KeyButton(t("feed.loadMore"), { msg.loadOlder() }, compact = true) } }
+                    }
                 }
             }
         }
@@ -314,6 +342,24 @@ fun ThreadScreen(model: AppModel) {
             val editing = msg.editing != null
             RoundKey(if (editing) "check" else "send", { if (canSend) { msg.send(draft, image); draft = ""; image = null; selected = null } }, description = t(if (editing) "messages.save" else "messages.send"), lit = true, enabled = canSend)
         }
+    }
+}
+
+/** The pill that says which day the messages below it are from. */
+@Composable
+private fun DayPill(text: String) {
+    Box(Modifier.fillMaxWidth().padding(top = 10.dp, bottom = 4.dp), contentAlignment = Alignment.Center) {
+        Txt(text, 12, FontWeight.Medium, C.g300, Modifier.clip(Pill).background(C.g900).border(1.dp, C.hair, Pill).padding(horizontal = 12.dp, vertical = 4.dp), maxLines = 1)
+    }
+}
+
+/** The line that marks where the unread messages begin. */
+@Composable
+private fun NewMessagesLine() {
+    Row(Modifier.fillMaxWidth().padding(top = 8.dp, bottom = 2.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+        Box(Modifier.weight(1f).height(1.dp).background(C.signalHi.copy(alpha = .4f)))
+        Txt(t("messages.newMessages").uppercase(), 11, FontWeight.ExtraBold, C.signalHi, spacing = 1f, maxLines = 1)
+        Box(Modifier.weight(1f).height(1.dp).background(C.signalHi.copy(alpha = .4f)))
     }
 }
 
