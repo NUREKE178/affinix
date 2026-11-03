@@ -24,6 +24,7 @@ import space.affinix.app.net.Session
 import space.affinix.app.store.AppModel
 import space.affinix.app.store.Tab
 import space.affinix.app.ui.Motion
+import kotlin.test.AfterTest
 import kotlin.test.BeforeTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -33,6 +34,7 @@ import kotlin.test.assertTrue
 @OptIn(ExperimentalComposeUiApi::class)
 class SwipeGestureTest {
     @BeforeTest fun still() { Motion.enabled = false }
+    @AfterTest fun stillAgain() { Motion.enabled = false }
 
     private fun model(): AppModel {
         val engine = MockEngine { respond("{}", HttpStatusCode.OK, headersOf(HttpHeaders.ContentType, "application/json")) }
@@ -57,12 +59,21 @@ class SwipeGestureTest {
         /** a quick touch: down and up in the same place */
         fun tap(x: Float, y: Float) { send(PointerEventType.Press, x, y, PointerType.Touch); frames(2); send(PointerEventType.Release, x, y, PointerType.Touch); frames(8) }
 
-        /** presses at (x0, y0), moves in small steps to (x1, y1) and lets go */
-        fun drag(x0: Float, y0: Float, x1: Float, y1: Float, pointer: PointerType = PointerType.Touch, steps: Int = 10) {
+        /** presses at (x0, y0), moves in small steps to (x1, y1) and lets go; [settle] frames are rendered after letting go (the pages are still sliding after a few) */
+        fun drag(x0: Float, y0: Float, x1: Float, y1: Float, pointer: PointerType = PointerType.Touch, steps: Int = 10, settle: Int = 6) {
             send(PointerEventType.Press, x0, y0, pointer); frames(1)
             for (i in 1..steps) { send(PointerEventType.Move, x0 + (x1 - x0) * i / steps, y0 + (y1 - y0) * i / steps, pointer); frames(1) }
-            send(PointerEventType.Release, x1, y1, pointer); frames(6)
+            send(PointerEventType.Release, x1, y1, pointer); frames(settle)
         }
+
+        /** the same in three parts, so that a test can look at the screen between them: the touch comes down ... */
+        fun down(x: Float, y: Float) { send(PointerEventType.Press, x, y, PointerType.Touch); frames(1) }
+        /** ... moves in small steps ... */
+        fun moveTo(x0: Float, y0: Float, x1: Float, y1: Float, steps: Int = 10) {
+            for (i in 1..steps) { send(PointerEventType.Move, x0 + (x1 - x0) * i / steps, y0 + (y1 - y0) * i / steps, PointerType.Touch); frames(1) }
+        }
+        /** ... and lets go, then [settle] frames */
+        fun up(x: Float, y: Float, settle: Int = 6) { send(PointerEventType.Release, x, y, PointerType.Touch); frames(settle) }
     }
 
     private fun withApp(m: AppModel, block: (Finger) -> Unit) {
@@ -75,6 +86,26 @@ class SwipeGestureTest {
             f.frames(10)
             block(f)
         } finally { scene.close() }
+    }
+
+    /**
+     * The recording of the phone («I keep swiping in Quests and it stays there»): with motion on, a swipe was decided on letting go but its change of tab waited for the end of the
+     * slide, and a touch that came down in the meantime threw it away, so the screen jumped back. The other tests run with motion off, where the change is made at once, which is why
+     * none of them saw it.
+     */
+    @Test fun aSwipeThatIsStillSlidingIsNotLostWhenTheNextTouchComesDown() {
+        val m = model(); m.tab = Tab.Quests
+        withApp(m) { f ->
+            Motion.enabled = true
+            f.drag(100f, 700f, 330f, 700f, settle = 2)         // Quests -> Play, let go: the pages are still sliding
+            f.down(330f, 700f)                                   // the next touch
+            assertEquals(Tab.Play, m.tab, "the swipe that was sliding is kept")
+            f.moveTo(330f, 700f, 130f, 700f); f.up(130f, 700f, settle = 2)   // Play -> Quests, and again the next touch before the end
+            f.down(100f, 700f)
+            assertEquals(Tab.Quests, m.tab, "and the second one too")
+            f.moveTo(100f, 700f, 330f, 700f); f.up(330f, 700f, settle = 60)  // let this one finish
+            assertEquals(Tab.Play, m.tab, "three quick swipes in a row end where the third one led")
+        }
     }
 
     @Test fun aSwipeToTheLeftGoesToTheNextTab() {
