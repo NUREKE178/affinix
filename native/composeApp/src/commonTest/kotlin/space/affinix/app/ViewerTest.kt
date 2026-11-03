@@ -66,8 +66,12 @@ class ViewerTest {
     }
 
     @Test fun aDoubleTapNearTheEdgeIsKeptInsideTheLimits() {
-        val a = doubleTapped(Zoom(MIN_ZOOM, 0f, 0f), 195f, 0f, 400f, 800f, 400f, 800f)
-        assertEquals(panLimit(400f, 400f, TAP_ZOOM), -a.x) // moved as far as it may go, not further
+        // a picture 300 wide on a 400 screen: at 2.5x it is 750 wide, so it may move 175 each way, while the tap alone would ask for 292.5
+        val a = doubleTapped(Zoom(MIN_ZOOM, 0f, 0f), 195f, 0f, 400f, 800f, 300f, 800f)
+        assertEquals(175f, panLimit(400f, 300f, TAP_ZOOM))
+        assertEquals(-175f, a.x) // moved as far as it may go, not further
+        // a picture as wide as the screen can follow any tap
+        assertEquals(-292.5f, doubleTapped(Zoom(MIN_ZOOM, 0f, 0f), 195f, 0f, 400f, 800f, 400f, 800f).x)
     }
 
     @Test fun pinchingNeverGoesPastTheLimitsAndAFingerPanMovesThePictureWhenZoomed() {
