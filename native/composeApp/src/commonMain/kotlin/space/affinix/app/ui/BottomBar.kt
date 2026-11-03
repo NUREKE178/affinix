@@ -68,6 +68,17 @@ fun barIndexOf(tab: Tab): Int = when (tab) {
 /** The largest of the [candidates] at which the widest label still fits the [room] (the last, smallest one when none does): the labels are fitted, never cut. */
 fun fitSp(candidates: List<Float>, room: Float, widestAt: (Float) -> Float): Float = candidates.firstOrNull { widestAt(it) <= room } ?: candidates.last()
 
+/**
+ * Where the lit pill is, in tabs. While a page is dragged it is between the tab it left and the tab that comes ([amount] of the way). The animated [settled] value that normally holds it
+ * is updated one frame after the tab changes, so the frame in which a swipe has just brought the new tab ([committed]) would show the pill back under the old one: it is put under the
+ * new tab at once instead.
+ */
+fun barPosition(current: Int, settled: Float, neighborBar: Int, amount: Float, committed: Boolean): Float = when {
+    neighborBar >= 0 -> settled + (neighborBar - settled) * amount
+    committed && current >= 0 -> current.toFloat()
+    else -> settled
+}
+
 private val LabelSizes = listOf(11f, 10.5f, 10f, 9.5f, 9f, 8.5f, 8f)
 
 /**
@@ -101,7 +112,7 @@ fun BottomBar(model: AppModel, pager: Pager, modifier: Modifier = Modifier) {
         val to = current.coerceAtLeast(0).toFloat()
         if (pager.committed || !Motion.enabled) settled.snapTo(to) else settled.animateTo(to, tween(260, easing = FastOutSlowInEasing))
     }
-    val pos = if (pager.neighborBar >= 0) settled.value + (pager.neighborBar - settled.value) * pager.amount else settled.value
+    val pos = barPosition(current, settled.value, pager.neighborBar, pager.amount, pager.committed)
 
     Column(
         modifier.fillMaxWidth().background(C.rail).drawBehind { drawLine(C.hair2, Offset(0f, 0f), Offset(size.width, 0f), 1.dp.toPx()) }

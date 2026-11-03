@@ -147,4 +147,16 @@ class SwipeTest {
         assertTrue(SwipeRules.goes(60f, 1000f, 300, 420f, true)) // to the right at speed: 60 + 120 = 180 > 168
         assertTrue(!SwipeRules.goes(-300f, -900f, 100, 420f, false)) // no page: never
     }
+
+    /** the frame after a swipe has brought a tab: the pill is under the new tab at once (the animated value is still at the old one), and it is where it was dragged to, never back */
+    @Test fun thePillIsUnderTheNewTabAtOnceAfterASwipe() {
+        // dragging from tab 2 towards tab 3, halfway: between them
+        assertEquals(2.5f, space.affinix.app.ui.barPosition(2, 2f, 3, .5f, false))
+        // the swipe has brought tab 3: the drag is over (no neighbour), the animated value has not caught up yet
+        assertEquals(3f, space.affinix.app.ui.barPosition(3, 2f, -1, 0f, true))
+        // a tap: the pill travels with the animated value
+        assertEquals(2.4f, space.affinix.app.ui.barPosition(3, 2.4f, -1, 0f, false))
+        // a screen that has no place in the bar (the bell): nothing to snap to
+        assertEquals(1f, space.affinix.app.ui.barPosition(-1, 1f, -1, 0f, true))
+    }
 }

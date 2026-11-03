@@ -69,6 +69,7 @@ If you change a string on the website, run `node native/scripts/gen-strings.mjs`
 - Updating an APK needs the same signing key: add the `ANDROID_KEYSTORE_*` secrets (`bash scripts/android-key.sh`), otherwise uninstall the old build first.
 - Google sign-in needs `http://127.0.0.1:**` and `space.affinix.app://auth` in Supabase, Auth, URL configuration, Redirect URLs. Picture picking and Google sign-in are covered by tests but have not been tried on a real phone.
 - The app only tells you that a newer release exists (it links to the download page); it does not install updates itself.
+- The picture viewer (chat and feed pictures; pinch, double tap, swipe) has no Save / Share yet; the bell's and the chat's day labels scroll with the list instead of sticking to the top; the chat does not jump to the «New messages» line.
 - Chats ask the server every few seconds (no live socket, no "typing" or online dots); there are no push notifications.
 - Not in the apps yet: CSV download on the Styles page, saving a report as a file, editing an existing experiment, creating a company and real billing (the site has none either).
 - The Research tab has been checked by tests (the numbers equal what the website's `stats.js` gives, request bodies of the builder are asserted) and by screenshots in CI, not by a person on a real PC or phone.

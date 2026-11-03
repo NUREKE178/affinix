@@ -2,6 +2,7 @@ package space.affinix.app.ui
 
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -161,7 +162,14 @@ private fun PostCard(model: AppModel, p: Post) {
         p.imageUrl?.let { u ->
             val bmp = model.images[u]
             Spacer(Modifier.height(10.dp))
-            Box(Modifier.fillMaxWidth().clip(RoundedCornerShape(12.dp)).background(C.wellTop), contentAlignment = Alignment.Center) {
+            Box(
+                Modifier.fillMaxWidth().clip(RoundedCornerShape(12.dp)).background(C.wellTop)
+                    .clickable(remember { androidx.compose.foundation.interaction.MutableInteractionSource() }, null, role = androidx.compose.ui.semantics.Role.Button, onClickLabel = t("viewer.open")) {
+                        // the pictures of the feed that is on the screen, page through them from the one that was tapped
+                        model.imageViewer.open(feed.posts.filter { it.imageUrl != null }.map { q -> space.affinix.app.store.Pic(q.id, q.imageUrl, null, q.author.name.orEmpty(), q.createdAt, q.body) }, p.id)
+                    },
+                contentAlignment = Alignment.Center,
+            ) {
                 if (bmp != null) Image(bmp, null, Modifier.fillMaxWidth().aspectRatio(bmp.width.toFloat() / bmp.height.toFloat()), contentScale = ContentScale.Fit)
                 else Box(Modifier.fillMaxWidth().aspectRatio(1.6f))
             }

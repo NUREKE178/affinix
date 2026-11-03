@@ -44,21 +44,27 @@ fun RankingsScreen(model: AppModel) {
                 Spacer(Modifier.height(4.dp))
                 Txt(t("arena.rankings.emptyBody"), 13, color = C.g400)
             }
-            else -> Plate(Modifier.fillMaxWidth(), pad = 8) {
-                lb.rows.forEach { row ->
-                    val who = row.person(); val info = row.arenaInfo(model.leaderboardScope == "all")
-                    Row(
-                        Modifier.fillMaxWidth().then(if (row.isMe) Modifier.well(12.dp) else Modifier).personTap(model, who, info).padding(horizontal = 10.dp, vertical = 9.dp),
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(10.dp),
-                    ) {
-                        Txt("${row.rank}", 15, FontWeight.ExtraBold, if (row.rank <= 3) C.signalHi else C.g400, Modifier.width(28.dp), align = TextAlign.Center)
-                        Avatar(model, who, 36.dp, opens = false)
-                        Column(Modifier.weight(1f)) {
-                            Txt(if (row.isMe) "${row.name.ifBlank { "–" }} · ${t("arena.rankings.you")}" else row.name.ifBlank { "–" }, 15, FontWeight.Bold, C.g50, maxLines = 1)
-                            Txt("${t("arena.level")} ${row.level}", 12, color = C.g500)
+            else -> {
+                val all = model.leaderboardScope == "all"
+                Podium(model, lb.rows.take(3), all)
+                // the first three stand on the podium; the others (and nobody else) are in the list below it
+                val rest = if (lb.rows.size > 3) lb.rows.drop(3) else emptyList()
+                if (rest.isNotEmpty()) Plate(Modifier.fillMaxWidth(), pad = 8) {
+                    rest.forEach { row ->
+                        val who = row.person(); val info = row.arenaInfo(all)
+                        Row(
+                            Modifier.fillMaxWidth().then(if (row.isMe) Modifier.well(12.dp) else Modifier).personTap(model, who, info).padding(horizontal = 10.dp, vertical = 9.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(10.dp),
+                        ) {
+                            Txt("${row.rank}", 15, FontWeight.ExtraBold, C.g400, Modifier.width(28.dp), align = TextAlign.Center)
+                            Avatar(model, who, 36.dp, opens = false)
+                            Column(Modifier.weight(1f)) {
+                                Txt(if (row.isMe) "${row.name.ifBlank { "–" }} · ${t("arena.rankings.you")}" else row.name.ifBlank { "–" }, 15, FontWeight.Bold, C.g50, maxLines = 1)
+                                Txt("${t("arena.level")} ${row.level}", 12, color = C.g500)
+                            }
+                            Txt("${row.xp} ${t("app.xp")}", 14, FontWeight.ExtraBold, C.g100, maxLines = 1)
                         }
-                        Txt("${row.xp} ${t("app.xp")}", 14, FontWeight.ExtraBold, C.g100, maxLines = 1)
                     }
                 }
             }
