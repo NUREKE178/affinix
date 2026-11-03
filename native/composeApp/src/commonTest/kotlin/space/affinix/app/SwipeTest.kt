@@ -2,7 +2,9 @@ package space.affinix.app
 
 import space.affinix.app.store.Tab
 import space.affinix.app.ui.BAR_TABS
+import space.affinix.app.ui.SettlingSwipe
 import space.affinix.app.ui.SwipeRegistry
+import space.affinix.app.ui.SwipeTarget
 import space.affinix.app.ui.barIndexOf
 import space.affinix.app.ui.fitSp
 import space.affinix.app.ui.SwipeRules
@@ -158,5 +160,37 @@ class SwipeTest {
         assertEquals(2.4f, space.affinix.app.ui.barPosition(3, 2.4f, -1, 0f, false))
         // a screen that has no place in the bar (the bell): nothing to snap to
         assertEquals(1f, space.affinix.app.ui.barPosition(-1, 1f, -1, 0f, true))
+    }
+
+    // ---- a swipe that is still sliding is not lost when the next touch comes (the recording: «I swipe on in Quests and it stays there») ----------------------------------------
+
+    @Test fun aSlidingSwipeIsTakenOverByTheNextTouchAndMadeAtOnce() {
+        val s = SettlingSwipe()
+        var made = 0
+        val a = SwipeTarget(null) { made++ }
+        s.start(a)
+        val taken = s.takeOver()
+        assertTrue(taken === a, "the touch gets the swipe that was sliding")
+        taken?.invoke()
+        assertEquals(1, made)
+        assertNull(s.takeOver(), "and only once")
+        assertFalse(s.finish(a), "the slide that was taken over does not make its change a second time")
+    }
+
+    @Test fun aSlideThatEndsByItselfMakesItsChangeOnceAndNobodyTakesItOverAfterwards() {
+        val s = SettlingSwipe()
+        val a = SwipeTarget(null) { }
+        s.start(a)
+        assertTrue(s.finish(a))
+        assertNull(s.takeOver())
+        assertFalse(s.finish(a))
+    }
+
+    @Test fun aNewerSlideReplacesTheOlderOne() {
+        val s = SettlingSwipe()
+        val a = SwipeTarget(null) { }; val b = SwipeTarget(null) { }
+        s.start(a); s.start(b)
+        assertFalse(s.finish(a), "the older slide has nothing left to do")
+        assertTrue(s.finish(b))
     }
 }

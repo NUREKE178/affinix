@@ -173,6 +173,24 @@ class Pager {
 }
 
 /**
+ * A swipe that has been decided and is still sliding to its place. The change of page is made when the slide ends, but the slide takes a few hundred milliseconds and its end is
+ * a long, almost invisible tail: a next touch that comes in that time must not throw the decided swipe away (the screen then jumped back to the page it had left: «I swipe on and it
+ * stays in Quests»). The next touch takes the swipe over and makes the change at once.
+ */
+class SettlingSwipe {
+    private var pending: SwipeTarget? = null
+
+    /** the slide of [t] begins */
+    fun start(t: SwipeTarget) { pending = t }
+
+    /** the slide of [t] ended by itself: true when the change is still to be made (nobody took it over, no newer slide replaced it) */
+    fun finish(t: SwipeTarget): Boolean { val mine = pending === t; if (mine) pending = null; return mine }
+
+    /** the next touch: the swipe that was still sliding, to be done at once, or null */
+    fun takeOver(): SwipeTarget? { val p = pending; pending = null; return p }
+}
+
+/**
  * Swiping the content sideways goes to the next / previous page, the way a pager does (the website's swipeTabs rules and WhatsApp's feel): the current page follows the finger
  * and the next one comes in beside it, so both are seen at once; let go far or quick enough and the pages finish the way, otherwise they come back. Where nothing can be drawn
  * beside the page (the modes of the feed, the sections ...) it follows with some resistance, slides out and fades instead. Only touch counts (not a mouse), the screen edges are
@@ -186,6 +204,7 @@ fun Modifier.pagerSwipe(pager: Pager, enabled: Boolean, barIndex: (Tab) -> Int, 
     val targetNow by rememberUpdatedState(target)
     val barIndexNow by rememberUpdatedState(barIndex)
     val job = remember { arrayOfNulls<Job>(1) }
+    val settling = remember { SettlingSwipe() }
 
     this
         .onSizeChanged { pager.width = it.width }
@@ -195,6 +214,8 @@ fun Modifier.pagerSwipe(pager: Pager, enabled: Boolean, barIndex: (Tab) -> Int, 
                 if (down.type != PointerType.Touch) return@awaitEachGesture
                 if (down.position.x < SwipeRules.EDGE * density || down.position.x > size.width - SwipeRules.EDGE * density) return@awaitEachGesture
                 job[0]?.cancel(); job[0] = null
+                // a swipe that was still sliding to its place is not lost: its change of page is made now, and this touch starts from the page it led to
+                settling.takeOver()?.let { pager.committed = true; it() }
                 pager.reset()
                 var locked = false
                 var goal: SwipeTarget? = null
@@ -244,10 +265,14 @@ fun Modifier.pagerSwipe(pager: Pager, enabled: Boolean, barIndex: (Tab) -> Int, 
                     job[0] = scope.launch {
                         if (beside != null) {
                             // the pages carry on at the speed of the finger (a spring, not a fixed time), and the neighbour arrives at the place of the current page
-                            if (Motion.enabled) animate(startDx, -dir * width, initialVelocity = vx, animationSpec = spring(dampingRatio = 1f, stiffness = 380f)) { v, _ -> pager.dx = v.coerceIn(-width, width) }
-                            pager.committed = true
-                            go()
-                            pager.reset()
+                            // (the slide ends when it is within a pixel of its place: the default tail of a spring is a few hundred milliseconds that cannot be seen)
+                            settling.start(go)
+                            if (Motion.enabled) animate(startDx, -dir * width, initialVelocity = vx, animationSpec = spring(dampingRatio = 1f, stiffness = 380f, visibilityThreshold = 1f)) { v, _ -> pager.dx = v.coerceIn(-width, width) }
+                            if (settling.finish(go)) {
+                                pager.committed = true
+                                go()
+                                pager.reset()
+                            }
                         } else {
                             // nothing can be drawn beside: the new content is put in at once (no blank moment) and settles in from the side the finger went
                             pager.committed = true
