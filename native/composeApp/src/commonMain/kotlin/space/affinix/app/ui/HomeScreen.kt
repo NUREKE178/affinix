@@ -2,13 +2,16 @@ package space.affinix.app.ui
 
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.defaultMinSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -28,16 +31,29 @@ import space.affinix.app.res.Res
 import space.affinix.app.res.logo
 import space.affinix.app.store.AppModel
 
-/** The search and the bell, with the number of what has not been read yet. */
+/** The number on a count badge: the whole number up to 99, «99+» above it (the badge must keep its size). */
+fun countLabel(n: Int): String = if (n > 99) "99+" else n.toString()
+
+/**
+ * The search and the bell: two round keys (the keys of the chat), 40 dp each, with the number of what has not been read yet on the bell, which is lit while there is news. They sit at the end of
+ * the level card and of the Profile header; [ring] is the colour of what is behind the badge, so that it looks cut out of the key.
+ */
 @Composable
-fun ArenaActions(model: AppModel) {
-    IcoAction("search", { model.tab = space.affinix.app.store.Tab.Search }, filled = false)
-    Box(contentAlignment = Alignment.TopEnd) {
-        IcoAction("bell", { model.tab = space.affinix.app.store.Tab.Notifications }, active = model.notifications.unread > 0, filled = false)
-        if (model.notifications.unread > 0) Box(Modifier.padding(top = 2.dp).background(C.signal, Pill).padding(horizontal = 5.dp)) { Txt("${model.notifications.unread}", 10, FontWeight.ExtraBold, C.signalInk) }
+fun ArenaActions(model: AppModel, ring: androidx.compose.ui.graphics.Color = C.plateTop) {
+    val unread = model.notifications.unread
+    Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
+        RoundKey("search", { model.tab = space.affinix.app.store.Tab.Search }, t("search.aria"))
+        Box {
+            RoundKey("bell", { model.tab = space.affinix.app.store.Tab.Notifications }, t("shell.notifications.title"), active = unread > 0)
+            if (unread > 0) Box(
+                Modifier.align(Alignment.TopEnd).offset(x = 5.dp, y = (-5).dp).defaultMinSize(minWidth = 16.dp, minHeight = 16.dp).background(C.signal, Pill).border(2.dp, ring, Pill).padding(horizontal = 4.dp),
+                contentAlignment = Alignment.Center,
+            ) { Txt(countLabel(unread), 9, FontWeight.ExtraBold, C.signalInk, maxLines = 1) }
+        }
     }
 }
 
+/** The level card: the logo, the level with the rank under it, the two actions at the end of that row, and the progress under all of it. */
 @Composable
 fun LevelHeader(model: AppModel, modifier: Modifier = Modifier) {
     val p = model.profile
@@ -45,11 +61,13 @@ fun LevelHeader(model: AppModel, modifier: Modifier = Modifier) {
     Plate(modifier.fillMaxWidth(), pad = 16) {
         Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(14.dp)) {
             Image(painterResource(Res.drawable.logo), null, Modifier.size(46.dp).breathe())
-            Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+            Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(7.dp)) {
                 Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    Txt("${t("arena.level")} ${prog.level}", 18, FontWeight.ExtraBold, C.g50)
-                    Chip(t("arena.rank.${Rules.rankForLevel(prog.level)}"), Tone.Neutral)
-                    Box(Modifier.weight(1f))
+                    // the rank is the second line of the title (it may take two lines itself on a narrow screen), so that the keys never have to share their row with a chip
+                    Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(1.dp)) {
+                        Txt("${t("arena.level")} ${prog.level}", 20, FontWeight.ExtraBold, C.g50, maxLines = 1)
+                        Txt(t("arena.rank.${Rules.rankForLevel(prog.level)}"), 12, FontWeight.Medium, C.g400, maxLines = 2)
+                    }
                     ArenaActions(model)
                 }
                 Bar(prog.ratio)
