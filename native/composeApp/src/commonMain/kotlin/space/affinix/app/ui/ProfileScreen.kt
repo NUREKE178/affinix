@@ -119,7 +119,7 @@ fun ProfileScreen(model: AppModel) {
     var editing by remember { mutableStateOf(false) }
     LaunchedEffect(Unit) { if (model.myProfile == null) model.loadMyProfile() }
     Column(Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(14.dp)) {
-        ScreenHeader(t("arena.tabs.profile")) { ArenaActions(model) }
+        ScreenHeader(t("arena.tabs.profile")) { ArenaActions(model, ring = C.canvas) }
         ProfileHero(model, editing) { editing = !editing }
         if (editing) EditProfile(model)
         LaunchedEffect(Unit) { if (!model.admin.meLoaded) model.admin.loadMe() }
