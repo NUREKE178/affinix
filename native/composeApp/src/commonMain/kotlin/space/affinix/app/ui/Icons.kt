@@ -32,11 +32,11 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 
 /**
- * The website's own icon set (see IconData.kt): 2px round strokes on a 24 grid, with a tinted body inside closed shapes. [filled] turns the tint solid (a liked heart). [pulse] is a counter
+ * The website's own icon set (see IconData.kt): 2px round strokes on a 24 grid, with a tinted body inside closed shapes ([tint] is how strong it is, 20 % by default). [filled] turns the tint solid (a liked heart). [pulse] is a counter
  * (see [rememberPulse]): each time it changes the icon plays its gesture once ([IconMotion]); a page that is drawn beside the current one keeps still.
  */
 @Composable
-fun Ico(name: String, modifier: Modifier = Modifier, color: Color = C.g200, size: Dp = 22.dp, filled: Boolean = false, pulse: Int = 0) {
+fun Ico(name: String, modifier: Modifier = Modifier, color: Color = C.g200, size: Dp = 22.dp, filled: Boolean = false, pulse: Int = 0, tint: Float = .2f) {
     val shapes = remember(name) {
         (ICONS[name] ?: emptyList()).map { s -> s to PathParser().parsePathString(s.d).toPath().also { if (s.evenOdd) it.fillType = PathFillType.EvenOdd } }
     }
@@ -49,7 +49,7 @@ fun Ico(name: String, modifier: Modifier = Modifier, color: Color = C.g200, size
             if (Motion.enabled && !still) { progress.snapTo(0f); progress.animateTo(1f, tween(IconMotion.MS, easing = LinearEasing)) }
         }
     }
-    Canvas(modifier.size(size)) { drawIco(name, shapes, color, filled, progress.value) }
+    Canvas(modifier.size(size)) { drawIco(name, shapes, color, filled, progress.value, tint) }
 }
 
 /** An icon caught at one moment [progress] (0 .. 1) of its gesture: the screenshots of the gestures use it. */
@@ -61,7 +61,7 @@ internal fun IcoAt(name: String, progress: Float, modifier: Modifier = Modifier,
     Canvas(modifier.size(size)) { drawIco(name, shapes, color, false, progress) }
 }
 
-private fun DrawScope.drawIco(name: String, shapes: List<Pair<IcShape, Path>>, color: Color, filled: Boolean, progress: Float) {
+private fun DrawScope.drawIco(name: String, shapes: List<Pair<IcShape, Path>>, color: Color, filled: Boolean, progress: Float, tint: Float = .2f) {
     val k = this.size.width / 24f
     scale(k, k, pivot = Offset.Zero) {
         shapes.forEachIndexed { idx, (s, path) ->
@@ -69,7 +69,7 @@ private fun DrawScope.drawIco(name: String, shapes: List<Pair<IcShape, Path>>, c
             val c = if (xf != null && xf.alpha < 1f) color.copy(alpha = color.alpha * xf.alpha) else color
             val paint = {
                 if (s.fill == 2) drawPath(path, c)
-                else if (s.fill == 1) drawPath(path, c.copy(alpha = if (filled) c.alpha else c.alpha * .2f))
+                else if (s.fill == 1) drawPath(path, c.copy(alpha = if (filled) c.alpha else c.alpha * tint))
                 if (s.stroke) drawPath(path, c, style = Stroke(width = s.width, cap = StrokeCap.Round, join = StrokeJoin.Round))
             }
             if (xf == null) paint()

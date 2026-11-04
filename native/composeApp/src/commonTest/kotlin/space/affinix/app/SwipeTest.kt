@@ -6,6 +6,7 @@ import space.affinix.app.ui.SettlingSwipe
 import space.affinix.app.ui.SwipeRegistry
 import space.affinix.app.ui.SwipeTarget
 import space.affinix.app.ui.barIndexOf
+import space.affinix.app.ui.barNear
 import space.affinix.app.ui.fitSp
 import space.affinix.app.ui.SwipeRules
 import space.affinix.app.ui.splitEllipsis
@@ -192,5 +193,19 @@ class SwipeTest {
         s.start(a); s.start(b)
         assertFalse(s.finish(a), "the older slide has nothing left to do")
         assertTrue(s.finish(b))
+    }
+
+    // ---- the lit key of the bar: how near it is to each tab (the colours of a tab follow it) ---------------------------------------------------------------------------------
+
+    @Test fun theColoursOfATabFollowTheLitKey() {
+        assertEquals(1f, barNear(2f, 2, 2), "under the key: fully lit")
+        assertEquals(0f, barNear(2f, 4, 2), "two tabs away: not lit")
+        assertEquals(.5f, barNear(2.5f, 2, 2), "the key halfway to the next tab lights both by half")
+        assertEquals(.5f, barNear(2.5f, 3, 2))
+        assertEquals(.75f, barNear(1.75f, 2, 2), "a quarter of the way off: three quarters lit")
+    }
+
+    @Test fun aScreenWithNoPlaceInTheBarLightsNoTab() {
+        for (i in 0..5) assertEquals(0f, barNear(0f, i, -1), "tab $i")
     }
 }

@@ -3,9 +3,11 @@ package space.affinix.app.ui
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.tween
+import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -32,6 +34,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
@@ -39,6 +42,8 @@ import androidx.compose.ui.graphics.lerp
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.selected
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.rememberTextMeasurer
@@ -81,11 +86,22 @@ fun barPosition(current: Int, settled: Float, neighborBar: Int, amount: Float, c
 
 private val LabelSizes = listOf(11f, 10.5f, 10f, 9.5f, 9f, 8.5f, 8f)
 
+/** How near the lit key is to tab [i] (1 under it, 0 a tab away or more): the colours of the tab follow it, so they change with the finger too. 0 for every tab when the screen has no place in the bar. */
+fun barNear(pos: Float, i: Int, current: Int): Float = if (current < 0) 0f else (1f - abs(pos - i)).coerceIn(0f, 1f)
+
+private val BarTop = Color(0xFF141416)
+private val BarBottom = Color(0xFF0F0F11)
+private val BarBrush = androidx.compose.ui.graphics.Brush.verticalGradient(listOf(BarTop, BarBottom))
+private val KeyShape = RoundedCornerShape(16.dp)
+private const val TintResting = .14f
+private const val TintLit = .24f
+
 /**
  * The bottom bar. Its structure follows from the problems of the old one: a flat bar that is as wide as the screen (the old card and its paddings took 36 dp of the width that six
  * labels need), a fixed height of 56 dp, one size for every label that is found by measuring them (the widest must fit its room; nothing is cut with «…»), the same weight and the
  * same icon size for the active tab and the others (so nothing changes its size or shifts when the tab changes: only the colour and the lit pill move), and the system's own
- * navigation inset below it. The lit pill slides to the tab, and while a page is dragged it follows the finger.
+ * navigation inset below it. The lit key (a raised key, like every key of the app) slides to the tab, and while a page is dragged it follows the finger; the icon of the lit tab takes the
+ * signal colour and a stronger body, its label gets brighter: shape, lightness and hue all say «here», so it does not rest on colour alone.
  */
 @Composable
 fun BottomBar(model: AppModel, pager: Pager, modifier: Modifier = Modifier) {
@@ -114,33 +130,44 @@ fun BottomBar(model: AppModel, pager: Pager, modifier: Modifier = Modifier) {
     }
     val pos = barPosition(current, settled.value, pager.neighborBar, pager.amount, pager.committed)
 
+    // which tab is being pressed (-1: none): the lit key sinks a little when it is the lit one
+    var pressed by remember { mutableIntStateOf(-1) }
+
     Column(
-        modifier.fillMaxWidth().background(C.rail).drawBehind { drawLine(C.hair2, Offset(0f, 0f), Offset(size.width, 0f), 1.dp.toPx()) }
+        modifier.fillMaxWidth().background(BarBrush).drawBehind { drawLine(C.hair2, Offset(0f, 0f), Offset(size.width, 0f), 1.dp.toPx()) }
             .windowInsetsPadding(WindowInsets.navigationBars),
     ) {
         Box(Modifier.fillMaxWidth().height(56.dp).onSizeChanged { barWidth = it.width }) {
             if (itemW > 0 && current >= 0) {
                 val pillW = min(52.dp.value * density.density, (itemW - with(density) { 4.dp.toPx() }))
+                val sink = if (pressed >= 0 && pressed == current) 1.dp else 0.dp
                 Box(
-                    Modifier.offset { IntOffset((pos * itemW + (itemW - pillW) / 2f).roundToInt(), with(density) { 6.dp.roundToPx() }) }
-                        .size(with(density) { pillW.toDp() }, 30.dp).clip(RoundedCornerShape(15.dp)).background(Color.White.copy(alpha = .1f)),
+                    Modifier.offset { IntOffset((pos * itemW + (itemW - pillW) / 2f).roundToInt(), with(density) { (6.dp + sink).roundToPx() }) }
+                        .size(with(density) { pillW.toDp() }, 32.dp)
+                        .raisedKey(sink == 0.dp),
                 )
             }
             Row(Modifier.fillMaxSize()) {
                 BAR_TABS.forEachIndexed { i, (tab, icon) ->
                     val pulse = rememberPulse(current == i)
-                    // how near the lit pill is to this tab (1 under it, 0 a tab away): the colours follow it, so they change with the finger too
-                    val near = (1f - abs(pos - i)).coerceIn(0f, 1f).let { if (current < 0) 0f else it }
-                    val c = lerp(C.g400, C.g50, near)
+                    val near = barNear(pos, i, current)
+                    val iconColor = lerp(C.g400, C.signalHi, near)
+                    val labelColor = lerp(C.g400, C.g50, near)
+                    val src = remember { MutableInteractionSource() }
+                    val down by src.collectIsPressedAsState()
+                    LaunchedEffect(down) { if (down) pressed = i else if (pressed == i) pressed = -1 }
+                    // a press shrinks the icon a little (only while there is motion)
+                    val squeeze by animateFloatAsState(if (down && Motion.enabled) .9f else 1f, tween(110), label = "barPress")
                     Column(
                         Modifier.weight(1f).fillMaxHeight()
-                            .clickable(remember { MutableInteractionSource() }, null, role = Role.Tab) { pulse.intValue++; model.tab = tab }
+                            .semantics { selected = current == i }
+                            .clickable(src, null, role = Role.Tab) { pulse.intValue++; model.tab = tab }
                             .padding(top = 6.dp),
                         horizontalAlignment = Alignment.CenterHorizontally,
                     ) {
-                        Box(Modifier.height(30.dp).fillMaxWidth(), contentAlignment = Alignment.Center) {
-                            Box(contentAlignment = Alignment.TopEnd) {
-                                Ico(icon, color = c, size = 22.dp, pulse = pulse.intValue)
+                        Box(Modifier.height(32.dp).fillMaxWidth(), contentAlignment = Alignment.Center) {
+                            Box(Modifier.graphicsLayer { scaleX = squeeze; scaleY = squeeze }, contentAlignment = Alignment.TopEnd) {
+                                Ico(icon, color = iconColor, size = 22.dp, pulse = pulse.intValue, tint = TintResting + (TintLit - TintResting) * near)
                                 if (tab == Tab.Chats && model.messages.unreadTotal > 0) {
                                     Box(
                                         Modifier.offset(x = 9.dp, y = (-5).dp).defaultMinSize(minWidth = 16.dp, minHeight = 16.dp).clip(Pill).background(C.signal)
@@ -153,7 +180,7 @@ fun BottomBar(model: AppModel, pager: Pager, modifier: Modifier = Modifier) {
                         Box(Modifier.padding(top = 3.dp)) {
                             BasicText(
                                 labels[i], maxLines = 1, softWrap = false, overflow = TextOverflow.Clip,
-                                style = TextStyle(fontSize = sp.sp, fontWeight = FontWeight.Medium, color = c, fontFamily = family, lineHeight = (sp * 1.2f).sp),
+                                style = TextStyle(fontSize = sp.sp, fontWeight = FontWeight.Medium, color = labelColor, fontFamily = family, lineHeight = (sp * 1.2f).sp),
                             )
                         }
                     }
@@ -162,3 +189,19 @@ fun BottomBar(model: AppModel, pager: Pager, modifier: Modifier = Modifier) {
         }
     }
 }
+
+/**
+ * The lit key of the bar: a raised key like the keys of the app ([KeyBrush] colours, a black edge, a light line inside its top edge, a soft shadow below). [raised] false = pressed: the
+ * darker key brush and no shadow, so that it looks pushed in.
+ */
+private fun Modifier.raisedKey(raised: Boolean): Modifier = this.drawBehind {
+    val r = androidx.compose.ui.geometry.CornerRadius(16.dp.toPx())
+    if (raised) {
+        // a soft shadow: three rounded rectangles, each lower, wider and fainter than the one before
+        listOf(Triple(1.dp, 0.dp, .30f), Triple(2.dp, 1.dp, .18f), Triple(3.dp, 2.dp, .10f)).forEach { (dy, grow, a) ->
+            drawRoundRect(Color.Black.copy(alpha = a), topLeft = Offset(-grow.toPx(), dy.toPx() - grow.toPx()), size = androidx.compose.ui.geometry.Size(size.width + 2 * grow.toPx(), size.height + 2 * grow.toPx()), cornerRadius = androidx.compose.ui.geometry.CornerRadius(r.x + grow.toPx()))
+        }
+    }
+    drawRoundRect(brush = if (raised) KeyBrush else KeyDownBrush, cornerRadius = r)
+    if (raised) drawLine(Color.White.copy(alpha = .10f), Offset(r.x, 1.dp.toPx()), Offset(size.width - r.x, 1.dp.toPx()), 1.dp.toPx())
+}.border(1.dp, Color.Black.copy(alpha = .55f), KeyShape)
