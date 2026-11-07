@@ -1,0 +1,120 @@
+11-07 13:19:29.305  1672  1672 E VS.BluetoothShim: 	at com.google.android.apps.gsa.speech.audio.a.i.onServiceConnected(PG:1)
+11-07 13:19:29.305  1672  1672 E VS.BluetoothShim: 	at android.bluetooth.BluetoothProfileConnector$3.handleMessage(BluetoothProfileConnector.java:234)
+11-07 13:19:29.305  1672  1672 E VS.BluetoothShim: 	at android.os.Handler.dispatchMessage(Handler.java:106)
+11-07 13:19:29.305  1672  1672 E VS.BluetoothShim: 	at android.os.Looper.loopOnce(Looper.java:205)
+11-07 13:19:29.305  1672  1672 E VS.BluetoothShim: 	at android.os.Looper.loop(Looper.java:294)
+11-07 13:19:29.305  1672  1672 E VS.BluetoothShim: 	at android.app.ActivityThread.main(ActivityThread.java:8177)
+11-07 13:19:29.305  1672  1672 E VS.BluetoothShim: 	at java.lang.reflect.Method.invoke(Native Method)
+11-07 13:19:29.305  1672  1672 E VS.BluetoothShim: 	at com.android.internal.os.RuntimeInit$MethodAndArgsCaller.run(RuntimeInit.java:552)
+11-07 13:19:29.305  1672  1672 E VS.BluetoothShim: 	at com.android.internal.os.ZygoteInit.main(ZygoteInit.java:971)
+11-07 13:19:29.310  1488  2050 I Icing   : IndexChimeraService.getServiceInterface callingPackage=com.google.android.googlequicksearchbox componentName=agsa_icing_connection serviceId=33
+11-07 13:19:29.312   399   571 W ServiceManagerCppClient: Permission failure: android.permission.CAPTURE_BLACKOUT_CONTENT from uid=2000 pid=4697
+11-07 13:19:29.312   399   571 D PermissionCache: checking android.permission.CAPTURE_BLACKOUT_CONTENT for uid=2000 => denied (747 us)
+11-07 13:19:29.320   335  4711 I resolv  : GetAddrInfoHandler::run: {100 786532 100 983140 10131 0}
+11-07 13:19:29.323   335  4713 I resolv  : res_nmkquery: (QUERY, IN, A)
+11-07 13:19:29.323   335  4713 I resolv  : resolv_cache_lookup: FOUND IN CACHE entry=0x7d15b3675090
+11-07 13:19:29.323   335  4713 I resolv  : doQuery: rcode=0, ancount=7, return value=161
+11-07 13:19:29.325   335  4712 I resolv  : res_nmkquery: (QUERY, IN, AAAA)
+11-07 13:19:29.326   335  4712 I resolv  : resolv_cache_lookup: FOUND IN CACHE entry=0x7d15b3674b10
+11-07 13:19:29.326   335  4712 I resolv  : doQuery: rcode=0, ancount=5, return value=177
+11-07 13:19:29.327  1816  2439 I A       : Trying to enqueue PieTriggeringWorker
+11-07 13:19:29.328  1433  3448 D TrafficStats: tagSocket(180) with statsTag=0x30000407, statsUid=-1
+11-07 13:19:29.330  1672  1672 I A       : eventData = # com.google.android.apps.gsa.search.shared.service.b.ur@e3b82bac
+11-07 13:19:29.330  1672  1672 I A       : [255935327] {
+11-07 13:19:29.330  1672  1672 I A       : }
+11-07 13:19:29.332  1672  2236 I A       : Logging success flow
+11-07 13:19:29.349  1816  2655 I A       : Using proto config with mendel
+11-07 13:19:29.350  1816  2655 I A       : Using proto config with mendel
+11-07 13:19:29.352  2053  4702 D CompatibilityChangeReporter: Compat change id reported: 247079863; UID 10087; state: ENABLED
+11-07 13:19:29.378   134   134 I hwservicemanager: getTransport: Cannot find entry android.hardware.graphics.mapper@4.0::IMapper/default in either framework or device VINTF manifest.
+11-07 13:19:29.378  4697  4710 I Gralloc4: mapper 4.x is not supported
+11-07 13:19:29.538     0     0 I servicemanager: Could not find android.hardware.graphics.allocator.IAllocator/default in the VINTF manifest.
+11-07 13:19:29.384  1816  2439 W SearchServiceCore: Abort, client detached.
+11-07 13:19:29.385  1816  2439 W SearchServiceCore: Abort, client detached.
+11-07 13:19:29.385  1816  2439 W SearchServiceCore: Abort, client detached.
+11-07 13:19:29.386  1816  2439 W SearchServiceCore: Abort, client detached.
+11-07 13:19:29.386  1816  2439 W SearchServiceCore: Abort, client detached.
+11-07 13:19:29.386  1816  2439 W SearchServiceCore: Abort, client detached.
+11-07 13:19:29.386  1433  1433 D BoundBrokerSvc: onUnbind: Intent { act=com.google.android.gms.clearcut.bootcount.service.START pkg=com.google.android.gms }
+11-07 13:19:29.394  1816  2616 E BistoWorker: Couldn't get logged in Google account.
+11-07 13:19:29.394   520   617 D ActivityManager: freezing 4304 com.google.android.marvin.talkback
+11-07 13:19:29.417  1672  2234 I A       : No BT device
+11-07 13:19:29.418  1433  3448 W Conscrypt: Could not set socket write timeout: java.net.SocketException: Socket closed
+11-07 13:19:29.419  1816  2301 I BistoWorker: Performing LockscreenPersonalResponseSetting migration.
+11-07 13:19:29.438  1816  2655 I A       : Using proto config with mendel
+11-07 13:19:29.438  1816  2655 I A       : Merging legacy hotword config map with new proto.
+11-07 13:19:29.442  1433  3448 W Conscrypt: 	at com.google.android.gms.org.conscrypt.Platform.setSocketWriteTimeout(:com.google.android.gms@231818047@23.18.18 (190800-535401451):2)
+11-07 13:19:29.445  1816  2655 I A       : Skipping. Expected model: 1 Found: 2
+11-07 13:19:29.445  1816  2655 I A       : Skipping. Expected model: 1 Found: 2
+11-07 13:19:29.445  1816  2655 I A       : Skipping. Expected model: 1 Found: 2
+11-07 13:19:29.445  1816  2655 I A       : Adding from config to map. Locale: ro-RO modelPrefix: okgoogle Location:b051c93dce7bb4dcb5d9ddcbbb2ca760Test isSpeakerIdSupported: false
+11-07 13:19:29.445  1816  2655 I A       : Skipping. Expected model: 1 Found: 2
+11-07 13:19:29.445  1816  2655 I A       : Using proto config with mendel
+11-07 13:19:29.446  1816  2655 I A       : Using proto config with mendel
+11-07 13:19:29.446  1816  2655 I A       : Using proto config with mendel
+11-07 13:19:29.447  1816  2655 I A       : Merging legacy hotword config map with new proto.
+11-07 13:19:29.447  1816  2655 I A       : Skipping. Expected model: 1 Found: 2
+11-07 13:19:29.447  1816  2655 I A       : Skipping. Expected model: 1 Found: 2
+11-07 13:19:29.447  1816  2655 I A       : Skipping. Expected model: 1 Found: 2
+11-07 13:19:29.447  1816  2655 I A       : Adding from config to map. Locale: ro-RO modelPrefix: okgoogle Location:b051c93dce7bb4dcb5d9ddcbbb2ca760Test isSpeakerIdSupported: false
+11-07 13:19:29.447  1816  2655 I A       : Skipping. Expected model: 1 Found: 2
+11-07 13:19:29.447  1816  2655 I A       : hasHotwordEverywhere-true
+11-07 13:19:29.447  1816  2655 I A       : Using proto config with mendel
+11-07 13:19:29.447  1816  2655 I A       : Using proto config with mendel
+11-07 13:19:29.448  1816  2655 I A       : Using proto config with mendel
+11-07 13:19:29.448  1816  2655 I A       : Merging legacy hotword config map with new proto.
+11-07 13:19:29.448  1816  2655 I A       : Skipping. Expected model: 1 Found: 2
+11-07 13:19:29.448  1816  2655 I A       : Skipping. Expected model: 1 Found: 2
+11-07 13:19:29.448  1816  2655 I A       : Skipping. Expected model: 1 Found: 2
+11-07 13:19:29.448  1816  2655 I A       : Adding from config to map. Locale: ro-RO modelPrefix: okgoogle Location:b051c93dce7bb4dcb5d9ddcbbb2ca760Test isSpeakerIdSupported: false
+11-07 13:19:29.448  1816  2655 I A       : Skipping. Expected model: 1 Found: 2
+11-07 13:19:29.449  1816  2655 I A       : Using proto config with mendel
+11-07 13:19:29.449  1816  2655 I A       : Using proto config with mendel
+11-07 13:19:29.450  1433  3448 W Conscrypt: 	at com.google.android.gms.org.conscrypt.ConscryptFileDescriptorSocket.setSoWriteTimeout(:com.google.android.gms@231818047@23.18.18 (190800-535401451):0)
+11-07 13:19:29.459  1433  3448 W Conscrypt: Could not set socket write timeout: java.net.SocketException: Socket closed
+11-07 13:19:29.459  1433  3448 W Conscrypt: 	at com.google.android.gms.org.conscrypt.Platform.setSocketWriteTimeout(:com.google.android.gms@231818047@23.18.18 (190800-535401451):2)
+11-07 13:19:29.459  1433  3448 W Conscrypt: 	at com.google.android.gms.org.conscrypt.ConscryptFileDescriptorSocket.setSoWriteTimeout(:com.google.android.gms@231818047@23.18.18 (190800-535401451):0)
+11-07 13:19:29.483  1816  2439 I BistoSessionController: onStart no extra context
+11-07 13:19:29.484  1816  2439 I BistoSessionController: handleGenericClientEvent ID = 455
+11-07 13:19:29.485  1816  2439 E BistoWorker: Couldn't get logged in Google account.
+11-07 13:19:29.505  1816  2439 W SearchServiceCore: Abort, client detached.
+11-07 13:19:29.505  1816  2439 W SearchServiceCore: Abort, client detached.
+11-07 13:19:29.505  1816  2439 W SearchServiceCore: Abort, client detached.
+11-07 13:19:29.505  1816  2439 W SearchServiceCore: Abort, client detached.
+11-07 13:19:29.506  1816  2439 W SearchServiceCore: Abort, client detached.
+11-07 13:19:29.506  1816  2439 W SearchServiceCore: Abort, client detached.
+11-07 13:19:29.685     0     0 I logd    : logdr: UID=2000 GID=2000 PID=4716 n tail=0 logMask=99 pid=0 start=0ns deadline=0ns
+11-07 13:19:29.540  1816  2638 I ModelDownloadController: Fetching and maybe downloading FileGroup with name: hotword_model_en-US_okhey, locale: en-US
+11-07 13:19:29.583  1672  2277 I A       : Disconnecting from SysUi, flag disabled [IVR]
+11-07 13:19:29.586  1672  2277 I A       : Disconnecting from SysUi, eligibilityNotifier absent [IVR]
+11-07 13:19:29.588  1672  2277 I A       : Disconnecting from SysUi, VM not enabled [IVR]
+11-07 13:19:29.589  1672  2277 I A       : No binding to unbind [IVR]
+11-07 13:19:29.590  1672  2277 I A       : Disconnected from SysUi [IVR]
+11-07 13:19:29.594  1816  1935 I earchbox:search: Background young concurrent copying GC freed 230881(10MB) AllocSpace objects, 29(1436KB) LOS objects, 37% free, 17MB/28MB, paused 36us,375us total 308.571ms
+11-07 13:19:29.609  1488  2059 W Icing   : No valid account for uploading user actions
+11-07 13:19:29.623  1433  1442 W .gms.persistent: Long monitor contention with owner highpool[6] (3281) at java.io.InputStream android.content.res.AssetManager.openNonAsset(int, java.lang.String, int)(AssetManager.java:1027) waiters=0 in void android.content.res.AssetManager$AssetInputStream.close() for 204ms
+11-07 13:19:29.630  1816  2638 I A       : Using proto config with mendel
+11-07 13:19:29.634  1816  2638 I A       : Using proto config with mendel
+11-07 13:19:29.636  1816  2638 I A       : Using proto config with mendel
+11-07 13:19:29.636  1816  2638 I A       : Merging legacy hotword config map with new proto.
+11-07 13:19:29.636  1816  2638 I A       : Skipping. Expected model: 1 Found: 2
+11-07 13:19:29.636  1816  2638 I A       : Skipping. Expected model: 1 Found: 2
+11-07 13:19:29.636  1816  2638 I A       : Skipping. Expected model: 1 Found: 2
+11-07 13:19:29.636  1816  2638 I A       : Adding from config to map. Locale: ro-RO modelPrefix: okgoogle Location:b051c93dce7bb4dcb5d9ddcbbb2ca760Test isSpeakerIdSupported: false
+11-07 13:19:29.637  1816  2638 I A       : Skipping. Expected model: 1 Found: 2
+11-07 13:19:29.640  1816  2638 I A       : Using proto config with mendel
+11-07 13:19:29.640  1816  2638 I A       : Using proto config with mendel
+11-07 13:19:29.643  1816  2638 I A       : Using proto config with mendel
+11-07 13:19:29.643  1816  2638 I A       : Merging legacy hotword config map with new proto.
+11-07 13:19:29.643  1816  2638 I A       : Skipping. Expected model: 1 Found: 2
+11-07 13:19:29.643  1816  2638 I A       : Skipping. Expected model: 1 Found: 2
+11-07 13:19:29.643  1816  2638 I A       : Skipping. Expected model: 1 Found: 2
+11-07 13:19:29.643  1816  2638 I A       : Adding from config to map. Locale: ro-RO modelPrefix: okgoogle Location:b051c93dce7bb4dcb5d9ddcbbb2ca760Test isSpeakerIdSupported: false
+11-07 13:19:29.643  1816  2638 I A       : Skipping. Expected model: 1 Found: 2
+11-07 13:19:29.648  1816  2439 I A       : Trying to enqueue PieTriggeringWorker
+11-07 13:19:29.650  1672  2277 I NgaEntryPointEventSendr: setupConnection
+11-07 13:19:29.654  1672  1672 I A       : eventData = # com.google.android.apps.gsa.search.shared.service.b.ur@e3b82bac
+11-07 13:19:29.654  1672  1672 I A       : [255935327] {
+11-07 13:19:29.654  1672  1672 I A       : }
+11-07 13:19:29.656  1816  1816 I A       : Creating pss binder().
+11-07 13:19:29.662  1672  2277 I NgaEntryPointEventSendr: State changed: Disconnected => Connecting
