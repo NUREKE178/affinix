@@ -13,7 +13,7 @@ import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.requiredSize
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
@@ -32,6 +32,9 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 
 /**
+ * An icon is always drawn at [size] (`requiredSize`, not `size`): the drawing is scaled by its canvas, so a row that has no room left must not be able to shrink the canvas and with it the glyph (the 0.13 bell
+ * was drawn at 70 % of the magnifier beside it for that reason, see IconSizeTest); a row that is too narrow overlaps instead, which is visible and gets fixed where the layout is wrong.
+ *
  * The website's own icon set (see IconData.kt): 2px round strokes on a 24 grid, with a tinted body inside closed shapes ([tint] is how strong it is, 20 % by default). [filled] turns the tint solid (a liked heart). [pulse] is a counter
  * (see [rememberPulse]): each time it changes the icon plays its gesture once ([IconMotion]); a page that is drawn beside the current one keeps still.
  */
@@ -49,7 +52,7 @@ fun Ico(name: String, modifier: Modifier = Modifier, color: Color = C.g200, size
             if (Motion.enabled && !still) { progress.snapTo(0f); progress.animateTo(1f, tween(IconMotion.MS, easing = LinearEasing)) }
         }
     }
-    Canvas(modifier.size(size)) { drawIco(name, shapes, color, filled, progress.value, tint) }
+    Canvas(modifier.requiredSize(size)) { drawIco(name, shapes, color, filled, progress.value, tint) }
 }
 
 /** An icon caught at one moment [progress] (0 .. 1) of its gesture: the screenshots of the gestures use it. */
@@ -58,7 +61,7 @@ internal fun IcoAt(name: String, progress: Float, modifier: Modifier = Modifier,
     val shapes = remember(name) {
         (ICONS[name] ?: emptyList()).map { s -> s to PathParser().parsePathString(s.d).toPath().also { if (s.evenOdd) it.fillType = PathFillType.EvenOdd } }
     }
-    Canvas(modifier.size(size)) { drawIco(name, shapes, color, false, progress) }
+    Canvas(modifier.requiredSize(size)) { drawIco(name, shapes, color, false, progress) }
 }
 
 private fun DrawScope.drawIco(name: String, shapes: List<Pair<IcShape, Path>>, color: Color, filled: Boolean, progress: Float, tint: Float = .2f) {
