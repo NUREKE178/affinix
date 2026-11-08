@@ -62,7 +62,7 @@ not switched on yet"). Phone / SMS sign-in was removed on purpose (SMS costs mon
   `https://<project-ref>.supabase.co/auth/v1/callback`. In Supabase: Authentication -> Providers -> Google -> enable, paste the
   client ID and secret. In Authentication -> URL Configuration add the site address (for example
   `https://<your-domain>/index.html` and the Vercel preview domain) to *Redirect URLs*, and set *Site URL*.
-- A person who signs in for the first time gets an account automatically; the onboarding wizard asks for the name.
+- A person who signs in for the first time gets an account automatically and lands in the Arena; a workspace named after them is made silently (`ensureWorkspace` in `src/lib/org.js`), nothing else is asked. Everything the old ten-screen wizard asked is in Profile, Settings and Team.
 
 ### Running the migrations locally without a Supabase project
 

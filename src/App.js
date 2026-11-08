@@ -2,7 +2,8 @@ import { html, useState, useEffect, useRef } from "./lib/preact.js";
 import { useRoute, matchRoute, navigate, HOME_PATH } from "./router.js";
 import { Landing } from "./pages/Landing.js";
 import { useSession } from "./lib/auth.js";
-import { fetchMyOrganizations } from "./lib/org.js";
+import { fetchMyOrganizations, ensureWorkspace } from "./lib/org.js";
+import { gateFor } from "./lib/firstRun.js";
 import { IS_CONFIGURED } from "./lib/env.js";
 import { useT } from "./lib/i18n.js";
 import { Button, BootScreen } from "./components/ui.js";
@@ -33,7 +34,6 @@ const Login = lazyPage(() => import("./pages/auth/Login.js"), "Login");
 const Register = lazyPage(() => import("./pages/auth/Register.js"), "Register");
 const ForgotPassword = lazyPage(() => import("./pages/auth/ForgotPassword.js"), "ForgotPassword");
 const ResetPassword = lazyPage(() => import("./pages/auth/ResetPassword.js"), "ResetPassword");
-const Onboarding = lazyPage(() => import("./pages/auth/Onboarding.js"), "Onboarding");
 // The Arena (and the specimen generators behind it) loads the first time it is opened.
 const Arena = lazyPage(() => import("./pages/Arena.js"), "Arena");
 // Crowd tests: the page that makes one and the page that reads one (the list lives on the Research page).
@@ -115,8 +115,8 @@ function FullScreenLoading({ phase = "session" }) {
 }
 
 /** Gatekeeper for everything under /app: requires a signed-in session, then
- * requires the user to belong to at least one organization (routing them to
- * /onboarding to create one otherwise). */
+ * requires the user to belong to at least one organization; a person who has
+ * none gets one made for them silently (see gateFor), never a wizard. */
 function ProtectedApp({ path, query }) {
   const t = useT();
   const { session, loading: sessionLoading } = useSession();
@@ -135,7 +135,19 @@ function ProtectedApp({ path, query }) {
     return () => { cancelled = true; };
   }, [session, retryTick]);
 
-  if (!IS_CONFIGURED) {
+  const gate = gateFor({ configured: IS_CONFIGURED, sessionLoading, hasSession: !!session, orgChecked, orgError, hasOrg });
+
+  // first visit: no workspace yet -> make one (named after the person), then carry on into the app
+  useEffect(() => {
+    if (gate !== "provision" || !session) return undefined;
+    let cancelled = false;
+    withTimeout(ensureWorkspace(session.user), 20000)
+      .then(() => { if (!cancelled) setHasOrg(true); })
+      .catch(() => { if (!cancelled) setOrgError(true); });
+    return () => { cancelled = true; };
+  }, [gate, session?.user?.id]);
+
+  if (gate === "notConfigured") {
     return html`
       <div class="min-h-screen flex items-center justify-center bg-graphite-950 px-6">
         <div class="max-w-md text-center">
@@ -146,10 +158,10 @@ function ProtectedApp({ path, query }) {
     `;
   }
 
-  if (sessionLoading) return html`<${FullScreenLoading} phase="session" />`;
-  if (!session) { navigate("/login"); return null; }
-  if (!orgChecked) return html`<${FullScreenLoading} phase="workspace" />`;
-  if (orgError) {
+  if (gate === "loadingSession") return html`<${FullScreenLoading} phase="session" />`;
+  if (gate === "login") { navigate("/login"); return null; }
+  if (gate === "loadingWorkspace" || gate === "provision") return html`<${FullScreenLoading} phase="workspace" />`;
+  if (gate === "error") {
     return html`
       <div class="min-h-screen flex flex-col items-center justify-center gap-4 bg-graphite-950 px-6 text-center">
         <div class="max-w-sm">
@@ -160,7 +172,6 @@ function ProtectedApp({ path, query }) {
       </div>
     `;
   }
-  if (!hasOrg) { navigate("/onboarding"); return null; }
 
   for (const route of DASHBOARD_ROUTES) {
     const params = matchRoute(route.pattern, path);
@@ -233,7 +244,8 @@ export function App() {
     }
   }
 
-  if (path === "/onboarding") return html`<${Onboarding} />`;
+  // the old ten-screen wizard is gone: an old bookmark or e-mail link lands in the Arena
+  if (path === "/onboarding") { navigate(HOME_PATH); return null; }
 
   for (const route of AUTH_ROUTES) {
     if (matchRoute(route.pattern, path)) {

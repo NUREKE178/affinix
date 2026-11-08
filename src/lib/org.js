@@ -1,5 +1,6 @@
 import { requireSupabase } from "./supabaseClient.js";
 import { getCurrentUser } from "./auth.js";
+import { workspaceNameFor } from "./firstRun.js";
 
 function slugify(name) {
   const base = name
@@ -139,4 +140,22 @@ export async function addMemberByEmail(organizationId, email, role) {
     if (data?.error) throw new Error(data.message || data.error);
     return { status: "invited", email: data.email };
   }
+}
+
+let provisioning = null;
+
+/** The person's workspace, made for them when they have none yet (their first visit): named after them, no questions asked.
+ * One request at a time, and it looks again before creating, so a second call or a reload never makes a second workspace. */
+export function ensureWorkspace(user) {
+  provisioning ??= (async () => {
+    try {
+      const existing = await fetchMyOrganizations(user.id);
+      if (existing.length) return existing[0];
+      const meta = user.user_metadata ?? {};
+      return await createOrganization(workspaceNameFor({ fullName: meta.full_name ?? meta.name, email: user.email }));
+    } finally {
+      provisioning = null;
+    }
+  })();
+  return provisioning;
 }

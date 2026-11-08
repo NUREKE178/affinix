@@ -4,6 +4,7 @@ import { LanguageSwitch } from "../components/languageSwitch.js";
 import { useT, useLocale } from "../lib/i18n.js";
 import { useReveal } from "../lib/motion.js";
 import { scrollToTarget } from "../lib/scrollWatch.js";
+import { ChallengeInvite } from "./ChallengeInvite.js";
 
 // The landing in the product's own "Instrument" look (graphite, one orange signal, tactile keys, quiet plates). All
 // styling lives in landing.css (every class is lp- prefixed and scoped under .lp-root, because vendor/tailwind.css is
@@ -457,6 +458,7 @@ export function Landing() {
     <div class="lp-root">
       <${Header} t=${t} />
       <main>
+        <${ChallengeInvite} />
         <${Hero} t=${t} />
         <${CanTest} t=${t} />
         <${Duel} t=${t} />

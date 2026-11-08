@@ -61,7 +61,7 @@ looking empty charts. That's a focused scope, not a rewrite of everything.
 
 ```
 /                          Landing (public)
-/login /register /forgot-password /reset-password /onboarding
+/login /register /forgot-password /reset-password   (/onboarding only redirects to the Arena: no wizard any more)
 /u/:username               Public researcher profile (opt-in, public)
 /research/:slug            Participant flow (public, no chrome)
 

@@ -3,6 +3,9 @@ import { App } from "./App.js";
 import { ToastHost } from "./components/ui.js";
 import { startIdlePreload } from "./lib/idlePreload.js";
 import "./lib/pwaInstall.js"; // listens for the install prompt early and registers the service worker
+import { captureChallengeFromUrl } from "./lib/arena/inbox.js";
+
+captureChallengeFromUrl(); // a friend's Taste Match link: kept (it survives sign-up) and taken out of the address bar before anything renders
 
 const root = document.getElementById("app");
 render(html`<${Fragment}><${App} /><${ToastHost} /><//>`, root);

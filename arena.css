@@ -446,3 +446,70 @@
 /* a quiet door from the Arena to what its answers mean for designers and marketers */
 .ar-styles-link { align-self: flex-start; padding: 0; border: 0; background: none; color: var(--g-400); font-size: 12.5px; cursor: pointer; transition: color var(--sk-dur-fast); }
 .ar-styles-link:hover { color: var(--signal-hi, #ff8f55); }
+
+/* ---- first look, Taste Match ------------------------------------------------------------ */
+/* The one-screen welcome (own or from a friend's link), the share card after a round, the match after a friend's challenge,
+   and the invitation on the landing page. Design: the canvas "Affinix: First Look and Taste Match". */
+.ar-first { max-width: 520px; width: 100%; margin: 18px auto 0; display: flex; flex-direction: column; gap: 14px; }
+.ar-first-card { padding: 30px 26px 22px; display: flex; flex-direction: column; align-items: center; text-align: center; gap: 14px; }
+.ar-first-mark, .ar-first-avatar { width: 56px; height: 56px; border-radius: 17px; display: grid; place-items: center; background: rgba(0,0,0,.4); border: 1px solid var(--hair); color: var(--signal-hi); }
+.ar-first-avatar { border-radius: 50%; background: var(--signal); color: var(--signal-ink); border-color: var(--signal); font-size: 26px; font-weight: 800; }
+.ar-first-title { margin: 0; font-size: 25px; line-height: 1.2; font-weight: 800; color: var(--g-50); }
+.ar-first-body { margin: 0; max-width: 390px; font-size: 15px; line-height: 1.55; color: var(--g-400); }
+.ar-first-facts { display: flex; flex-wrap: wrap; justify-content: center; align-items: center; gap: 6px 12px; font-size: 13px; color: var(--g-300); }
+.ar-first-facts i { width: 3px; height: 3px; border-radius: 50%; background: var(--g-500); }
+.ar-first-dots { display: flex; gap: 6px; align-self: stretch; }
+.ar-first-dots i { flex: 1; min-width: 0; height: 24px; border-radius: 7px; display: grid; place-items: center; font-style: normal; font-size: 11px; font-weight: 700; color: var(--g-400); background: rgba(0,0,0,.4); border: 1px dashed var(--g-500); }
+.ar-first-fact { font-size: 12.5px; color: var(--g-400); }
+.ar-first-old { margin: 0; font-size: 12.5px; color: var(--g-300); }
+.ar-first-start { align-self: stretch; margin-top: 6px; }
+.ar-first-later { background: none; border: 0; padding: 6px 12px; font: inherit; font-size: 14px; font-weight: 600; color: var(--g-400); cursor: pointer; border-radius: 8px; }
+.ar-first-later:hover { color: var(--g-100); }
+.ar-first-note { margin: 0; text-align: center; font-size: 12.5px; color: var(--g-400); }
+
+.ar-share.sk-panel { padding: 20px 18px 16px; display: flex; flex-direction: column; gap: 12px; border-color: rgba(255,132,56,.55); }
+.ar-share-head { display: flex; align-items: center; gap: 10px; }
+.ar-share-head h3 { margin: 0; font-size: 18px; font-weight: 800; color: var(--g-50); }
+.ar-share-body { margin: 0; font-size: 14px; line-height: 1.55; color: var(--g-400); }
+.ar-share-link { display: flex; align-items: center; gap: 8px; padding: 9px 12px; border-radius: 12px; background: rgba(0,0,0,.4); border: 1px solid var(--hair); }
+.ar-share-link span { flex: 1; min-width: 0; font-size: 13px; color: var(--g-300); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.ar-share-link button { background: none; border: 0; padding: 4px; font: inherit; font-size: 12.5px; font-weight: 700; color: var(--signal-hi); cursor: pointer; white-space: nowrap; }
+.ar-share-note { margin: 0; font-size: 12px; line-height: 1.45; color: var(--g-400); }
+
+.ar-match.sk-panel { padding: 22px 20px 18px; display: flex; flex-direction: column; align-items: center; gap: 8px; text-align: center; }
+.ar-match-names { font-size: 13px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: var(--g-400); }
+.ar-match-pct { font-size: 84px; line-height: 1; font-weight: 800; color: var(--signal-hi); }
+.ar-match-pct span { font-size: 44px; }
+.ar-match-label { font-size: 17px; font-weight: 700; color: var(--g-50); }
+.ar-match-line { font-size: 13.5px; color: var(--g-400); }
+.ar-match-line b { color: var(--g-100); }
+.ar-match-segs { display: flex; gap: 5px; align-self: stretch; margin-top: 8px; }
+.ar-match-segs span { flex: 1; min-width: 0; display: flex; flex-direction: column; align-items: center; gap: 4px; }
+.ar-match-segs i { width: 100%; height: 10px; border-radius: 5px; box-sizing: border-box; background: var(--signal); border: 1px solid var(--signal); }
+.ar-match-segs span[data-state="split"] i { background: transparent; border-color: var(--g-400); }
+.ar-match-segs span[data-state="skip"] i { background: transparent; border: 1px dashed var(--g-500); }
+.ar-match-segs em { font-style: normal; font-size: 10.5px; color: var(--g-400); }
+.ar-match-h { align-self: flex-start; margin: 12px 0 0; font-size: 12px; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; color: var(--g-400); }
+.ar-match-none, .ar-match-more { margin: 0; align-self: flex-start; font-size: 13.5px; color: var(--g-400); text-align: left; }
+.ar-match-splits { align-self: stretch; display: flex; flex-direction: column; gap: 8px; }
+.ar-match-split { display: flex; align-items: center; gap: 16px; padding: 10px 14px 16px; border-radius: 14px; background: rgba(0,0,0,.25); border: 1px solid var(--hair); }
+.ar-match-n { width: 22px; font-size: 13px; font-weight: 700; color: var(--g-400); text-align: left; }
+.ar-match-pick { position: relative; display: inline-flex; padding: 3px; border-radius: 13px; border: 2px solid transparent; }
+.ar-match-pick[data-me="true"] { border-color: var(--signal-hi); }
+.ar-match-pick[data-them="true"] { border-color: var(--g-300); }
+.ar-match-pick b { position: absolute; left: -2px; bottom: -10px; padding: 1px 6px; border-radius: 6px; font-size: 10px; font-weight: 800; color: #0e0e10; background: var(--g-300); }
+.ar-match-pick[data-me="true"] b { background: var(--signal-hi); }
+
+.ar-invite { max-width: 552px; margin: 84px auto 0; padding: 0 16px; }
+.ar-invite-card.sk-panel { padding: 26px 22px 20px; display: flex; flex-direction: column; gap: 14px; }
+.ar-invite-badge { align-self: flex-start; display: inline-flex; align-items: center; gap: 8px; padding: 5px 12px 5px 5px; border-radius: 999px; background: rgba(0,0,0,.45); border: 1px solid var(--hair); font-size: 13px; font-weight: 600; color: var(--g-300); }
+.ar-invite-badge i { width: 26px; height: 26px; border-radius: 50%; display: grid; place-items: center; font-style: normal; font-weight: 800; font-size: 13px; background: var(--signal); color: var(--signal-ink); }
+.ar-invite-card h1 { margin: 0; font-size: 27px; line-height: 1.2; font-weight: 800; color: var(--g-50); }
+.ar-invite-card p { margin: 0; font-size: 15px; line-height: 1.55; color: var(--g-400); }
+.ar-invite-card .ar-first-note { font-size: 12.5px; }
+.ar-invite-card .ar-invite-login { text-align: center; font-size: 14px; }
+.ar-invite-login button { background: none; border: 0; padding: 0; font: inherit; font-weight: 600; color: var(--signal-hi); cursor: pointer; }
+@media (max-width: 480px) {
+  .ar-first-card { padding: 26px 18px 18px; }
+  .ar-match-pct { font-size: 72px; }
+}

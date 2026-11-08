@@ -89,7 +89,7 @@ export async function signIn({ email, password }) {
 }
 
 /** Google sign-in. The browser leaves for Google and comes back to this page with the session in the URL (handled by
- * App's auth-callback code); a person who has no account yet gets one, and the onboarding wizard follows. The project
+ * App's auth-callback code); a person who has no account yet gets one, and lands in the Arena. The project
  * needs the Google provider switched on and this site's address in its Redirect URLs (see README).
  * supabase-js only builds the address; if the provider is off, the browser would land on a raw JSON error page of the
  * auth server. So the address is asked once first (a plain GET, no redirect followed): a refusal is turned into an error
