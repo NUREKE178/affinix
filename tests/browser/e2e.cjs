@@ -52,6 +52,18 @@ const ledgerOf = (page, uid) => page.evaluate((u) => JSON.parse(localStorage.get
     return page;
   };
   try {
+    // 0. the gate: a signed-in person with no workspace gets one made (once, named after them), never the old wizard.
+    //    (The shell around the Arena needs a real backend for its other stores, so only the gate is judged here.)
+    const g = await (await browser.newContext({ viewport: { width: 390, height: 844 } })).newPage();
+    await g.goto(`${BASE}?v=app&u=u9&name=${encodeURIComponent("Нурлан Жайлау")}`);
+    await g.waitForFunction(() => window.__workspaceCalls >= 1, null, { timeout: 15000 });
+    await g.waitForTimeout(800);
+    assert.equal(await g.evaluate(() => window.__workspaceCalls), 1, "one workspace is made, once");
+    assert.equal(await g.evaluate(() => window.__workspaceUser), "Нурлан Жайлау");
+    assert.equal(await g.evaluate(() => location.hash), "#/app/arena", "the person is in the Arena");
+    assert.equal(await g.locator("text=/Шаг 1 из|Step 1 of/").count(), 0, "no wizard");
+    await g.close();
+
     // 1. a brand-new player: the welcome, no questions, the person's own first name
     const p1 = await open();
     await p1.goto(`${BASE}?u=u1&name=${encodeURIComponent("Нурлан Жайлау")}&l=ru`);

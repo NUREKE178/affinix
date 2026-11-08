@@ -19,7 +19,8 @@
 { "imports": {
   "preact": "/vendor/preact.module.js", "preact/hooks": "/vendor/hooks.module.js", "htm": "/vendor/htm.module.js",
   "__ORIGIN__/src/lib/auth.js": "/__h/fake-auth.js",
-  "__ORIGIN__/src/lib/supabaseClient.js": "/__h/fake-supabase.js"
+  "__ORIGIN__/src/lib/supabaseClient.js": "/__h/fake-supabase.js",
+  "__ORIGIN__/src/lib/org.js": "/__h/fake-org.js"
 } }
 </script>
 </head>
@@ -33,7 +34,14 @@ const q = new URLSearchParams(location.search);
 setLocale(q.get("l") ?? "ru");
 captureChallengeFromUrl(); // as src/main.js does
 const root = document.getElementById("app");
-if ((q.get("v") ?? "arena") === "landing") {
+if (q.get("v") === "app") {
+  // the real app shell and gate, at /app/arena, for a signed-in person with no workspace
+  history.replaceState(null, "", "/__h/harness.html" + location.search);
+  const { App } = await import("/src/App.js");
+  const { navigate, HOME_PATH } = await import("/src/router.js");
+  render(html`<${App} />`, root);
+  navigate(HOME_PATH);
+} else if ((q.get("v") ?? "arena") === "landing") {
   const { Landing } = await import("/src/pages/Landing.js");
   root.style.maxWidth = "none"; root.style.padding = "0";
   render(html`<${Landing} />`, root);
