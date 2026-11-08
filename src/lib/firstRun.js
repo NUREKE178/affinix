@@ -7,6 +7,16 @@ export function gateFor({ configured, sessionLoading, hasSession, orgChecked, or
   if (!hasSession) return "login";
   if (!orgChecked) return "loadingWorkspace";
   if (orgError) return "error";
-  if (!hasOrg) return "onboarding";
+  if (!hasOrg) return "provision"; // a workspace is made for them (org.js ensureWorkspace); they are never asked to name one
   return "app";
+}
+
+/** The name of the workspace made silently for a new person: their own name (a researcher renames it in Settings), else the part of the email before "@". */
+export function workspaceNameFor({ fullName, email } = {}) {
+  const clean = (v) => String(v ?? "").replace(/\s+/g, " ").trim();
+  const cut = (v) => Array.from(v).slice(0, 60).join("");
+  const name = clean(fullName);
+  if (name) return cut(name);
+  const local = clean(String(email ?? "").split("@")[0]);
+  return local ? cut(local) : "Workspace";
 }

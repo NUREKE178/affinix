@@ -21,3 +21,21 @@ test("the waiting states keep their order", () => {
   assert.equal(gateFor({ ...ready, orgChecked: false, hasOrg: false }), "loadingWorkspace");
   assert.equal(gateFor({ ...ready, orgError: true, hasOrg: false }), "error");
 });
+
+import { workspaceNameFor } from "../src/lib/firstRun.js";
+
+test("the silent workspace is named after the person, else after their email", () => {
+  assert.equal(workspaceNameFor({ fullName: "  Нурлан   Жайлау ", email: "x@y.kz" }), "Нурлан Жайлау");
+  assert.equal(workspaceNameFor({ fullName: "", email: "roma2002@gmail.com" }), "roma2002");
+  assert.equal(workspaceNameFor({}), "Workspace");
+  assert.equal(workspaceNameFor({ fullName: null, email: "@x.kz" }), "Workspace");
+});
+
+test("a long or emoji name is cut by characters, never in the middle of one", () => {
+  const long = "Айгерим".repeat(20);
+  assert.equal(Array.from(workspaceNameFor({ fullName: long })).length, 60);
+  const emoji = "😀".repeat(70);
+  const cut = workspaceNameFor({ fullName: emoji });
+  assert.equal(Array.from(cut).length, 60);
+  assert.ok(!/[\ud800-\udbff]$/.test(cut), "no lone surrogate at the end");
+});

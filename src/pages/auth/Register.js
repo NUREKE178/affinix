@@ -1,5 +1,5 @@
 import { html, useState } from "../../lib/preact.js";
-import { navigate } from "../../router.js";
+import { navigate, HOME_PATH } from "../../router.js";
 import { AuthLayout, AuthError, AuthSuccess } from "./AuthLayout.js";
 import { Field, TextInput, Button } from "../../components/ui.js";
 import { signUp, friendlyAuthError } from "../../lib/auth.js";
@@ -24,7 +24,7 @@ export function Register() {
       const data = await signUp({ email, password, fullName });
       if (data.session) {
         // Email confirmation disabled on this project -- signed in immediately.
-        navigate("/onboarding");
+        navigate(HOME_PATH);
       } else {
         setDone(true);
       }
