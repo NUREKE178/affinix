@@ -39,3 +39,11 @@ test("a long or emoji name is cut by characters, never in the middle of one", ()
   assert.equal(Array.from(cut).length, 60);
   assert.ok(!/[\ud800-\udbff]$/.test(cut), "no lone surrogate at the end");
 });
+
+import { firstLookDue } from "../src/lib/firstRun.js";
+
+test("the welcome is for a person with no answers who has not seen it", () => {
+  assert.equal(firstLookDue({ votes: 0, seen: false }), true);
+  assert.equal(firstLookDue({ votes: 0, seen: true }), false);
+  assert.equal(firstLookDue({ votes: 3, seen: false }), false);
+});

@@ -1,0 +1,47 @@
+<!doctype html>
+<html lang="ru" class="dark" translate="no">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>browser harness</title>
+<base href="/">
+<link rel="stylesheet" href="/vendor/tailwind.css" />
+<link rel="stylesheet" href="/styles.css" />
+<link rel="stylesheet" href="/landing.css" />
+<link rel="stylesheet" href="/arena.css" />
+<link rel="stylesheet" href="/crowd.css" />
+<link rel="stylesheet" href="/messages.css" />
+<link rel="stylesheet" href="/feed.css" />
+<link rel="stylesheet" href="/admin.css" />
+<link rel="stylesheet" href="/shell.css" />
+<link rel="stylesheet" href="/insights.css" />
+<script type="importmap">
+{ "imports": {
+  "preact": "/vendor/preact.module.js", "preact/hooks": "/vendor/hooks.module.js", "htm": "/vendor/htm.module.js",
+  "__ORIGIN__/src/lib/auth.js": "/__h/fake-auth.js",
+  "__ORIGIN__/src/lib/supabaseClient.js": "/__h/fake-supabase.js"
+} }
+</script>
+</head>
+<body class="bg-graphite-950 font-sans antialiased">
+<div id="app" style="max-width: 1100px; margin: 0 auto; padding: 16px"></div>
+<script type="module">
+import { render, html } from "/src/lib/preact.js";
+import { setLocale } from "/src/lib/i18n.js";
+import { captureChallengeFromUrl } from "/src/lib/arena/inbox.js";
+const q = new URLSearchParams(location.search);
+setLocale(q.get("l") ?? "ru");
+captureChallengeFromUrl(); // as src/main.js does
+const root = document.getElementById("app");
+if ((q.get("v") ?? "arena") === "landing") {
+  const { Landing } = await import("/src/pages/Landing.js");
+  root.style.maxWidth = "none"; root.style.padding = "0";
+  render(html`<${Landing} />`, root);
+} else {
+  const { Arena } = await import("/src/pages/Arena.js");
+  render(html`<${Arena} query=${new URLSearchParams()} />`, root);
+}
+window.__ready = true;
+</script>
+</body>
+</html>

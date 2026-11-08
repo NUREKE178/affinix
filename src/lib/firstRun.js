@@ -20,3 +20,8 @@ export function workspaceNameFor({ fullName, email } = {}) {
   const local = clean(String(email ?? "").split("@")[0]);
   return local ? cut(local) : "Workspace";
 }
+
+/** Should the one-screen welcome be shown in the Arena? Only to someone who has not answered a duel yet and has not been through it. */
+export function firstLookDue({ votes, seen }) {
+  return votes === 0 && !seen;
+}

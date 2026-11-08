@@ -17,6 +17,10 @@ import { Specimen, Ladder, Thumb, nf, clock } from "./parts.js";
 import { DailyReport } from "./DailyReport.js";
 import { MissionBlock, MissionConsole, MissionSummary } from "./Mission.js";
 import { MarathonBlock } from "./Marathon.js";
+import { FirstLook, ChallengeShare, MatchBlock, playChallenge } from "./Challenge.js";
+import { useSession } from "../../lib/auth.js";
+import { activeChallenge, firstLookSeen } from "../../lib/arena/inbox.js";
+import { firstLookDue } from "../../lib/firstRun.js";
 
 const AUTO_MS = 2600;
 
@@ -451,11 +455,13 @@ function Summary({ arena, onStart }) {
   const entry = set ? view.sets.find((x) => x.n === set) : null;
   const nextEntry = set ? view.sets.find((x) => x.n === set + 1) : null;
   const nextOpen = !!entry?.done && !!nextEntry && !nextEntry.done;
+  const isChallenge = round.mode === "challenge";
   return html`
     <div class="ar-summary-wrap">
+      ${isChallenge && html`<${MatchBlock} round=${round} />`}
       <section class="ar-summary sk-panel" data-testid="arena-summary">
         <div class="ar-summary-top">
-          <span class="sk-caption" data-testid="arena-summary-title">${set ? t(entry?.done ? "arena.marathon.setDoneTitle" : "arena.marathon.setPartTitle", { n: set }) : daily ? t("arena.summary.dailyTitle") : t("arena.summary.title")}</span>
+          <span class="sk-caption" data-testid="arena-summary-title">${set ? t(entry?.done ? "arena.marathon.setDoneTitle" : "arena.marathon.setPartTitle", { n: set }) : daily ? t("arena.summary.dailyTitle") : isChallenge ? t("arena.match.roundTitle") : t("arena.summary.title")}</span>
           <div class="ar-summary-xp sk-num" data-testid="arena-summary-xp">+${nf(s.xp)}<span class="sk-unit">XP</span></div>
           <div class="ar-summary-level">
             <span class="sk-caption">${t("arena.level")} ${view.level} · ${t(`arena.rank.${view.rank}`)}</span>
@@ -469,7 +475,7 @@ function Summary({ arena, onStart }) {
           <${StatTile} label=${t("arena.summary.eye")} value=${s.eye.total ? `${s.eye.correct}/${s.eye.total}` : "—"} hint=${t("arena.summary.eyeHint")} />
           <${StatTile} label=${t("arena.summary.speed")} value=${s.avgMs ? `${(s.avgMs / 1000).toFixed(1)} ${t("common.unitSec")}` : "—"} hint=${t("arena.summary.speedHint")} />
         </div>
-        ${set && html`
+        ${set > 0 && html`
           <p class="ar-mi-note ar-summary-note" data-testid="arena-set-note">
             ${entry?.done ? t("arena.marathon.setNoteDone") : t("arena.marathon.setNoteLeft", { n: entry ? entry.size - entry.votes : 0 })}
             ${" "}${t("arena.marathon.themeLine", { family: t(`arena.family.${view.theme.family}`), votes: view.theme.votes, goal: view.theme.goal })}
@@ -490,6 +496,7 @@ function Summary({ arena, onStart }) {
           <${Button} data-ar-native=${true} variant="secondary" onClick=${() => navigate("/app/arena?tab=profile")}><${Icon} name="sliders" size=${14} />${t("arena.summary.dna")}<//>
         </div>
       </section>
+      ${!set && html`<${ChallengeShare} round=${round} mode=${isChallenge ? "own" : "after"} />`}
       ${daily && showReport && html`<${DailyReport} day=${round.day} season=${round.season} />`}
     </div>
   `;
@@ -501,16 +508,26 @@ function Summary({ arena, onStart }) {
 
 export function PlayTab({ arena }) {
   const { ready, view, round, actions } = arena;
+  const { user } = useSession();
+  const [, bump] = useState(0); // the welcome puts itself away (and a friend's challenge is put off) without the store changing
   const start = useMemo(() => (mode) => {
-    // Enter in the lobby starts whichever mode is the lit key
+    // Enter in the lobby starts whichever mode is the lit key; while a friend's challenge is on screen, that is the challenge
+    const waiting = !arena.round && !mode ? activeChallenge() : null;
+    if (waiting) { playChallenge(waiting); return; }
     actions.startRound(mode ?? (arena.view && !arena.view.daily.done ? "daily" : "free"));
-  }, [actions, arena.view?.daily.done]);
+  }, [actions, arena.view?.daily.done, arena.round]);
   useArenaKeys(arena, start);
 
   if (!ready || !view) {
     return html`<div class="ar-lobby"><${Skeleton} className="h-40 w-full rounded-xl" /><${Skeleton} className="h-24 w-full rounded-xl" /></div>`;
   }
-  if (!round) return html`<${Lobby} arena=${arena} onStart=${start} />`;
+  if (!round) {
+    const waiting = activeChallenge();
+    if (waiting || firstLookDue({ votes: view.votes, seen: firstLookSeen(user?.id) })) {
+      return html`<${FirstLook} userId=${user?.id} challenge=${waiting} onDone=${() => bump((n) => n + 1)} />`;
+    }
+    return html`<${Lobby} arena=${arena} onStart=${start} />`;
+  }
   if (round.mode === "mission") {
     return round.phase === "summary" ? html`<${MissionSummary} arena=${arena} />` : html`<${MissionConsole} arena=${arena} />`;
   }

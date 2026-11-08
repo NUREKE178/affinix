@@ -529,6 +529,25 @@ export async function startSet(n) {
   return true;
 }
 
+/** A friend's Taste Match (lib/arena/challenge.js): the same pairs they answered, one after another, in this person's own
+ * random left and right order. Answers are recorded like free-play ones (a pair already answered earns nothing again); a
+ * pair of a season the server no longer takes is played and compared on the device only. */
+export async function startChallenge(challenge) {
+  if (!S || !challenge?.answers?.length) return false;
+  const { duelFromPair } = await loadSampler();
+  if (!S) return false;
+  const season = challenge.season;
+  const seen = seenFor(season);
+  const rand = mulberry32(hashStringToSeed(`${S.userId}/challenge/${Date.now()}/${Math.random()}`));
+  const duels = challenge.answers.map((a) => duelFromPair(rand, { season, family: a.family, dim: a.dim, a: a.a, b: a.b, repeat: seen.has(duelCode(a.family, a.a, a.b, a.dim)) }));
+  const now = Date.now();
+  S.round = { id: uuid(), mode: "challenge", challenge: { from: challenge.name ?? null, answers: challenge.answers }, day: localDay(), season, duels, idx: 0, phase: "choose", results: [], combo: 0, startedAt: now, shownAt: now, tallies: {}, last: null };
+  persist();
+  notify();
+  prefetchTallies(S.round);
+  return true;
+}
+
 /** Display side (0 = left, 1 = right) -> the canonical side the server stores. */
 const canonicalSide = (duel, side) => (duel.swap ? 1 - side : side);
 
@@ -943,7 +962,7 @@ export function arenaRemote() {
   return S?.remote ?? "unknown";
 }
 
-export const actions = { startRound, startSet, startMission, retryMissionVote, vote, skip, next, endRound, claim, setPref, syncNow, flush };
+export const actions = { startRound, startSet, startChallenge, startMission, retryMissionVote, vote, skip, next, endRound, claim, setPref, syncNow, flush };
 
 export function useArena() {
   const [, setTick] = useState(0);

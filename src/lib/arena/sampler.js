@@ -11,7 +11,7 @@
 // take drop indexes yet (`drops: false`, migration 0026 not applied) everything is dealt from the classics, as before.
 import { mulberry32, hashStringToSeed, shuffle } from "../prng.js";
 import { FAMILY_IDS, POOL_SIZE, DIMENSIONS, familyDims, getStimulus, isObjective, legibilityWinner } from "./stimuli.js";
-import { CLASSIC_POOL, LEGACY_FAMILY_COUNT, CORE_DIMENSION_IDS, dropPoolForDay, indexOf } from "./catalog.js";
+import { CLASSIC_POOL, LEGACY_FAMILY_COUNT, CORE_DIMENSION_IDS, dropPoolForDay, indexOf, poolOfIndex } from "./catalog.js";
 import { duelCode, pairKey } from "./ledger.js";
 import { traitDistance } from "./traits.js";
 import { ROUND_SIZE, DAILY_SET_SIZE, SET_SIZE, themeIndex } from "./rules.js";
@@ -123,6 +123,12 @@ function buildDuel(rand, { season, family, dim, a, b, repeat = false, daily = fa
     duel.truth = truthMatrix(season, family, pool).get((a - base) * POOL_SIZE + (b - base));
   }
   return duel;
+}
+
+/** A duel for a pair somebody else already answered (a Taste Match link): the pair, the question and the pool are theirs,
+ * only the side each specimen is shown on is drawn again. */
+export function duelFromPair(rand, { season, family, dim, a, b, repeat = false }) {
+  return buildDuel(rand, { season, family, dim, a, b, repeat, pool: poolOfIndex(a) });
 }
 
 /**
