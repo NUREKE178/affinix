@@ -142,7 +142,76 @@ class AppModel(
         }
     }
 
-    init { checkForUpdate(); if (signedIn) refresh() }
+    // ---- Taste Match: the first look and a friend's challenge (src/lib/arena/challenge.js on the website) ---------------------------------
+
+    /** the text of a friend's link that has reached this device and has not been played yet; it is kept across restarts and across sign-up */
+    private var challengeRaw: String? = kv.get("challenge")
+    var challenge by mutableStateOf(Challenge.decode(challengeRaw))
+        private set
+    /** "Later" puts the welcome away for this visit; the challenge itself stays */
+    var challengeSnoozed by mutableStateOf(false)
+        private set
+    var firstLookSeen by mutableStateOf(false)
+        private set
+
+    private fun firstLookKey() = api.session?.userId?.let { "firstLook.$it" }
+    private fun loadFirstLook() { firstLookSeen = firstLookKey()?.let { kv.get(it) == "1" } ?: false }
+
+    /** the one-screen welcome is for a player who has answered no duel yet and has not been through it (nothing is shown before the profile has been read) */
+    val firstLookDue get() = profile?.let { it.votes == 0 && !firstLookSeen } ?: false
+
+    /** the friend's challenge to show now: waiting and not put off for this visit */
+    val activeChallenge get() = if (challengeSnoozed) null else challenge
+
+    fun markFirstLookSeen() { firstLookKey()?.let { kv.put(it, "1") }; firstLookSeen = true }
+
+    /** Takes in a link: an address, a pasted message that has one in it, or the bare value. True when it was a valid challenge. */
+    fun receiveChallenge(pasted: String?): Boolean {
+        val c = Challenge.param(pasted) ?: return false
+        val parsed = Challenge.decode(c) ?: return false
+        challengeRaw = c; challenge = parsed; challengeSnoozed = false
+        kv.put("challenge", c)
+        tab = Tab.Play
+        return true
+    }
+
+    fun snoozeChallenge() { challengeSnoozed = true }
+
+    fun forgetChallenge() { challengeRaw = null; challenge = null; challengeSnoozed = false; kv.put("challenge", null) }
+
+    /** the welcome's button: the first Daily Challenge, with nothing asked */
+    fun startFirstRound() { markFirstLookSeen(); startDaily() }
+
+    /** Plays the waiting challenge: the same pairs as the friend, dealt by the same dealer (names and pictures), in this player's own left and right order. */
+    fun playChallenge() {
+        val ch = challenge ?: return
+        val raw = challengeRaw ?: return
+        if (loading) return
+        scope.launch {
+            loading = true; error = null
+            try {
+                loadSeen()
+                val seed = (Platform.nowMillis() xor (Platform.uuid().hashCode().toLong() shl 7)) and 0xFFFFFFFFL
+                val duels = Challenge.marked(api.dealPairs(raw, seed), seen, Challenge.seasonIsLive(ch.season, Platform.nowMillis()))
+                if (duels.isEmpty()) return@launch
+                markFirstLookSeen()
+                game.start(Mode.Challenge, duels, challenge = ch)
+                forgetChallenge()
+                scope.launch { game.loadTallies() }
+                duels.take(2).forEach { ensureImages(it) }
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: ApiException) {
+                error = "${text("app.dealFailed")} (${e.status}: ${e.message})"
+            } catch (e: Exception) {
+                error = "${text("app.noNetwork")} (${e::class.simpleName}: ${e.message?.take(100)})"
+            } finally {
+                loading = false
+            }
+        }
+    }
+
+    init { checkForUpdate(); if (challenge == null && challengeRaw != null) { challengeRaw = null; kv.put("challenge", null) }; loadFirstLook(); if (signedIn) refresh() }
 
     fun changeLang(l: Lang) { lang = l; kv.put("lang", l.tag) }
 
@@ -155,6 +224,7 @@ class AppModel(
             if (s == null) return@guard "CONFIRM"
         } else api.signIn(email, password)
         signedIn = true
+        loadFirstLook()
         refresh()
         null
     }
@@ -163,6 +233,7 @@ class AppModel(
     suspend fun googleSignIn(): String? = guard {
         if (api.signInWithGoogle() == null) return@guard null
         signedIn = true
+        loadFirstLook()
         refresh()
         null
     }
@@ -175,6 +246,7 @@ class AppModel(
         profile = null; today = null; leaderboard = null
         game.end()
         seen.clear(); seenLoaded = false
+        firstLookSeen = false; challengeSnoozed = false
         freshSocial()
         tab = Tab.Play
     }

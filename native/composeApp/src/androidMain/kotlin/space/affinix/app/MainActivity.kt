@@ -23,11 +23,17 @@ class MainActivity : ComponentActivity() {
         AndroidImages.context = applicationContext
         AndroidAuth.context = applicationContext
         AndroidAuth.deliver(intent?.data)
+        AndroidChallenge.deliver(intent?.data) // a Taste Match link that opened the app
         AndroidImages.launch = { pickImage.launch("image/*") }
         val kv = PrefsKeyValueStore(applicationContext)
         setContent {
             val scope = rememberCoroutineScope()
             val model = remember { AppModel(Api(httpClient(), Config(), StoredSession(kv)), scope, kv) }
+            androidx.compose.runtime.DisposableEffect(model) {
+                AndroidChallenge.onLink = { c -> model.receiveChallenge(c) }
+                AndroidChallenge.takePending()?.let { c -> model.receiveChallenge(c) }
+                onDispose { AndroidChallenge.onLink = null }
+            }
             val round by model.game.round.collectAsState()
             // Back leaves a round first, then goes back to the Play tab; only from there does it close the app.
             BackHandler(enabled = model.signedIn && (model.imageViewer.isOpen || model.profileViewer.isOpen || round != null || model.mission.round != null || model.messages.open != null || model.tab != Tab.Play)) {
@@ -48,6 +54,7 @@ class MainActivity : ComponentActivity() {
         super.onNewIntent(intent)
         setIntent(intent)
         AndroidAuth.deliver(intent.data) // the browser coming back from Google
+        AndroidChallenge.deliver(intent.data)
     }
 
     override fun onDestroy() {

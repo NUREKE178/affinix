@@ -28,6 +28,10 @@ const KEYS = [
   "common.loading", "common.retry", "common.back", "common.continue", "common.cancel",
   "shell.userMenu.logout",
   "arena.title", "arena.subtitle", "arena.level",
+  // the first look and Taste Match (the website's arena.firstLook / arena.challenge / arena.match; the invitation texts are the landing page's only)
+  ...["title", "titleNoName", "body", "fact1", "fact2", "fact3", "start", "later", "note"].map((k) => `arena.firstLook.${k}`),
+  ...["someone", "title", "body", "hidden", "play", "later", "keep", "oldSeason", "shareTitle", "shareBody", "shareCta", "copy", "copied", "copyFailed", "privacy", "shareText", "shareHeading", "pasteLink", "pasteBad"].map((k) => `arena.challenge.${k}`),
+  ...["roundTitle", "vs", "label", "line", "twins", "close", "mixed", "opposite", "splits", "noSplits", "more", "you", "sendOwn", "sendOwnBody"].map((k) => `arena.match.${k}`),
   "arena.tabs.play", "arena.tabs.rankings", "arena.tabs.profile",
   ...RANKS.map((r) => `arena.rank.${r}`),
   ...DIMS.map((d) => `arena.q.${d}`),

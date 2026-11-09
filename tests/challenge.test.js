@@ -87,6 +87,7 @@ test("the text of a link is never trusted: everything that is not exactly what w
 test("a name is the first word only, without invisible or direction-changing characters", () => {
   assert.equal(cleanName("  Айгерим   Сериккызы "), "Айгерим");
   assert.equal(cleanName("Ai​ger‮im"), "Aigerim");
+  assert.equal(cleanName("Ali\u00a0Baba"), "Ali", "a no-break space ends the first word too");
   assert.equal(cleanName("\u0000\u0007"), "");
   assert.equal(cleanName(null), "");
   assert.equal(Array.from(cleanName("А".repeat(80))).length, NAME_MAX);

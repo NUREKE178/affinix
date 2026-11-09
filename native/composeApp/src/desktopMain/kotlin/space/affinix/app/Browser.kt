@@ -44,6 +44,9 @@ actual object Browser {
 
     actual fun openUrl(url: String): Boolean = open(url)
 
+    /** a computer has no share sheet: the page copies the link instead */
+    actual fun shareText(text: String): Boolean = false
+
     /** how the page is shown; tests replace it with a fake browser */
     internal var opener: (String) -> Boolean = ::open
 
