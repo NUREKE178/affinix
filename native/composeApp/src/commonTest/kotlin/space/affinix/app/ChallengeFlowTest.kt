@@ -38,7 +38,10 @@ class ChallengeFlowTest {
         """{"id":"${a.family}-${a.a}-${a.b}","season":"$season","family":"${a.family}","dim":"${a.dim}","a":${a.a},"b":${a.b},"pair":"$season/${a.family}/${a.a}-${a.b}","swap":false,"objective":false,"repeat":false,"daily":false,"set":0,"specimens":[{"name":"A"},{"name":"B"}]}"""
     }}]}"""
 
-    private class Rig(val app: AppModel, val log: MutableList<String>, val kv: MemoryKeyValueStore)
+    private class Rig(val app: AppModel, val log: MutableList<String>, val kv: MemoryKeyValueStore) {
+        /** the requests the fake server has seen so far (a copy: the server writes to the list from its own thread) */
+        fun requests(): List<String> = synchronized(log) { log.toList() }
+    }
 
     private fun rig(season: String = seasonOf(), kv: MemoryKeyValueStore = MemoryKeyValueStore(), votes: Int = 0, seen: List<Pair<String, String>> = emptyList(), dealFails: Boolean = false): Rig {
         val log = java.util.Collections.synchronizedList(mutableListOf<String>())
@@ -154,7 +157,7 @@ class ChallengeFlowTest {
         assertTrue(round.duels.none { it.repeat }, "nothing answered yet: every pair is worth XP")
         assertTrue(round.duels.none { it.daily || it.set != 0 }, "a challenge pair is a free-play pair for the server")
         assertEquals("Aigerim", round.challenge?.name)
-        val deal = r.log.first { it.contains("/api/arena-deal") }
+        val deal = r.requests().first { it.contains("/api/arena-deal") }
         assertTrue(deal.contains("kind=pairs") && deal.contains("c=1.") && deal.contains("seed="), deal)
         assertNull(r.app.challenge, "once the round is open the challenge is no longer waiting")
         assertNull(r.kv.get("challenge"))
@@ -187,7 +190,7 @@ class ChallengeFlowTest {
         settled(r.app)
         r.app.receiveChallenge(linkFor(seasonOf()))
         r.app.playChallenge()
-        waitUntil { r.log.any { it.contains("/api/arena-deal") } && !r.app.loading }
+        waitUntil { r.requests().any { it.contains("/api/arena-deal") } && !r.app.loading }
         assertNull(r.app.game.round.value)
         assertNotNull(r.app.challenge, "the player can try again")
         assertNotNull(r.kv.get("challenge"))
