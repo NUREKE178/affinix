@@ -149,13 +149,24 @@ class FeedTest {
     // `loaded` is false (the first reading), and switching tabs kept `loaded = true` and the old posts until the new answer came in, so the old tab's list stayed on
     // screen under the new tab's name and then jumped.
     @Test fun switchingToAnotherTabDoesNotLeaveTheOldListOnScreen() = runTest {
-        val f = feed({ p, _, q, _ -> savedAware(p, q) })
+        // the saved list is held back by the fake server until the test lets it go, so the moment in between is not a race with the answer
+        val gate = kotlinx.coroutines.CompletableDeferred<Unit>()
+        val engine = MockEngine { req ->
+            val path = req.url.encodedPath; val q = req.url.encodedQuery
+            if (path.endsWith("/post_saves") && q.contains("user_id")) gate.await()
+            respond(savedAware(path, q), HttpStatusCode.OK, json)
+        }
+        val api = Api(HttpClient(engine), config, MemorySessionStore(Session("a", "r", Long.MAX_VALUE / 4, "me", "me@x.kz")), nowSeconds = { 1000 })
+        val f = FeedModel(api, kotlinx.coroutines.CoroutineScope(kotlinx.coroutines.SupervisorJob())) { "me" }
         f.loadNow()
         assertEquals(2, f.posts.size); assertTrue(f.loaded)
         f.showMode(2)
-        // at once, before anything has come back: the other tab's posts are gone and the screen shows its skeleton (it does while `loaded` is false)
+        // the new tab's answer has not come: the other tab's posts are gone and the screen shows its skeleton (it does while `loaded` is false)
         assertTrue(f.posts.isEmpty(), "the list of the other tab is not shown under this tab")
         assertFalse(f.loaded, "so the skeleton is what the screen draws")
+        kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.Default) { kotlinx.coroutines.delay(150) }
+        assertFalse(f.loaded, "and it stays so for as long as the answer is on its way")
+        gate.complete(Unit)
         waitUntil { f.loaded }
         assertEquals(listOf("p1"), f.posts.map { it.id })
         assertFalse(f.hasMore, "the saved list has no next page")
