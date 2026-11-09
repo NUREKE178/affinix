@@ -51,7 +51,17 @@ class FeedModel(private val api: Api, private val scope: CoroutineScope, private
 
     private fun say(key: String) { notice = key; scope.launch { delay(3500); if (notice == key) notice = null } }
 
-    fun showMode(m: Int) { if (mode != m) { mode = m; load() } }
+    /** Another tab (All / Mine / Favorites). The list of the tab that was left must not stay on screen under the new tab's name while the new one is on its way:
+     * it is dropped and `loaded` is false until the answer comes, which is what makes the screen draw its skeleton. */
+    fun showMode(m: Int) {
+        if (mode == m) return
+        mode = m
+        posts = emptyList(); hasMore = false; loaded = false; failed = false
+        load()
+    }
+
+    /** counts the readings of the first page: an answer that is not the latest one (a tab that was left in the meantime) is never applied */
+    private var loadSeq = 0
 
     // ---- reading --------------------------------------------------------------------------------------------------------------------
 
@@ -109,20 +119,24 @@ class FeedModel(private val api: Api, private val scope: CoroutineScope, private
     fun load() { scope.launch { loadNow() } }
 
     internal suspend fun loadNow() {
+        val seq = ++loadSeq
         loading = true; failed = false
         try {
             val p = page(null)
+            if (seq != loadSeq) return // another reading (another tab) has replaced this one: its answer is stale
             posts = p; hasMore = mode != 2 && p.size >= PAGE; loaded = true
-        } catch (e: CancellationException) { throw e } catch (e: Exception) { failed = true } finally { loading = false }
+        } catch (e: CancellationException) { throw e } catch (e: Exception) { if (seq == loadSeq) failed = true } finally { if (seq == loadSeq) loading = false }
     }
 
     fun loadMore() {
         val last = posts.lastOrNull() ?: return
         if (loadingMore || !hasMore) return
+        val seq = loadSeq
         scope.launch {
             loadingMore = true
             try {
                 val p = page(last.createdAt)
+                if (seq != loadSeq) return@launch // the tab changed while the next page was coming: it belongs to the other list
                 val have = posts.map { it.id }.toSet()
                 posts = posts + p.filter { it.id !in have }; hasMore = p.size >= PAGE
             } catch (e: CancellationException) { throw e } catch (e: Exception) { say("feed.loadMoreFailed") } finally { loadingMore = false }
