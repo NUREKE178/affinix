@@ -62,6 +62,9 @@ class ChallengeFlowTest {
         kotlinx.coroutines.withTimeout(limitMs) { while (!cond()) kotlinx.coroutines.delay(10) }
     }
 
+    /** AppModel reads the profile as soon as it is made; while that goes on `loading` is true and the Play key is disabled (playChallenge ignores the call, like startDaily) */
+    private suspend fun settled(app: AppModel) = waitUntil { app.profile != null && !app.loading }
+
     // ---- a link that reaches the device ----------------------------------------------------------
 
     @Test fun aLinkIsTakenFromAnAddressAFriendsMessageOrTheBareValue() {
@@ -139,6 +142,7 @@ class ChallengeFlowTest {
     @Test fun playingAChallengeDealsTheLinksPairsAndOpensAChallengeRound() = runTest {
         val season = seasonOf()
         val r = rig(season)
+        settled(r.app)
         r.app.receiveChallenge(linkFor(season))
         r.app.playChallenge()
         waitUntil { r.app.game.round.value != null }
@@ -159,6 +163,7 @@ class ChallengeFlowTest {
     @Test fun aPairThePlayerHasAlreadyAnsweredEarnsNothingAgain() = runTest {
         val season = seasonOf()
         val r = rig(season, seen = listOf(Challenge.pairOf(season, sent[2]) to sent[2].dim))
+        settled(r.app)
         r.app.receiveChallenge(linkFor(season))
         r.app.playChallenge()
         waitUntil { r.app.game.round.value != null }
@@ -167,6 +172,7 @@ class ChallengeFlowTest {
 
     @Test fun aChallengeOfAnOldSeasonIsPlayedButEarnsNothing() = runTest {
         val r = rig("202401")
+        settled(r.app)
         r.app.receiveChallenge(linkFor("202401"))
         r.app.playChallenge()
         waitUntil { r.app.game.round.value != null }
