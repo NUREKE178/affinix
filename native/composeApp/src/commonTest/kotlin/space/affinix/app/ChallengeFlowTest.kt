@@ -40,11 +40,12 @@ class ChallengeFlowTest {
 
     private class Rig(val app: AppModel, val log: MutableList<String>, val kv: MemoryKeyValueStore)
 
-    private fun rig(season: String = seasonOf(), kv: MemoryKeyValueStore = MemoryKeyValueStore(), votes: Int = 0, seen: List<Pair<String, String>> = emptyList()): Rig {
+    private fun rig(season: String = seasonOf(), kv: MemoryKeyValueStore = MemoryKeyValueStore(), votes: Int = 0, seen: List<Pair<String, String>> = emptyList(), dealFails: Boolean = false): Rig {
         val log = java.util.Collections.synchronizedList(mutableListOf<String>())
         val engine = MockEngine { req ->
             val path = req.url.encodedPath
             log += "${req.method.value} $path?${req.url.encodedQuery}"
+            if (dealFails && path.endsWith("/api/arena-deal")) return@MockEngine respond("""{"error":"bad kind"}""", HttpStatusCode.BadRequest, json)
             val body = when {
                 path.endsWith("/api/arena-deal") -> dealFor(season)
                 path.endsWith("arena_state") -> """{"profile":{"xp":0,"level":1,"votes":$votes,"streak":0,"visible":true,"badges":[]}}"""
@@ -181,19 +182,16 @@ class ChallengeFlowTest {
     }
 
     @Test fun aFailedDealKeepsTheChallengeWaiting() = runTest {
-        val kv = MemoryKeyValueStore()
-        val log = mutableListOf<String>()
-        val engine = MockEngine { req ->
-            log += req.url.encodedPath
-            if (req.url.encodedPath.endsWith("/api/arena-deal")) respond("""{"error":"bad challenge"}""", HttpStatusCode.BadRequest, json) else respond("[]", HttpStatusCode.OK, json)
-        }
-        val api = Api(HttpClient(engine), Config(supabaseUrl = "https://sb.test", anonKey = "anon", apiBase = "https://api.test"), MemorySessionStore(Session("a", "r", Long.MAX_VALUE / 4, "me", "me@x.kz")), nowSeconds = { 1000 })
-        val app = AppModel(api, CoroutineScope(SupervisorJob() + Dispatchers.Default), kv)
-        app.receiveChallenge(linkFor(seasonOf()))
-        app.playChallenge()
-        waitUntil { log.any { it.endsWith("/api/arena-deal") } && !app.loading }
-        assertNull(app.game.round.value)
-        assertNotNull(app.challenge, "the player can try again")
-        assertNotNull(app.error)
+        // an older server does not know kind=pairs: it answers 400, the app says so and the link stays for the next try
+        val r = rig(dealFails = true)
+        settled(r.app)
+        r.app.receiveChallenge(linkFor(seasonOf()))
+        r.app.playChallenge()
+        waitUntil { r.log.any { it.contains("/api/arena-deal") } && !r.app.loading }
+        assertNull(r.app.game.round.value)
+        assertNotNull(r.app.challenge, "the player can try again")
+        assertNotNull(r.kv.get("challenge"))
+        assertNotNull(r.app.error)
+        assertTrue(r.app.error!!.contains("400"), r.app.error)
     }
 }
