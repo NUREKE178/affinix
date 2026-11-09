@@ -153,7 +153,7 @@ class FeedTest {
         val gate = kotlinx.coroutines.CompletableDeferred<Unit>()
         val engine = MockEngine { req ->
             val path = req.url.encodedPath; val q = req.url.encodedQuery
-            if (path.endsWith("/post_saves") && q.contains("user_id")) gate.await()
+            if (path.endsWith("/post_saves") && q.contains("order=")) gate.await() // the Favorites tab's own reading (newest save first); the saved flags of the other tabs ask without an order
             respond(savedAware(path, q), HttpStatusCode.OK, json)
         }
         val api = Api(HttpClient(engine), config, MemorySessionStore(Session("a", "r", Long.MAX_VALUE / 4, "me", "me@x.kz")), nowSeconds = { 1000 })
