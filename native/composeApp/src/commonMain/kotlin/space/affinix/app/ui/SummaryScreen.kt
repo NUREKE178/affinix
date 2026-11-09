@@ -47,6 +47,7 @@ fun SummaryScreen(model: AppModel, r: Round) {
     // the figures scroll; the two keys of the end stay at the bottom, where the thumb is
     Column(Modifier.fillMaxSize(), verticalArrangement = Arrangement.spacedBy(12.dp)) {
         Column(Modifier.weight(1f).fillMaxWidth().verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(14.dp)) {
+            if (r.mode == Mode.Challenge) MatchBlock(model, r)
             Box(Modifier.fillMaxWidth()) {
                 Column(
                     Modifier.fillMaxWidth().enter().plate(22.dp).clip(RoundedCornerShape(22.dp))
@@ -58,6 +59,7 @@ fun SummaryScreen(model: AppModel, r: Round) {
                         when {
                             entry != null -> t(if (entry.done) "arena.marathon.setDoneTitle" else "arena.marathon.setPartTitle", "n" to r.set)
                             r.mode == Mode.Daily -> t("arena.summary.dailyTitle")
+                            r.mode == Mode.Challenge -> t("arena.match.roundTitle")
                             else -> t("arena.summary.title")
                         },
                         T.Heading, FontWeight.ExtraBold, C.g200, align = TextAlign.Center,
@@ -81,6 +83,7 @@ fun SummaryScreen(model: AppModel, r: Round) {
                 StatTile(t("arena.summary.eye"), if (eyeAll.isEmpty()) "–" else "$eyeOk/${eyeAll.size}", Modifier.weight(1f), t("arena.summary.eyeHint"))
                 StatTile(t("arena.summary.speed"), avgText, Modifier.weight(1f), t("arena.summary.speedHint"))
             }
+            if (r.set == 0) ChallengeShareCard(model, r, own = r.mode == Mode.Challenge)
             if (entry != null) {
                 val th = model.theme
                 Plate(Modifier.fillMaxWidth(), radius = 14, pad = 14) {

@@ -112,6 +112,14 @@ fun HomeScreen(model: AppModel) {
             }
         }
 
+        // a new player (or a friend's waiting challenge) gets one screen and one key instead of the whole lobby: the first look, no questions
+        if (model.activeChallenge != null || model.firstLookDue) {
+            FirstLook(model)
+            model.error?.let { Txt(it, 13, FontWeight.Medium, C.bad) }
+            if (model.loading) LoadingState(compact = true)
+            return@Column
+        }
+
         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
             Stat(t("app.xp"), (p?.xp ?: 0).toInt(), Modifier.weight(1f))
             Stat(t("arena.lobby.statStreak"), p?.streak ?: 0, Modifier.weight(1f))
@@ -149,6 +157,8 @@ fun HomeScreen(model: AppModel) {
             Spacer(Modifier.height(14.dp))
             KeyButton(t("arena.lobby.freeStart"), model::startFree, Modifier.fillMaxWidth(), lit = model.dailyComplete, enabled = !model.loading, big = true)
         }
+
+        PasteChallengeLink(model)
 
         model.error?.let { Txt(it, 13, FontWeight.Medium, C.bad) }
         if (model.loading) LoadingState(compact = true)

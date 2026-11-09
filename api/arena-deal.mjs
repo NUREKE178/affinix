@@ -3,9 +3,11 @@
 //   GET  /api/arena-deal?kind=daily&day=2026-10-30&season=202610            the shared daily challenge (10 duels, the same for everybody)
 //   GET  /api/arena-deal?kind=set&n=3&day=...&season=...                    an extra set of the day (2..6)
 //   POST /api/arena-deal  { kind: "free", day, season, seed, seen: [[pair, dim], ...], recent: [...] }   a free-play round dealt around what the player has answered
+//   GET  /api/arena-deal?kind=pairs&c=<a Taste Match link's c value>[&seed=n]                          the pairs a friend answered (lib/arena/challenge.js), in their order, sides drawn again
 // Every duel carries what the screen needs to show and reveal it: both specimens' names, and for an eye test the contrast of each.
 import { mulberry32, hashStringToSeed } from "../src/lib/prng.js";
-import { planDaily, planSet, planRound, SET_CANDIDATES } from "../src/lib/arena/sampler.js";
+import { planDaily, planSet, planRound, duelFromPair, SET_CANDIDATES } from "../src/lib/arena/sampler.js";
+import { decodeChallenge } from "../src/lib/arena/challenge.js";
 import { getStimulus, FAMILY_IDS, DIMENSION_IDS } from "../src/lib/arena/stimuli.js";
 import { ROUND_SIZE, DAILY_SET_SIZE } from "../src/lib/arena/rules.js";
 import { parsePair, duelCode } from "../src/lib/arena/ledger.js";
@@ -32,6 +34,13 @@ function seenCodes(rows) {
 
 export function deal(input) {
   const kind = String(input.kind ?? "daily");
+  if (kind === "pairs") {
+    // a friend's Taste Match: the season and the pairs come from the link itself (decoded as strictly as the website does it)
+    const ch = decodeChallenge(String(input.c ?? ""));
+    if (!ch) throw Object.assign(new Error("bad challenge"), { status: 400 });
+    const rand = mulberry32(Number.isFinite(Number(input.seed)) ? Number(input.seed) >>> 0 : hashStringToSeed(`${ch.season}/${Math.random()}`));
+    return ch.answers.map((a) => describe(duelFromPair(rand, { season: ch.season, family: a.family, dim: a.dim, a: a.a, b: a.b })));
+  }
   const day = String(input.day ?? "");
   const season = String(input.season ?? "");
   if (!DAY.test(day) || !SEASON.test(season)) throw Object.assign(new Error("bad day or season"), { status: 400 });
@@ -61,7 +70,7 @@ export default async function handler(req, res) {
       input = { ...input, ...(body ?? {}) };
     }
     const duels = deal(input);
-    res.setHeader("Cache-Control", input.kind === "free" || req.method === "POST" ? "no-store" : "public, max-age=300, s-maxage=3600");
+    res.setHeader("Cache-Control", input.kind === "free" || input.kind === "pairs" || req.method === "POST" ? "no-store" : "public, max-age=300, s-maxage=3600");
     res.status(200).json({ duels });
   } catch (err) {
     res.status(err.status ?? 500).json({ error: err.status ? err.message : "deal failed" });

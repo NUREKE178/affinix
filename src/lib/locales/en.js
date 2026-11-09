@@ -452,6 +452,8 @@ export default {
       privacy: "The link holds only your name and your {n} answers. Only the people you send it to see it.",
       shareText: "Shall we compare tastes? Play my {n} duels on Affinix and see how much we match.",
       shareHeading: "Taste duel",
+      pasteLink: "Have a challenge link? Paste it",
+      pasteBad: "There is no challenge link on the clipboard. Copy it from your friend's message.",
     },
     match: {
       roundTitle: "Challenge played",

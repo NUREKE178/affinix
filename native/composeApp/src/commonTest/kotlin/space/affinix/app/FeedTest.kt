@@ -17,6 +17,7 @@ import space.affinix.app.store.FeedModel
 import space.affinix.app.store.Moderation
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertFalse
 import kotlin.test.assertNull
 import kotlin.test.assertTrue
 
@@ -133,5 +134,48 @@ class FeedTest {
         f.loadNow()
         assertNull(f.comment(f.posts[1], "note to self"))
         assertTrue(seen.none { it.contains("/notifications") })
+    }
+
+    // ---- the tabs All / Mine / Favorites ----------------------------------------------------------
+
+    private suspend fun waitUntil(limitMs: Long = 5000, cond: () -> Boolean) = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.Default) {
+        kotlinx.coroutines.withTimeout(limitMs) { while (!cond()) kotlinx.coroutines.delay(10) }
+    }
+
+    /** the reading of the saved posts: the ids first, then the posts */
+    private fun savedAware(path: String, query: String) = if (path.endsWith("/post_saves") && query.contains("user_id")) """[{"post_id":"p1"}]""" else reply(path)
+
+    // The report: in the Feed, going from «Mine» to «Favorites» showed nothing while the other list loaded. The cause: the screen draws its skeleton only while
+    // `loaded` is false (the first reading), and switching tabs kept `loaded = true` and the old posts until the new answer came in, so the old tab's list stayed on
+    // screen under the new tab's name and then jumped.
+    @Test fun switchingToAnotherTabDoesNotLeaveTheOldListOnScreen() = runTest {
+        val f = feed({ p, _, q, _ -> savedAware(p, q) })
+        f.loadNow()
+        assertEquals(2, f.posts.size); assertTrue(f.loaded)
+        f.showMode(2)
+        // at once, before anything has come back: the other tab's posts are gone and the screen shows its skeleton (it does while `loaded` is false)
+        assertTrue(f.posts.isEmpty(), "the list of the other tab is not shown under this tab")
+        assertFalse(f.loaded, "so the skeleton is what the screen draws")
+        waitUntil { f.loaded }
+        assertEquals(listOf("p1"), f.posts.map { it.id })
+        assertFalse(f.hasMore, "the saved list has no next page")
+    }
+
+    // The same switch made twice in a row: the answer of the tab that was left must never replace the list of the tab that is on screen.
+    @Test fun anAnswerForTheTabYouLeftDoesNotReplaceTheList() = runTest {
+        val engine = MockEngine { req ->
+            val path = req.url.encodedPath; val q = req.url.encodedQuery
+            if (path.endsWith("/posts") && q.contains("author_id")) kotlinx.coroutines.delay(500) // «Mine» answers late
+            respond(savedAware(path, q), HttpStatusCode.OK, json)
+        }
+        val api = Api(HttpClient(engine), config, MemorySessionStore(Session("a", "r", Long.MAX_VALUE / 4, "me", "me@x.kz")), nowSeconds = { 1000 })
+        val f = FeedModel(api, kotlinx.coroutines.CoroutineScope(kotlinx.coroutines.SupervisorJob())) { "me" }
+        f.showMode(1)
+        f.showMode(2)
+        waitUntil { f.loaded }
+        assertEquals(listOf("p1"), f.posts.map { it.id })
+        kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.Default) { kotlinx.coroutines.delay(900) } // the late answer of «Mine» arrives now
+        assertEquals(2, f.mode)
+        assertEquals(listOf("p1"), f.posts.map { it.id }, "the late answer of the tab that was left is ignored")
     }
 }

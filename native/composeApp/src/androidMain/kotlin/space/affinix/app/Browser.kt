@@ -34,8 +34,33 @@ actual object Browser {
         return withTimeoutOrNull(180_000) { back.await() }
     }
 
+    actual fun shareText(text: String): Boolean {
+        val ctx = AndroidAuth.context ?: return false
+        return try {
+            val send = Intent(Intent.ACTION_SEND).setType("text/plain").putExtra(Intent.EXTRA_TEXT, text)
+            ctx.startActivity(Intent.createChooser(send, null).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
+            true
+        } catch (e: Exception) { false }
+    }
+
     actual fun openUrl(url: String): Boolean {
         val ctx = AndroidAuth.context ?: return false
         return try { ctx.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(url)).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)); true } catch (e: Exception) { false }
     }
+}
+
+/** A Taste Match link that opened the app from outside (a message, a browser): handed to the app model as soon as there is one. */
+object AndroidChallenge {
+    internal var onLink: ((String) -> Unit)? = null
+    private var pending: String? = null
+
+    /** called by the activity with the address it was opened with: only affinix.space addresses that carry a `c` value count */
+    fun deliver(uri: Uri?) {
+        if (uri == null || uri.scheme != "https" || uri.host != "affinix.space") return
+        val c = uri.getQueryParameter("c") ?: return
+        val listener = onLink
+        if (listener != null) listener(c) else pending = c
+    }
+
+    internal fun takePending(): String? = pending.also { pending = null }
 }

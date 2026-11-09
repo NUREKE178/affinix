@@ -309,6 +309,9 @@ class Api(
 
     suspend fun dealSet(n: Int, day: String, season: String): List<Duel> = get("/api/arena-deal", "kind" to "set", "n" to n.toString(), "day" to day, "season" to season)
 
+    /** The pairs of a friend's Taste Match link (store/Challenge.kt), in their order, with the sides drawn from [seed]: the same dealer, the same names and pictures. */
+    suspend fun dealPairs(c: String, seed: Long): List<Duel> = get("/api/arena-deal", "kind" to "pairs", "c" to c, "seed" to seed.toString())
+
     suspend fun dealFree(day: String, season: String, seed: Long, seen: List<Pair<String, String>>, recent: JsonElement = JsonArray(emptyList())): List<Duel> {
         val body = buildJsonObject {
             put("kind", "free"); put("day", day); put("season", season); put("seed", seed)

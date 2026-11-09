@@ -60,7 +60,7 @@ class ScreenshotTest {
     private val dnaFixture = kotlinx.serialization.json.Json.parseToJsonElement(javaClass.getResource("/dna.json")!!.readText()) as kotlinx.serialization.json.JsonObject
 
     /** [marathon]: the daily ten is done and set 2 too, set 3 is half way; [dna]: the player has 90 answers on record */
-    private fun model(signedIn: Boolean, marathon: Boolean = false, dna: Boolean = false, styles: Boolean = false, admin: Boolean = false, chatDown: Boolean = false, hangPath: String? = null, days: Boolean = false, veteran: Boolean = false): AppModel {
+    private fun model(signedIn: Boolean, marathon: Boolean = false, dna: Boolean = false, styles: Boolean = false, admin: Boolean = false, chatDown: Boolean = false, hangPath: String? = null, days: Boolean = false, veteran: Boolean = false, newcomer: Boolean = false): AppModel {
         val engine = MockEngine { req ->
             if (hangPath != null && req.url.encodedPath.endsWith(hangPath)) kotlinx.coroutines.delay(120_000) // this answer never comes in the picture: the screen shows what it shows while it waits
             if (chatDown && req.url.encodedPath.endsWith("/messages")) return@MockEngine respond("""{"message":"permission denied for table messages"}""", HttpStatusCode.BadRequest, json)
@@ -104,6 +104,8 @@ class ScreenshotTest {
                 marathon && req.url.encodedPath.endsWith("arena_state") -> """{"profile":{"xp":2840,"level":8,"votes":331,"eyeCorrect":18,"eyeTotal":25,"streak":4,"bestCombo":9,"visible":true,"badges":["first_vote","votes_100"]},"today":{"day":"${localDay()}","votes":27,"dailyVotes":10,"setVotes":[10,4,0,0,0],"familyVotes":{"card":22,"mark":5},"maxCombo":7,"slate":["votes_15","fam_5","combo_6"],"claimed":["votes_15","daily_set","set_2"]},"days":[]}"""
                 dna && req.url.encodedPath.endsWith("arena_my_votes") -> if (String(req.body.toByteArray()).contains("\"${seasonOf()}\"")) """{"rows":[${(dnaFixture["votes"] as kotlinx.serialization.json.JsonArray).joinToString(",")}],"last":90,"more":false}""" else """{"rows":[],"last":0,"more":false}"""
                 dna && req.url.encodedPath.endsWith("arena-traits") -> """{"order":${dnaFixture["order"]},"traits":${dnaFixture["traits"]}}"""
+                // [newcomer]: nothing answered yet, so the one-screen welcome is what the Play tab shows
+                newcomer && req.url.encodedPath.endsWith("arena_state") -> """{"profile":{"xp":0,"level":1,"votes":0,"eyeCorrect":0,"eyeTotal":0,"streak":0,"bestCombo":0,"visible":true,"badges":[]},"today":{"day":"2026-10-30","votes":0,"dailyVotes":0,"maxCombo":0,"eyeCorrect":0,"sec":0,"families":[],"dims":[],"slate":["votes_15","fam_5","combo_6"],"claimed":[]}}"""
                 // [veteran]: level 31, whose rank («Креативный директор») is the longest name there is
                 veteran && req.url.encodedPath.endsWith("arena_state") -> """{"profile":{"xp":47000,"level":31,"votes":2310,"eyeCorrect":180,"eyeTotal":250,"streak":4,"bestCombo":9,"visible":true,"badges":["first_vote","votes_100"]},"today":{"day":"2026-10-30","votes":16,"dailyVotes":4,"maxCombo":7,"eyeCorrect":2,"sec":0,"families":["mark","card","poster"],"dims":["trust","clarity"],"slate":["votes_15","fam_5","combo_6"],"claimed":["votes_15"]}}"""
                 req.url.encodedPath.endsWith("arena_state") -> """{"profile":{"xp":1240,"level":5,"votes":231,"eyeCorrect":18,"eyeTotal":25,"streak":4,"bestCombo":9,"visible":true,"badges":["first_vote","votes_100","streak_3","level_5","combo_8"]},"today":{"day":"2026-10-30","votes":16,"dailyVotes":4,"maxCombo":7,"eyeCorrect":2,"sec":0,"families":["mark","card","poster"],"dims":["trust","clarity"],"slate":["votes_15","fam_5","combo_6"],"claimed":["votes_15"]}}"""
@@ -203,6 +205,48 @@ class ScreenshotTest {
     @Test fun summary() {
         val m = model(true); primeRound(m)
         shoot("06-summary-phone", 420, 820, m) { repeat(2) { Thread.sleep(700); m.vote(0); m.game.next() } }
+    }
+
+    // ---- the first look and Taste Match (store/Challenge.kt; the screens of the canvas «Affinix: First Look and Taste Match») ----
+
+    private fun waitFor(ms: Long = 8000, cond: () -> Boolean) { val until = System.currentTimeMillis() + ms; while (!cond() && System.currentTimeMillis() < until) Thread.sleep(50) }
+
+    /** the pairs of a shared link as the dealer returns them, with a coloured swatch for every specimen */
+    private fun challengeDuels(m: AppModel, answers: List<space.affinix.app.store.Challenge.Answer>, season: String) = answers.mapIndexed { i, a ->
+        m.images["$season/${a.family}/${a.a}"] = swatch(Color(0xFF000000 or (0x20304AL + i * 0x1A0B05L)), Color(0xFFFF6A1F))
+        m.images["$season/${a.family}/${a.b}"] = swatch(Color(0xFFE9E7E2), Color(0xFF000000 or (0x2D5A44L + i * 0x0B0F12L)))
+        Duel("${a.family}-${a.a}-${a.b}", season, a.family, a.dim, a.a, a.b, "$season/${a.family}/${a.a}-${a.b}", specimens = listOf(Specimen("A"), Specimen("B")))
+    }
+
+    private fun vector(note: String) = ChallengeVectors.good.first { it.note.startsWith(note) }
+
+    @Test fun firstLookOwn() { val m = model(true, newcomer = true); shoot("58-first-look-phone", 420, 900, m) { waitFor { m.firstLookDue } } }
+
+    @Test fun firstLookChallengeKazakh() {
+        val m = model(true, newcomer = true); m.changeLang(Lang.Kk)
+        val v = vector("Cyrillic"); m.receiveChallenge("https://affinix.space/?c=${v.text}")
+        shoot("59-first-look-challenge-kk-phone", 420, 900, m) { waitFor { m.profile != null } }
+    }
+
+    /** a friend's ten answers played back with seven of them the same: 70 %, three pairs where the two people split */
+    private fun matchShot(name: String, lang: Lang?) {
+        val m = model(true); lang?.let { m.changeLang(it) }
+        val v = vector("ten answers"); val parsed = space.affinix.app.store.Challenge.decode(v.text)!!
+        m.game.start(Mode.Challenge, challengeDuels(m, parsed.answers, parsed.season), challenge = parsed)
+        shoot(name, 420, 2300, m) {
+            parsed.answers.forEachIndexed { i, a -> Thread.sleep(700); m.vote(if (i == 2 || i == 5 || i == 9) 1 - a.pick else a.pick); m.game.next() }
+        }
+    }
+
+    @Test fun matchPhone() = matchShot("60-match-phone", null)
+    @Test fun matchPhoneKazakh() = matchShot("61-match-kk-phone", Lang.Kk)
+
+    /** the end of an ordinary round: the card that sends the answers to a friend */
+    @Test fun summaryShare() {
+        val m = model(true)
+        val v = vector("ten answers"); val parsed = space.affinix.app.store.Challenge.decode(v.text)!!
+        m.game.start(Mode.Free, challengeDuels(m, parsed.answers, parsed.season))
+        shoot("62-summary-share-phone", 420, 2300, m) { parsed.answers.forEach { a -> Thread.sleep(700); m.vote(a.pick); m.game.next() } }
     }
 
     @Test fun rankings() { val m = model(true); m.tab = Tab.Rankings; shoot("07-rankings-phone", 420, 820, m) }

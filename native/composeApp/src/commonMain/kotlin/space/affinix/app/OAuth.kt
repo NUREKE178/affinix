@@ -13,6 +13,9 @@ expect object Browser {
 
     /** Shows a web page in the system browser (the download page, for an update). */
     fun openUrl(url: String): Boolean
+
+    /** Opens the system's share sheet with [text]. Returns false when the platform has none (a computer): the caller copies the text instead. */
+    fun shareText(text: String): Boolean
 }
 
 /** PKCE (RFC 7636): the app proves it is the one that started the sign-in without keeping a secret. */

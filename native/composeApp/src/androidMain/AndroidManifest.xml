@@ -26,6 +26,13 @@
                 <category android:name="android.intent.category.BROWSABLE" />
                 <data android:scheme="space.affinix.app" android:host="auth" />
             </intent-filter>
+            <!-- a Taste Match link of a friend (https://affinix.space/?c=...): the app is offered next to the browser where the system allows it -->
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data android:scheme="https" android:host="affinix.space" android:pathPrefix="/" />
+            </intent-filter>
         </activity>
     </application>
 </manifest>

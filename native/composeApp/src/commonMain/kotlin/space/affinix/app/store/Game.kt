@@ -15,7 +15,8 @@ import space.affinix.app.net.WireVote
 
 enum class Phase { Choose, Reveal, Summary }
 
-enum class Mode { Daily, Free }
+/** [Challenge]: the pairs of a friend's Taste Match link (store/Challenge.kt), played like free play and compared with the friend's answers at the end */
+enum class Mode { Daily, Free, Challenge }
 
 /** What one answered duel looked like, for the reveal and the summary. */
 data class Result(
@@ -48,6 +49,8 @@ data class Round(
     val last: Result? = null,
     /** 0 = the daily ten or a free round; 2..6 = an extra set of the marathon */
     val set: Int = 0,
+    /** the friend's link this round plays (mode [Mode.Challenge]) */
+    val challenge: Challenge.Parsed? = null,
 ) {
     val duel: Duel? get() = duels.getOrNull(idx)
     val xp: Int get() = results.sumOf { it.xp }
@@ -79,8 +82,8 @@ class Game(
     private val flushLock = Mutex()
     val pendingCount get() = pending.size
 
-    fun start(mode: Mode, duels: List<Duel>, set: Int = 0) {
-        _round.value = if (duels.isEmpty()) null else Round(mode, today(), duels, shownAt = now(), set = set)
+    fun start(mode: Mode, duels: List<Duel>, set: Int = 0, challenge: Challenge.Parsed? = null) {
+        _round.value = if (duels.isEmpty()) null else Round(mode, today(), duels, shownAt = now(), set = set, challenge = challenge)
     }
 
     /** Fetches the crowd's counts for the whole round once, so the reveal can show them at once. */
