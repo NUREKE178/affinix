@@ -35,7 +35,12 @@ export async function pushStatus() {
 async function serverKey() {
   const sb = requireSupabase();
   const { data, error } = await sb.functions.invoke("notify-message", { body: { action: "key" } });
-  if (error || !data?.publicKey) throw new Error("push_not_configured");
+  if (error) {
+    // say WHY: 503 = the function has no VAPID secrets, 404 = it is not deployed under this name, anything else = the code in the message
+    const status = error.context?.status;
+    throw new Error(status === 503 ? "push_not_configured" : status === 404 ? "push_no_function" : `push_http_${status ?? "network"}`);
+  }
+  if (!data?.publicKey) throw new Error("push_not_configured");
   return data.publicKey;
 }
 
