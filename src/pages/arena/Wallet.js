@@ -221,7 +221,6 @@ function HowTo({ wallet, t }) {
         <li>${t("cash.rules.month", { cap: money(r.monthlyCap ?? 0) })}</li>
         ${r.xpPerTenge > 0 && html`<li>${t("cash.rules.xp", { xp: r.xpPerTenge })}</li>`}
         <li>${t("cash.rules.funded")}</li>
-        <li>${t("cash.rules.cap", { cap: money(r.dailyCap ?? 0) })}</li>
         <li>${t("cash.rules.hold", { days: r.holdDays ?? 7 })}</li>
         <li>${t("cash.rules.quality")}</li>
         <li>${t("cash.rules.fair")}</li>

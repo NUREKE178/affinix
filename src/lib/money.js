@@ -4,7 +4,7 @@
 export const TIYN_PER_TENGE = 100;
 
 /** Why an answer paid nothing (the `cashReason` of arena_test_vote), as the key of a sentence the player can act on. */
-export const CASH_REASONS = ["budget", "cap", "month_cap", "too_fast", "need_play", "new_account", "blocked", "off"];
+export const CASH_REASONS = ["budget", "month_cap", "too_fast", "need_play", "new_account", "blocked", "off"];
 
 // ---------------------------------------------------------------------------
 // money formatting (pure, tested)

@@ -4418,7 +4418,7 @@ transfer the bonus to the user's bank, but not now; the site must be able to exp
 - **The server decides every payment** (`_cash_earn`, called from `arena_test_vote` with the test row locked): funded and
   budget left; account older than `min_account_hours` (24) with `min_arena_votes` (30) Arena duels; answer slower than
   `min_answer_ms` (600, client-reported) **and** at least `min_gap_ms` (1500) after the player's previous paid answer on the
-  server clock (`cash_accounts.last_paid_at`, under a row lock); `user_daily_cap` (500 ₸, UTC day).
+  server clock (`cash_accounts.last_paid_at`, under a row lock); `user_daily_cap` (500 ₸, UTC day; removed again in 0029, see below).
 - **Holding period:** a bonus is `pending` for `hold_days` (7), then released lazily on the next wallet read
   (`_cash_release`, no cron). An account on `review` is not released; `blocked` earns nothing and its pending bonuses are voided.
 - **Quality checks (test-retest):** `arena_test_queue` sometimes (`check_rate`, 20 %) brings back, as an ordinary-looking
@@ -4524,3 +4524,17 @@ ledger lines (the `cash_admin_void` RPC exists, no screen yet), the jury script 
   several values to 15 ₸, the landing XP counter changes over time, the animation runs only once the section is in view, and with reduce motion the picture stands on
   100 XP); `node --test` 31; the old e2e and the SQL tests unchanged and green. Pictures were looked at, mid-animation too.
 - Landing numbers (62 / 38, n = 30) are illustrative and say nothing about real results.
+
+## Arena cash, part 3: no daily limit, the monthly 3 000 ₸ is the only one (migration 0029)
+
+**Ask:** "not a daily limit, make it a monthly limit, 3000 tenge."
+
+- 0027 had a daily cap (500 ₸) and 0028 added the monthly one (3 000 ₸). 0029 removes the daily one entirely: `cash_settings.user_daily_cap` is dropped, `_cash_room`
+  now returns only the month (`month`, `monthLeft`, `room` = what is left, `reason` = `month_cap`), `_cash_earn` lost its daily check and the `cap` reason, `_cash_wallet_json` lost
+  `today` and `rules.dailyCap`, `cash_admin_update_settings` no longer accepts `user_daily_cap` (answers `bad_patch`). The functions are replaced (not the old migrations edited), so it
+  works whether 0027 / 0028 were applied earlier or together with it; the runner's second pass still ends on the 0029 versions.
+- Rules unchanged otherwise: XP conversion cut to what is left of the month, a mission reward that does not fit is refused with `month_cap`, UTC calendar month.
+- Screens: the "at most {cap} a day" rule, the admin "daily limit per person" row and form field and the `cash.reason.cap` text are gone (3 strings x 3 languages: 1 824 per language).
+- Verified: SQL **103 + 32** assertions (the old daily tests became monthly ones; new: the column is gone, 80 000 XP in one day -> 800 ₸ with no cut, the old setting is refused, the
+  wallet has no daily keys); browser e2e 47 checks; `node --test` 31.
+- **Apply:** `supabase db push` (0029).

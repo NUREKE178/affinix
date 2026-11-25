@@ -1044,7 +1044,6 @@ export default {
     errorBody: "Check your connection and try again.",
     reason: {
       budget: "This test's budget has run out: no bonus",
-      cap: "Today's bonus limit is reached",
       month_cap: "This month's bonus limit is reached",
       too_fast: "Answered too fast: no bonus",
       need_play: "Play in the Arena first to earn bonuses",
@@ -1111,7 +1110,6 @@ export default {
       month: "At most {cap} a month (XP and missions together).",
       xp: "{xp} XP = 1 ₸. XP counts only once bonuses are open for the account.",
       funded: "Missions marked ₸ pay an extra bonus, and their budget is limited.",
-      cap: "At most {cap} a day.",
       hold: "A new bonus waits {days} days, then becomes available.",
       quality: "Now and then a pair you already answered comes back. If your answers often disagree, the account goes into review.",
       fair: "Clicking too fast, several accounts or a bot get bonuses cancelled.",
@@ -1830,7 +1828,6 @@ export default {
         rate: "XP rate",
         payouts: "Bank withdrawals",
         hold: "Holding period, days",
-        cap: "Daily limit per person",
         max: "Most per answer",
         min: "Minimum withdrawal",
         eligible: "Who can earn",

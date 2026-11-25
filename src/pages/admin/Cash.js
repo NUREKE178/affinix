@@ -52,7 +52,7 @@ function Rules({ d, t, onChanged }) {
   const [busy, setBusy] = useState(false);
   const [form, setForm] = useState(null);
   const edit = () => {
-    setForm({ hold: String(s.hold_days), cap: tenge(s.user_daily_cap), month: tenge(s.monthly_cap ?? 0), rate: String(s.xp_per_tenge ?? 0),
+    setForm({ hold: String(s.hold_days), month: tenge(s.monthly_cap ?? 0), rate: String(s.xp_per_tenge ?? 0),
       max: tenge(s.max_reward), min: tenge(s.min_payout), votes: String(s.min_arena_votes) });
     setOpen(true);
   };
@@ -64,7 +64,7 @@ function Rules({ d, t, onChanged }) {
   }
   async function save() {
     const patch = {
-      hold_days: Number.parseInt(form.hold, 10), user_daily_cap: parseTenge(form.cap), monthly_cap: parseTenge(form.month),
+      hold_days: Number.parseInt(form.hold, 10), monthly_cap: parseTenge(form.month),
       xp_per_tenge: Number.parseInt(form.rate, 10), max_reward: parseTenge(form.max),
       min_payout: parseTenge(form.min), min_arena_votes: Number.parseInt(form.votes, 10),
     };
@@ -80,7 +80,6 @@ function Rules({ d, t, onChanged }) {
     [t("admin.cash.rule.hold"), t("admin.cash.days", { n: s.hold_days })],
     [t("admin.cash.rule.month"), money(s.monthly_cap ?? 0)],
     [t("admin.cash.rule.rate"), s.xp_per_tenge > 0 ? t("admin.cash.rate", { xp: s.xp_per_tenge }) : t("admin.cash.off")],
-    [t("admin.cash.rule.cap"), money(s.user_daily_cap)],
     [t("admin.cash.rule.max"), money(s.max_reward)],
     [t("admin.cash.rule.min"), money(s.min_payout)],
     [t("admin.cash.rule.eligible"), t("admin.cash.eligible", { h: s.min_account_hours, n: s.min_arena_votes })],
@@ -105,7 +104,6 @@ function Rules({ d, t, onChanged }) {
             <${Field} label=${t("admin.cash.rule.hold")}><${TextInput} className="w-full" inputmode="numeric" value=${form.hold} onInput=${(e) => setForm({ ...form, hold: e.target.value })} /><//>
             <${Field} label=${`${t("admin.cash.rule.month")}, ₸`}><${TextInput} className="w-full" inputmode="decimal" value=${form.month} onInput=${(e) => setForm({ ...form, month: e.target.value })} data-testid="admin-cash-month" /><//>
             <${Field} label=${t("admin.cash.xpPerTenge")}><${TextInput} className="w-full" inputmode="numeric" value=${form.rate} onInput=${(e) => setForm({ ...form, rate: e.target.value })} data-testid="admin-cash-rate" /><//>
-            <${Field} label=${`${t("admin.cash.rule.cap")}, ₸`}><${TextInput} className="w-full" inputmode="decimal" value=${form.cap} onInput=${(e) => setForm({ ...form, cap: e.target.value })} /><//>
             <${Field} label=${`${t("admin.cash.rule.max")}, ₸`}><${TextInput} className="w-full" inputmode="decimal" value=${form.max} onInput=${(e) => setForm({ ...form, max: e.target.value })} /><//>
             <${Field} label=${`${t("admin.cash.rule.min")}, ₸`}><${TextInput} className="w-full" inputmode="decimal" value=${form.min} onInput=${(e) => setForm({ ...form, min: e.target.value })} /><//>
             <${Field} label=${t("admin.cash.minVotes")}><${TextInput} className="w-full" inputmode="numeric" value=${form.votes} onInput=${(e) => setForm({ ...form, votes: e.target.value })} /><//>

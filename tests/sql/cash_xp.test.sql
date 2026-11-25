@@ -18,7 +18,7 @@ insert into arena_profiles (user_id, votes_total, xp_total) values
   ('00000000-0000-0000-0000-0000000000c3', 40, 1000), ('00000000-0000-0000-0000-0000000000c4', 10, 1000)
 on conflict (user_id) do nothing;
 -- the defaults of 0028 (cash.test.sql switched the conversion off for its own blocks)
-update cash_settings set xp_per_tenge = 100, monthly_cap = 300000, user_daily_cap = 50000, earning_enabled = true, check_rate = 0, min_gap_ms = 0;
+update cash_settings set xp_per_tenge = 100, monthly_cap = 300000, earning_enabled = true, check_rate = 0, min_gap_ms = 0;
 
 do $$
 declare c1 uuid := '00000000-0000-0000-0000-0000000000c1'; w jsonb;
@@ -88,15 +88,17 @@ begin
   update cash_settings set monthly_cap = 300000;
 end $$;
 
--- the daily limit cuts the same way
+-- there is no daily limit (0029): a big day converts in full, only the month can stop it
 do $$
-declare c1 uuid := '00000000-0000-0000-0000-0000000000c1'; today bigint;
+declare c1 uuid := '00000000-0000-0000-0000-0000000000c1'; before bigint;
 begin
-  today := (t.wallet(c1)->>'today')::bigint;
-  update cash_settings set user_daily_cap = today + 100;
-  update arena_profiles set xp_total = xp_total + 400 where user_id = c1;
-  perform t.ok((t.wallet(c1)->>'today')::bigint = today + 100, 'day: cut to the daily limit');
-  update cash_settings set user_daily_cap = 50000;
+  perform t.ok(not exists (select 1 from information_schema.columns where table_name = 'cash_settings' and column_name = 'user_daily_cap'), 'day: the daily limit column is gone');
+  select coalesce(sum(amount), 0) into before from cash_ledger where user_id = c1;
+  update arena_profiles set xp_total = xp_total + 80000 where user_id = c1;   -- 800 tenge in one day, more than the old 500
+  perform t.ok((select sum(amount) from cash_ledger where user_id = c1) - before = 80000, 'day: 80 000 XP in one day -> 800 tenge, no daily cut');
+  perform t.as_user('00000000-0000-0000-0000-0000000000a2');
+  perform t.ok(t.raises($q$select cash_admin_update_settings('{"user_daily_cap": 1000}')$q$) = 'bad_patch', 'day: the old setting is refused');
+  perform t.ok(not (cash_admin_overview()->'settings') ? 'user_daily_cap', 'day: the admin overview has no daily setting');
 end $$;
 
 -- who earns nothing: a new account, too few duels, a blocked account, bonuses paused
