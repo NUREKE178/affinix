@@ -20,6 +20,8 @@ export function Composer({
     if (!el) return;
     el.style.height = "auto";
     el.style.height = `${Math.min(el.scrollHeight, 140)}px`;
+    // the scrollbar only appears once the box has stopped growing
+    el.classList.toggle("is-scroll", el.scrollHeight > 140);
   }
   // the box grows with the text and shrinks back after a send, an edit or a draft restored
   useEffect(autosize, [value]);

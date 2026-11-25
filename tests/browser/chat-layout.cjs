@@ -39,6 +39,10 @@ server.listen(0, "127.0.0.1", async () => {
       assert.ok(m.docH <= m.vh, `${tag}: the page is ${m.docH - m.vh}px taller than the screen (${m.docH} > ${m.vh}), so it can scroll`);
       assert.ok(m.headTop >= m.barBottom, `${tag}: the chat header (top ${m.headTop}) starts above the bottom of the top bar (${m.barBottom})`);
       assert.ok(m.composerBottom <= m.vh, `${tag}: the composer is cut off (${m.composerBottom} > ${m.vh})`);
+      // the empty field is one line tall, its hint does not wrap and no scrollbar shows
+      const box = await page.evaluate(() => { const i = document.getElementById("input"); return { h: i.getBoundingClientRect().height, sh: i.scrollHeight, ch: i.clientHeight, ov: getComputedStyle(i).overflowY }; });
+      assert.ok(box.h <= 44, `${tag}: the empty field is ${box.h}px tall (the hint wraps)`);
+      assert.ok(box.sh <= box.ch + 1 && box.ov === "hidden", `${tag}: the empty field has a scrollbar (${box.sh} > ${box.ch}, overflow ${box.ov})`);
       // what used to push the header under the bar: focusing the field and dragging the page
       await page.focus("#input");
       await page.evaluate(() => window.scrollBy(0, 300));

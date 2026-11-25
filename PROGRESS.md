@@ -4551,3 +4551,11 @@ ledger lines (the `cash_admin_void` RPC exists, no screen yet), the jury script 
 - **Test:** `tests/browser/chat-layout.cjs` + `chat-layout.html` (real CSS, real class names, no backend): at 390x780, 360x640, 412x915 with a taller bar and 390x420 (keyboard height) the page is never taller than the
   screen, the header starts below the bar, the composer is on screen, and after focusing the field and dragging the page `scrollY` stays 0; the list fits too. It **failed on the old code** (65 px) and passes now.
 - **Not verified:** a real phone with the real keyboard (Android Chrome pans differently from the emulated shrink; iOS Safari has its own keyboard behaviour).
+
+## Phone messenger: tidier message composer (no migration)
+
+**Report:** a phone screenshot of the composer: the hint "Напишите сообщение…" wrapped onto two lines, a grey scrollbar sliver showed inside the field, the focus ring was a heavy orange glow, the icon buttons were large and loosely spaced.
+
+- **Cause:** on a 360 px phone three 40 px buttons plus 8 px gaps left the field ~160 px wide, too narrow for the hint at 14.5 px; the textarea had `overflow: auto` so the wrapped hint produced a scrollbar.
+- **Fix:** `styles.css`: phone block (<= 767 px) with 36 px icon buttons, 38 px send, 4 px gaps, 8 px padding; the field is `overflow-y: hidden` and `Composer.js` toggles `.is-scroll` only once the content passes the 140 px max height; the placeholder is `nowrap` with an ellipsis; a quiet chat-only focus state (thin warm edge instead of the 3 px glow).
+- **Test:** `tests/browser/chat-layout.cjs` (and its fixture, now with the real buttons) checks the empty field is <= 44 px tall with no scrollbar at 4 phone sizes. `node --test` 31, chat layout, e2e pass.
