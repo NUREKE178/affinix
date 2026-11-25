@@ -1169,7 +1169,11 @@ select.sk-input option:checked {
   position: relative; display: flex; align-items: flex-end; gap: 8px;
   padding: 10px 12px; border-top: 1px solid rgba(0,0,0,.45); background: rgba(255,255,255,.02);
 }
-.sk-chat-input { flex: 1; resize: none; border-radius: 18px; padding: 9px 14px; font-size: 14.5px; line-height: 1.35; max-height: 140px; color: #ececee; }
+.sk-chat-input { flex: 1; resize: none; border-radius: 18px; padding: 9px 14px; font-size: 14.5px; line-height: 1.35; max-height: 140px; color: #ececee; overflow-y: hidden; scrollbar-width: thin; scrollbar-color: rgba(255,255,255,.14) transparent; }
+.sk-chat-input.is-scroll { overflow-y: auto; }
+.sk-chat-input::placeholder { color: var(--g-500); opacity: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+/* in a chat the field is quiet: a thin warm edge on focus, no glow */
+.sk-chat-input:focus { border-color: rgba(255,106,31,.45); box-shadow: var(--sh-well), 0 0 0 1px rgba(255,106,31,.16); }
 .sk-chat-iconbtn, .sk-chat-send {
   flex-shrink: 0; width: 40px; height: 40px; border-radius: 50%; border: 0; cursor: pointer;
   display: inline-flex; align-items: center; justify-content: center;
@@ -1190,6 +1194,14 @@ select.sk-input option:checked {
 .sk-emoji-panel button { border: 0; background: transparent; font-size: 20px; padding: 4px 0; border-radius: 8px; cursor: pointer; }
 .sk-emoji-panel button:hover { background: rgba(255,255,255,.08); }
 
+@media (max-width: 767px) {
+  /* the composer on a phone: tighter controls so the hint stays on one line */
+  .sk-chat-composer { gap: 4px; padding: 8px 8px; }
+  .sk-chat-iconbtn { width: 36px; height: 36px; }
+  .sk-chat-iconbtn svg { width: 21px; height: 21px; }
+  .sk-chat-send { width: 38px; height: 38px; margin-left: 2px; }
+  .sk-chat-input { padding: 8px 12px; font-size: 15px; }
+}
 @media (max-width: 767px) {
   /* Measured on the real mobile Shell layout: topbar ~63px + main's own
      top/bottom padding ~24px each = ~111px (~7rem). 7.5rem leaves a small,
