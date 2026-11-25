@@ -85,9 +85,9 @@ def parse_speech_block(body):
             continue
         who = None
         text = l
-        m = re.match(r"^(СПИКЕР 1|ӘМИНА):\s*(.*)$", l)
+        m = re.match(r"^(НҰРЛАН|ӘМИНА):\s*(.*)$", l)
         if m:
-            who = "s1" if m.group(1) == "СПИКЕР 1" else "am"
+            who = "s1" if m.group(1) == "НҰРЛАН" else "am"
             text = m.group(2)
         elif l.startswith("ЕКЕУІ БІРГЕ"):
             who = "both"
@@ -114,7 +114,7 @@ sp_intro, sp_subs = subsections(top["1"]["lines"])
 schedule = []
 catchup = []
 for l in sp_intro:
-    for m in re.finditer(r"(Ашылу|1\.\d)(?:\s*\([^)]*\))?\s+(\d:\d\d)", l):
+    for m in re.finditer(r"(\d)\s+[^→\d]+?\s+(\d:\d\d)", l):
         schedule.append((m.group(1), m.group(2)))
     if l.strip().startswith("•"):
         catchup.append(l.strip().lstrip("• ").strip())
@@ -129,15 +129,12 @@ sections = []
 prev_end = 0
 for title, body in sp_subs:
     sid = title.split()[0].rstrip(":")
-    if title.startswith("АШЫЛУ"):
-        sid = "Ашылу"
     end = next((mmss(e) for k, e in schedule if k == sid), None)
     mt = re.search(r"\((\d:\d\d)", title)
     dur = mt.group(1) if mt else ""
     slides = re.search(r"\[(Слайд[^\]]*)\]", title)
     name = re.sub(r"\s*\(.*?\)\s*|\s*\[.*?\]\s*", " ", title).strip()
-    name = re.sub(r"^(АШЫЛУ:\s*)", "Ашылу · ", name)
-    name = re.sub(r"^(1\.\d)\s+", r"\1 · ", name)
+    name = re.sub(r"^(\d)\s+", r"\1 · ", name)
     sections.append({"id": sid, "name": name, "dur": dur, "slides": slides.group(1) if slides else "", "start": prev_end, "end": end,
                      "blocks": parse_speech_block(body)})
     if end:
@@ -146,7 +143,7 @@ for title, body in sp_subs:
 
 def render_blocks(blocks):
     out = []
-    labels = {"s1": "СПИКЕР 1", "am": "ӘМИНА", "both": "ЕКЕУІ БІРГЕ"}
+    labels = {"s1": "НҰРЛАН", "am": "ӘМИНА", "both": "ЕКЕУІ БІРГЕ"}
     for b in blocks:
         if b["type"] == "stage":
             out.append(f'<p class="stage">{inline(b["text"])}</p>')
@@ -235,7 +232,7 @@ for title, body in qa_subs:
         cur = None
         for raw in body:
             l = raw.rstrip()
-            m = re.match(r"^(\d+б?)\.\s+(.*?)\s*\((С1|Ә|екеуі)\)\s*(?:—\s*(.*))?$", l)
+            m = re.match(r"^(\d+[а-яә]?)\.\s+(.*?)\s*\((Н|Ә|екеуі)\)\s*(?:—\s*(.*))?$", l)
             if m:
                 cur = {"n": m.group(1), "q": m.group(2), "who": m.group(3), "flag": (m.group(4) or "").strip(), "a": []}
                 qs.append(cur)
@@ -243,8 +240,8 @@ for title, body in qa_subs:
                 cur["a"].append(l.strip())
         groups.append((title, qs))
 
-WHO_CLS = {"С1": "s1", "Ә": "am", "екеуі": "both"}
-WHO_LBL = {"С1": "Спикер 1", "Ә": "Әмина", "екеуі": "Екеуі"}
+WHO_CLS = {"Н": "s1", "Ә": "am", "екеуі": "both"}
+WHO_LBL = {"Н": "Нұрлан", "Ә": "Әмина", "екеуі": "Екеуі"}
 
 
 def render_answer(lines):
@@ -278,7 +275,7 @@ if featured["title"]:
         f'<p class="muted">{inline(featured["intro"])}</p>'
         f'<div class="ans-card short"><div class="ac-h"><span class="pill">15 сек</span> Қысқа жауап · кім болса да</div>'
         f'<p class="quote">{"<br>".join(inline(x) for x in st)}</p></div>'
-        f'<div class="ans-card long"><div class="ac-h"><span class="pill">60 сек</span> Толық жауап · Спикер 1 айтады, Әмина соңын қосады</div>{long_html}</div>'
+        f'<div class="ans-card long"><div class="ac-h"><span class="pill">60 сек</span> Толық жауап · Нұрлан айтады, Әмина соңын қосады</div>{long_html}</div>'
         f'<h3>Қосымша қарсы сұрақтар</h3>{follow}'
         f'<p class="note">{inline(featured["note"])}</p></section>'
     )
@@ -465,7 +462,7 @@ details.q[open] > summary { border-bottom:1px solid var(--line); }
 <body>
 <header class="top">
   <div class="bar">
-    <div class="title">Жюриге айтатын баяндама<small>Affinix · 7 минут · Спикер 1 және Әмина</small></div>
+    <div class="title">Жюриге айтатын баяндама<small>Affinix · 7 минут · Нұрлан және Әмина</small></div>
     <div class="timer">
       <div class="clock" id="clock" data-state="idle">0:00</div>
       <button class="go" id="go" aria-label="Бастау / тоқтату">▶</button>
