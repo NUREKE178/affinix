@@ -114,3 +114,29 @@
 .tm-matrix-list span { display: block; font-size: 13px; color: var(--g-300); }
 .tm-matrix-list div { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 7px; }
 .tm-matrix-list i { padding: 2px 9px; border-radius: 999px; background: rgba(52,211,153,.1); box-shadow: inset 0 0 0 1px rgba(52,211,153,.3); font-style: normal; font-size: 11.5px; color: #6ee7b7; }
+
+/* ---- Bonuses (migration 0027) ------------------------------------------------------------------------------- */
+.adm-cash-block, .adm-cash-rules { padding: 18px 20px; display: flex; flex-direction: column; gap: 10px; }
+.adm-cash-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+.adm-cash-actions { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+.adm-cash-search { width: min(320px, 100%); }
+.adm-cash-note { margin: 0; font-size: 13px; line-height: 1.5; color: var(--g-400); }
+.adm-cash-rows { list-style: none; margin: 4px 0 0; padding: 0; display: flex; flex-direction: column; }
+.adm-cash-row { display: flex; align-items: center; gap: 14px; padding: 12px 0; border-top: 1px solid var(--hair); }
+.adm-cash-row:first-child { border-top: 0; }
+.adm-cash-main { flex: 1; min-width: 0; }
+.adm-cash-title { font-size: 14px; font-weight: 600; color: var(--g-100); display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.adm-cash-sub { font-size: 12.5px; color: var(--g-400); margin-top: 2px; }
+.adm-cash-money { display: flex; flex-direction: column; align-items: flex-end; gap: 2px; min-width: 140px; font-size: 12px; color: var(--g-400); text-align: right; }
+.adm-cash-money b { font-size: 15px; color: var(--g-50); font-weight: 600; }
+.adm-cash-row[data-funded="true"] .adm-cash-money b { color: var(--signal-hi); }
+.adm-cash-dl { margin: 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 10px 18px; }
+.adm-cash-dl div { display: flex; flex-direction: column; gap: 2px; padding: 10px 12px; border-radius: 10px; background: var(--well); border: 1px solid rgba(0,0,0,.6); box-shadow: var(--sh-well); }
+.adm-cash-dl dt { font-size: 11.5px; color: var(--g-500); text-transform: uppercase; letter-spacing: .06em; }
+.adm-cash-dl dd { margin: 0; font-size: 13.5px; color: var(--g-100); }
+.adm-cash-form { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0 14px; }
+@media (max-width: 640px) {
+  .adm-cash-row { flex-wrap: wrap; }
+  .adm-cash-money { align-items: flex-start; text-align: left; min-width: 0; }
+  .adm-cash-form { grid-template-columns: minmax(0, 1fr); }
+}

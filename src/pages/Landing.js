@@ -352,6 +352,42 @@ function Workflow({ t, locale }) {
   `;
 }
 
+function Benefits({ t }) {
+  const groups = [{ key: "players", icon: "arena" }, { key: "creators", icon: "target" }, { key: "society", icon: "results" }];
+  return html`
+    <section class="lp-sec" id="lp-benefits" data-testid="landing-benefits">
+      <div class="lp-wrap">
+        <${Reveal}>
+          <div class="lp-sec-h">
+            <span class="lp-eyebrow"><span class="lp-eb-ic" aria-hidden="true"><${Icon} name="heart" size=${13} strokeWidth=${3} /></span>${t("landing.benefits.eyebrow")}</span>
+            <h2 class="lp-h2">${t("landing.benefits.title")}</h2>
+            <p class="lp-sub">${t("landing.benefits.subtitle")}</p>
+          </div>
+          <div class="lp-bgrid">
+            ${groups.map((g) => html`
+              <article key=${g.key} class="lp-bc lp-bf" data-group=${g.key}>
+                <div class="lp-bc-top"><span class="lp-ico"><${Icon} name=${g.icon} size=${22} /></span><span class="lp-num">${t(`landing.benefits.items.${g.key}.tag`)}</span></div>
+                <h3>${t(`landing.benefits.items.${g.key}.title`)}</h3>
+                <ul class="lp-bf-list">
+                  ${["p1", "p2", "p3"].map((p) => html`<li key=${p}><${Icon} name="check" size=${16} strokeWidth=${2.6} className="lp-ic" /><span>${t(`landing.benefits.items.${g.key}.${p}`)}</span></li>`)}
+                </ul>
+              </article>
+            `)}
+          </div>
+          <div class="lp-earn" data-testid="landing-earn">
+            <span class="lp-ico" aria-hidden="true"><${Icon} name="wallet" size=${22} /></span>
+            <div class="lp-earn-main">
+              <h3>${t("landing.benefits.earnTitle")}</h3>
+              <p>${t("landing.benefits.earnBody")}</p>
+            </div>
+            <p class="lp-earn-note"><${Icon} name="shield" size=${15} className="lp-ic" /><span>${t("landing.benefits.earnNote")}</span></p>
+          </div>
+        <//>
+      </div>
+    </section>
+  `;
+}
+
 function Trust({ t }) {
   const items = [
     { key: "i1", icon: "results" }, { key: "i2", icon: "shuffle" },
@@ -462,6 +498,7 @@ export function Landing() {
         <${Hero} t=${t} />
         <${CanTest} t=${t} />
         <${Duel} t=${t} />
+        <${Benefits} t=${t} />
         <${Workflow} t=${t} locale=${locale} />
         <${Trust} t=${t} />
         <${Mobile} t=${t} locale=${locale} />

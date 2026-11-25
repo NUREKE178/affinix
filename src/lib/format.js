@@ -63,3 +63,14 @@ export function shortDate(iso) {
   if (!iso) return "—";
   return new Date(iso).toLocaleDateString(DATE_LOCALES[getLocale()] ?? "ru-RU", { month: "short", day: "numeric", year: "numeric" });
 }
+
+const KK_MONTHS = ["қаңтар", "ақпан", "наурыз", "сәуір", "мамыр", "маусым", "шілде", "тамыз", "қыркүйек", "қазан", "қараша", "желтоқсан"];
+
+/** "2 декабря" / "2 желтоқсан" / "December 2". Kazakh month names come from a table: some browsers ship no kk calendar data
+ * and print "M12 2". */
+export function dayMonth(iso) {
+  if (!iso) return "";
+  const d = new Date(iso);
+  if (getLocale() === "kk") return `${d.getDate()} ${KK_MONTHS[d.getMonth()]}`;
+  return d.toLocaleDateString(DATE_LOCALES[getLocale()] ?? "ru-RU", { day: "numeric", month: "long" });
+}

@@ -11,8 +11,9 @@ import { PlayTab } from "./arena/Play.js";
 import { QuestsTab } from "./arena/Quests.js";
 import { RankingsTab } from "./arena/Rankings.js";
 import { ProfileTab } from "./arena/Profile.js";
+import { WalletTab, WalletChip } from "./arena/Wallet.js";
 
-const TAB_IDS = ["play", "quests", "rankings", "profile"];
+const TAB_IDS = ["play", "quests", "wallet", "rankings", "profile"];
 const NOTICE_ICON = { level: "medal", badge: "medal", xp: "bolt", warn: "shield" };
 
 function Notices({ items }) {
@@ -44,6 +45,7 @@ export function Arena({ query }) {
   const tabs = [
     { id: "play", label: t("arena.tabs.play") },
     { id: "quests", label: html`${t("arena.tabs.quests")}${claimable > 0 ? html`<span class="sk-count" data-testid="arena-claimable">${claimable}</span>` : null}` },
+    { id: "wallet", label: t("arena.tabs.wallet") },
     { id: "rankings", label: t("arena.tabs.rankings") },
     { id: "profile", label: t("arena.tabs.profile") },
   ];
@@ -59,6 +61,7 @@ export function Arena({ query }) {
         <div class="ar-head-side">
           ${ready && view
             ? html`
+              <${WalletChip} />
               <div class="ar-streak-chip" data-on=${view.streak > 0} title=${t("arena.quests.streakTitle")} data-testid="arena-streak-chip">
                 <${Icon} name="flame" size=${20} />
                 <div><b class="sk-num">${view.streak}</b></div>
@@ -75,6 +78,7 @@ export function Arena({ query }) {
 
       ${tab === "play" && html`<${PlayTab} arena=${arena} />`}
       ${tab === "quests" && html`<${QuestsTab} arena=${arena} />`}
+      ${tab === "wallet" && html`<${WalletTab} />`}
       ${tab === "rankings" && html`<${RankingsTab} arena=${arena} />`}
       ${tab === "profile" && html`<${ProfileTab} arena=${arena} />`}
     </div>

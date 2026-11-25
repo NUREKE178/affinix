@@ -7,7 +7,8 @@ import { timeAgo } from "../../lib/format.js";
 import { fetchAdminLog } from "../../lib/platform.js";
 import { AdminError } from "./parts.js";
 
-const ICON = { admin_granted: "userPlus", admin_revoked: "userCheck", post_removed: "trash", comment_removed: "trash", owner_set: "crown" };
+const ICON = { admin_granted: "userPlus", admin_revoked: "userCheck", post_removed: "trash", comment_removed: "trash", owner_set: "crown",
+  cash_fund_test: "wallet", cash_status: "wallet", cash_void: "wallet", cash_settings: "sliders", cash_payout_paid: "card", cash_payout_rejected: "card" };
 
 export function AdminLog() {
   const t = useT();

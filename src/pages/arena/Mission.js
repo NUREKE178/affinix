@@ -11,7 +11,8 @@ import { navigate } from "../../router.js";
 import { useArenaClock } from "../../lib/arenaStore.js";
 import { useMissionQueue, fetchQueue, reportTest } from "../../lib/crowdStore.js";
 import { OptionThumb, optionName, safeImageUrl } from "../crowd/parts.js";
-import { Specimen, Ladder, nf, clock } from "./parts.js";
+import { Specimen, Ladder, nf, clock, money } from "./parts.js";
+import { useWallet } from "../../lib/cashStore.js";
 
 const AUTO_MS = 3200;
 /** Errors that mean "this mission cannot go on" rather than "try again". */
@@ -55,12 +56,17 @@ export function MissionBlock({ arena, unlocked }) {
     const capped = q.missionXp >= q.cap;
     body = html`
       <p class="ar-mi-note" data-testid="mission-available">${t("crowd.mission.available", { n: q.available, cap: q.cap })}</p>
+      ${q.tests.some((x) => x.reward > 0) && html`
+        <p class="ar-mi-note ar-mi-paid" data-testid="mission-paid-note">
+          <${Icon} name="wallet" size=${14} /><span>${t("cash.lobbyNote")}</span>
+          <button type="button" class="cr-link" data-ar-native=${true} onClick=${() => navigate("/app/arena?tab=wallet")}>${t("cash.openWallet")}</button>
+        </p>`}
       <div class="ar-mi-list">
         ${q.tests.map((x) => html`
           <div class="ar-mi-row" key=${x.id} data-testid="mission-row">
             <div class="ar-mi-thumbs">${(x.items ?? []).map((it) => html`<${OptionThumb} key=${it.id} item=${it} size=${38} />`)}</div>
             <div class="ar-mi-main">
-              <div class="ar-mi-title">${x.title}</div>
+              <div class="ar-mi-title">${x.title}${x.reward > 0 && html`<span class="ar-mi-cash" data-testid="mission-reward" title=${t("cash.rewardTitle")}><${Icon} name="wallet" size=${12} />+${money(x.reward)}</span>`}</div>
               <div class="ar-mi-sub">${t(`crowd.q.${x.dim}`)}${x.owner?.name ? ` · ${t("crowd.mission.by", { name: x.owner.name })}` : ""}</div>
             </div>
             <${Button} data-ar-native=${true} size="sm" onClick=${() => actions.startMission(x)} data-testid="mission-start">
@@ -118,6 +124,8 @@ function ResultStrip({ last, round, t }) {
     parts.push(html`<span class="ar-res-note ar-mi-fail" key="e" role="alert" data-testid="mission-error">${terminal ? t(last.error === "pending" ? "crowd.err.pending" : "crowd.mission.closed") : t("crowd.mission.sendFailed")}</span>`);
   } else {
     parts.push(html`<span class="ar-res ar-res-xp sk-num" key="xp" data-testid="arena-xp">+${last.xp ?? 0}<span class="sk-unit">XP</span></span>`);
+    if (last.cash > 0) parts.push(html`<span class="ar-res ar-res-cash sk-num" key="cash" data-testid="mission-cash"><${Icon} name="wallet" size=${14} />+${money(last.cash)}</span>`);
+    else if (last.cashReason && round.test.reward > 0) parts.push(html`<span class="ar-res-note ar-res-muted" key="cr" data-testid="mission-cash-reason">${t(`cash.reason.${last.cashReason}`)}</span>`);
     if (last.bonus > 0) parts.push(html`<span class="ar-res-note" key="b">${t("crowd.mission.bonus", { xp: last.bonus })}</span>`);
     if (last.capped) parts.push(html`<${Badge} key="c" tone="steel">${t("crowd.mission.capped")}<//>`);
     if (round.testStatus && round.testStatus !== "open") parts.push(html`<span class="ar-res-note ar-res-muted" key="cl">${t("crowd.mission.closed")}</span>`);
@@ -264,6 +272,9 @@ export function MissionSummary({ arena }) {
   const bonus = done.reduce((s, x) => s + (x.bonus ?? 0), 0);
   const avgMs = done.length ? Math.round(done.reduce((s, x) => s + (x.ms ?? 0), 0) / done.length) : 0;
   const owner = round.test.owner?.name ?? t("feed.unknownAuthor");
+  const cash = done.reduce((s, x) => s + (x.cash ?? 0), 0);
+  const paid = round.test.reward > 0 || cash > 0;
+  const { wallet } = useWallet();
 
   async function another() {
     setLoading(true);
@@ -292,10 +303,11 @@ export function MissionSummary({ arena }) {
             <span class="sk-num ar-level-xp">${nf(view.levelInto)}<span class="sk-unit">/ ${nf(view.levelSpan)} XP</span></span>
           </div>
         </div>
-        <div class="sk-stat-strip sk-stat-strip-well" style="--cols:3">
+        <div class="sk-stat-strip sk-stat-strip-well" style=${`--cols:${paid ? 4 : 3}`}>
           <${StatTile} label=${t("crowd.mission.answered")} value=${`${done.length}`} hint=${t("arena.summary.answersHint", { n: round.duels.length })} />
           <${StatTile} label=${t("arena.summary.speed")} value=${avgMs ? `${(avgMs / 1000).toFixed(1)} ${t("common.unitSec")}` : "—"} hint=${t("arena.summary.speedHint")} />
           <${StatTile} label="XP" value=${`${xp}`} hint=${bonus > 0 ? t("crowd.mission.bonus", { xp: bonus }) : t("crowd.mission.xpLeft", { xp: round.missionXp ?? 0, cap: 300 })} />
+          ${paid && html`<${StatTile} label=${t("cash.bonus")} value=${money(cash)} hint=${cash > 0 ? t("cash.summaryHint", { days: wallet?.rules?.holdDays ?? 7 }) : t("cash.summaryNone")} />`}
         </div>
         <div class="ar-summary-actions">
           <${Button} data-ar-native=${true} loading=${loading} onClick=${another} data-testid="mission-next"><${Icon} name="play" size=${14} />${t("crowd.mission.next")}<//>

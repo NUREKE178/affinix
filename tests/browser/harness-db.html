@@ -1,0 +1,57 @@
+<!doctype html>
+<!-- like harness.html, but the database calls reach a real PostgreSQL (see cash.e2e.cjs) -->
+<html lang="ru" class="dark" translate="no">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>browser harness</title>
+<base href="/">
+<link rel="stylesheet" href="/vendor/tailwind.css" />
+<link rel="stylesheet" href="/styles.css" />
+<link rel="stylesheet" href="/landing.css" />
+<link rel="stylesheet" href="/arena.css" />
+<link rel="stylesheet" href="/crowd.css" />
+<link rel="stylesheet" href="/messages.css" />
+<link rel="stylesheet" href="/feed.css" />
+<link rel="stylesheet" href="/admin.css" />
+<link rel="stylesheet" href="/shell.css" />
+<link rel="stylesheet" href="/insights.css" />
+<script type="importmap">
+{ "imports": {
+  "preact": "/vendor/preact.module.js", "preact/hooks": "/vendor/hooks.module.js", "htm": "/vendor/htm.module.js",
+  "__ORIGIN__/src/lib/auth.js": "/__h/fake-auth.js",
+  "__ORIGIN__/src/lib/supabaseClient.js": "/__h/fake-supabase-db.js",
+  "__ORIGIN__/src/lib/org.js": "/__h/fake-org.js"
+} }
+</script>
+</head>
+<body class="bg-graphite-950 font-sans antialiased">
+<div id="app" style="max-width: 1100px; margin: 0 auto; padding: 16px"></div>
+<script type="module">
+import { render, html } from "/src/lib/preact.js";
+import { setLocale } from "/src/lib/i18n.js";
+import { captureChallengeFromUrl } from "/src/lib/arena/inbox.js";
+const q = new URLSearchParams(location.search);
+setLocale(q.get("l") ?? "ru");
+captureChallengeFromUrl(); // as src/main.js does
+const root = document.getElementById("app");
+const v = q.get("v") ?? "arena";
+if (v === "landing") {
+  const { Landing } = await import("/src/pages/Landing.js");
+  root.style.maxWidth = "none"; root.style.padding = "0";
+  render(html`<${Landing} />`, root);
+} else if (v === "admin-cash") {
+  // the Bonuses tab on its own (the admin gate reads the profile through tables this harness does not serve)
+  const { AdminCash } = await import("/src/pages/admin/Cash.js");
+  render(html`<div class="adm"><${AdminCash} /></div>`, root);
+} else {
+  const { Arena } = await import("/src/pages/Arena.js");
+  const { ToastHost } = await import("/src/components/ui.js");
+  const { useRoute } = await import("/src/router.js");
+  function Page() { const { query } = useRoute(); return html`<${Arena} query=${query} /><${ToastHost} />`; }
+  render(html`<${Page} />`, root);
+}
+window.__ready = true;
+</script>
+</body>
+</html>

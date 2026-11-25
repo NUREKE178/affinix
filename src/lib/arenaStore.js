@@ -9,6 +9,7 @@
 // as friendsStore.js / postsStore.js.
 import { useState, useEffect } from "./preact.js";
 import { supabase } from "./supabaseClient.js";
+import { applyWallet } from "./cashStore.js";
 import { isMissingFunction, rpcHint } from "./rpcErrors.js";
 import { useSession } from "./auth.js";
 import { mulberry32, hashStringToSeed } from "./prng.js";
@@ -664,7 +665,7 @@ export function startMission(test) {
   const items = Object.fromEntries((test.items ?? []).map((it) => [it.id, it]));
   S.round = {
     id: uuid(), mode: "mission", day: localDay(), season: seasonOf(),
-    test: { id: test.id, title: test.title, dim: test.dim, owner: test.owner ?? null, items },
+    test: { id: test.id, title: test.title, dim: test.dim, owner: test.owner ?? null, items, reward: Number(test.reward ?? 0) },
     duels, idx: 0, phase: "choose", results: [], combo: 0, startedAt: now, shownAt: now, tallies: {}, last: null, missionXp: null,
   };
   persist();
@@ -680,7 +681,7 @@ function voteMission(side) {
   const right = duel.swap ? duel.a : duel.b;
   const pick = side === 0 ? left : right;
   const ms = Math.max(0, Date.now() - r.shownAt);
-  const result = { duelId: duel.id, pick, side, ms, a: duel.a, b: duel.b, xp: null, bonus: 0, pending: true, error: null, tally: null, capped: false };
+  const result = { duelId: duel.id, pick, side, ms, a: duel.a, b: duel.b, xp: null, bonus: 0, cash: 0, cashReason: null, pending: true, error: null, tally: null, capped: false };
   r.phase = "reveal";
   r.results.push(result);
   r.last = result;
@@ -705,6 +706,10 @@ async function sendMissionVote(r, result) {
     result.bonus = out.bonus ?? 0;
     result.capped = !!out.capped;
     result.reason = out.reason ?? null;
+    // money (migration 0027): what this answer paid, or why it paid nothing; older servers send neither
+    result.cash = Number(out.cash ?? 0);
+    result.cashReason = typeof out.cashReason === "string" ? out.cashReason : null;
+    if (res.wallet) applyWallet(res.wallet);
     // the server sends the votes for the lower item id (a) and the higher (b); the screen needs them per item
     const aIsLow = result.a < result.b;
     const lowVotes = out.aVotes ?? null;

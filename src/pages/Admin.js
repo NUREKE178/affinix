@@ -11,8 +11,9 @@ import { AdminOverview } from "./admin/Overview.js";
 import { AdminPeople } from "./admin/People.js";
 import { AdminModeration } from "./admin/Moderation.js";
 import { AdminLog } from "./admin/Log.js";
+import { AdminCash } from "./admin/Cash.js";
 
-const TABS = ["overview", "people", "moderation", "log"];
+const TABS = ["overview", "people", "moderation", "cash", "log"];
 
 export function Admin({ query }) {
   const t = useT();
@@ -36,6 +37,7 @@ export function Admin({ query }) {
       ${tab === "overview" && html`<${AdminOverview} onOpenTab=${go} />`}
       ${tab === "people" && html`<${AdminPeople} isOwner=${role === "owner"} meId=${profile.id} />`}
       ${tab === "moderation" && html`<${AdminModeration} />`}
+      ${tab === "cash" && html`<${AdminCash} />`}
       ${tab === "log" && html`<${AdminLog} />`}
     </div>
   `;
