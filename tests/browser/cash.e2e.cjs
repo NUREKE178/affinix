@@ -81,8 +81,9 @@ const kzt = (tiyn) => `${(Number(tiyn) / 100).toFixed(Number(tiyn) % 100 ? 2 : 0
   const errors = [];
   const checks = [];
   const ok = (cond, msg) => { assert.ok(cond, msg); checks.push(msg); };
-  const open = async (query, viewport = { width: 1280, height: 900 }, hash = "") => {
-    const page = await (await browser.newContext({ viewport, deviceScaleFactor: 1 })).newPage();
+  // Most checks read numbers, so they run with "reduce motion" (counters show their value at once). The animations have their own section.
+  const open = async (query, viewport = { width: 1280, height: 900 }, hash = "", { motion = false } = {}) => {
+    const page = await (await browser.newContext({ viewport, deviceScaleFactor: 1, reducedMotion: motion ? "no-preference" : "reduce" })).newPage();
     page.on("pageerror", (e) => errors.push("pageerror: " + e.message));
     await page.goto(`${BASE}?${query}${hash}`);
     await page.waitForSelector('[data-testid="arena-page"], [data-testid="admin-cash"], .lp-root', { timeout: 20000 });
@@ -113,6 +114,10 @@ const kzt = (tiyn) => `${(Number(tiyn) / 100).toFixed(Number(tiyn) % 100 ? 2 : 0
     await a.locator('[data-testid="arena-missions"]').screenshot({ path: `${OUT}/2-lobby-paid-mission-kk.png` });
     await paidRow.locator('[data-testid="mission-start"]').click();
     await a.waitForSelector('[data-testid="arena-console"][data-mode="mission"]');
+    ok((await a.locator('[data-testid="mission-text-art"]').count()) === 2, "console: both text options are posters (no empty wells)");
+    const tones = await a.$$eval('[data-testid="mission-text-art"]', (els) => els.map((e) => [e.dataset.tone, e.style.getPropertyValue("--tone-a"), e.style.getPropertyValue("--tone-fg")]));
+    ok(tones.every(([i, bg, fg]) => i !== undefined && bg && fg), "console: each text poster carries its own colours");
+    await a.screenshot({ path: `${OUT}/3a-mission-posters-kk.png` });
     await a.waitForTimeout(900); // a considered answer, not a reflex (min_answer_ms = 600)
     await a.keyboard.press("1");
     await a.waitForSelector('[data-testid="mission-cash"]', { timeout: 15000 });
@@ -136,6 +141,7 @@ const kzt = (tiyn) => `${(Number(tiyn) / 100).toFixed(Number(tiyn) % 100 ? 2 : 0
     await a.waitForSelector('[data-testid="wallet-tab"]');
     ok((await text(a, '[data-testid="wallet-pending"]')).includes(kzt(owed)), `wallet: ${kzt(owed)} pending`);
     ok((await text(a, '[data-testid="wallet-month"]')).includes(kzt(owed)), "wallet: counted in this month");
+    ok(Number(await a.getAttribute('[data-testid="wallet-ring"]', "data-ratio")) > 0, "wallet: the month ring has a fill");
     ok((await a.locator('[data-testid="wallet-row"]').count()) === 2, "wallet: two history lines (the mission, the day's XP)");
     ok((await a.locator('[data-testid="wallet-row"][data-kind="xp"]').count()) === 1, "wallet: the XP of the day is one line");
     ok((await text(a, '[data-testid="wallet-history"]')).includes("Кофехана логотипі"), "wallet: the mission row names the test");
@@ -196,6 +202,44 @@ const kzt = (tiyn) => `${(Number(tiyn) / 100).toFixed(Number(tiyn) % 100 ? 2 : 0
     await o.waitForFunction(() => !document.querySelector('[data-testid="admin-cash-account"][data-status="review"]'), null, { timeout: 15000 });
     ok(sql(`select status from cash_accounts where user_id = '${DAUREN}'`) === "ok", "db: review cleared");
     await o.close();
+
+    // 7b. things move: the balance rolls up to its value, the landing pictures loop (run with motion on)
+    const m = await open(`u=${DAUREN}&name=Dauren&l=en`, undefined, "#/app/arena?tab=wallet", { motion: true });
+    await m.waitForSelector('[data-testid="wallet-tab"]', { timeout: 20000 });
+    await m.waitForTimeout(260);
+    await m.screenshot({ path: `${OUT}/11-wallet-counting-en.png`, fullPage: true });
+    ok((await m.getAttribute('[data-testid="wallet-available"]', "data-value")) === "1500", "motion: the exact amount sits in data-value");
+    await m.waitForTimeout(1600);
+    ok((await text(m, '[data-testid="wallet-available"]')).includes("15"), "motion: the balance ends on 15 ₸");
+    await m.close();
+    const seenPage = await (await browser.newContext({ viewport: { width: 1280, height: 900 }, reducedMotion: "no-preference" })).newPage();
+    seenPage.on("pageerror", (e) => errors.push("pageerror: " + e.message));
+    await seenPage.addInitScript(() => {
+      window.__seen = new Set();
+      new MutationObserver(() => { const el = document.querySelector('[data-testid="wallet-available"]'); if (el) window.__seen.add(el.textContent.trim()); })
+        .observe(document, { subtree: true, childList: true, characterData: true });
+    });
+    await seenPage.goto(`${BASE}?u=${DAUREN}&name=Dauren&l=en#/app/arena?tab=wallet`);
+    await seenPage.waitForSelector('[data-testid="wallet-available"]', { timeout: 20000 });
+    await seenPage.waitForTimeout(1800);
+    const seen = (await seenPage.evaluate(() => [...window.__seen])).map((v) => v.replace(/\s/g, " "));
+    ok(seen.length >= 3 && seen.includes("15 ₸") && seen.some((v) => v !== "15 ₸" && parseFloat(v.replace(",", ".")) < 15), `motion: the balance rolled up through ${seen.length} values to 15 ₸`);
+    await seenPage.close();
+    const lv = await open(`v=landing&l=kk`, undefined, "", { motion: true });
+    await lv.locator('[data-testid="landing-benefits"]').scrollIntoViewIfNeeded();
+    await lv.waitForTimeout(600);
+    const run1 = await lv.evaluate(() => { const e = document.querySelector(".lp-xp-ladder i"); const c = getComputedStyle(e); return [c.animationName, c.animationPlayState]; });
+    ok(run1[0] !== "none" && run1[1] === "running", "landing: the XP ladder animates once the section is in view");
+    const n1 = await lv.evaluate(() => getComputedStyle(document.querySelector(".lp-xp-n")).getPropertyValue("--xp"));
+    await lv.waitForTimeout(700);
+    const n2 = await lv.evaluate(() => getComputedStyle(document.querySelector(".lp-xp-n")).getPropertyValue("--xp"));
+    ok(n1 !== n2, `landing: the XP counter counts (${n1} -> ${n2})`);
+    ok((await lv.locator(".lp-viz").count()) === 4, "landing: four living pictures");
+    await lv.close();
+    const lr = await open(`v=landing&l=kk`, undefined, "");
+    await lr.locator('[data-testid="landing-benefits"]').scrollIntoViewIfNeeded();
+    ok(await lr.evaluate(() => getComputedStyle(document.querySelector(".lp-xp-ladder i")).animationName === "none" && getComputedStyle(document.querySelector(".lp-xp-n")).getPropertyValue("--xp") === "100"), "landing: with reduce motion the pictures stand on their final frame (100 XP)");
+    await lr.close();
 
     // 8. the landing page explains who gains what, in Kazakh
     const l = await open(`v=landing&l=kk`, { width: 1280, height: 900 });

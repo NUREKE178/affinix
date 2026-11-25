@@ -10,7 +10,8 @@ import { useT } from "../../lib/i18n.js";
 import { navigate } from "../../router.js";
 import { useArenaClock } from "../../lib/arenaStore.js";
 import { useMissionQueue, fetchQueue, reportTest } from "../../lib/crowdStore.js";
-import { OptionThumb, optionName, safeImageUrl } from "../crowd/parts.js";
+import { OptionThumb, optionName, safeImageUrl, toneIndex, toneStyle } from "../crowd/parts.js";
+import { useCountUp } from "../../lib/countUp.js";
 import { Specimen, Ladder, nf, clock, money } from "./parts.js";
 import { useWallet } from "../../lib/cashStore.js";
 
@@ -93,7 +94,13 @@ function MissionArt({ item, t }) {
   if (url) {
     return html`<span class="ar-mi-art"><img src=${url} alt="" draggable="false" />${item.label && html`<span class="ar-mi-cap">${item.label}</span>`}</span>`;
   }
-  return html`<span class="ar-mi-art ar-mi-art-text"><b>${optionName(item, t)}</b></span>`;
+  // no picture: a small poster on this option's own colours, with a big drifting shape behind its words
+  return html`
+    <span class="ar-mi-art ar-mi-art-text" data-tone=${toneIndex(item)} style=${toneStyle(item)} data-testid="mission-text-art">
+      <i class="ar-mi-orb" aria-hidden="true"></i><i class="ar-mi-ring" aria-hidden="true"></i>
+      <span class="ar-mi-letter" aria-hidden="true">${optionName(item, t).trim().slice(0, 1)}</span>
+      <b>${optionName(item, t)}</b>
+    </span>`;
 }
 
 function SideFoot({ last, side, left, right, picked, t }) {
@@ -115,6 +122,12 @@ function SideFoot({ last, side, left, right, picked, t }) {
     </span>`;
 }
 
+/** "+10 ₸" that pops in with a coin and rolls up to its amount. */
+function CashPop({ tiyn }) {
+  const shown = useCountUp(tiyn, { ms: 600 });
+  return html`<span class="ar-res ar-res-cash sk-num" data-testid="mission-cash" data-value=${tiyn}><span class="ar-coin ar-coin-sm" aria-hidden="true"><b>₸</b></span>+${money(shown)}</span>`;
+}
+
 function ResultStrip({ last, round, t }) {
   const parts = [];
   if (last.pending) {
@@ -124,7 +137,7 @@ function ResultStrip({ last, round, t }) {
     parts.push(html`<span class="ar-res-note ar-mi-fail" key="e" role="alert" data-testid="mission-error">${terminal ? t(last.error === "pending" ? "crowd.err.pending" : "crowd.mission.closed") : t("crowd.mission.sendFailed")}</span>`);
   } else {
     parts.push(html`<span class="ar-res ar-res-xp sk-num" key="xp" data-testid="arena-xp">+${last.xp ?? 0}<span class="sk-unit">XP</span></span>`);
-    if (last.cash > 0) parts.push(html`<span class="ar-res ar-res-cash sk-num" key="cash" data-testid="mission-cash"><${Icon} name="wallet" size=${14} />+${money(last.cash)}</span>`);
+    if (last.cash > 0) parts.push(html`<${CashPop} key="cash" tiyn=${last.cash} />`);
     else if (last.cashReason && round.test.reward > 0) parts.push(html`<span class="ar-res-note ar-res-muted" key="cr" data-testid="mission-cash-reason">${t(`cash.reason.${last.cashReason}`)}</span>`);
     if (last.bonus > 0) parts.push(html`<span class="ar-res-note" key="b">${t("crowd.mission.bonus", { xp: last.bonus })}</span>`);
     if (last.capped) parts.push(html`<${Badge} key="c" tone="steel">${t("crowd.mission.capped")}<//>`);

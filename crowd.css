@@ -43,7 +43,7 @@
 
 .cr-thumb { display: inline-flex; align-items: center; justify-content: center; flex: none; overflow: hidden; border-radius: 9px; background: var(--well); border: 1px solid rgba(0,0,0,.6); box-shadow: var(--sh-well); }
 .cr-thumb img { display: block; width: 100%; height: 100%; object-fit: cover; }
-.cr-thumb-text { font-weight: 600; letter-spacing: .02em; text-transform: uppercase; color: var(--g-300); }
+.cr-thumb-text { font-weight: 700; letter-spacing: .02em; text-transform: uppercase; color: var(--tone-fg, var(--g-300)); background: linear-gradient(145deg, var(--tone-a, var(--well)), var(--tone-b, var(--well))); border-color: rgba(255,255,255,.14); box-shadow: inset 0 1px 0 rgba(255,255,255,.22), 0 1px 2px rgba(0,0,0,.4); }
 
 /* ---- the form --------------------------------------------------------------- */
 .cr-create, .cr-results { display: flex; flex-direction: column; gap: 16px; max-width: 920px; }
@@ -129,8 +129,16 @@
 .ar-mi-art { position: relative; display: grid; place-items: center; width: 100%; height: 100%; }
 .ar-mi-art img { display: block; width: 100%; height: 100%; object-fit: contain; }
 .ar-mi-cap { position: absolute; left: 8px; right: 8px; bottom: 8px; padding: 6px 10px; border-radius: 8px; font-size: 13px; line-height: 1.3; text-align: center; color: var(--g-100); background: rgba(14,14,16,.82); }
-.ar-mi-art-text { padding: 16px; }
-.ar-mi-art-text b { display: block; max-width: 100%; font-size: clamp(20px, 3.2vw, 32px); font-weight: 600; line-height: 1.2; letter-spacing: -.01em; text-align: center; color: var(--g-50); overflow-wrap: anywhere; }
+/* an option with no picture: a poster in its own two colours, a big drifting disc and ring, the first letter huge and faint, the words on top */
+.ar-mi-art-text { padding: 16px; overflow: hidden; border-radius: 14px; isolation: isolate; color: var(--tone-fg, var(--g-50)); background: linear-gradient(150deg, var(--tone-a, #26282d), var(--tone-b, #3a3c43)); }
+.ar-mi-orb, .ar-mi-ring { position: absolute; z-index: -1; border-radius: 50%; pointer-events: none; }
+.ar-mi-orb { width: 62%; aspect-ratio: 1; right: -14%; top: -18%; background: rgba(255,255,255,.14); animation: arMiDrift 9s ease-in-out infinite alternate; }
+.ar-mi-ring { width: 46%; aspect-ratio: 1; left: -10%; bottom: -16%; border: 2px solid color-mix(in srgb, var(--tone-fg, #fff) 35%, transparent); animation: arMiDrift 11s ease-in-out -4s infinite alternate-reverse; }
+.ar-mi-letter { position: absolute; z-index: -1; left: 50%; top: 50%; translate: -50% -52%; font-size: clamp(110px, 22vw, 210px); font-weight: 800; line-height: 1; letter-spacing: -.04em; text-transform: uppercase; color: color-mix(in srgb, var(--tone-fg, #fff) 11%, transparent); animation: arMiBreathe 7s ease-in-out infinite; }
+@keyframes arMiDrift { from { transform: translate(0, 0) scale(1); } to { transform: translate(-8%, 10%) scale(1.1); } }
+@keyframes arMiBreathe { 0%, 100% { scale: 1; } 50% { scale: 1.06; } }
+@media (prefers-reduced-motion: reduce) { .ar-mi-orb, .ar-mi-ring, .ar-mi-letter { animation: none; } }
+.ar-mi-art-text b { display: block; max-width: 100%; font-size: clamp(20px, 3.2vw, 32px); font-weight: 700; line-height: 1.2; letter-spacing: -.01em; text-align: center; color: var(--tone-fg, var(--g-50)); overflow-wrap: anywhere; text-wrap: balance; }
 .ar-mi-owner { display: inline-flex; align-items: center; gap: 8px; margin-top: 6px; font-size: 12.5px; color: var(--g-400); }
 .ar-mi-owner:hover span { color: var(--g-100); }
 .ar-mi-foot-note { font-size: 12px; color: var(--g-500); }

@@ -541,7 +541,7 @@
 .ar-wl-top { display: flex; align-items: center; gap: 10px; }
 .ar-wl-top .sk-badge { margin-left: auto; }
 .ar-wl-top-gap { margin-top: 8px; }
-.ar-wl-big { font-size: 44px; line-height: 1; color: var(--g-50); letter-spacing: -.02em; }
+.ar-wl-big { display: block; font-size: 44px; line-height: 1; color: var(--g-50); letter-spacing: -.02em; font-variant-numeric: tabular-nums; }
 .ar-wl-text { margin: 0; font-size: 13.5px; line-height: 1.55; color: var(--g-300); text-wrap: pretty; }
 .ar-wl-small { margin: 0; font-size: 12.5px; color: var(--g-400); }
 .ar-wl-progress { display: flex; align-items: center; gap: 12px; }
@@ -590,9 +590,57 @@
   .ar-wl-row { flex-wrap: wrap; }
   .ar-wl-row-main { flex-basis: 100%; }
 }
-.ar-wl-big-row { display: flex; align-items: flex-end; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+.ar-wl-big-row { display: flex; align-items: center; justify-content: space-between; gap: 12px 16px; }
+.ar-wl-big-col { display: flex; flex-direction: column; align-items: flex-start; gap: 12px; min-width: 0; }
 .ar-wl-rate {
   display: inline-flex; align-items: center; gap: 6px; padding: 6px 10px; border-radius: 999px; font-size: 12.5px; font-weight: 600;
   color: var(--g-100); background: var(--well); border: 1px solid rgba(0,0,0,.6); box-shadow: var(--sh-well);
 }
 .ar-wl-rate svg { color: var(--signal-hi); }
+
+/* ---- Wallet: what moves --------------------------------------------------------------------------------------- */
+/* a number that just grew flashes green and settles back (Wallet.js Counter sets data-up for about a second) */
+.ar-wl-big, .ar-chip-num, .ar-wl-balance .sk-stat-value > span { transition: color .9s var(--sk-ease-out), transform .45s var(--sk-ease-spring); }
+:is(.ar-wl-big, .ar-chip-num, .ar-wl-balance .sk-stat-value > span)[data-up="true"] { color: var(--led-ok); transform: translateY(-2px) scale(1.04); transition-duration: .12s; }
+.ar-wl-big { transform-origin: left center; }
+.ar-wallet-chip:has(.ar-chip-num[data-up="true"]) { animation: arChipBump .6s var(--sk-ease-spring); border-color: rgba(52,211,153,.45); }
+@keyframes arChipBump { 0% { transform: scale(1); } 35% { transform: scale(1.07); } 100% { transform: scale(1); } }
+
+/* the month against its limit: a ring that fills when the tab opens */
+.ar-wl-ring { position: relative; flex: none; width: 84px; height: 84px; display: grid; place-items: center; }
+.ar-wl-ring svg { position: absolute; inset: 0; overflow: visible; }
+.ar-wl-ring-track { fill: var(--well-fill, #0b0b0d); stroke: rgba(255,255,255,.07); stroke-width: 7; }
+.ar-wl-ring-fill { fill: none; stroke: var(--signal); stroke-width: 7; stroke-linecap: round; transition: stroke-dashoffset 1.4s var(--sk-ease-out) .25s; }
+.ar-wl-ring-pct { position: relative; font-size: 17px; color: var(--g-100); }
+.ar-wl-ring-pct .sk-unit { font-size: 11px; color: var(--g-400); }
+
+/* the history: rows slide in one after another; the empty state has a coin turning on its edge */
+.ar-wl-row { animation: arRowIn .45s var(--sk-ease-out) backwards; animation-delay: calc(var(--i, 0) * 60ms + 120ms); }
+@keyframes arRowIn { from { opacity: 0; transform: translateX(-10px); } to { opacity: 1; transform: none; } }
+.ar-wl-empty { display: flex; align-items: center; gap: 16px; }
+.ar-wl-empty .ar-wl-text { flex: 1; }
+
+/* a coin: matte graphite face with an orange tenge sign, like the keys of the rest of the app; it turns on its vertical axis */
+.ar-coin {
+  position: relative; display: inline-grid; place-items: center; flex: none; width: 52px; height: 52px; border-radius: 50%;
+  background: var(--key); border: 1px solid var(--edge); box-shadow: var(--sh-key), inset 0 0 0 4px rgba(0,0,0,.18);
+  color: var(--signal-hi); font-size: 24px; line-height: 1; animation: arCoinTurn 3.2s var(--sk-ease-standard) infinite; transform-style: preserve-3d;
+}
+.ar-coin b { font-family: var(--font-mono); font-weight: 600; }
+.ar-coin::after { content: ""; position: absolute; inset: 5px; border-radius: 50%; border: 1px dashed rgba(255,255,255,.14); }
+@keyframes arCoinTurn { 0%, 55%, 100% { transform: rotateY(0); } 80% { transform: rotateY(180deg); } 80.01% { transform: rotateY(-180deg); } }
+.ar-coin-sm { width: 22px; height: 22px; font-size: 12px; box-shadow: var(--sh-key); animation: arCoinPop .7s var(--sk-ease-spring) both; }
+.ar-coin-sm::after { inset: 3px; }
+@keyframes arCoinPop { 0% { transform: translateY(8px) scale(.4) rotateY(0); opacity: 0; } 55% { transform: translateY(-4px) scale(1.2) rotateY(360deg); opacity: 1; } 100% { transform: none; opacity: 1; } }
+
+.ar-res-cash { animation: arCashIn .6s var(--sk-ease-spring) both; }
+@keyframes arCashIn { 0% { transform: translateY(10px) scale(.8); opacity: 0; } 100% { transform: none; opacity: 1; } }
+
+@media (max-width: 640px) {
+  .ar-wl-ring { width: 68px; height: 68px; }
+  .ar-wl-ring-pct { font-size: 14px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .ar-coin, .ar-coin-sm, .ar-res-cash, .ar-wl-row, .ar-wallet-chip { animation: none !important; }
+  .ar-wl-ring-fill { transition: none; }
+}

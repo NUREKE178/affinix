@@ -4503,3 +4503,24 @@ ledger lines (the `cash_admin_void` RPC exists, no screen yet), the jury script 
   each collect up to 3 000 ₸ a month (pending, after 24 h and 30 duels, released after 7 days). The limits slow it down; only
   checking the bank account holder at withdrawal time stops it. Withdrawals stay off.
 - **Apply:** `supabase db push` (0028).
+
+## Making the landing and the Arena screens alive (no migration)
+
+**Ask:** "the pictures look very lifeless, show them alive" (landing and Arena screens, chosen from the options).
+
+- **Landing, "One choice, three gains":** four pure-CSS loops (`landing.css`, `Landing.js` `Viz*`): players (ten LEDs light up, XP counts 0 -> 100 through an
+  integer `@property`, a "+1 ₸" coin pops), creators (two bars race to 62 / 38, n counts to 30, the winner chip appears), science (the confidence
+  interval narrows for n = 10 / 30 / 100), and the monthly-limit meter climbing to 3 000 ₸. They start when the section scrolls in (`.sk-reveal[data-visible]`), carry no words
+  (numbers and symbols only), and every element's own declaration is its **final frame**, so `prefers-reduced-motion` (animations killed under `.lp-root`) shows a finished
+  picture. The rating bars of the workflow card now rise on scroll-in (before: hover only); pack thumbnails, floating chips and the phone drift with the individual
+  `translate` property, so the hover transforms still work.
+- **Wallet** (`Wallet.js`): `Counter` rolls every amount to its value (`src/lib/countUp.js`, the maths `countUpAt` / `easeOut` in `money.js`, unit-tested; exact amount in
+  `data-value`; reduce-motion shows it at once) and flashes green when it grew; the header chip bumps; `MonthRing` fills when the tab opens; history rows slide in one after
+  another; the empty history has a coin turning on its axis.
+- **Missions:** "+10 ₸" pops in with a coin and rolls up (`CashPop`). **Text-only options are no longer empty black wells:** a poster in one of eight two-tone looks
+  (`crowd/parts.js` `TONES`, chosen by a hash of the option id, text colour picked for contrast) with a drifting disc and ring and a huge faint first letter; the small
+  thumbnails (`OptionThumb`) wear the same colours.
+- **Verified:** `tests/browser/cash.e2e.cjs` now **47 checks** (the number checks run with reduce motion; separate checks with motion on: the balance rolls through
+  several values to 15 ₸, the landing XP counter changes over time, the animation runs only once the section is in view, and with reduce motion the picture stands on
+  100 XP); `node --test` 31; the old e2e and the SQL tests unchanged and green. Pictures were looked at, mid-animation too.
+- Landing numbers (62 / 38, n = 30) are illustrative and say nothing about real results.

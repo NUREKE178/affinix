@@ -49,3 +49,18 @@ export function daysUntil(iso, now = Date.now()) {
   return ms <= 0 ? 0 : Math.ceil(ms / 86400000);
 }
 
+
+// ---------------------------------------------------------------------------
+// count-up (pure): the number the screen shows while a balance rolls to its new value
+// ---------------------------------------------------------------------------
+
+/** Ease-out cubic: fast at first, settling softly. t in 0..1. */
+export const easeOut = (t) => 1 - Math.pow(1 - Math.min(1, Math.max(0, t)), 3);
+
+/** The whole-tiyn value shown `t` (0..1) of the way from `from` to `to`. Always ends exactly on `to`. */
+export function countUpAt(from, to, t) {
+  const a = Number.isFinite(Number(from)) ? Number(from) : 0;
+  const b = Number.isFinite(Number(to)) ? Number(to) : 0;
+  if (t >= 1) return Math.trunc(b);
+  return Math.trunc(a + (b - a) * easeOut(t));
+}

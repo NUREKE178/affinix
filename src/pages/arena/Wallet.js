@@ -1,16 +1,47 @@
 // Wallet tab: the money bonus from research missions (migration 0027). What is available, what is still in its holding
 // period, the way to a bank transfer (switched off until a payment provider is connected), the history and the rules.
 // Every number comes from the server (cash_wallet); this screen computes nothing that matters.
-import { html, useState, useEffect } from "../../lib/preact.js";
+import { html, useState, useEffect, useRef } from "../../lib/preact.js";
 import { Button, Badge, ProgressBar, Skeleton, EmptyState, Modal, toast } from "../../components/ui.js";
 import { Icon } from "../../components/icons.js";
 import { useT } from "../../lib/i18n.js";
 import { dayMonth } from "../../lib/format.js";
 import { navigate } from "../../router.js";
 import { useWallet, refreshWallet, requestPayout, payoutProgress, daysUntil } from "../../lib/cashStore.js";
+import { useCountUp } from "../../lib/countUp.js";
 import { money } from "./parts.js";
 
 const day = (iso) => dayMonth(iso);
+
+/** A money amount that rolls to its value; `data-value` carries the exact tiyn (tests and screen readers), `data-up` flashes
+ * for a moment when the amount grew. */
+function Counter({ value, className = "", testid }) {
+  const shown = useCountUp(value);
+  const prev = useRef(value);
+  const [up, setUp] = useState(false);
+  useEffect(() => {
+    if (value > prev.current) { setUp(true); const id = setTimeout(() => setUp(false), 1100); prev.current = value; return () => clearTimeout(id); }
+    prev.current = value;
+    return undefined;
+  }, [value]);
+  return html`<span class=${className} data-value=${value} data-up=${up} data-testid=${testid}>${money(shown)}</span>`;
+}
+
+/** This month against its limit, as a ring that fills when the tab opens. */
+function MonthRing({ month, cap, t }) {
+  const ratio = cap > 0 ? Math.min(1, month / cap) : 0;
+  const [on, setOn] = useState(false);
+  useEffect(() => { const id = requestAnimationFrame(() => setOn(true)); return () => cancelAnimationFrame(id); }, []);
+  const R = 34, C = 2 * Math.PI * R;
+  return html`
+    <div class="ar-wl-ring" role="img" aria-label=${t("cash.monthHint", { cap: money(cap), left: money(Math.max(0, cap - month)) })} data-testid="wallet-ring" data-ratio=${ratio.toFixed(3)}>
+      <svg viewBox="0 0 84 84" width="84" height="84" aria-hidden="true">
+        <circle class="ar-wl-ring-track" cx="42" cy="42" r=${R} />
+        <circle class="ar-wl-ring-fill" cx="42" cy="42" r=${R} stroke-dasharray=${C.toFixed(2)} stroke-dashoffset=${(C * (on ? 1 - ratio : 1)).toFixed(2)} transform="rotate(-90 42 42)" />
+      </svg>
+      <span class="ar-wl-ring-pct sk-num">${Math.round(ratio * 100)}<span class="sk-unit">%</span></span>
+    </div>`;
+}
 
 function StatusNote({ wallet, t }) {
   const e = wallet.eligibility ?? {};
@@ -49,23 +80,26 @@ function Balance({ wallet, t }) {
         <span class="sk-caption">${t("cash.available")}</span>
       </div>
       <div class="ar-wl-big-row">
-        <div class="ar-wl-big sk-num" data-testid="wallet-available">${money(wallet.available)}</div>
-        ${wallet.rules?.xpPerTenge > 0 && html`<span class="ar-wl-rate" data-testid="wallet-rate"><${Icon} name="bolt" size=${14} />${t("cash.rate", { xp: wallet.rules.xpPerTenge })}</span>`}
+        <div class="ar-wl-big-col">
+          <${Counter} value=${wallet.available} className="ar-wl-big sk-num" testid="wallet-available" />
+          ${wallet.rules?.xpPerTenge > 0 && html`<span class="ar-wl-rate" data-testid="wallet-rate"><${Icon} name="bolt" size=${14} />${t("cash.rate", { xp: wallet.rules.xpPerTenge })}</span>`}
+        </div>
+        ${wallet.rules?.monthlyCap > 0 && html`<${MonthRing} month=${wallet.month ?? 0} cap=${wallet.rules.monthlyCap} t=${t} />`}
       </div>
       <div class="sk-stat-strip sk-stat-strip-well" style="--cols:3">
         <div class="sk-stat" data-testid="wallet-pending">
           <div class="sk-stat-label">${t("cash.pending")}</div>
-          <div class="sk-stat-value">${money(wallet.pending)}</div>
+          <div class="sk-stat-value"><${Counter} value=${wallet.pending} /></div>
           <div class="sk-stat-hint">${wallet.pending > 0 && wallet.nextRelease ? (days > 0 ? t("cash.nextRelease", { amount: money(wallet.nextRelease.amount), days }) : t("cash.releasing")) : t("cash.holdHint", { days: wallet.rules?.holdDays ?? 7 })}</div>
         </div>
         <div class="sk-stat" data-testid="wallet-month">
           <div class="sk-stat-label">${t("cash.month")}</div>
-          <div class="sk-stat-value">${money(wallet.month ?? 0)}</div>
+          <div class="sk-stat-value"><${Counter} value=${wallet.month ?? 0} /></div>
           <div class="sk-stat-hint">${t("cash.monthHint", { cap: money(wallet.rules?.monthlyCap ?? 0), left: money(wallet.monthLeft ?? 0) })}</div>
         </div>
         <div class="sk-stat" data-testid="wallet-total">
           <div class="sk-stat-label">${t("cash.earnedTotal")}</div>
-          <div class="sk-stat-value">${money(wallet.earnedTotal)}</div>
+          <div class="sk-stat-value"><${Counter} value=${wallet.earnedTotal} /></div>
           <div class="sk-stat-hint">${wallet.paidOut > 0 ? t("cash.paidOut", { amount: money(wallet.paidOut) }) : t("cash.earnedHint")}</div>
         </div>
       </div>
@@ -143,11 +177,15 @@ function History({ wallet, t }) {
         <span class="sk-caption">${t("cash.history")}</span>
       </div>
       ${rows.length === 0
-        ? html`<p class="ar-wl-text" data-testid="wallet-history-empty">${t("cash.historyEmpty")}</p>`
+        ? html`
+          <div class="ar-wl-empty" data-testid="wallet-history-empty">
+            <span class="ar-coin" aria-hidden="true"><b>₸</b></span>
+            <p class="ar-wl-text">${t("cash.historyEmpty")}</p>
+          </div>`
         : html`
           <ul class="ar-wl-rows">
-            ${rows.map((r) => html`
-              <li key=${r.id} class="ar-wl-row" data-state=${r.state} data-kind=${r.kind} data-testid="wallet-row">
+            ${rows.map((r, i) => html`
+              <li key=${r.id} class="ar-wl-row" data-state=${r.state} data-kind=${r.kind} data-testid="wallet-row" style=${`--i:${Math.min(i, 8)}`}>
                 <div class="ar-wl-row-main">
                   <div class="ar-wl-row-title">${rowLabel(r, t)}</div>
                   <div class="ar-wl-row-sub">${day(r.at)}${r.note ? ` · ${r.note}` : ""}</div>
@@ -231,7 +269,7 @@ export function WalletChip() {
   return html`
     <button type="button" class="ar-wallet-chip" onClick=${() => navigate("/app/arena?tab=wallet")} title=${t("cash.chipTitle")} data-testid="arena-wallet-chip">
       <${Icon} name="wallet" size=${20} />
-      <div><b class="sk-num">${money(wallet.available + wallet.pending)}</b></div>
+      <div><${Counter} value=${wallet.available + wallet.pending} className="sk-num ar-chip-num" /></div>
       <span class="sk-caption">${wallet.pending > 0 ? t("cash.chipPending", { amount: money(wallet.pending) }) : t("cash.available")}</span>
     </button>
   `;

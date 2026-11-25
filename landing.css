@@ -258,6 +258,96 @@
   .lp-earn .lp-earn-note { flex: none; }
 }
 
+/* ---- the living pictures of the Benefits cards (Landing.js Viz*) ------------------------------------------------ */
+/* Integer custom properties let a counter roll in pure CSS; where @property is not known the numbers simply flip. Every
+   element's own declaration is its FINAL frame, so "reduce motion" (no animation at all) and old browsers show the finished picture. */
+@property --xp { syntax: "<integer>"; inherits: false; initial-value: 100; }
+@property --pa { syntax: "<integer>"; inherits: false; initial-value: 62; }
+@property --pb { syntax: "<integer>"; inherits: false; initial-value: 38; }
+@property --an { syntax: "<integer>"; inherits: false; initial-value: 30; }
+@property --mo { syntax: "<integer>"; inherits: false; initial-value: 2400; }
+.lp-mono { font-family: var(--font-mono); font-variant-numeric: tabular-nums slashed-zero; }
+.lp-viz { margin-top: 20px; padding: 14px 16px; min-height: 112px; display: flex; flex-direction: column; justify-content: center; gap: 10px; border-radius: 14px; background: var(--well); border: 1px solid rgba(0,0,0,.65); box-shadow: var(--sh-well); font-size: 12.5px; color: var(--g-300); }
+.lp-viz * { animation-play-state: paused; }
+.sk-reveal[data-visible="true"] .lp-viz * { animation-play-state: running; }
+
+/* players: 10 LEDs light up one after another, XP counts to 100, a coin turns 100 XP into 1 tenge, then it starts over */
+.lp-xp-row { display: flex; align-items: baseline; gap: 6px; }
+.lp-xp-n { --xp: 100; counter-reset: xp var(--xp); font-size: 26px; font-weight: 500; line-height: 1; color: var(--g-50); animation: lp-xp-count 6s linear infinite; }
+.lp-xp-n::before { content: counter(xp); }
+.lp-xp-unit { color: var(--dim); }
+.lp-xp-coin { margin-left: auto; padding: 3px 9px; border-radius: 8px; font-size: 13px; font-weight: 600; color: var(--signal-ink); background: var(--lit); box-shadow: var(--sh-lit); animation: lp-xp-coin 6s ease-out infinite; transform-origin: right center; }
+.lp-xp-ladder { display: grid; grid-template-columns: repeat(10, 1fr); gap: 4px; }
+.lp-xp-ladder i { height: 12px; border-radius: 3px; background: var(--g-800); box-shadow: inset 0 1px 2px rgba(0,0,0,.6); animation: lp-xp-led 6s linear infinite; animation-delay: calc(var(--i) * .27s); }
+.lp-xp-foot { display: flex; justify-content: space-between; align-items: center; font-size: 11.5px; color: var(--dim); }
+.lp-xp-foot span { display: inline-flex; align-items: center; gap: 5px; }
+.lp-xp-foot .lp-ic { color: var(--signal-hi); animation: lp-flame 1.6s ease-in-out infinite; transform-origin: 50% 90%; }
+@keyframes lp-xp-count { 0% { --xp: 0; } 46% { --xp: 100; } 100% { --xp: 100; } }
+@keyframes lp-xp-led { 0%, 2% { background: var(--g-800); box-shadow: inset 0 1px 2px rgba(0,0,0,.6); } 5%, 88% { background: var(--lit); box-shadow: var(--sh-lit); } 95%, 100% { background: var(--g-800); box-shadow: inset 0 1px 2px rgba(0,0,0,.6); } }
+@keyframes lp-xp-coin { 0%, 46% { opacity: 0; transform: translateY(8px) scale(.5); } 54% { opacity: 1; transform: translateY(-3px) scale(1.18); } 60%, 88% { opacity: 1; transform: none; } 96%, 100% { opacity: 0; transform: none; } }
+@keyframes lp-flame { 0%, 100% { transform: scale(1) rotate(0); } 50% { transform: scale(1.18) rotate(-6deg); } }
+
+/* creators: two bars race to 62 / 38 while the answers pile up to 30, then the winner is marked */
+.lp-ab-row { display: flex; align-items: center; gap: 10px; }
+.lp-ab-row b { width: 14px; font-size: 12px; font-weight: 700; color: var(--g-200); }
+.lp-ab-bar { position: relative; flex: 1; height: 14px; border-radius: 7px; background: var(--g-900); box-shadow: inset 0 1px 2px rgba(0,0,0,.7); overflow: hidden; }
+.lp-ab-bar i { position: absolute; inset: 0; transform-origin: left center; border-radius: 7px; }
+.lp-ab-a { background: var(--lit); transform: scaleX(.62); animation: lp-ab-a 6s cubic-bezier(.2,.8,.2,1) infinite; }
+.lp-ab-b { background: linear-gradient(180deg, #5a5d67, #454851); transform: scaleX(.38); animation: lp-ab-b 6s cubic-bezier(.2,.8,.2,1) infinite; }
+.lp-ab-row em { --pa: 62; --pb: 38; width: 38px; text-align: right; font-style: normal; font-size: 12.5px; color: var(--g-100); }
+.lp-ab-pa { counter-reset: pa var(--pa); animation: lp-ab-pa 6s linear infinite; }
+.lp-ab-pb { counter-reset: pb var(--pb); animation: lp-ab-pb 6s linear infinite; }
+.lp-ab-pa::before { content: counter(pa) "%"; }
+.lp-ab-pb::before { content: counter(pb) "%"; }
+.lp-ab-foot { display: flex; justify-content: space-between; align-items: center; font-size: 11.5px; color: var(--dim); }
+.lp-ab-n { --an: 30; counter-reset: an var(--an); animation: lp-ab-n 6s linear infinite; }
+.lp-ab-n::before { content: "n = " counter(an); }
+.lp-ab-win { display: inline-flex; align-items: center; gap: 5px; padding: 2px 8px; border-radius: 999px; font-weight: 700; color: #052e1d; background: var(--led-ok); animation: lp-ab-win 6s ease-out infinite; }
+@keyframes lp-ab-a { 0% { transform: scaleX(0); } 40%, 100% { transform: scaleX(.62); } }
+@keyframes lp-ab-b { 0% { transform: scaleX(0); } 40%, 100% { transform: scaleX(.38); } }
+@keyframes lp-ab-pa { 0% { --pa: 0; } 40%, 100% { --pa: 62; } }
+@keyframes lp-ab-pb { 0% { --pb: 0; } 40%, 100% { --pb: 38; } }
+@keyframes lp-ab-n { 0% { --an: 0; } 40%, 100% { --an: 30; } }
+@keyframes lp-ab-win { 0%, 44% { opacity: 0; transform: scale(.6); } 52% { opacity: 1; transform: scale(1.12); } 58%, 90% { opacity: 1; transform: none; } 97%, 100% { opacity: 0; } }
+
+/* society: the confidence interval narrows as the number of answers grows (10 -> 30 -> 100) */
+.lp-viz-ci { position: relative; gap: 11px; }
+.lp-ci-row { display: flex; align-items: center; gap: 10px; }
+.lp-ci-row b { width: 44px; font-size: 11.5px; font-weight: 500; color: var(--dim); }
+.lp-ci-track { position: relative; flex: 1; height: 14px; display: block; }
+.lp-ci-track::before { content: ""; position: absolute; left: 50%; top: -6px; bottom: -6px; border-left: 1px dashed rgba(255,255,255,.16); }
+.lp-ci-whisker { position: absolute; left: calc(50% - var(--w) / 2); width: var(--w); top: 6px; height: 2px; border-radius: 1px; background: var(--g-400); transform-origin: center; animation: lp-ci-grow 6s cubic-bezier(.2,.8,.2,1) infinite; animation-delay: calc(var(--i) * .35s); }
+.lp-ci-whisker::before, .lp-ci-whisker::after { content: ""; position: absolute; top: -4px; width: 2px; height: 10px; border-radius: 1px; background: var(--g-400); }
+.lp-ci-whisker::before { left: 0; }
+.lp-ci-whisker::after { right: 0; }
+.lp-ci-dot { position: absolute; left: calc(50% - 4px); top: 3px; width: 8px; height: 8px; border-radius: 50%; background: var(--signal-hi); text-decoration: none; animation: lp-ci-dot 6s ease-out infinite; animation-delay: calc(var(--i) * .35s); }
+.lp-ci-row:last-child .lp-ci-whisker, .lp-ci-row:last-child .lp-ci-whisker::before, .lp-ci-row:last-child .lp-ci-whisker::after { background: var(--signal-hi); }
+@keyframes lp-ci-grow { 0% { transform: scaleX(0); opacity: 0; } 12% { opacity: 1; } 30%, 88% { transform: scaleX(1); opacity: 1; } 96%, 100% { transform: scaleX(1); opacity: 0; } }
+@keyframes lp-ci-dot { 0%, 8% { transform: scale(0); } 22% { transform: scale(1.5); } 30%, 88% { transform: scale(1); } 96%, 100% { transform: scale(0); } }
+
+/* the monthly limit: the month's bonus climbs towards 3 000 tenge, then the month starts over */
+.lp-viz-month { margin-top: 12px; min-height: 0; padding: 10px 14px; gap: 8px; }
+.lp-mo-row { display: flex; align-items: baseline; justify-content: space-between; font-size: 12px; color: var(--dim); }
+.lp-mo-n { --mo: 2400; counter-reset: mo var(--mo); font-size: 17px; color: var(--g-50); animation: lp-mo-count 8s ease-out infinite; }
+.lp-mo-n::before { content: counter(mo) " ₸"; }
+.lp-mo-bar { position: relative; display: block; height: 8px; border-radius: 4px; background: var(--g-900); box-shadow: inset 0 1px 2px rgba(0,0,0,.7); overflow: hidden; }
+.lp-mo-bar i { position: absolute; inset: 0; transform-origin: left center; transform: scaleX(.8); border-radius: 4px; background: var(--lit); animation: lp-mo-bar 8s ease-out infinite; }
+@keyframes lp-mo-count { 0% { --mo: 0; } 55%, 92% { --mo: 2400; } 100% { --mo: 0; } }
+@keyframes lp-mo-bar { 0% { transform: scaleX(0); } 55%, 92% { transform: scaleX(.8); } 100% { transform: scaleX(0); } }
+
+/* the rest of the landing breathes too: bars of the rating card rise when it scrolls in (not only on hover), packs and phones drift */
+.sk-reveal[data-visible="true"] .lp-mc i { animation: lp-rise .9s cubic-bezier(.2,.8,.2,1) both; }
+.sk-reveal[data-visible="true"] .lp-mc:nth-child(2) i { animation-delay: .12s; }
+.sk-reveal[data-visible="true"] .lp-mc:nth-child(3) i { animation-delay: .24s; }
+.sk-reveal[data-visible="true"] .lp-mc:nth-child(4) i { animation-delay: .36s; }
+@keyframes lp-bob { 0%, 100% { translate: 0 0; } 50% { translate: 0 -6px; } }
+.sk-reveal[data-visible="true"] .lp-th1 { animation: lp-bob 5.2s ease-in-out infinite; }
+.sk-reveal[data-visible="true"] .lp-th2 { animation: lp-bob 4.4s ease-in-out -1.5s infinite; }
+.sk-reveal[data-visible="true"] .lp-th3 { animation: lp-bob 5.8s ease-in-out -3s infinite; }
+.sk-reveal[data-visible="true"] .lp-fl1 { animation: lp-bob 5s ease-in-out infinite; }
+.sk-reveal[data-visible="true"] .lp-fl2 { animation: lp-bob 6s ease-in-out -2s infinite; }
+.sk-reveal[data-visible="true"] .lp-ph { animation: lp-bob 7s ease-in-out infinite; }
+
 /* ---- Bento -------------------------------------------------------------------------------------- */
 
 .lp-bento { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; margin-top: 56px; }
