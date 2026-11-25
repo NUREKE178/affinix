@@ -7,7 +7,16 @@
 // Secrets (supabase secrets set): VAPID_PUBLIC_KEY, VAPID_PRIVATE_KEY, VAPID_SUBJECT (mailto:you@example.com).
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import webpush from "npm:web-push@3.6.7";
-import { jsonResponse, handleOptions } from "../_shared/cors.ts";
+
+// Kept in this one file (no ../_shared import) so it can also be pasted into the Supabase dashboard's function editor.
+const corsHeaders = {
+  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+  "Access-Control-Allow-Methods": "POST, OPTIONS",
+};
+const jsonResponse = (body: unknown, status = 200) =>
+  new Response(JSON.stringify(body), { status, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+const handleOptions = (req: Request) => (req.method === "OPTIONS" ? new Response("ok", { headers: corsHeaders }) : null);
 
 const MAX_AGE_MS = 2 * 60 * 1000;
 

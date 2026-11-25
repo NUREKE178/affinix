@@ -123,3 +123,6 @@ See `vendor/NOTICE.md`.
   Until a release exists the page says "being prepared" and offers the browser install.
 - Known limits: the installer is not signed (Windows SmartScreen shows "More info -> Run anyway"); the APK is debug-signed (Android asks to allow installs from the browser);
   Google sign-in may be refused inside an embedded window (use email there, or the browser install, where Google sign-in works).
+
+### No Supabase CLI (for example on a phone / Termux)
+The CLI does not run on Android. Everything it does for chat push can be done in the Supabase dashboard: **Edge Functions -> Secrets** (add `VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY`, `VAPID_SUBJECT`), then **Edge Functions -> Deploy a new function -> Via Editor**, name `notify-message`, paste `supabase/functions/notify-message/index.ts` (it is one self-contained file) and keep "Verify JWT" on.
