@@ -10,6 +10,7 @@ import { COUNTRIES, TIMEZONES } from "../lib/questionTypes.js";
 import { shortDate } from "../lib/format.js";
 import { useT, useLocale, setLocale as setAppLocale, LOCALES } from "../lib/i18n.js";
 import { withTimeout } from "../lib/async.js";
+import { PushToggle } from "../components/PushToggle.js";
 import { PlatformBadge } from "../components/platformBadge.js";
 import { platformRoleOf } from "../lib/platformRole.js";
 
@@ -219,6 +220,7 @@ function NotificationsTab({ profile, t }) {
     <div class="max-w-md divide-y divide-graphite-800">
       <${Switch} label=${t("profile.notifications.emailOnResponses")} checked=${responses} onChange=${(v) => toggle("notify_email_responses", v, setResponses)} />
       <${Switch} label=${t("profile.notifications.weeklyDigest")} checked=${digest} onChange=${(v) => toggle("notify_email_digest", v, setDigest)} />
+      <${PushToggle} t=${t} />
     </div>
   `;
 }

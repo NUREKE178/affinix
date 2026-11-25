@@ -4575,3 +4575,15 @@ ledger lines (the `cash_admin_void` RPC exists, no screen yet), the jury script 
 
 - **Fix:** `layoutVars.js` sets `data-vpan` on `<html>` only when `visualViewport.offsetTop > 8` (iOS pan). `shell.css` pins the chat with `html[data-kb][data-vpan]`; Android (page resized, offsetTop 0) keeps the in-page layout under the top bar.
 - **Test:** `chat-layout.cjs` adds the Android case (`?kb=1&pan=0`): not `position: fixed`, header below the bar, page does not scroll. `node --test` 31.
+
+## Push notifications for chat messages (migration 0030, edge function, service worker)
+
+**Report:** "when someone writes a message, no notification comes on the phone itself". Cause: the site only ever used `new Notification()` from an open page; with the site closed or the phone locked nothing could arrive. There was no Web Push.
+
+- **DB (`0030_web_push.sql`):** `push_subscriptions` (one row per device: endpoint, p256dh, auth, user agent), RLS select-own only; writes through `push_subscribe()` (upsert by endpoint: a device signed in by someone else moves to them) and `push_unsubscribe()`, both SECURITY DEFINER, authenticated only. Safe to run twice.
+- **Edge function `notify-message`:** `{message_id}` from the signed-in sender; checks the caller is the sender, the message is < 2 min old and not deleted, the recipient did not mute the conversation; sends via `npm:web-push` to the recipient's devices, drops subscriptions that answer 404/410. `{action:"key"}` returns the public VAPID key (so the key is configured only in the function's secrets). Secrets: `VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY`, `VAPID_SUBJECT`.
+- **Service worker (`sw.js`, cache v3):** `push` shows the notification (silent when a window of the site is visible: the page has its own toast), `notificationclick` focuses/opens the window on `#/app/messages?c=<id>`.
+- **Client:** `src/lib/pushStore.js` (+ pure `pushUtil.js`): status (`on / off / denied / install / unsupported`; iOS needs the Home Screen app), `enablePush()` (from a tap), `disablePush()`, `resyncPush()` on sign-in, `notifyMessage()` after a message is saved (fire-and-forget). UI: `components/PushToggle.js` as a switch in Profile -> Notifications and a dismissible banner above the chat list. Strings in `profile.notifications.push*` (3 locales).
+- **Tests:** `tests/sql/push.test.sql` (12), `tests/push.test.js` (5: status rules, key decoding, the worker's push / quiet-when-visible / click handlers in a stub scope); `node --test` 36, e2e and chat layout pass.
+- **Apply:** `supabase db push` (0030); `npx web-push generate-vapid-keys` then `supabase secrets set VAPID_PUBLIC_KEY=... VAPID_PRIVATE_KEY=... VAPID_SUBJECT=mailto:...`; `supabase functions deploy notify-message`.
+- **Not verified:** the edge function was not run (no Deno / project here) and no real phone received a push. Only direct chats; the native Android app (`native/`) has its own pipeline and gets nothing from this.

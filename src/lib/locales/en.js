@@ -1949,6 +1949,17 @@ export default {
     notifications: {
       emailOnResponses: "Email on new participant responses",
       weeklyDigest: "Weekly results digest",
+      pushLabel: "Push notifications about messages",
+      pushHintOff: "A new message reaches your phone even when Affinix is closed.",
+      pushHintOn: "On for this device.",
+      pushDenied: "Notifications are blocked for this site in the browser settings. Allow them there, then come back.",
+      pushInstall: "On iPhone, first add Affinix to the Home Screen (Share → Add to Home Screen), open it from there, then turn this on.",
+      pushUnsupported: "This browser cannot show push notifications.",
+      pushNotConfigured: "Push is not set up on the server yet.",
+      pushFailed: "Could not change notifications. Try again.",
+      pushBanner: "Get new messages as notifications, even when the site is closed.",
+      pushEnable: "Turn on",
+      pushDismiss: "Not now",
     },
     preferences: {
       languageLabel: "Interface language",
