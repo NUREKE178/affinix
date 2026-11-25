@@ -1,0 +1,48 @@
+<!doctype html>
+<!-- A stand-in for the app shell + an open chat on a phone: the real CSS and the real class names, no backend.
+     tests/browser/chat-layout.cjs measures it. ?bar=88 makes the top bar taller (it can wrap on narrow screens). -->
+<html lang="ru" class="dark">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>chat layout</title>
+<link rel="stylesheet" href="/vendor/tailwind.css" />
+<link rel="stylesheet" href="/styles.css" />
+<link rel="stylesheet" href="/shell.css" />
+<link rel="stylesheet" href="/messages.css" />
+</head>
+<body class="bg-graphite-950 font-sans antialiased">
+<div class="min-h-screen bg-graphite-950 text-graphite-100">
+  <header id="bar" class="sk-topbar sk-topbar-grid sticky top-0 z-30 items-center gap-3 px-4 py-3 md:px-8">
+    <div class="flex items-center gap-3 justify-self-start"><button class="sk-btn md:!hidden h-9 w-9 rounded-lg shrink-0">≡</button></div>
+    <div class="flex items-center gap-3 col-start-2 sm:col-start-3 justify-self-center sm:justify-self-end"><span id="barfill" style="display:inline-block;width:150px;height:44px"></span></div>
+    <button class="md:hidden col-start-3 justify-self-end">me</button>
+  </header>
+  <div class="sk-shell-main">
+    <main class="sk-main px-4 py-6 md:px-8 md:py-8 max-w-[1400px] mx-auto">
+      <div id="pane" class="sk-chat sk-panel" data-pane="chat">
+        <aside class="sk-chat-list"><div class="sk-chat-list-head"><h2>Чаты</h2></div><div class="sk-chat-items" id="items"></div></aside>
+        <section class="sk-chat-pane">
+          <div class="sk-chat-head" id="head"><button class="sk-chat-back">‹</button><div class="sk-chat-head-text"><div class="sk-chat-head-name">Marzhan Rustamova</div><div class="sk-chat-head-status sk-status-online">в сети</div></div></div>
+          <div class="sk-chat-scroll" id="scroll"></div>
+          <div class="msg-composer-wrap" id="composer"><div class="sk-chat-composer"><textarea class="sk-input sk-chat-input" id="input" rows="1" placeholder="Напишите сообщение…"></textarea></div></div>
+        </section>
+      </div>
+    </main>
+  </div>
+  <nav class="mtb" id="dock"><div class="mtb-in"></div></nav>
+</div>
+<script type="module">
+const q = new URLSearchParams(location.search);
+if (q.get('pane') === 'list') document.getElementById('pane').setAttribute('data-pane', 'list');
+document.getElementById('barfill').style.height = (Number(q.get('bar') || 68) - 24) + 'px';
+const sc = document.getElementById('scroll');
+for (let i = 0; i < 40; i++) { const d = document.createElement('div'); d.className = 'sk-bubble'; d.style.cssText = 'padding:10px 14px;margin:3px 0;background:#26282d;border-radius:14px;align-self:' + (i % 2 ? 'flex-end' : 'flex-start'); d.textContent = 'сообщение ' + i; sc.appendChild(d); }
+if (q.get('vars') !== '0') {
+  try { const m = await import('/src/lib/layoutVars.js'); window.__stop = m.watchLayoutVars(document.getElementById('bar')); } catch (e) { window.__varsError = String(e); }
+}
+for (let i = 0; i < 12; i++) { const d = document.createElement('div'); d.className = 'sk-chat-item'; d.textContent = 'Собеседник ' + i; document.getElementById('items').appendChild(d); }
+window.__ready = true;
+</script>
+</body>
+</html>

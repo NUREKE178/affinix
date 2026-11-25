@@ -93,7 +93,14 @@
   .sk-toast-stack { bottom: calc(var(--mtb-dock) + 12px) !important; right: 12px !important; left: 12px; max-width: none !important; transition: bottom .28s var(--sk-ease-standard, ease); }
   body:has(.feed-dock) .sk-toast-stack { bottom: calc(var(--mtb-dock) + 92px) !important; }
   .feed-dock { bottom: var(--mtb-dock); transition: bottom .28s var(--sk-ease-standard, ease); }
-  .sk-chat[data-pane="list"] { height: calc(100svh - 7.5rem - var(--mtb-total)); }
+  /* The messenger fills exactly what is left of the screen, so the page itself never scrolls (lib/layoutVars.js sets --topbar-h, the sticky bar's real height, and
+     --app-vh, the visible height that shrinks with the keyboard; the fallbacks are the old estimates). The list leaves room for the dock; an open chat has no dock and
+     locks the page. Before: calc(100svh - 7.5rem) + the dock's padding made the page ~65px taller than the screen, it scrolled, and the chat's own header (the other
+     person's name and "online") slid under the top bar. */
+  .sk-chat[data-pane="list"] { height: calc(var(--app-vh, 100svh) - var(--topbar-h, 5rem) - 2.75rem - var(--mtb-total)); min-height: 0; }
+  .sk-chat[data-pane="chat"] { height: calc(var(--app-vh, 100svh) - var(--topbar-h, 5rem) - 1.5rem); min-height: 0; }
+  body:has(.sk-chat[data-pane="chat"]) .sk-main { padding-top: .75rem; padding-bottom: .75rem; }
+  html:has(.sk-chat[data-pane="chat"]) { overflow: hidden; overscroll-behavior: none; }
   .ar-spec-art { height: clamp(120px, calc((100dvh - 430px - var(--mtb-total)) / 2), 230px); }
 }
 .mtb {

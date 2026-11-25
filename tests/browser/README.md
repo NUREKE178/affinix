@@ -8,3 +8,5 @@
 section) against a **real** PostgreSQL: it builds a fresh database with `tests/sql/run.sh` (all migrations, then
 `cash-seed.sql`) and answers every RPC of the page as the signed-in person. Needs a local PostgreSQL 16, e.g.
 `PGHOST=/tmp PGPORT=54329 PGUSER=postgres node tests/browser/cash.e2e.cjs`. The SQL tests alone: `tests/sql/run.sh`.
+
+`node tests/browser/chat-layout.cjs` checks the phone messenger layout (the open chat fits the screen and never scrolls the page, so its header stays under the top bar). No backend needed.

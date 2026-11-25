@@ -20,6 +20,7 @@ import { ProfileViewerHost } from "./profileViewer.js";
 import { openProfile } from "../lib/profileViewer.js";
 import { GlobalSearch, SearchSheetButton } from "./globalSearch.js";
 import { MobileTabBar } from "./mobileTabBar.js";
+import { watchLayoutVars } from "../lib/layoutVars.js";
 
 // Two work areas. The Arena is the home of the app (first item; see HOME_PATH). "Research" holds everything about
 // experiments and crowd tests: its overview, participants and reports are tabs of that one area (`also` keeps the
@@ -324,6 +325,9 @@ const SIDEBAR_MODE_KEY = "decisionos_sidebar_mode";
 const SIDEBAR_MODE_IDS = SIDEBAR_MODES.map((m) => m.id);
 
 export function Shell({ currentPath, children }) {
+  const topbar = useRef(null);
+  // --topbar-h / --app-vh for the phone chat layout (shell.css): the real top bar height and the visible height
+  useEffect(() => watchLayoutVars(topbar.current), []);
   const t = useT();
   // Opens the live message/presence connections for the whole signed-in session.
   useMessagingBootstrap();
@@ -416,7 +420,7 @@ export function Shell({ currentPath, children }) {
       `}
 
       <!-- The top bar does not depend on the sidebar at all: the search and the buttons never move when the rail opens or closes -->
-      <header class="sk-topbar sk-topbar-grid sticky top-0 z-30 items-center gap-3 px-4 py-3 md:px-8">
+      <header ref=${topbar} class="sk-topbar sk-topbar-grid sticky top-0 z-30 items-center gap-3 px-4 py-3 md:px-8">
         <div class="flex items-center gap-3 justify-self-start">
           <button class="sk-btn md:!hidden h-9 w-9 rounded-lg text-graphite-400 shrink-0" onClick=${() => setMobileOpen(true)}><${Icon} name="menu" size=${19} /></button>
         </div>
