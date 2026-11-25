@@ -72,6 +72,17 @@ server.listen(0, "127.0.0.1", async () => {
       await page.screenshot({ path: path.join(require("node:os").tmpdir(), `chat-kb-${w}x${h}.png`) });
       await ctx.close();
     }
+    // Android with the keyboard up: the page itself is resized (no pan), so the chat stays in the page under the top bar, not an overlay
+    {
+      const ctx = await browser.newContext({ viewport: { width: 390, height: 500 }, deviceScaleFactor: 2, isMobile: true, hasTouch: true });
+      const page = await ctx.newPage();
+      await page.goto(`${base}?bar=68&kb=1&pan=0`);
+      await page.waitForFunction(() => window.__ready);
+      const a = await page.evaluate(() => ({ pos: getComputedStyle(document.getElementById("pane")).position, headTop: Math.round(document.getElementById("head").getBoundingClientRect().top), barBottom: Math.round(document.getElementById("bar").getBoundingClientRect().bottom), docH: document.documentElement.scrollHeight, vh: innerHeight }));
+      assert.notEqual(a.pos, "fixed", "android keyboard: the chat must not become an overlay");
+      assert.ok(a.headTop >= a.barBottom && a.docH <= a.vh, `android keyboard: header ${a.headTop} vs bar ${a.barBottom}, page ${a.docH} vs ${a.vh}`);
+      await ctx.close();
+    }
     // the conversation list (the dock is on screen there) fits the screen too
     for (const [w, h] of [[390, 780], [360, 640]]) {
       const ctx = await browser.newContext({ viewport: { width: w, height: h }, deviceScaleFactor: 2, isMobile: true, hasTouch: true });

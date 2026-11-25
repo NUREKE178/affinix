@@ -4568,3 +4568,10 @@ ledger lines (the `cash_admin_void` RPC exists, no screen yet), the jury script 
 - **Fix:** `src/lib/layoutVars.js` also keeps `--app-top` (visualViewport.offsetTop, on resize and scroll). `shell.css`: with `html[data-kb]` (set while a field has focus, by mobileTabBar) the open chat is `position: fixed` at `--app-top`, `--app-vh` tall, full width, above the top bar; the bar returns when the keyboard closes. `styles.css`: the chat field is 16px under `@supports (-webkit-touch-callout: none)` (iOS only).
 - **Test:** `chat-layout.html?kb=1` mocks a shorter, panned visualViewport; `chat-layout.cjs` asserts the chat starts and ends exactly on it, is full width, and the field and header are inside it (2 phone sizes). `node --test` 31, e2e pass.
 - **Not verified:** a real iPhone (the mock imitates the pan; Safari's exact event timing may differ).
+
+## Chat keyboard fix only where the viewport is panned (no migration)
+
+**Report:** an Android Chrome screen recording: with the keyboard up, the chat became a full-screen overlay and covered the top bar (the iPhone fix also applied on Android).
+
+- **Fix:** `layoutVars.js` sets `data-vpan` on `<html>` only when `visualViewport.offsetTop > 8` (iOS pan). `shell.css` pins the chat with `html[data-kb][data-vpan]`; Android (page resized, offsetTop 0) keeps the in-page layout under the top bar.
+- **Test:** `chat-layout.cjs` adds the Android case (`?kb=1&pan=0`): not `position: fixed`, header below the bar, page does not scroll. `node --test` 31.

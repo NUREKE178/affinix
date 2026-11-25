@@ -9,7 +9,12 @@ export function watchLayoutVars(header) {
   const vv = window.visualViewport;
   const setBar = () => { if (header?.isConnected) root.style.setProperty("--topbar-h", `${Math.round(header.getBoundingClientRect().height)}px`); };
   const setVh = () => root.style.setProperty("--app-vh", `${Math.round(vv ? vv.height : window.innerHeight)}px`);
-  const setTop = () => root.style.setProperty("--app-top", `${Math.round(vv ? vv.offsetTop : 0)}px`);
+  // data-vpan: the visual viewport is panned (iOS with the keyboard up). Android Chrome resizes the page instead (offsetTop stays 0), and there the chat stays in the page under the top bar.
+  const setTop = () => {
+    const top = Math.round(vv ? vv.offsetTop : 0);
+    root.style.setProperty("--app-top", `${top}px`);
+    if (top > 8) root.dataset.vpan = "1"; else delete root.dataset.vpan;
+  };
   setBar(); setVh(); setTop();
   const ro = typeof ResizeObserver === "function" && header ? new ResizeObserver(setBar) : null;
   ro?.observe(header);
@@ -26,5 +31,6 @@ export function watchLayoutVars(header) {
     root.style.removeProperty("--topbar-h");
     root.style.removeProperty("--app-vh");
     root.style.removeProperty("--app-top");
+    delete root.dataset.vpan;
   };
 }
