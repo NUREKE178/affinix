@@ -23,7 +23,7 @@ async function turnOn(t) {
     const code = err?.message;
     if (code === "denied") toast(t("profile.notifications.pushDenied"), "amber");
     else if (code === "push_not_configured") toast(t("profile.notifications.pushNotConfigured"), "amber");
-    else toast(t("profile.notifications.pushFailed"), "rose");
+    else toast(`${t("profile.notifications.pushFailed")} (${code ?? "?"})`, "rose");
   }
 }
 
