@@ -513,3 +513,80 @@
   .ar-first-card { padding: 26px 18px 18px; }
   .ar-match-pct { font-size: 72px; }
 }
+
+/* ---- Wallet: the money bonus from research missions (migration 0027) ---------------------------------------- */
+.ar-wallet-chip {
+  display: inline-flex; align-items: center; gap: 8px; height: 56px; padding: 0 16px; border-radius: 14px; cursor: pointer;
+  background: var(--plate); border: 1px solid var(--hair); box-shadow: var(--sh-plate); color: var(--g-300); font: inherit; text-align: left;
+  transition: border-color .2s, transform .2s var(--sk-ease-out);
+}
+.ar-wallet-chip:hover { border-color: var(--hair-2); }
+.ar-wallet-chip:active { transform: translateY(1px); }
+.ar-wallet-chip svg { color: var(--signal-hi); flex: none; }
+.ar-wallet-chip b { font-size: 18px; line-height: 1; color: var(--g-50); white-space: nowrap; }
+.ar-wallet-chip span.sk-caption { line-height: 1.1; max-width: 110px; }
+
+.ar-mi-cash {
+  display: inline-flex; align-items: center; gap: 4px; margin-left: 8px; padding: 2px 7px; border-radius: 999px; vertical-align: 1px;
+  font-size: 11.5px; font-weight: 700; color: var(--signal-ink); background: var(--lit); box-shadow: var(--sh-lit);
+}
+.ar-mi-paid { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; color: var(--g-300); }
+.ar-mi-paid svg { color: var(--signal-hi); flex: none; }
+.ar-res-cash { display: inline-flex; align-items: center; gap: 6px; font-size: 22px; line-height: 1; color: var(--led-ok); }
+.ar-res-cash svg { flex: none; }
+
+.ar-wl-grid { display: grid; grid-template-columns: minmax(0, 1.55fr) minmax(0, 1fr); gap: 16px; align-items: start; }
+.ar-wl-col { display: flex; flex-direction: column; gap: 16px; min-width: 0; }
+.ar-wl-balance, .ar-wl-out, .ar-wl-hist, .ar-wl-how { padding: 20px; display: flex; flex-direction: column; gap: 14px; }
+.ar-wl-top { display: flex; align-items: center; gap: 10px; }
+.ar-wl-top .sk-badge { margin-left: auto; }
+.ar-wl-top-gap { margin-top: 8px; }
+.ar-wl-big { font-size: 44px; line-height: 1; color: var(--g-50); letter-spacing: -.02em; }
+.ar-wl-text { margin: 0; font-size: 13.5px; line-height: 1.55; color: var(--g-300); text-wrap: pretty; }
+.ar-wl-small { margin: 0; font-size: 12.5px; color: var(--g-400); }
+.ar-wl-progress { display: flex; align-items: center; gap: 12px; }
+.ar-wl-progress > :first-child { flex: 1; }
+.ar-wl-progress-num { font-size: 13px; color: var(--g-200); white-space: nowrap; }
+.ar-wl-out[data-open="false"] .ar-wl-progress { opacity: .8; }
+
+.ar-wl-note {
+  display: flex; align-items: center; gap: 12px; padding: 12px 14px; border-radius: 12px; font-size: 13.5px; line-height: 1.45;
+  background: var(--well); border: 1px solid rgba(0,0,0,.65); box-shadow: var(--sh-well); color: var(--g-200);
+}
+.ar-wl-note > svg { flex: none; color: var(--led-info); }
+.ar-wl-note[data-tone="warn"] > svg { color: var(--led-warn); }
+.ar-wl-note[data-tone="bad"] > svg { color: var(--led-bad); }
+.ar-wl-note-main { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 8px; }
+
+.ar-wl-rows { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; }
+.ar-wl-row { display: flex; align-items: center; gap: 12px; padding: 11px 2px; border-top: 1px solid var(--hair); }
+.ar-wl-row:first-child { border-top: 0; }
+.ar-wl-row-main { flex: 1; min-width: 0; }
+.ar-wl-row-title { font-size: 13.5px; font-weight: 600; color: var(--g-100); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.ar-wl-row-sub { font-size: 12px; color: var(--g-400); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.ar-wl-amount { font-size: 14px; color: var(--led-ok); white-space: nowrap; min-width: 72px; text-align: right; }
+.ar-wl-amount[data-sign="minus"] { color: var(--g-200); }
+.ar-wl-row[data-state="void"] .ar-wl-amount { color: var(--g-500); text-decoration: line-through; }
+
+.ar-wl-steps { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 12px; }
+.ar-wl-steps li { display: flex; gap: 12px; align-items: flex-start; }
+.ar-wl-steps b { display: block; font-size: 13.5px; color: var(--g-100); }
+.ar-wl-steps p { margin: 3px 0 0; font-size: 12.5px; line-height: 1.5; color: var(--g-400); }
+.ar-wl-step-n {
+  flex: none; display: inline-flex; align-items: center; justify-content: center; width: 26px; height: 26px; border-radius: 8px;
+  font-size: 13px; color: var(--signal-ink); background: var(--lit); box-shadow: var(--sh-lit);
+}
+.ar-wl-rules { margin: 0; padding-left: 18px; display: flex; flex-direction: column; gap: 7px; font-size: 12.5px; line-height: 1.5; color: var(--g-300); }
+.ar-wl-rules li::marker { color: var(--g-500); }
+
+@media (max-width: 900px) {
+  .ar-wl-grid { grid-template-columns: minmax(0, 1fr); }
+}
+@media (max-width: 640px) {
+  /* the header row has no room for a third plate on a phone: the Wallet tab is one tap away */
+  .ar-wallet-chip { display: none; }
+  .ar-wl-big { font-size: 36px; }
+  .ar-wl-balance .sk-stat-strip { grid-template-columns: minmax(0, 1fr); }
+  .ar-wl-row { flex-wrap: wrap; }
+  .ar-wl-row-main { flex-basis: 100%; }
+}

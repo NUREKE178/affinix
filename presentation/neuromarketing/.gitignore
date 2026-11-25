@@ -1,0 +1,7 @@
+assets/
+theme.json
+__pycache__/
+*.pdf
+n.pptx
+deckkit.py
+assets.js

@@ -5,8 +5,12 @@ import { Icon } from "../../components/icons.js";
 import { ProgressBar } from "../../components/ui.js";
 import { useT, getLocale } from "../../lib/i18n.js";
 import { renderSvg, getStimulus } from "../../lib/arena/stimuli.js";
+import { formatMoney } from "../../lib/money.js";
 
 export const nf = (n) => new Intl.NumberFormat(getLocale()).format(Math.round(n));
+
+/** tiyn -> "10 ₸" in the current language (migration 0027 amounts are integers in tiyn). */
+export const money = (tiyn) => formatMoney(tiyn, getLocale());
 
 /** 3725 -> "1:02:05", 125 -> "2:05" */
 export function clock(sec) {

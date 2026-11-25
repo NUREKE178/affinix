@@ -50,6 +50,7 @@ const PATHS = {
   shield: html`<path class="b" d="M12 2.8l7.5 3v5.6c0 5.2-3.2 8.3-7.5 9.9-4.3-1.6-7.5-4.7-7.5-9.9V5.8z"/><path d="M8.6 12l2.5 2.5 4.4-4.9" stroke-width="2.3"/>`,
   sparkle: html`<path class="b" d="M12 2.8l2.1 5.8 5.8 2.1-5.8 2.1L12 18.6l-2.1-5.8L4.1 10.7l5.8-2.1z"/><path class="b" d="M19 16.2l.8 2 2 .8-2 .8-.8 2-.8-2-2-.8 2-.8z"/>`,
   user: html`<circle class="b" cx="12" cy="8" r="3.8"/><path class="b" d="M4.2 20.5c0-3.8 3.1-6.2 7.8-6.2s7.8 2.4 7.8 6.2z"/>`,
+  wallet: html`<rect class="b" x="3" y="6.5" width="18" height="13" rx="2.6"/><path d="M5.5 6.5V6a2 2 0 0 1 2-2h8.5a2 2 0 0 1 2 2v.5"/><path class="b" d="M21 11h-4a2 2 0 0 0 0 4h4z"/><circle class="f" cx="17" cy="13" r="1.1"/>`,
   card: html`<rect class="b" x="2.5" y="5" width="19" height="14" rx="2.6"/><path d="M2.5 10h19"/><path d="M6 15h4.5"/>`,
   globe: html`<circle class="b" cx="12" cy="12" r="8.8"/><path d="M3.2 12h17.6"/><path d="M12 3.2c2.4 2.4 3.6 5.4 3.6 8.8s-1.2 6.4-3.6 8.8c-2.4-2.4-3.6-5.4-3.6-8.8S9.6 5.6 12 3.2z"/>`,
   logout: html`<path d="M9 20H5.5A1.5 1.5 0 0 1 4 18.5v-13A1.5 1.5 0 0 1 5.5 4H9"/><path d="M16 16.5l4.5-4.5L16 7.5M20 12H9" stroke-width="2.3"/>`,

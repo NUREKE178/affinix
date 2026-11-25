@@ -4403,3 +4403,72 @@ The first half of the marketers' tools, in the native apps (Kotlin + Compose), o
 - **Tests:** CI run 42613778987 (the release run of 0.15.0): **371 native tests** (`ChallengeTest` 13, `ChallengeFlowTest` 11, two `FeedTest` cases, ...), all green; **27 web tests**. Pictures 58 to 62 (first look, first look from a friend in Kazakh, the match in Russian and in Kazakh, the end of a round with the share card).
 - **Flaky tests of my own, found by CI and fixed (said on purpose):** the first release run (42611570728) failed on `FeedTest.switchingToAnotherTabDoesNotLeaveTheOldListOnScreen`, which asserted the in-between state while the reading was already running against a mock that answers at once (it had passed twice by luck); it now holds the Favorites reading back behind a gate. The second try (42612613150) hung because the gate also caught the saved flags that every other tab reads (`post_saves` with a user id): it now gates only the request that has an order. Earlier, `ChallengeFlowTest` ignored `playChallenge` while the first profile reading still had `loading` on (the real key is disabled meanwhile), and read the fake server's request list while the server wrote to it; both fixed.
 - **Not verified:** a real phone (the share sheet, the intent filter, the feel), the live `kind=pairs` on affinix.space, clicking a link in a messenger.
+
+## Arena cash: a money bonus for research missions, the admin Bonuses tab, "who gains what" on the landing (migration 0027)
+
+**Ask:** "add cash to the Arena: people get money for doing tests; thought through, professional; later we must be able to
+transfer the bonus to the user's bank, but not now; the site must be able to explain what the project gives people."
+
+**Design decisions**
+- **Money has a source.** Only a test an admin has *funded* pays (`arena_tests.cash_reward` per answer, `cash_budget`,
+  `cash_spent`). Today the platform funds tests; later a researcher pays for their own test (Billing) and fills the same
+  columns. An unfunded test pays XP exactly as before. This is also the main defence against "create a test, answer it with
+  fake accounts": creating a test creates no money.
+- **Integers in tiyn** (1 ₸ = 100 tiyn) everywhere; the browser formats, never computes money.
+- **The server decides every payment** (`_cash_earn`, called from `arena_test_vote` with the test row locked): funded and
+  budget left; account older than `min_account_hours` (24) with `min_arena_votes` (30) Arena duels; answer slower than
+  `min_answer_ms` (600, client-reported) **and** at least `min_gap_ms` (1500) after the player's previous paid answer on the
+  server clock (`cash_accounts.last_paid_at`, under a row lock); `user_daily_cap` (500 ₸, UTC day).
+- **Holding period:** a bonus is `pending` for `hold_days` (7), then released lazily on the next wallet read
+  (`_cash_release`, no cron). An account on `review` is not released; `blocked` earns nothing and its pending bonuses are voided.
+- **Quality checks (test-retest):** `arena_test_queue` sometimes (`check_rate`, 20 %) brings back, as an ordinary-looking
+  one-pair mission, a pair the player answered at least `check_age_minutes` (30) ago. The second answer goes through the
+  duplicate path of `arena_test_vote` into `cash_checks` (no money, the usual XP so it looks like any answer, never counted twice for the author). After
+  `check_min` (8) checks below `check_floor` (60 %) the account goes to `review` automatically. A random clicker matches ~50 %.
+  Only eligible players get checks; one open check at a time, kept until answered.
+- **Append-only ledger** (`cash_ledger`): earn / adjustment / payout rows; a trigger refuses any change of amount, owner,
+  kind or answer and any delete (except the cascade of a deleted person), and allows only forward state moves
+  (pending -> available/void/settled, available -> void; settled only for payouts). `cash_accounts` is a cache rebuilt from the
+  ledger by `_cash_recompute` (the SQL tests assert cache == ledger for every account).
+- **Payouts exist but are off:** `cash_payout_requests` + `cash_request_payout` (reserves the amount as a pending payout row) +
+  `cash_admin_decide_payout` (paid -> settled, rejected -> void, the money returns). `cash_settings.payouts_enabled` is false;
+  only the owner can switch it (`cash_admin_update_settings`), to be done once a payment provider is wired. `destination` is
+  for a provider token / masked account; raw card or account numbers are never stored.
+- **Admin:** `cash_admin_overview / tests / fund_test / accounts / set_status / void / update_settings / payouts /
+  decide_payout`, all behind `_require_admin()`, every change in `admin_audit` (`cash_*` actions, shown in the Log tab).
+- RLS: players read only their own `cash_accounts`, `cash_ledger`, `cash_payout_requests` rows; no insert/update/delete for
+  the API roles on any cash table; settings and checks are not readable directly; internal `_cash_*` helpers are not executable.
+
+**Screens**
+- Arena: a **Wallet** tab (`src/pages/arena/Wallet.js`): available / pending (with the next release) / today vs the cap /
+  earned; "Withdraw to a bank — soon" with the progress to the minimum (the request flow appears only when payouts are on);
+  history; how to earn, the rules, why it matters; notes for review / blocked / need 30 duels / new account / paused. A header
+  chip with the balance once something was earned (hidden on phones: the header row has no room for a third plate).
+- Missions: "+10 ₸" on funded tests in the lobby and an explanation line; after an answer "+10 ₸" or why it paid nothing
+  (budget, cap, too fast, new account, need to play, paused); a Bonus tile in the mission summary.
+- Admin panel: a **Bonuses** tab (`src/pages/admin/Cash.js`): what is owed, fund a test (reward and budget in ₸, with "covers
+  about N answers"), accounts (review first, consistency %, approve / review / block with an optional void of the available
+  balance), withdrawal requests (only when on or any exist), the rules with pause/resume and an edit dialog.
+- Landing: **"One choice, three gains"** (players / founders and creators / science and society) and how the bonus works,
+  saying plainly that bank withdrawals are not open yet.
+- `src/lib/cashStore.js` (RPCs, one reactive wallet store fed also by the mission answers), `src/lib/money.js` (pure:
+  `formatMoney` writes the sign after the number in every browser — Chromium printed "₸ 0" for kk-KZ; `parseTenge`,
+  `payoutProgress`, `daysUntil`), `format.dayMonth` (Kazakh month names from a table: the headless Chromium has no kk
+  calendar data and printed "M12 2"), a `wallet` icon. 199 new strings in each of ru / kk / en.
+
+**Verified**
+- `tests/sql/` is new in the repository: `supabase-stubs.sql` (auth.uid() from a setting, the API roles with Supabase's default
+  grants, storage stubs), `run.sh` (all migrations on a fresh database, 0021+ twice), `cash.test.sql`: **102 assertions**
+  on PostgreSQL 16, all pass (funding and its gates, eligibility, payment, retries, both speed rules, budget to the tiyn, the
+  daily cap, holding period and the review freeze, ledger immutability, RLS and grants, the payout flow with the switch on,
+  void and block, quality checks and the automatic review, cache == ledger, account deletion).
+- `tests/browser/cash.e2e.cjs` (+ `harness-db.html`, `fake-supabase-db.js`, `cash-seed.sql`): the real screens in Chromium
+  with every RPC answered by the real database as the signed-in person: **31 checks**, 0 script errors (kk / ru / en, desktop
+  and phone). Pictures were looked at.
+- `node --test "tests/*.test.js"`: **30 pass** (3 new in `tests/money.test.js`); the existing `tests/browser/e2e.cjs` still passes.
+
+**Apply:** `supabase db push` (migration **0027**). Nothing pays until an admin funds a test in Admin → Bonuses.
+
+**Not done / next:** the payment provider and bank transfers (then KYC: the bank account holder must match the person;
+"one person, one account" is not checked today), researcher-paid tests through Billing, an admin view of one person's
+ledger lines (the `cash_admin_void` RPC exists, no screen yet), the jury script (`ғылыми_жоба.txt`) is updated.
