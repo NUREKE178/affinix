@@ -71,6 +71,8 @@ function serve() {
 
 const sql = (q) => execFileSync("psql", ["-X", "-q", "-At", "-d", DB, "-c", q]).toString().trim();
 const text = async (page, sel) => (await page.textContent(sel)).replace(/\s+/g, " ").trim();
+// tiyn -> "10,32 ₸" the way the ru / kk screens write it (formatMoney: sign after, decimals only when there are any)
+const kzt = (tiyn) => `${(Number(tiyn) / 100).toFixed(Number(tiyn) % 100 ? 2 : 0).replace(".", ",").replace(/\B(?=(\d{3})+(?!\d))/g, " ")} ₸`;
 
 (async () => {
   const server = await serve();
@@ -97,6 +99,8 @@ const text = async (page, sel) => (await page.textContent(sel)).replace(/\s+/g, 
     ok((await a.locator('[data-testid="wallet-history-empty"]').count()) === 1, "wallet: empty history explained");
     ok((await a.locator('[data-testid="arena-wallet-chip"]').count()) === 0, "header: no wallet chip before the first bonus");
     ok((await text(a, '[data-testid="wallet-how"]')).includes("30"), "wallet: how-to names the 30 duels");
+    ok((await text(a, '[data-testid="wallet-rate"]')) === "100 XP = 1 ₸", "wallet: the XP rate is shown");
+    ok((await text(a, '[data-testid="wallet-month"]')).includes("3 000 ₸"), "wallet: the monthly limit (3 000 ₸) is shown");
     await a.screenshot({ path: `${OUT}/1-wallet-empty-kk.png`, fullPage: true });
 
     // 2. the lobby: the funded mission carries its reward; play it
@@ -116,6 +120,8 @@ const text = async (page, sel) => (await page.textContent(sel)).replace(/\s+/g, 
     await a.screenshot({ path: `${OUT}/3-mission-paid-kk.png` });
     ok(sql(`select count(*) from cash_ledger where user_id = '${AIGERIM}' and kind = 'earn' and state = 'pending' and amount = 1000`) === "1", "db: one pending 1000-tiyn bonus");
     ok(sql(`select cash_spent from arena_tests where id = 'e0000000-0000-0000-0000-000000000001'`) === "1000", "db: the test's budget is charged");
+    const xpGain = Number(sql(`select sum(xp) from arena_test_votes where voter_id = '${AIGERIM}'`));
+    ok(sql(`select coalesce(sum(amount), 0) from cash_ledger where user_id = '${AIGERIM}' and source = 'xp'`) === String(xpGain), `db: the mission's ${xpGain} XP became ${xpGain} tiyn`);
     await a.click('[data-testid="arena-next"]');
     await a.waitForSelector('[data-testid="arena-summary"][data-mode="mission"]');
     ok((await text(a, '[data-testid="arena-summary"]')).replace(/\s/g, "").includes("10₸"), "summary: the bonus tile");
@@ -124,12 +130,15 @@ const text = async (page, sel) => (await page.textContent(sel)).replace(/\s+/g, 
 
     // 3. the header chip and the wallet after the bonus
     await a.waitForSelector('[data-testid="arena-wallet-chip"]', { timeout: 15000 });
-    ok((await text(a, '[data-testid="arena-wallet-chip"]')).includes("10 ₸"), "header: the chip shows 10 ₸");
+    const owed = Number(sql(`select sum(amount) from cash_ledger where user_id = '${AIGERIM}'`));
+    ok((await text(a, '[data-testid="arena-wallet-chip"]')).includes(kzt(owed)), `header: the chip shows ${kzt(owed)} (bonus + XP)`);
     await a.click('[data-testid="arena-wallet-chip"]');
     await a.waitForSelector('[data-testid="wallet-tab"]');
-    ok((await text(a, '[data-testid="wallet-pending"]')).includes("10 ₸"), "wallet: 10 ₸ pending");
-    ok((await a.locator('[data-testid="wallet-row"]').count()) === 1, "wallet: one history row");
-    ok((await text(a, '[data-testid="wallet-row"]')).includes("Кофехана логотипі"), "wallet: the row names the test");
+    ok((await text(a, '[data-testid="wallet-pending"]')).includes(kzt(owed)), `wallet: ${kzt(owed)} pending`);
+    ok((await text(a, '[data-testid="wallet-month"]')).includes(kzt(owed)), "wallet: counted in this month");
+    ok((await a.locator('[data-testid="wallet-row"]').count()) === 2, "wallet: two history lines (the mission, the day's XP)");
+    ok((await a.locator('[data-testid="wallet-row"][data-kind="xp"]').count()) === 1, "wallet: the XP of the day is one line");
+    ok((await text(a, '[data-testid="wallet-history"]')).includes("Кофехана логотипі"), "wallet: the mission row names the test");
     await a.screenshot({ path: `${OUT}/5-wallet-after-kk.png`, fullPage: true });
 
     // 4. an unfunded mission pays XP only and says nothing about money
@@ -168,7 +177,9 @@ const text = async (page, sel) => (await page.textContent(sel)).replace(/\s+/g, 
     // 7. the owner's Bonuses tab: what is owed, fund a test, clear a review
     const o = await open(`v=admin-cash&u=${OWNER}&name=Owner&l=kk`);
     await o.waitForSelector('[data-testid="admin-cash-kpis"]', { timeout: 20000 });
-    ok((await text(o, '[data-testid="cash-kpi-pending"]')).includes("25 ₸"), "admin: pending = 10 + 15 ₸");
+    const allPending = sql(`select sum(amount) from cash_ledger where kind = 'earn' and state = 'pending'`);
+    ok((await text(o, '[data-testid="cash-kpi-pending"]')).includes(kzt(allPending)), `admin: pending = ${kzt(allPending)} (missions + XP)`);
+    ok((await text(o, '[data-testid="admin-cash-rules"]')).includes("3 000 ₸") && (await text(o, '[data-testid="admin-cash-rules"]')).includes("100 XP = 1 ₸"), "admin: the monthly limit and the XP rate in the rules");
     ok((await o.locator('[data-testid="admin-cash-test"][data-funded="true"]').count()) === 1, "admin: one funded test listed");
     await o.screenshot({ path: `${OUT}/8-admin-cash-kk.png`, fullPage: true });
     await o.locator('[data-testid="admin-cash-test"][data-funded="false"]').first().locator('[data-testid="admin-cash-fund"]').click();

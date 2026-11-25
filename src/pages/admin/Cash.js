@@ -52,7 +52,8 @@ function Rules({ d, t, onChanged }) {
   const [busy, setBusy] = useState(false);
   const [form, setForm] = useState(null);
   const edit = () => {
-    setForm({ hold: String(s.hold_days), cap: tenge(s.user_daily_cap), max: tenge(s.max_reward), min: tenge(s.min_payout), votes: String(s.min_arena_votes) });
+    setForm({ hold: String(s.hold_days), cap: tenge(s.user_daily_cap), month: tenge(s.monthly_cap ?? 0), rate: String(s.xp_per_tenge ?? 0),
+      max: tenge(s.max_reward), min: tenge(s.min_payout), votes: String(s.min_arena_votes) });
     setOpen(true);
   };
   async function toggleEarning() {
@@ -63,7 +64,8 @@ function Rules({ d, t, onChanged }) {
   }
   async function save() {
     const patch = {
-      hold_days: Number.parseInt(form.hold, 10), user_daily_cap: parseTenge(form.cap), max_reward: parseTenge(form.max),
+      hold_days: Number.parseInt(form.hold, 10), user_daily_cap: parseTenge(form.cap), monthly_cap: parseTenge(form.month),
+      xp_per_tenge: Number.parseInt(form.rate, 10), max_reward: parseTenge(form.max),
       min_payout: parseTenge(form.min), min_arena_votes: Number.parseInt(form.votes, 10),
     };
     if (Object.values(patch).some((v) => v === null || !Number.isFinite(v) || v < 0)) { toast(t("admin.cash.err.bad_patch"), "rose"); return; }
@@ -76,6 +78,8 @@ function Rules({ d, t, onChanged }) {
     [t("admin.cash.rule.earning"), s.earning_enabled ? t("admin.cash.on") : t("admin.cash.off")],
     [t("admin.cash.rule.payouts"), s.payouts_enabled ? t("admin.cash.on") : t("admin.cash.payoutsOff")],
     [t("admin.cash.rule.hold"), t("admin.cash.days", { n: s.hold_days })],
+    [t("admin.cash.rule.month"), money(s.monthly_cap ?? 0)],
+    [t("admin.cash.rule.rate"), s.xp_per_tenge > 0 ? t("admin.cash.rate", { xp: s.xp_per_tenge }) : t("admin.cash.off")],
     [t("admin.cash.rule.cap"), money(s.user_daily_cap)],
     [t("admin.cash.rule.max"), money(s.max_reward)],
     [t("admin.cash.rule.min"), money(s.min_payout)],
@@ -99,6 +103,8 @@ function Rules({ d, t, onChanged }) {
         ${form && html`
           <div class="adm-cash-form">
             <${Field} label=${t("admin.cash.rule.hold")}><${TextInput} className="w-full" inputmode="numeric" value=${form.hold} onInput=${(e) => setForm({ ...form, hold: e.target.value })} /><//>
+            <${Field} label=${`${t("admin.cash.rule.month")}, ₸`}><${TextInput} className="w-full" inputmode="decimal" value=${form.month} onInput=${(e) => setForm({ ...form, month: e.target.value })} data-testid="admin-cash-month" /><//>
+            <${Field} label=${t("admin.cash.xpPerTenge")}><${TextInput} className="w-full" inputmode="numeric" value=${form.rate} onInput=${(e) => setForm({ ...form, rate: e.target.value })} data-testid="admin-cash-rate" /><//>
             <${Field} label=${`${t("admin.cash.rule.cap")}, ₸`}><${TextInput} className="w-full" inputmode="decimal" value=${form.cap} onInput=${(e) => setForm({ ...form, cap: e.target.value })} /><//>
             <${Field} label=${`${t("admin.cash.rule.max")}, ₸`}><${TextInput} className="w-full" inputmode="decimal" value=${form.max} onInput=${(e) => setForm({ ...form, max: e.target.value })} /><//>
             <${Field} label=${`${t("admin.cash.rule.min")}, ₸`}><${TextInput} className="w-full" inputmode="decimal" value=${form.min} onInput=${(e) => setForm({ ...form, min: e.target.value })} /><//>

@@ -590,3 +590,9 @@
   .ar-wl-row { flex-wrap: wrap; }
   .ar-wl-row-main { flex-basis: 100%; }
 }
+.ar-wl-big-row { display: flex; align-items: flex-end; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+.ar-wl-rate {
+  display: inline-flex; align-items: center; gap: 6px; padding: 6px 10px; border-radius: 999px; font-size: 12.5px; font-weight: 600;
+  color: var(--g-100); background: var(--well); border: 1px solid rgba(0,0,0,.6); box-shadow: var(--sh-well);
+}
+.ar-wl-rate svg { color: var(--signal-hi); }

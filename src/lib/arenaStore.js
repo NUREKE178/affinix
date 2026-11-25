@@ -9,7 +9,7 @@
 // as friendsStore.js / postsStore.js.
 import { useState, useEffect } from "./preact.js";
 import { supabase } from "./supabaseClient.js";
-import { applyWallet } from "./cashStore.js";
+import { applyWallet, refreshWallet } from "./cashStore.js";
 import { isMissingFunction, rpcHint } from "./rpcErrors.js";
 import { useSession } from "./auth.js";
 import { mulberry32, hashStringToSeed } from "./prng.js";
@@ -298,8 +298,18 @@ export async function flush({ force = false, fromSync = false } = {}) {
   return flushPromise;
 }
 
+// XP turns into tenge on the server (migration 0028): after XP was sent, re-read the wallet, at most every 15 s
+let walletReadAt = 0;
+function walletAfterXp() {
+  const now = Date.now();
+  if (now - walletReadAt < 15000) return;
+  walletReadAt = now;
+  refreshWallet();
+}
+
 async function runFlush() {
   const userId = S.userId;
+  let sentXp = false;
   try {
     ensureSlate(localDay());
     let guard = 0;
@@ -317,6 +327,7 @@ async function runFlush() {
       if (slate && (S.base.days[slate.day]?.slate.length ?? 0) > 0) S.pending.slate = null;
       S.remote = "ready";
       failures = 0;
+      sentXp = true;
       announceServerBadges(res.newBadges);
     }
     while (S && S.userId === userId && S.pending.claims.length) {
@@ -328,7 +339,9 @@ async function runFlush() {
       if (res?.ok) announceServerBadges(res.newBadges);
       // the server did not take it (an older database, a condition not met there): say so instead of leaving a phantom reward
       else if (res && res.reason !== "claimed") pushNotice("warn", tt("arena.toast.claimRefused"));
+      sentXp = true;
     }
+    if (sentXp) walletAfterXp();
   } catch (err) {
     if (S && S.userId === userId) {
       noteFailure(err);

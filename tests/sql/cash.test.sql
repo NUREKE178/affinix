@@ -64,6 +64,8 @@ insert into arena_test_items (id, test_id, pos, label) values
 
 -- no quality checks until the block that tests them; no pacing gap except where it is tested
 update cash_settings set check_rate = 0, min_gap_ms = 0;
+-- this file is about the mission bonuses of 0027: the XP conversion of 0028 has its own file (cash_xp.test.sql)
+do $$ begin if exists (select 1 from information_schema.columns where table_name = 'cash_settings' and column_name = 'xp_per_tenge') then execute 'update cash_settings set xp_per_tenge = 0'; end if; end $$;
 
 -- ---------------------------------------------------------------------------
 -- 1. an unfunded test pays XP only

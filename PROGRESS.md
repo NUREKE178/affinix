@@ -4472,3 +4472,34 @@ transfer the bonus to the user's bank, but not now; the site must be able to exp
 **Not done / next:** the payment provider and bank transfers (then KYC: the bank account holder must match the person;
 "one person, one account" is not checked today), researcher-paid tests through Billing, an admin view of one person's
 ledger lines (the `cash_admin_void` RPC exists, no screen yet), the jury script (`ғылыми_жоба.txt`) is updated.
+
+## Arena cash, part 2: 100 XP = 1 ₸, at most 3 000 ₸ a month (migration 0028)
+
+**Ask:** "a monthly limit of 3 000 tenge; let 100 XP give 1 tenge."
+
+- **Where:** every XP change goes through `arena_profiles.xp_total`, only upwards, inside the SECURITY DEFINER functions that
+  re-derive XP (`arena_submit`, `arena_claim`, `arena_test_vote`). A trigger `cash_on_xp` (after update of `xp_total`)
+  converts the increase with `_cash_accrue_xp`: `units = carry + xp * 100`, `tiyn = units / xp_per_tenge` (100 by default,
+  so 1 XP = 1 tiyn), the remainder carried in `cash_accounts.xp_carry`. The browser never states XP, so it cannot state money.
+- **Limits:** `cash_settings.monthly_cap` (300 000 tiyn = 3 000 ₸, UTC calendar month) next to the daily cap; `_cash_room`
+  gives what is left of both. An XP conversion is **cut** to the room (and then nothing more is converted); a funded
+  mission's reward (0027) is **refused** with the new reason `month_cap` (a reward is one sum). Both count against the
+  same limits.
+- **Same guards as 0027:** eligibility (24 h + 30 duels; XP from before is not converted), holding period, review / block,
+  pause (`earning_enabled`), `xp_per_tenge = 0` switches the conversion off.
+- **Ledger:** XP rows are `kind = 'earn'`, new column `source = 'xp'` (mission bonuses `'mission'`); the earn check now
+  reads "a mission row has its answer, an XP row has none"; the guard also fixes `source`. The wallet shows the XP rows of a
+  UTC day and state as **one** line ("Arena XP").
+- **Screens:** wallet: "This month / limit / left" instead of "Today", a "100 XP = 1 ₸" chip, how-to and rules rewritten,
+  the history line; the wallet is re-read after XP is sent (at most every 15 s) and when the tab opens. Admin: the monthly
+  limit and the XP rate in the rules and the edit dialog. Landing: the players' card and the bonus text name the rate and
+  the limit. 11 new strings per language (2 removed: the "today" tile).
+- **Verified:** `tests/sql/cash_xp.test.sql` **29 assertions** (defaults, no retroactive conversion, 500 XP -> 500 tiyn, a real
+  `arena_submit` vote's XP -> the same tiyn, rate 200 with the carry, rate 0, the monthly cut and stop, `month_cap` for a
+  mission, last month not counted, the daily cut, new / under 30 duels / blocked / paused, one history line per day, only
+  admins change the rate, cache == ledger); `cash.test.sql` still **102** (it switches the conversion off for its own
+  blocks); browser e2e against the real database **37 checks**; `node --test` 30; the old e2e passes.
+- **Risk said plainly (also in the jury script):** XP comes from the game itself, so fake accounts or a bot playing duels can
+  each collect up to 3 000 ₸ a month (pending, after 24 h and 30 duels, released after 7 days). The limits slow it down; only
+  checking the bank account holder at withdrawal time stops it. Withdrawals stay off.
+- **Apply:** `supabase db push` (0028).
