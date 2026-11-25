@@ -1601,3 +1601,5 @@ select.sk-input option:checked {
 @keyframes icm-clash-r { 0% { transform: rotate(9deg); } 38% { transform: translate(-1.1px, -.4px) rotate(-3deg); } 62% { transform: rotate(13deg); } 100% { transform: rotate(9deg); } }
 @keyframes icm-bolt { 0% { transform: scale(1); } 38% { transform: scale(1.7); filter: drop-shadow(0 0 3px #ff8f55); } 100% { transform: scale(1); } }
 @media (prefers-reduced-motion: reduce) { .ic, .ic * { animation: none !important; } }
+
+.push-note { margin: -4px 0 8px; font-size: 12px; line-height: 1.45; color: var(--g-500); }

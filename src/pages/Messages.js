@@ -11,6 +11,7 @@ import {
 } from "../lib/messagesStore.js";
 import { navigate } from "../router.js";
 import { ChatListItem, MessageHit } from "./messages/ChatList.js";
+import { PushBanner } from "../components/PushToggle.js";
 import { ChatPane } from "./messages/ChatPane.js";
 
 export function Messages({ query }) {
@@ -115,6 +116,7 @@ export function Messages({ query }) {
           <h2>${t("messages.title")}</h2>
           <input class="sk-input sk-chat-search" type="search" data-testid="chat-search" placeholder=${t("messages.search")} value=${search} onInput=${(e) => setSearch(e.currentTarget.value)} />
         </div>
+        <${PushBanner} t=${t} />
         <div class="sk-chat-items">
           ${!loaded && html`
             ${[0, 1, 2, 3].map((i) => html`

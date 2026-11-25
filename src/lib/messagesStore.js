@@ -9,6 +9,7 @@ import { isMissingFunction } from "./rpcErrors.js";
 import { prepareImage } from "./imageTools.js";
 import { toast } from "../components/ui.js";
 import { navigate } from "../router.js";
+import { notifyMessage } from "./pushStore.js";
 
 // ============================================================================
 // 1:1 messaging between accepted friends (migrations 0018, 0020, 0024).
@@ -456,6 +457,7 @@ async function deliver(convId, id) {
     const saved = await insertMessage(convId, id, msg.body, msg.replyToId, attachmentPath);
     if (image && attachmentPath) urlCache.set(attachmentPath, { url: image.previewUrl, exp: Date.now() + 24 * 3600 * 1000 });
     pendingImages.delete(id);
+    notifyMessage(saved.id); // the other person's phone, even when Affinix is closed
     upsertMessage(convId, { ...saved, reply: findMessage(convId, id)?.reply ?? snapshotReply(convId, msg.replyToId), reactions: [], localImage: image?.previewUrl ?? null });
   } catch (err) {
     if (err?.code === "PGRST204" || /attachment_path/.test(err?.message ?? "")) setCaps({ images: "old" });

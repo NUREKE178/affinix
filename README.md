@@ -47,7 +47,11 @@ by phase.
    npx supabase functions deploy complete-session
    npx supabase functions deploy generate-insights
    npx supabase functions deploy invite-member
+   npx supabase functions deploy notify-message   # chat push notifications, see below
    ```
+   Chat push notifications also need VAPID keys (once): `npx web-push generate-vapid-keys`, then
+   `npx supabase secrets set VAPID_PUBLIC_KEY=<public> VAPID_PRIVATE_KEY=<private> VAPID_SUBJECT=mailto:you@example.com`.
+   Without them the function answers `push_not_configured` and everything else keeps working.
 5. Put `SUPABASE_URL` / `SUPABASE_ANON_KEY` into `src/lib/env.js` (the anon
    key is meant to be public -- Supabase's security model is anon key + RLS,
    not a secret key). Never put the service role key or `AI_API_KEY` there.

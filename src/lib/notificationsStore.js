@@ -1,4 +1,5 @@
 import { useState, useEffect } from "./preact.js";
+import { resyncPush } from "./pushStore.js";
 import { requireSupabase } from "./supabaseClient.js";
 import { getCurrentUser, useSession } from "./auth.js";
 import { fetchAuthorsById } from "./postsStore.js";
@@ -259,6 +260,7 @@ export function useNotifications() {
     if (!userId) return;
     subscribeToLiveNotifications(userId);
     requestNotificationPermission();
+    resyncPush(); // this device may already have said yes (maybe for someone else who used the same phone)
   }, [userId]);
 
   const unreadCount = state.notifications.filter((n) => !n.isRead).length;
