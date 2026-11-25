@@ -1202,6 +1202,10 @@ select.sk-input option:checked {
   .sk-chat-send { width: 38px; height: 38px; margin-left: 2px; }
   .sk-chat-input { padding: 8px 12px; font-size: 15px; }
 }
+/* iOS Safari zooms the whole page into any field under 16px when it gets focus (and leaves it shifted sideways), so the chat field is 16px there */
+@supports (-webkit-touch-callout: none) {
+  .sk-chat-input { font-size: 16px; }
+}
 @media (max-width: 767px) {
   /* Measured on the real mobile Shell layout: topbar ~63px + main's own
      top/bottom padding ~24px each = ~111px (~7rem). 7.5rem leaves a small,

@@ -54,6 +54,24 @@ server.listen(0, "127.0.0.1", async () => {
       await page.screenshot({ path: path.join(require("node:os").tmpdir(), `chat-layout-${w}x${h}.png`) });
       await ctx.close();
     }
+    // iOS with the keyboard up: the visual viewport is shorter and panned down; the chat must sit exactly on it, field included
+    for (const [w, h] of [[390, 780], [360, 640]]) {
+      const ctx = await browser.newContext({ viewport: { width: w, height: h }, deviceScaleFactor: 2, isMobile: true, hasTouch: true });
+      const page = await ctx.newPage();
+      await page.goto(`${base}?bar=68&kb=1`);
+      await page.waitForFunction(() => window.__ready);
+      const k = await page.evaluate(() => {
+        const r = (id) => document.getElementById(id).getBoundingClientRect();
+        return { top: Math.round(r("pane").top), bottom: Math.round(r("pane").bottom), left: Math.round(r("pane").left), right: Math.round(r("pane").right), comp: Math.round(r("composer").bottom), headTop: Math.round(r("head").top), vvTop: visualViewport.offsetTop, vvH: visualViewport.height, w: innerWidth };
+      });
+      const tag = `keyboard ${w}x${h}`;
+      assert.equal(k.top, k.vvTop, `${tag}: the chat starts at ${k.top}, the visible area at ${k.vvTop}`);
+      assert.equal(k.bottom, k.vvTop + k.vvH, `${tag}: the chat ends at ${k.bottom}, the visible area at ${k.vvTop + k.vvH}`);
+      assert.ok(k.left === 0 && k.right === k.w, `${tag}: the chat is not full width (${k.left}..${k.right} of ${k.w})`);
+      assert.ok(k.comp <= k.vvTop + k.vvH && k.headTop >= k.vvTop, `${tag}: the field or header is outside the visible area`);
+      await page.screenshot({ path: path.join(require("node:os").tmpdir(), `chat-kb-${w}x${h}.png`) });
+      await ctx.close();
+    }
     // the conversation list (the dock is on screen there) fits the screen too
     for (const [w, h] of [[390, 780], [360, 640]]) {
       const ctx = await browser.newContext({ viewport: { width: w, height: h }, deviceScaleFactor: 2, isMobile: true, hasTouch: true });

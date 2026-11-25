@@ -38,6 +38,12 @@ if (q.get('pane') === 'list') document.getElementById('pane').setAttribute('data
 document.getElementById('barfill').style.height = (Number(q.get('bar') || 68) - 24) + 'px';
 const sc = document.getElementById('scroll');
 for (let i = 0; i < 40; i++) { const d = document.createElement('div'); d.className = 'sk-bubble'; d.style.cssText = 'padding:10px 14px;margin:3px 0;background:#26282d;border-radius:14px;align-self:' + (i % 2 ? 'flex-end' : 'flex-start'); d.textContent = 'сообщение ' + i; sc.appendChild(d); }
+// ?kb=1 imitates iOS Safari with the keyboard up: the page keeps its size, the visual viewport is shorter and panned down (offsetTop > 0)
+if (q.get('kb')) {
+  const vv = Object.assign(new EventTarget(), { height: innerHeight - 300, offsetTop: 260, width: innerWidth, scale: 1 });
+  Object.defineProperty(window, 'visualViewport', { value: vv, configurable: true });
+  document.documentElement.dataset.kb = '1';
+}
 if (q.get('vars') !== '0') {
   try { const m = await import('/src/lib/layoutVars.js'); window.__stop = m.watchLayoutVars(document.getElementById('bar')); } catch (e) { window.__varsError = String(e); }
 }

@@ -99,6 +99,9 @@
      person's name and "online") slid under the top bar. */
   .sk-chat[data-pane="list"] { height: calc(var(--app-vh, 100svh) - var(--topbar-h, 5rem) - 2.75rem - var(--mtb-total)); min-height: 0; }
   .sk-chat[data-pane="chat"] { height: calc(var(--app-vh, 100svh) - var(--topbar-h, 5rem) - 1.5rem); min-height: 0; }
+  /* Keyboard up (iOS pans the visual viewport instead of shrinking the page): pin the chat to what is visible, full width, above the top bar, so the
+     field never ends up half a screen above the keyboard. The bar comes back when the keyboard closes. */
+  html[data-kb] .sk-chat[data-pane="chat"] { position: fixed; z-index: 60; left: 0; right: 0; top: var(--app-top, 0px); height: var(--app-vh, 100svh); margin: 0; border-radius: 0; }
   body:has(.sk-chat[data-pane="chat"]) .sk-main { padding-top: .75rem; padding-bottom: .75rem; }
   html:has(.sk-chat[data-pane="chat"]) { overflow: hidden; overscroll-behavior: none; }
   .ar-spec-art { height: clamp(120px, calc((100dvh - 430px - var(--mtb-total)) / 2), 230px); }
