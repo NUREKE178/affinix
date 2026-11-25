@@ -4559,3 +4559,12 @@ ledger lines (the `cash_admin_void` RPC exists, no screen yet), the jury script 
 - **Cause:** on a 360 px phone three 40 px buttons plus 8 px gaps left the field ~160 px wide, too narrow for the hint at 14.5 px; the textarea had `overflow: auto` so the wrapped hint produced a scrollbar.
 - **Fix:** `styles.css`: phone block (<= 767 px) with 36 px icon buttons, 38 px send, 4 px gaps, 8 px padding; the field is `overflow-y: hidden` and `Composer.js` toggles `.is-scroll` only once the content passes the 140 px max height; the placeholder is `nowrap` with an ellipsis; a quiet chat-only focus state (thin warm edge instead of the 3 px glow).
 - **Test:** `tests/browser/chat-layout.cjs` (and its fixture, now with the real buttons) checks the empty field is <= 44 px tall with no scrollbar at 4 phone sizes. `node --test` 31, chat layout, e2e pass.
+
+## iPhone: the open chat stays above the keyboard (no migration)
+
+**Report:** an iPhone screenshot with the keyboard up: the chat stayed in the top part of the screen with a big empty gap above the keyboard, the page was zoomed in and shifted sideways (the emoji button half off screen).
+
+- **Cause:** iOS Safari does not resize the page for the keyboard, it pans the visual viewport (`offsetTop > 0`); the chat was sized from `--app-vh` but still positioned in the page, so it was left behind above the visible area. Separately, iOS zooms into any field with a font under 16px on focus (the chat field was 15px).
+- **Fix:** `src/lib/layoutVars.js` also keeps `--app-top` (visualViewport.offsetTop, on resize and scroll). `shell.css`: with `html[data-kb]` (set while a field has focus, by mobileTabBar) the open chat is `position: fixed` at `--app-top`, `--app-vh` tall, full width, above the top bar; the bar returns when the keyboard closes. `styles.css`: the chat field is 16px under `@supports (-webkit-touch-callout: none)` (iOS only).
+- **Test:** `chat-layout.html?kb=1` mocks a shorter, panned visualViewport; `chat-layout.cjs` asserts the chat starts and ends exactly on it, is full width, and the field and header are inside it (2 phone sizes). `node --test` 31, e2e pass.
+- **Not verified:** a real iPhone (the mock imitates the pan; Safari's exact event timing may differ).
