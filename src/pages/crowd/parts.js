@@ -21,13 +21,40 @@ export function safeImageUrl(path) {
   try { return imageUrl(path); } catch { return null; }
 }
 
-/** An option as a small tile: its image when it has one, else the first letters of its text. */
+/** Eight flat two-tone looks for options that have no picture, so a text-only option is a small poster instead of an empty
+ * well. The look is chosen by a hash of the option's id (else its text), so one option always wears the same one. Text colours
+ * are picked for contrast (white on the saturated ones, near-black on the light ones). */
+export const TONES = [
+  { bg: "#2f2170", bg2: "#5b3fd1", fg: "#ffffff" }, // violet
+  { bg: "#0b3b36", bg2: "#178a74", fg: "#ffffff" }, // teal
+  { bg: "#5c1d2b", bg2: "#c9433b", fg: "#ffffff" }, // coral
+  { bg: "#e9d7a8", bg2: "#d9a83f", fg: "#2a1c05" }, // sand
+  { bg: "#12304f", bg2: "#2f6fb0", fg: "#ffffff" }, // blue
+  { bg: "#cde6a8", bg2: "#7cc24a", fg: "#10240a" }, // lime
+  { bg: "#3b1a52", bg2: "#b8419f", fg: "#ffffff" }, // magenta
+  { bg: "#f2f2f4", bg2: "#c3c6ce", fg: "#18191c" }, // paper
+];
+
+/** Which of TONES an option wears: a stable index from its id or text. */
+export function toneIndex(item) {
+  const key = String(item?.id ?? item?.label ?? "?");
+  let h = 2166136261;
+  for (let i = 0; i < key.length; i++) { h ^= key.charCodeAt(i); h = Math.imul(h, 16777619); }
+  return (h >>> 0) % TONES.length;
+}
+
+export const toneStyle = (item) => {
+  const t = TONES[toneIndex(item)];
+  return { "--tone-a": t.bg, "--tone-b": t.bg2, "--tone-fg": t.fg };
+};
+
+/** An option as a small tile: its image when it has one, else the first letters of its text on its own colours. */
 export function OptionThumb({ item, size = 44 }) {
   const url = item.path ? safeImageUrl(item.path) : null;
   const box = { width: `${size}px`, height: `${size}px` };
   return url
     ? html`<span class="cr-thumb" style=${box}><img src=${url} alt="" loading="lazy" draggable="false" /></span>`
-    : html`<span class="cr-thumb cr-thumb-text" style=${{ ...box, fontSize: `${Math.max(11, size * 0.32)}px` }}>${(item.label ?? "?").trim().slice(0, 2)}</span>`;
+    : html`<span class="cr-thumb cr-thumb-text" data-tone=${toneIndex(item)} style=${{ ...box, ...toneStyle(item), fontSize: `${Math.max(11, size * 0.32)}px` }}>${(item.label ?? "?").trim().slice(0, 2)}</span>`;
 }
 
 /** One sentence on where the test stands (see testVerdict for the rules). */

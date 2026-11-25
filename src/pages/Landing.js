@@ -352,8 +352,46 @@ function Workflow({ t, locale }) {
   `;
 }
 
+/* The small living pictures of the "who gains what" cards. Pure CSS loops (landing.css, .lp-viz): they start when the section scrolls
+ * into view, stand still on their final frame with "reduce motion", and carry no words of their own (numbers and symbols only),
+ * so they read the same in every language. */
+function VizXp() {
+  return html`
+    <div class="lp-viz lp-viz-xp" aria-hidden="true">
+      <div class="lp-xp-row"><span class="lp-xp-n lp-mono"></span><span class="lp-xp-unit lp-mono">/ 100 XP</span><span class="lp-xp-coin lp-mono">+1 ₸</span></div>
+      <div class="lp-xp-ladder">${Array.from({ length: 10 }, (_, i) => html`<i key=${i} style=${`--i:${i}`}></i>`)}</div>
+      <div class="lp-xp-foot lp-mono"><span><${Icon} name="flame" size=${13} className="lp-ic" />4</span><span>100 XP = 1 ₸</span></div>
+    </div>`;
+}
+
+function VizAb() {
+  return html`
+    <div class="lp-viz lp-viz-ab" aria-hidden="true">
+      <div class="lp-ab-row"><b>A</b><span class="lp-ab-bar"><i class="lp-ab-a"></i></span><em class="lp-ab-pa lp-mono"></em></div>
+      <div class="lp-ab-row"><b>B</b><span class="lp-ab-bar"><i class="lp-ab-b"></i></span><em class="lp-ab-pb lp-mono"></em></div>
+      <div class="lp-ab-foot lp-mono"><span class="lp-ab-n"></span><span class="lp-ab-win"><${Icon} name="check" size=${12} strokeWidth=${3.2} />A</span></div>
+    </div>`;
+}
+
+function VizCi() {
+  const rows = [["10", 78], ["30", 46], ["100", 24]];
+  return html`
+    <div class="lp-viz lp-viz-ci" aria-hidden="true">
+      ${rows.map(([n, w], i) => html`
+        <div class="lp-ci-row lp-mono" key=${n} style=${`--i:${i};--w:${w}%`}><b>n ${n}</b><span class="lp-ci-track"><i class="lp-ci-whisker"></i><u class="lp-ci-dot"></u></span></div>`)}
+    </div>`;
+}
+
+function VizMonth() {
+  return html`
+    <div class="lp-viz lp-viz-month" aria-hidden="true">
+      <div class="lp-mo-row lp-mono"><span class="lp-mo-n"></span><span>/ 3 000 ₸</span></div>
+      <span class="lp-mo-bar"><i></i></span>
+    </div>`;
+}
+
 function Benefits({ t }) {
-  const groups = [{ key: "players", icon: "arena" }, { key: "creators", icon: "target" }, { key: "society", icon: "results" }];
+  const groups = [{ key: "players", icon: "arena", viz: VizXp }, { key: "creators", icon: "target", viz: VizAb }, { key: "society", icon: "results", viz: VizCi }];
   return html`
     <section class="lp-sec" id="lp-benefits" data-testid="landing-benefits">
       <div class="lp-wrap">
@@ -367,6 +405,7 @@ function Benefits({ t }) {
             ${groups.map((g) => html`
               <article key=${g.key} class="lp-bc lp-bf" data-group=${g.key}>
                 <div class="lp-bc-top"><span class="lp-ico"><${Icon} name=${g.icon} size=${22} /></span><span class="lp-num">${t(`landing.benefits.items.${g.key}.tag`)}</span></div>
+                <${g.viz} />
                 <h3>${t(`landing.benefits.items.${g.key}.title`)}</h3>
                 <ul class="lp-bf-list">
                   ${["p1", "p2", "p3"].map((p) => html`<li key=${p}><${Icon} name="check" size=${16} strokeWidth=${2.6} className="lp-ic" /><span>${t(`landing.benefits.items.${g.key}.${p}`)}</span></li>`)}
@@ -379,6 +418,7 @@ function Benefits({ t }) {
             <div class="lp-earn-main">
               <h3>${t("landing.benefits.earnTitle")}</h3>
               <p>${t("landing.benefits.earnBody")}</p>
+              <${VizMonth} />
             </div>
             <p class="lp-earn-note"><${Icon} name="shield" size=${15} className="lp-ic" /><span>${t("landing.benefits.earnNote")}</span></p>
           </div>

@@ -64,6 +64,8 @@ insert into arena_test_items (id, test_id, pos, label) values
 
 -- no quality checks until the block that tests them; no pacing gap except where it is tested
 update cash_settings set check_rate = 0, min_gap_ms = 0;
+-- this file is about the mission bonuses of 0027: the XP conversion of 0028 has its own file (cash_xp.test.sql)
+do $$ begin if exists (select 1 from information_schema.columns where table_name = 'cash_settings' and column_name = 'xp_per_tenge') then execute 'update cash_settings set xp_per_tenge = 0'; end if; end $$;
 
 -- ---------------------------------------------------------------------------
 -- 1. an unfunded test pays XP only
@@ -161,7 +163,6 @@ end $$;
 do $$
 declare r jsonb; p2 uuid := '00000000-0000-0000-0000-0000000000b2'; fresh uuid := '00000000-0000-0000-0000-0000000000b3';
 begin
-  update cash_settings set user_daily_cap = 100000;
   -- p2 already answered T1's only pair (too fast); fresh did too (new account). Spend the budget with new people.
   insert into auth.users (id, email) select ('00000000-0000-0000-0000-0000000001' || lpad(g::text, 2, '0'))::uuid, 'x' || g || '@x' from generate_series(1, 4) g;
   insert into profiles (id, full_name, created_at) select ('00000000-0000-0000-0000-0000000001' || lpad(g::text, 2, '0'))::uuid, 'P' || g, now() - interval '2 days' from generate_series(1, 4) g on conflict (id) do update set created_at = excluded.created_at;
@@ -180,19 +181,20 @@ begin
 end $$;
 
 -- ---------------------------------------------------------------------------
--- 5. the daily cap
+-- 5. the monthly limit (the only limit: there is no daily one) as seen by a mission reward
 -- ---------------------------------------------------------------------------
 do $$
 declare r jsonb; p2 uuid := '00000000-0000-0000-0000-0000000000b2';
 begin
   update arena_tests set cash_reward = 700, cash_budget = 100000 where id = '10000000-0000-0000-0000-000000000002';
-  update cash_settings set user_daily_cap = 1000;
+  update cash_settings set monthly_cap = 1000;
   r := t.vote(p2, '10000000-0000-0000-0000-000000000002', '20000000-0000-0000-0000-000000000021', '20000000-0000-0000-0000-000000000022', '20000000-0000-0000-0000-000000000022');
-  perform t.ok((r->'results'->0->>'cash')::bigint = 700, 'cap: first answer paid');
+  perform t.ok((r->'results'->0->>'cash')::bigint = 700, 'month: first answer paid');
   r := t.vote(p2, '10000000-0000-0000-0000-000000000002', '20000000-0000-0000-0000-000000000021', '20000000-0000-0000-0000-000000000023', '20000000-0000-0000-0000-000000000023');
-  perform t.ok((r->'results'->0->>'cash')::bigint = 0 and r->'results'->0->>'cashReason' = 'cap', 'cap: 700 + 700 > 1000, refused');
-  perform t.ok((r->'wallet'->>'today')::bigint = 700, 'cap: today = 700');
-  update cash_settings set user_daily_cap = 50000;
+  perform t.ok((r->'results'->0->>'cash')::bigint = 0 and r->'results'->0->>'cashReason' = 'month_cap', 'month: 700 + 700 > 1000, refused with month_cap');
+  perform t.ok((r->'wallet'->>'month')::bigint = 700 and (r->'wallet'->>'monthLeft')::bigint = 300, 'month: the wallet says 700 earned, 300 left');
+  perform t.ok(not (r->'wallet') ? 'today' and not (r->'wallet'->'rules') ? 'dailyCap', 'month: the wallet has no daily figures any more');
+  update cash_settings set monthly_cap = 300000;
 end $$;
 
 -- ---------------------------------------------------------------------------

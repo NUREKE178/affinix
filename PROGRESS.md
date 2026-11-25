@@ -4418,7 +4418,7 @@ transfer the bonus to the user's bank, but not now; the site must be able to exp
 - **The server decides every payment** (`_cash_earn`, called from `arena_test_vote` with the test row locked): funded and
   budget left; account older than `min_account_hours` (24) with `min_arena_votes` (30) Arena duels; answer slower than
   `min_answer_ms` (600, client-reported) **and** at least `min_gap_ms` (1500) after the player's previous paid answer on the
-  server clock (`cash_accounts.last_paid_at`, under a row lock); `user_daily_cap` (500 ₸, UTC day).
+  server clock (`cash_accounts.last_paid_at`, under a row lock); `user_daily_cap` (500 ₸, UTC day; removed again in 0029, see below).
 - **Holding period:** a bonus is `pending` for `hold_days` (7), then released lazily on the next wallet read
   (`_cash_release`, no cron). An account on `review` is not released; `blocked` earns nothing and its pending bonuses are voided.
 - **Quality checks (test-retest):** `arena_test_queue` sometimes (`check_rate`, 20 %) brings back, as an ordinary-looking
@@ -4472,3 +4472,69 @@ transfer the bonus to the user's bank, but not now; the site must be able to exp
 **Not done / next:** the payment provider and bank transfers (then KYC: the bank account holder must match the person;
 "one person, one account" is not checked today), researcher-paid tests through Billing, an admin view of one person's
 ledger lines (the `cash_admin_void` RPC exists, no screen yet), the jury script (`ғылыми_жоба.txt`) is updated.
+
+## Arena cash, part 2: 100 XP = 1 ₸, at most 3 000 ₸ a month (migration 0028)
+
+**Ask:** "a monthly limit of 3 000 tenge; let 100 XP give 1 tenge."
+
+- **Where:** every XP change goes through `arena_profiles.xp_total`, only upwards, inside the SECURITY DEFINER functions that
+  re-derive XP (`arena_submit`, `arena_claim`, `arena_test_vote`). A trigger `cash_on_xp` (after update of `xp_total`)
+  converts the increase with `_cash_accrue_xp`: `units = carry + xp * 100`, `tiyn = units / xp_per_tenge` (100 by default,
+  so 1 XP = 1 tiyn), the remainder carried in `cash_accounts.xp_carry`. The browser never states XP, so it cannot state money.
+- **Limits:** `cash_settings.monthly_cap` (300 000 tiyn = 3 000 ₸, UTC calendar month) next to the daily cap; `_cash_room`
+  gives what is left of both. An XP conversion is **cut** to the room (and then nothing more is converted); a funded
+  mission's reward (0027) is **refused** with the new reason `month_cap` (a reward is one sum). Both count against the
+  same limits.
+- **Same guards as 0027:** eligibility (24 h + 30 duels; XP from before is not converted), holding period, review / block,
+  pause (`earning_enabled`), `xp_per_tenge = 0` switches the conversion off.
+- **Ledger:** XP rows are `kind = 'earn'`, new column `source = 'xp'` (mission bonuses `'mission'`); the earn check now
+  reads "a mission row has its answer, an XP row has none"; the guard also fixes `source`. The wallet shows the XP rows of a
+  UTC day and state as **one** line ("Arena XP").
+- **Screens:** wallet: "This month / limit / left" instead of "Today", a "100 XP = 1 ₸" chip, how-to and rules rewritten,
+  the history line; the wallet is re-read after XP is sent (at most every 15 s) and when the tab opens. Admin: the monthly
+  limit and the XP rate in the rules and the edit dialog. Landing: the players' card and the bonus text name the rate and
+  the limit. 11 new strings per language (2 removed: the "today" tile).
+- **Verified:** `tests/sql/cash_xp.test.sql` **29 assertions** (defaults, no retroactive conversion, 500 XP -> 500 tiyn, a real
+  `arena_submit` vote's XP -> the same tiyn, rate 200 with the carry, rate 0, the monthly cut and stop, `month_cap` for a
+  mission, last month not counted, the daily cut, new / under 30 duels / blocked / paused, one history line per day, only
+  admins change the rate, cache == ledger); `cash.test.sql` still **102** (it switches the conversion off for its own
+  blocks); browser e2e against the real database **37 checks**; `node --test` 30; the old e2e passes.
+- **Risk said plainly (also in the jury script):** XP comes from the game itself, so fake accounts or a bot playing duels can
+  each collect up to 3 000 ₸ a month (pending, after 24 h and 30 duels, released after 7 days). The limits slow it down; only
+  checking the bank account holder at withdrawal time stops it. Withdrawals stay off.
+- **Apply:** `supabase db push` (0028).
+
+## Making the landing and the Arena screens alive (no migration)
+
+**Ask:** "the pictures look very lifeless, show them alive" (landing and Arena screens, chosen from the options).
+
+- **Landing, "One choice, three gains":** four pure-CSS loops (`landing.css`, `Landing.js` `Viz*`): players (ten LEDs light up, XP counts 0 -> 100 through an
+  integer `@property`, a "+1 ₸" coin pops), creators (two bars race to 62 / 38, n counts to 30, the winner chip appears), science (the confidence
+  interval narrows for n = 10 / 30 / 100), and the monthly-limit meter climbing to 3 000 ₸. They start when the section scrolls in (`.sk-reveal[data-visible]`), carry no words
+  (numbers and symbols only), and every element's own declaration is its **final frame**, so `prefers-reduced-motion` (animations killed under `.lp-root`) shows a finished
+  picture. The rating bars of the workflow card now rise on scroll-in (before: hover only); pack thumbnails, floating chips and the phone drift with the individual
+  `translate` property, so the hover transforms still work.
+- **Wallet** (`Wallet.js`): `Counter` rolls every amount to its value (`src/lib/countUp.js`, the maths `countUpAt` / `easeOut` in `money.js`, unit-tested; exact amount in
+  `data-value`; reduce-motion shows it at once) and flashes green when it grew; the header chip bumps; `MonthRing` fills when the tab opens; history rows slide in one after
+  another; the empty history has a coin turning on its axis.
+- **Missions:** "+10 ₸" pops in with a coin and rolls up (`CashPop`). **Text-only options are no longer empty black wells:** a poster in one of eight two-tone looks
+  (`crowd/parts.js` `TONES`, chosen by a hash of the option id, text colour picked for contrast) with a drifting disc and ring and a huge faint first letter; the small
+  thumbnails (`OptionThumb`) wear the same colours.
+- **Verified:** `tests/browser/cash.e2e.cjs` now **47 checks** (the number checks run with reduce motion; separate checks with motion on: the balance rolls through
+  several values to 15 ₸, the landing XP counter changes over time, the animation runs only once the section is in view, and with reduce motion the picture stands on
+  100 XP); `node --test` 31; the old e2e and the SQL tests unchanged and green. Pictures were looked at, mid-animation too.
+- Landing numbers (62 / 38, n = 30) are illustrative and say nothing about real results.
+
+## Arena cash, part 3: no daily limit, the monthly 3 000 ₸ is the only one (migration 0029)
+
+**Ask:** "not a daily limit, make it a monthly limit, 3000 tenge."
+
+- 0027 had a daily cap (500 ₸) and 0028 added the monthly one (3 000 ₸). 0029 removes the daily one entirely: `cash_settings.user_daily_cap` is dropped, `_cash_room`
+  now returns only the month (`month`, `monthLeft`, `room` = what is left, `reason` = `month_cap`), `_cash_earn` lost its daily check and the `cap` reason, `_cash_wallet_json` lost
+  `today` and `rules.dailyCap`, `cash_admin_update_settings` no longer accepts `user_daily_cap` (answers `bad_patch`). The functions are replaced (not the old migrations edited), so it
+  works whether 0027 / 0028 were applied earlier or together with it; the runner's second pass still ends on the 0029 versions.
+- Rules unchanged otherwise: XP conversion cut to what is left of the month, a mission reward that does not fit is refused with `month_cap`, UTC calendar month.
+- Screens: the "at most {cap} a day" rule, the admin "daily limit per person" row and form field and the `cash.reason.cap` text are gone (3 strings x 3 languages: 1 824 per language).
+- Verified: SQL **103 + 32** assertions (the old daily tests became monthly ones; new: the column is gone, 80 000 XP in one day -> 800 ₸ with no cut, the old setting is refused, the
+  wallet has no daily keys); browser e2e 47 checks; `node --test` 31.
+- **Apply:** `supabase db push` (0029).

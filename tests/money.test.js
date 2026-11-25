@@ -32,3 +32,18 @@ test("payoutProgress and daysUntil", () => {
   assert.equal(daysUntil("2026-11-25T13:00:00Z", now), 1);
   assert.equal(daysUntil("2026-12-02T12:00:00Z", now), 7);
 });
+
+import { countUpAt, easeOut } from "../src/lib/money.js";
+
+test("countUpAt: starts at the old value, rises monotonically, ends exactly on the new one", () => {
+  assert.equal(countUpAt(0, 1032, 0), 0);
+  assert.equal(countUpAt(0, 1032, 1), 1032);
+  assert.equal(countUpAt(0, 1032, 5), 1032, "past the end stays on the target");
+  let prev = -1;
+  for (let i = 0; i <= 20; i++) { const v = countUpAt(0, 1032, i / 20); assert.ok(v >= prev, "monotonic"); prev = v; }
+  assert.ok(countUpAt(0, 1000, 0.5) > 500, "ease-out: more than half done at half time");
+  assert.equal(countUpAt(500, 200, 1), 200, "also downwards");
+  assert.equal(countUpAt("x", 10, 1), 10);
+  assert.equal(easeOut(-1), 0);
+  assert.equal(easeOut(2), 1);
+});
