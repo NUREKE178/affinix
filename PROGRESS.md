@@ -4538,3 +4538,16 @@ ledger lines (the `cash_admin_void` RPC exists, no screen yet), the jury script 
 - Verified: SQL **103 + 32** assertions (the old daily tests became monthly ones; new: the column is gone, 80 000 XP in one day -> 800 ₸ with no cut, the old setting is refused, the
   wallet has no daily keys); browser e2e 47 checks; `node --test` 31.
 - **Apply:** `supabase db push` (0029).
+
+## Phone messenger: the open chat no longer slides under the top bar (no migration)
+
+**Report:** a phone screenshot of an open chat: the page had scrolled and the chat's own header (the other person's name and "online") was hidden under the app's sticky top bar.
+
+- **Cause:** the chat was `calc(100svh - 7.5rem)` tall (a guess), while the page also holds the sticky top bar, the main padding and, on phones, `padding-bottom: dock + 20px`. Measured in Chromium
+  (390x780): the page was **65 px taller than the screen**, so it scrolled (a focus of the composer, a drag outside the message list), and the header slid under the bar.
+- **Fix:** `src/lib/layoutVars.js` keeps `--topbar-h` (the bar's real height, ResizeObserver) and `--app-vh` (the visual viewport: it shrinks with the on-screen keyboard) on `<html>`;
+  `Shell` wires it to the header. `shell.css` (phone block): the open chat is `--app-vh - --topbar-h - 1.5rem` tall with smaller main padding (the dock is hidden inside a chat), and `html:has(.sk-chat[data-pane="chat"])`
+  gets `overflow: hidden` so the page itself cannot scroll; the list is `--app-vh - --topbar-h - 2.75rem - dock`. Fallbacks are the old estimates. Desktop unchanged.
+- **Test:** `tests/browser/chat-layout.cjs` + `chat-layout.html` (real CSS, real class names, no backend): at 390x780, 360x640, 412x915 with a taller bar and 390x420 (keyboard height) the page is never taller than the
+  screen, the header starts below the bar, the composer is on screen, and after focusing the field and dragging the page `scrollY` stays 0; the list fits too. It **failed on the old code** (65 px) and passes now.
+- **Not verified:** a real phone with the real keyboard (Android Chrome pans differently from the emulated shrink; iOS Safari has its own keyboard behaviour).
