@@ -114,6 +114,10 @@ export async function signInWithGoogle() {
 }
 
 export async function signOut() {
+  // Before the session ends (the calls need it): this device must stop receiving the signed-out person's message pushes, and what they had
+  // typed but not sent must not stay behind for whoever uses the device next.
+  try { await (await import("./pushStore.js")).disablePush(); } catch { /* best effort */ }
+  try { Object.keys(localStorage).filter((k) => k.startsWith("dos_chat_drafts_")).forEach((k) => localStorage.removeItem(k)); } catch { /* private mode */ }
   const { error } = await requireSupabase().auth.signOut();
   if (error) throw error;
 }

@@ -3,7 +3,7 @@
 // POST { action: "key" } Returns the public VAPID key the browser needs to subscribe (so the key lives in one place: the function's secrets).
 //
 // Security: the caller must be signed in AND be the sender of that very message, which must be fresh (a minute or two) and not deleted.
-// So nobody can use this to spam a stranger or to replay an old message. A muted conversation sends nothing.
+// So nobody can use this to spam a stranger or to replay an old message, and each message is pushed at most once (push_sent_at, migration 0031). A muted conversation sends nothing.
 // Secrets (supabase secrets set): VAPID_PUBLIC_KEY, VAPID_PRIVATE_KEY, VAPID_SUBJECT (mailto:you@example.com).
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import webpush from "npm:web-push@3.6.7";
@@ -56,6 +56,10 @@ Deno.serve(async (req) => {
 
     const { data: subs } = await admin.from("push_subscriptions").select("id, endpoint, p256dh, auth").eq("user_id", to);
     if (!subs?.length) return jsonResponse({ ok: true, sent: 0 });
+
+    // one push per message: whoever flips push_sent_at first sends; a replayed call (the sender repeating it) finds it already set
+    const { data: claimed } = await admin.from("messages").update({ push_sent_at: new Date().toISOString() }).eq("id", msg.id).is("push_sent_at", null).select("id");
+    if (!claimed?.length) return jsonResponse({ ok: true, skipped: "already_sent" });
 
     const { data: sender } = await admin.from("profiles").select("full_name").eq("id", me).maybeSingle();
     const text = (msg.body ?? "").trim();
