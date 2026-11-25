@@ -4587,3 +4587,18 @@ ledger lines (the `cash_admin_void` RPC exists, no screen yet), the jury script 
 - **Tests:** `tests/sql/push.test.sql` (12), `tests/push.test.js` (5: status rules, key decoding, the worker's push / quiet-when-visible / click handlers in a stub scope); `node --test` 36, e2e and chat layout pass.
 - **Apply:** `supabase db push` (0030); `npx web-push generate-vapid-keys` then `supabase secrets set VAPID_PUBLIC_KEY=... VAPID_PRIVATE_KEY=... VAPID_SUBJECT=mailto:...`; `supabase functions deploy notify-message`.
 - **Not verified:** the edge function was not run (no Deno / project here) and no real phone received a push. Only direct chats; the native Android app (`native/`) has its own pipeline and gets nothing from this.
+
+## Chat hardening: blocks, flood limit, bucket limits, one push per message, headers (migration 0031)
+
+**Request:** make the messenger much more secure, like WhatsApp / Telegram, and fix bugs.
+
+**Audit** (messages / conversations / reactions / storage policies, RPCs, push, realtime, client, hosting headers). Already fine: only the two members read a thread, only accepted friends write, SECURITY DEFINER RPCs check the caller, private image bucket with a path trigger, links are `noopener` and http(s) only, no `innerHTML`. Gaps found and fixed:
+- **No block.** `user_blocks`, `block_user()` (also deletes the friendship), `unblock_user()`, `is_blocked_between()`; the friend-request function and its raw-insert policy, and the message insert policy, refuse while a block exists; the blocked person is not told (they see "not friends"). UI: "Block / Unblock" in the chat menu (with a confirm) and an "You blocked this person. Unblock" bar. Strings `messages.block / unblock / blockConfirm / blockedByMe` x3 locales.
+- **No flood limit:** trigger `messages_rate_limit` (20 per 10 s, 500 per hour per sender, error `rate_limited`).
+- **Bucket had no limits:** `message-images` is now JPEG / PNG / WebP, 2 MB; the upload policy also requires an accepted friendship.
+- **Push replay:** `messages.push_sent_at`, claimed atomically by `notify-message`; a repeated call answers `already_sent`.
+- **Sign-out:** the device's push subscription is removed and unsent drafts (`dos_chat_drafts_*`) are cleared before the session ends.
+- **Headers (`vercel.json`):** `X-Frame-Options: DENY`, `nosniff`, `Referrer-Policy`, `Permissions-Policy`, HSTS, and an enforced CSP with only `frame-ancestors 'none'; base-uri 'self'; object-src 'none'; form-action 'self'`. A full CSP is shipped as `Content-Security-Policy-Report-Only` first (inline script / style are in use, so it needs `'unsafe-inline'`; check the browser console for violations before enforcing).
+- **Not done, on purpose:** end-to-end encryption (separate large project: keys on devices, search and push previews change); private Realtime channels for the typing indicator and the `presence:online` list (needs `realtime.messages` policies that cannot be tested here); "report a message"; disappearing messages.
+- **Tests:** `tests/sql/chat_security.test.sql` (19 checks: blocks both ways, raw inserts refused, no leak of the block, flood limit, bucket); all migrations run twice; `node --test` 36, e2e, chat layout pass. The block menu / bar have no browser test (there is no fake chat backend); syntax-checked only.
+- **Apply:** `supabase db push` (0031); redeploy `notify-message` (paste the new `index.ts` in the dashboard editor).

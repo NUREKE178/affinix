@@ -82,7 +82,7 @@ export function Messages({ query }) {
   const selected = conversations.find((c) => c.id === selectedId) ?? null;
   const friendIds = useMemo(() => new Set(friends.map((f) => f.otherId)), [friends]);
   // Until the friends list has loaded, assume yes (the server is the real gate).
-  const canSend = selected ? friendsLoading && friends.length === 0 ? true : friendIds.has(selected.otherId) : false;
+  const canSend = selected ? friendsLoading && friends.length === 0 ? true : friendIds.has(selected.otherId) && !selected.blocked : false;
 
   async function openItem(item) {
     if (item.id) { setSelectedId(item.id); return; }

@@ -171,15 +171,17 @@ async function fetchConversations() {
   const sb = requireSupabase();
   const me = getCurrentUser()?.id;
   if (!me) return [];
-  const [convRes, unreadRes, prefRes] = await Promise.all([
+  const [convRes, unreadRes, prefRes, blockRes] = await Promise.all([
     sb.from("conversations").select("*").order("last_message_at", { ascending: false, nullsFirst: false }),
     sb.rpc("my_unread_counts"),
     sb.from("conversation_prefs").select("conversation_id,pinned_at,muted"), // absent before 0024: ignored
+    sb.from("user_blocks").select("blocked_id"), // absent before 0031: nobody is blocked
   ]);
   if (convRes.error) throw convRes.error;
   const rows = convRes.data ?? [];
   const unreadByConv = new Map((unreadRes.error ? [] : unreadRes.data ?? []).map((r) => [r.conversation_id, Number(r.unread)]));
   const prefByConv = new Map((prefRes.error || !Array.isArray(prefRes.data) ? [] : prefRes.data).map((r) => [r.conversation_id, r]));
+  const blockedIds = new Set((blockRes.error || !Array.isArray(blockRes.data) ? [] : blockRes.data).map((r) => r.blocked_id));
   const otherIds = [...new Set(rows.map((r) => (r.user_a === me ? r.user_b : r.user_a)))];
   const people = await fetchAuthorsById(otherIds);
   return rows
@@ -201,6 +203,7 @@ async function fetchConversations() {
         unread: unreadByConv.get(r.id) ?? 0,
         pinned: !!pref?.pinned_at,
         muted: !!pref?.muted,
+        blocked: blockedIds.has(otherId),
       };
     })
     .sort(compareConversations);
@@ -586,6 +589,22 @@ export async function setConversationPref(convId, { pinned, muted } = {}) {
     return { ok: true };
   } catch (err) {
     patchConversation(convId, { pinned: conv.pinned, muted: conv.muted });
+    return { ok: false, error: chatErrorCode(err) };
+  }
+}
+
+/** Blocks / unblocks the person of a conversation (migration 0031). Blocking also ends the friendship. Resolves { ok } or { ok: false, error }. */
+export async function setBlocked(convId, blocked) {
+  const conv = state.conversations.find((c) => c.id === convId);
+  if (!conv) return { ok: false, error: "not_found" };
+  patchConversation(convId, { blocked });
+  try {
+    const { error } = await requireSupabase().rpc(blocked ? "block_user" : "unblock_user", { p_user_id: conv.otherId });
+    if (error) throw error;
+    loadConversationsQuietly();
+    return { ok: true };
+  } catch (err) {
+    patchConversation(convId, { blocked: conv.blocked });
     return { ok: false, error: chatErrorCode(err) };
   }
 }

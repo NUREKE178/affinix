@@ -159,3 +159,6 @@
 .msg-push-actions { display: flex; align-items: center; gap: 10px; }
 .msg-push-x { border: 0; background: transparent; color: var(--g-500); font-size: 12.5px; cursor: pointer; padding: 4px 2px; }
 .msg-push-x:hover { color: var(--g-200); }
+
+.msg-item.danger { color: #f0848a; }
+.msg-unblock { margin-left: 8px; border: 0; background: transparent; color: var(--signal-hi); font: inherit; font-weight: 600; cursor: pointer; text-decoration: underline; }
