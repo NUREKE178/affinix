@@ -4618,3 +4618,7 @@ ledger lines (the `cash_admin_void` RPC exists, no screen yet), the jury script 
 - `styles.css`: `.pf*` rules; `.pf-tabs` fades the right edge of the tab strip on phones.
 - **Test:** `tests/browser/profile-preview.html` + `profile-preview.cjs` (harness fakes): 390x800, 360x740, desktop; no sideways scroll, no squeezed field, the save bar hidden at first, visible after an edit and inside the screen, hidden again after Discard. `node --test` 36, e2e, styles preview pass.
 - **Not done:** the Security / Notifications / Preferences / Sessions tabs are unchanged apart from the card they sit in.
+
+## Platform badge ("Владелец платформы"): the crown chip no longer touches the outline
+
+The 22 px chip sat 3 px from the pill's outline (it looked like it merged with it) and the pill had an orange glow around it. `admin.css`: the pill is a fixed 28 px, the chip 20 px with 4 px around it, the outer glow is gone (only the inset outline stays); `platformBadge.js` passes size 20. Same class everywhere the badge is used (profile, public profile, admin).
