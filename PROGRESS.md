@@ -4666,3 +4666,23 @@ The shared `Glyph` renders icons with a heavy stroke, a tinted body and dots; at
 - **Tests:** `tests/profanity.test.js` (BAD / GOOD examples; the SUB / EXACT lists are compared with the arrays in the migration so the two cannot drift), `tests/sql/profanity.test.sql` (the same examples through the SQL function + the trigger), profile preview (obscene name -> warning, Save disabled). `node --test` 41, SQL all pass, e2e pass.
 - **Limits:** list-based, not perfect; only profile text (not chat, posts, comments); existing names untouched. Extend `profanity.js` + regenerate the arrays in the migration.
 - **Apply:** `supabase db push` (0033), or run the file in the SQL Editor.
+
+## SECURITY FIX: anybody could add anybody to any organisation (migration 0034)
+
+**Request:** "can nobody read the chats? we must protect against hackers and be able to explain it to the jury".
+**Audit:** RLS enabled on every table; internal `_*` and cash / admin functions not executable by `anon` / `authenticated` (admin ones call `_require_admin()`); policies with `true` are only the feed / quest definitions for signed-in people; no `service_role` in the client; `dangerouslySetInnerHTML` only for our own generated SVG.
+**Found (critical):** `add_member_by_email(org_id, email, role)` (SECURITY DEFINER, executable by PUBLIC incl. `anon`) did `if org_role(org_id) not in ('owner','admin') then raise`. `org_role()` is NULL for a non-member, `NULL not in (...)` is NULL, the IF skipped the check, and the INSERT ran with the definer's rights: any visitor with the public anon key could make any registered person an admin of ANY organisation (read its experiments / results) and could enumerate registered emails. Reproduced on the test database (anon call -> "attacker became admin"). Chat messages are NOT affected (their policies do not use it).
+**Fix (`0034_org_member_security_fix.sql`):** `auth.uid()` required, `coalesce(org_role(org_id)::text, '') not in (...)`, `revoke execute ... from public, anon`. `tests/sql/org_security.test.sql` (8 checks: anon refused, stranger refused and learns nothing, made-up org id, only the owner can add, no second owner, a viewer cannot add).
+**Must do:** apply 0034, then check `select * from organization_members order by created_at;` for unexpected rows (we cannot know whether it was used before).
+**Jury:** new Q&A 20d in `жюри_баяндама.txt` (honest: TLS + RLS + block / flood / image limits; NOT end-to-end encrypted, the database owner can read messages; the audit finding and its fix; next steps), `jury.html` / `jury.pdf` rebuilt.
+
+## SECURITY FIX #2: open doors (migration 0035)
+
+**Request:** "are there more vulnerabilities, hackers can get in".
+**Method:** attacked the database as `anon` and as an ordinary signed-in user on the test PostgreSQL: privilege escalation (`is_admin`, `platform_role`), XP / cash tables, other people's rows, views, storage policies, bucket limits, every SECURITY DEFINER function's callers.
+**Found (critical):** `profiles_public` (0011) is a plain auto-updatable view owned by the migration role (skips RLS) and had the default ALL grant for `anon` and `authenticated`: any visitor could `update` / `delete from profiles_public` (reproduced: anon deleted a profile; the delete cascades). Also: the `avatars`, `post-images`, `variant-assets` buckets had no size / MIME limits server-side; no flood limits on posts, comments, notifications, friend requests.
+**Fix (`0035_close_open_doors.sql`):** view read-only and signed-in only; `anon` loses every right on every public table / view / sequence (default privileges too); `authenticated` loses TRUNCATE / REFERENCES / TRIGGER; bucket limits (images only, 3 / 5 / 5 MB); `_flood_guard()` triggers (posts 10 / 10 min, comments 40 / 10 min, notifications 80 / 10 min, friend requests 30 / hour).
+**Tests:** `tests/sql/open_doors.test.sql` (14 checks); all other SQL tests, `cash.e2e` (47), e2e, `node --test` 41 pass; migrations run twice.
+**Verified fine:** RLS on every table; the platform flags are locked (`platform_flags_locked`); users cannot write `arena_profiles` / `cash_*`; internal `_*` and admin functions are closed; no `service_role` in the browser.
+**Still open (documented):** `presence:online` / `dm:<id>` Realtime channels are public (anyone with the anon key sees online user UUIDs); Supabase Auth settings (email confirmation, min password length, CAPTCHA, rate limits) live in the dashboard; no external audit; messages are not end-to-end encrypted; full CSP still report-only.
+**Apply:** 0034 then 0035 (`supabase db push`, or the SQL Editor in order).
