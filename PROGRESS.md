@@ -4706,3 +4706,7 @@ The ring beside "Available" was an 84 px dark filled disc with a thick track, dr
 ## Search engines: robots.txt, sitemap.xml, description (no migration)
 
 For Google Search Console: `robots.txt` (allow all, points to the sitemap), `sitemap.xml` (the landing page only: the app is behind sign-in and in the `#/` fragment, which search engines do not index), a Russian / Kazakh meta description (it was English only while the page is `lang="ru"`), `<link rel="canonical">`, a small `WebSite` JSON-LD, and a commented place for the `google-site-verification` tag (the owner gets it from Search Console). Domain verification by a DNS TXT record needs no code at all.
+
+## Presentation: 6 slides, QR code to the site on the last one
+
+`presentation/neuromarketing/build.py`: the slides are reordered so the slideshow has 6 (Title, Neuromarketing and the brain, Problem, Solution, Security, Conclusion + QR); the other 8 stay in the file hidden (`show="0"`, open from the slide sorter for questions). `frame()` numbers the main slides `0i / 06` with six dots, the hidden ones say "РЕЗЕРВ". The conclusion slide is re-laid out: text on the left, a plate with `qr.png` (https://affinix.space, error correction M, made with `qrcode`: `qrcode.QRCode(error_correction=ERROR_CORRECT_M, box_size=20, border=2)`, dark #101114 on #F5F5F6) on the right; the QR was decoded from the LibreOffice render with OpenCV. `жюри_баяндама.txt` slide references follow the new numbers; jury.html / jury.pdf rebuilt; `preview.jpg` shows the 6.
