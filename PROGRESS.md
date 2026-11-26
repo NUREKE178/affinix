@@ -4626,3 +4626,12 @@ The 22 px chip sat 3 px from the pill's outline (it looked like it merged with i
 ## Platform badge: the crown / shield drawn as clean silhouettes
 
 The shared `Glyph` renders icons with a heavy stroke, a tinted body and dots; at 13 px the crown became a lumpy blob. `platformBadge.js` now draws its own solid crown (owner) and shield with a check (admin) as inline SVG inside the same `.sk-glyph` chip (20 px). `tests/browser/profile-preview.html` takes `?role=admin` to look at the other badge.
+
+## Clear chat (migration 0032) and the "New" tag
+
+**Request:** a way to clear a chat, and a small "New" on things that were added recently. (The request also said the messages section design is disliked; no screenshot came with it, so no redesign yet.)
+- **DB (`0032_clear_chat.sql`):** `conversation_prefs.cleared_at`; `messages_select_member` now also requires `created_at > cleared_at` of the caller's own pref row, so the thread, search, unread counters and realtime all hide the cleared history without further changes; `clear_conversation(uuid)` (SECURITY DEFINER, members only, sets the mark). It hides for the caller only: the other person keeps everything; images stay in storage.
+- **Client:** `messagesStore.clearConversation()` empties the local thread and the list preview; `fetchConversations` reads `cleared_at` (falls back to the old select on a database without 0032) and hides the preview of a cleared conversation until a newer message; chat head menu "Clear chat" (confirm) with a trash icon. Strings `common.new`, `messages.clearChat / clearConfirm / cleared` x3 locales.
+- **"New" tag:** `src/lib/newTag.js` (pure: `isNew(id)`, `markSeen(id)` in localStorage, cut-off 2027-01-15) and `components/NewBadge.js`; shown on Clear chat, Block (chat menu) and the push switch (profile), gone after first use.
+- **Tests:** `tests/sql/chat_clear.test.sql` (13 checks), `tests/newbadge.test.js` (2); `node --test` 38, e2e, profile preview pass; migrations run twice. The menu itself has no browser test.
+- **Apply:** `supabase db push` (0032), or run the file in the SQL Editor.

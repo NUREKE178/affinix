@@ -174,10 +174,15 @@ async function fetchConversations() {
   const [convRes, unreadRes, prefRes, blockRes] = await Promise.all([
     sb.from("conversations").select("*").order("last_message_at", { ascending: false, nullsFirst: false }),
     sb.rpc("my_unread_counts"),
-    sb.from("conversation_prefs").select("conversation_id,pinned_at,muted"), // absent before 0024: ignored
+    sb.from("conversation_prefs").select("conversation_id,pinned_at,muted,cleared_at"), // absent before 0024: ignored; cleared_at only since 0032
     sb.from("user_blocks").select("blocked_id"), // absent before 0031: nobody is blocked
   ]);
   if (convRes.error) throw convRes.error;
+  if (prefRes.error && /cleared_at/.test(prefRes.error.message ?? "")) {
+    // a database that does not have 0032 yet: ask again without the new column, so pins and mutes keep working
+    const again = await sb.from("conversation_prefs").select("conversation_id,pinned_at,muted");
+    prefRes.error = again.error; prefRes.data = again.data;
+  }
   const rows = convRes.data ?? [];
   const unreadByConv = new Map((unreadRes.error ? [] : unreadRes.data ?? []).map((r) => [r.conversation_id, Number(r.unread)]));
   const prefByConv = new Map((prefRes.error || !Array.isArray(prefRes.data) ? [] : prefRes.data).map((r) => [r.conversation_id, r]));
@@ -195,14 +200,16 @@ async function fetchConversations() {
         otherName: p?.full_name ?? null,
         otherUsername: p?.username ?? null,
         otherAvatarUrl: p?.avatar_url ?? null,
-        lastBody: r.last_message_body ?? null,
+        // a chat the person cleared shows no preview until a newer message arrives
+        lastBody: pref?.cleared_at && r.last_message_at && r.last_message_at <= pref.cleared_at ? null : r.last_message_body ?? null,
         lastAt: r.last_message_at ?? null,
-        lastSenderId: r.last_message_sender_id ?? null,
-        lastHasImage: !!r.last_message_has_attachment,
-        lastDeleted: !!r.last_message_deleted,
+        lastSenderId: pref?.cleared_at && r.last_message_at && r.last_message_at <= pref.cleared_at ? null : r.last_message_sender_id ?? null,
+        lastHasImage: pref?.cleared_at && r.last_message_at && r.last_message_at <= pref.cleared_at ? false : !!r.last_message_has_attachment,
+        lastDeleted: pref?.cleared_at && r.last_message_at && r.last_message_at <= pref.cleared_at ? false : !!r.last_message_deleted,
         unread: unreadByConv.get(r.id) ?? 0,
         pinned: !!pref?.pinned_at,
         muted: !!pref?.muted,
+        clearedAt: pref?.cleared_at ?? null,
         blocked: blockedIds.has(otherId),
       };
     })
@@ -589,6 +596,23 @@ export async function setConversationPref(convId, { pinned, muted } = {}) {
     return { ok: true };
   } catch (err) {
     patchConversation(convId, { pinned: conv.pinned, muted: conv.muted });
+    return { ok: false, error: chatErrorCode(err) };
+  }
+}
+
+/** Clears the history of a conversation for ME only (migration 0032); the other person keeps theirs. Resolves { ok } or { ok: false, error }. */
+export async function clearConversation(convId) {
+  const conv = state.conversations.find((c) => c.id === convId);
+  if (!conv) return { ok: false, error: "not_found" };
+  try {
+    const { data, error } = await requireSupabase().rpc("clear_conversation", { p_conversation_id: convId });
+    if (error) throw error;
+    const thread = threads.get(convId);
+    if (thread) threads.set(convId, { ...thread, messages: [], hasMore: false, divider: null });
+    patchConversation(convId, { clearedAt: data ?? new Date().toISOString(), lastBody: null, lastSenderId: null, lastHasImage: false, lastDeleted: false, unread: 0 });
+    notify();
+    return { ok: true };
+  } catch (err) {
     return { ok: false, error: chatErrorCode(err) };
   }
 }
