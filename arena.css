@@ -644,3 +644,12 @@
   .ar-coin, .ar-coin-sm, .ar-res-cash, .ar-wl-row, .ar-wallet-chip { animation: none !important; }
   .ar-wl-ring-fill { transition: none; }
 }
+
+/* "Why this one?" -- one optional tap after a duel */
+.ar-foot-main { display: flex; flex-direction: column; gap: 10px; min-width: 0; flex: 1 1 320px; }
+.ar-why { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 6px; }
+.ar-why-q { margin-right: 4px; font-size: 12px; color: var(--g-500); }
+.ar-why-chip { border: 0; border-radius: 999px; padding: 5px 11px; background: var(--g-800); box-shadow: inset 0 0 0 1px rgba(255,255,255,.08); color: var(--g-300); font-size: 12.5px; cursor: pointer; transition: background var(--sk-dur-fast), color var(--sk-dur-fast); }
+.ar-why-chip:hover:not(:disabled) { color: var(--g-50); }
+.ar-why-chip[data-on="true"] { background: rgba(255,106,31,.16); box-shadow: inset 0 0 0 1px rgba(255,106,31,.62); color: var(--signal-hi); }
+.ar-why-chip:disabled:not([data-on="true"]) { opacity: .4; cursor: default; }

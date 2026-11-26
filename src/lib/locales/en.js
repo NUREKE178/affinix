@@ -447,6 +447,16 @@ export default {
   },
 
   arena: {
+    reasons: {
+      title: "Why this one?",
+      thanks: "Thanks!",
+      color: "Colour",
+      type: "Type",
+      layout: "Layout",
+      clear: "Clarity",
+      trust: "Trust",
+      mood: "Mood",
+    },
     firstLook: {
       title: "Welcome, {name}",
       titleNoName: "Welcome",
@@ -1537,6 +1547,12 @@ export default {
   },
 
   styles: {
+    reasons: {
+      title: "Why people chose these",
+      n: "{n} reasons given",
+      mostly: "Most often because of {reason}",
+      note: "Each reason is one optional tap of a player after a duel; it is a hint about taste, not a proof. Only the designs that won are counted.",
+    },
     title: "What people love",
     pro: "Pro",
     subtitle: "Which style wins when people are asked what looks more premium, friendlier, more natural… Built from Arena duels.",

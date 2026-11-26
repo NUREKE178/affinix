@@ -11,7 +11,7 @@ import { getLocale } from "../lib/i18n.js";
 import { seasonOf, localDay } from "../lib/arena/rules.js";
 import { FAMILY_IDS, DIMENSION_IDS, POOL_SIZE, CLASSIC_POOL, dropPoolForDay } from "../lib/arena/catalog.js";
 import { TRAIT_IDS } from "../lib/arena/traits.js";
-import { fetchStyleReport, fetchStyleSegments, withTraits, traitLifts, recipeOf, rankSpecimens, toCsv, MIN_GROUP } from "../lib/styleInsights.js";
+import { fetchStyleReport, fetchStyleSegments, fetchReasonReport, withTraits, traitLifts, recipeOf, rankSpecimens, toCsv, MIN_GROUP } from "../lib/styleInsights.js";
 
 const nf = (n) => new Intl.NumberFormat(getLocale()).format(Math.round(n ?? 0));
 const pts = (v) => `${v >= 0 ? "+" : "−"}${Math.abs(Math.round(v * 100))}`;
@@ -55,6 +55,25 @@ function Fingerprint({ lifts, overall, t, country }) {
     </div>`;
 }
 
+/** "Why people chose": how often each reason was given for the specimens that won, in the current question / family / month. */
+function WhyCard({ reasons, t }) {
+  const rows = Object.entries(reasons.byReason).sort((a, b) => b[1] - a[1]);
+  const top = rows[0]?.[1] || 1;
+  return html`
+    <section class="sty-card sk-panel" data-testid="styles-why">
+      <div class="sty-card-head"><span class="sk-caption">${t("styles.reasons.title")}</span><span class="sty-hint">${t("styles.reasons.n", { n: nf(reasons.total) })}</span></div>
+      <div class="sty-why-rows">
+        ${rows.map(([id, n]) => html`
+          <div class="sty-why-row" key=${id} data-reason=${id}>
+            <span class="sty-why-name">${t(`arena.reasons.${id}`)}</span>
+            <span class="sty-why-track" aria-hidden="true"><i style=${{ width: `${Math.max(4, (n / top) * 100)}%` }}></i></span>
+            <span class="sty-why-val sk-num">${Math.round((n / reasons.total) * 100)}%</span>
+          </div>`)}
+      </div>
+      <p class="sty-hint sty-why-note">${t("styles.reasons.note")}</p>
+    </section>`;
+}
+
 export function Styles() {
   const t = useT();
   const [season, setSeason] = useState(seasonOf());
@@ -77,9 +96,10 @@ export function Styles() {
     (async () => {
       try {
         const fam = family === "all" ? null : family;
-        const [report, segs] = await Promise.all([
+        const [report, segs, reasons] = await Promise.all([
           fetchStyleReport({ season, dim, family: fam }),
           fetchStyleSegments({ season, dim, family: fam }).catch(() => ({ countries: [], rows: [] })),
+          fetchReasonReport({ season, dim, family: fam }),
         ]);
         if (token.current !== mine) return;
         const stop = () => token.current !== mine;
@@ -91,7 +111,7 @@ export function Styles() {
           if (!segEntries || token.current !== mine) return;
           for (const e of segEntries) (byCountry[e.country] ??= []).push(e);
         }
-        const data = { report, entries, countries: segs.countries, byCountry };
+        const data = { report, entries, countries: segs.countries, byCountry, reasons };
         memo.current.set(key, data);
         setState({ status: "ready", data, error: null, progress: null });
       } catch (error) {
@@ -184,6 +204,8 @@ export function Styles() {
             <p>${recipeText ? t("styles.recipe.lead", { dim: t(`builder.dimensions.${dim}.label`).toLowerCase(), traits: recipeText }) : t("styles.recipe.none")}</p>
           </section>
 
+          ${d.reasons && d.reasons.total >= 5 && html`<${WhyCard} reasons=${d.reasons} t=${t} />`}
+
           ${view.ranked.best.length > 0 && html`
             <section class="sty-card sk-panel" data-testid="styles-winners">
               <div class="sty-card-head"><span class="sk-caption">${t("styles.loved")}</span></div>
@@ -191,7 +213,8 @@ export function Styles() {
                 ${view.ranked.best.map((m) => html`
                   <figure class="sty-spec" key=${m.stim} data-stim=${m.stim}>
                     <${Thumb} season=${season} family=${m.family} index=${m.index} size=168 />
-                    <figcaption><b class="sk-num">${Math.round(m.rate * 100)}%</b><span>${t(`arena.family.${m.family}`)} · ${t("styles.winners.answers", { n: nf(m.n) })}</span></figcaption>
+                    <figcaption><b class="sk-num">${Math.round(m.rate * 100)}%</b><span>${t(`arena.family.${m.family}`)} · ${t("styles.winners.answers", { n: nf(m.n) })}</span>
+                      ${d.reasons?.bySpecimen.get(m.stim) && html`<em class="sty-why" data-testid="styles-spec-why">${t("styles.reasons.mostly", { reason: t(`arena.reasons.${d.reasons.bySpecimen.get(m.stim).reason}`).toLowerCase() })}</em>`}</figcaption>
                   </figure>`)}
               </div>
               ${view.ranked.worst.length > 0 && html`

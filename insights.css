@@ -97,3 +97,14 @@
   .sty-conf { grid-column: 2; grid-row: 3; justify-self: end; }
   .sty-fp-row[data-level="none"] { opacity: .62; }
 }
+
+/* why people chose */
+.sty-why-rows { display: flex; flex-direction: column; gap: 10px; }
+.sty-why-row { display: grid; grid-template-columns: 110px minmax(0, 1fr) 44px; align-items: center; gap: 12px; font-size: 13.5px; }
+.sty-why-name { color: var(--g-200); }
+.sty-why-track { height: 10px; border-radius: 999px; background: var(--well); box-shadow: var(--sh-well); overflow: hidden; }
+.sty-why-track > i { display: block; height: 100%; border-radius: 999px; background: linear-gradient(180deg, #ff8f55, #ff6a1f); }
+.sty-why-val { text-align: right; color: var(--g-50); font-weight: 600; }
+.sty-why-note { margin: 12px 0 0; }
+.sty-why { display: block; margin-top: 2px; font-style: normal; font-size: 11px; color: var(--signal-hi); }
+@media (max-width: 520px) { .sty-why-row { grid-template-columns: 92px minmax(0, 1fr) 40px; gap: 10px; } }

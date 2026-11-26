@@ -6,7 +6,7 @@ import { useT, getLocale } from "../../lib/i18n.js";
 import { getStimulus, renderSvg } from "../../lib/arena/stimuli.js";
 import { TRAIT_IDS } from "../../lib/arena/traits.js";
 import { flowBonus, DAILY_SET_BONUS, DAILY_SET_SIZE, MAX_FLOW_BONUS, XP_BASE, PIONEER_BONUS, seasonOf } from "../../lib/arena/rules.js";
-import { summarize, useArenaClock, roundPhase, roundMode, roundSet, getView, fetchLeaderboard, ensureDrops } from "../../lib/arenaStore.js";
+import { summarize, useArenaClock, roundPhase, roundMode, roundSet, getView, fetchLeaderboard, ensureDrops, REASONS } from "../../lib/arenaStore.js";
 import { FAMILY_IDS, dropPoolForDay, indexOf } from "../../lib/arena/catalog.js";
 import { Avatar } from "../../components/avatar.js";
 import { useMyProfile } from "../../lib/profile.js";
@@ -352,6 +352,17 @@ function ClockChip({ on }) {
   `;
 }
 
+/** "Why this one?": one optional tap after a duel. It never blocks the next duel and is not part of the response time. */
+function ReasonChips({ last, onPick, t }) {
+  if (!last || last.skipped || last.repeat || !last.voteId) return null;
+  return html`
+    <div class="ar-why" data-testid="arena-why" role="group" aria-label=${t("arena.reasons.title")}>
+      <span class="ar-why-q">${last.reason ? t("arena.reasons.thanks") : t("arena.reasons.title")}</span>
+      ${REASONS.map((id) => html`<button type="button" key=${id} class="ar-why-chip" data-on=${last.reason === id} data-ar-native=${true} data-testid=${`arena-why-${id}`}
+        disabled=${!!last.reason && last.reason !== id} aria-pressed=${last.reason === id} onClick=${() => onPick(id)}>${t(`arena.reasons.${id}`)}</button>`)}
+    </div>`;
+}
+
 function Console({ arena }) {
   const t = useT();
   const { round, prefs, actions, remote } = arena;
@@ -367,9 +378,10 @@ function Console({ arena }) {
   // auto-advance after the reveal
   useEffect(() => {
     if (!revealing || !prefs.auto) return undefined;
-    const id = setTimeout(() => actions.next(), AUTO_MS);
+    // a tapped reason moves on soon; chips on screen get a little longer than a bare result
+    const id = setTimeout(() => actions.next(), last?.reason ? 700 : AUTO_MS);
     return () => clearTimeout(id);
-  }, [round.id, round.idx, revealing, prefs.auto]);
+  }, [round.id, round.idx, revealing, prefs.auto, last?.reason]);
 
   const kbdFor = (side) => (side === 0 ? "1" : "2");
   return html`
@@ -419,7 +431,7 @@ function Console({ arena }) {
 
       <footer class="ar-console-foot">
         ${revealing
-          ? html`<${ResultStrip} last=${last} duel=${duel} info=${info} remote=${remote} t=${t} insight=${insight} />`
+          ? html`<div class="ar-foot-main"><${ResultStrip} last=${last} duel=${duel} info=${info} remote=${remote} t=${t} insight=${insight} /><${ReasonChips} last=${last} onPick=${actions.setReason} t=${t} /></div>`
           : html`<${FlowMeter} combo=${round.combo} />`}
         <div class="ar-foot-actions">
           <label class="ar-auto" title=${t("arena.console.autoHint")}>

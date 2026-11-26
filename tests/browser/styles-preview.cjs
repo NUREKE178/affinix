@@ -46,6 +46,9 @@ server.listen(0, "127.0.0.1", async () => {
         assert.ok(m.panelRight - m.firstRowRight < 40, `${name}: the posters leave ${Math.round(m.panelRight - m.firstRowRight)}px of empty space on the right`);
         assert.ok(m.filtersH <= 400, `${name}: the filters take ${m.filtersH}px (a wall of chips)`);
       }
+      // "why people chose": the card and a reason under the posters
+      const why = await page.evaluate(() => ({ card: !!document.querySelector('[data-testid="styles-why"]'), rows: document.querySelectorAll(".sty-why-row").length, chips: document.querySelectorAll('[data-testid="styles-spec-why"]').length }));
+      assert.ok(why.card && why.rows >= 3, `${name}: the "why people chose" card is missing (${JSON.stringify(why)})`);
       await page.screenshot({ path: path.join(os.tmpdir(), `styles-${name}.png`), fullPage: true });
       await ctx.close();
     }

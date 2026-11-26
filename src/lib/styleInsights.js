@@ -51,6 +51,19 @@ export async function fetchStyleSegments({ season, dim, family = null }) {
   } catch (err) { throw failure(err); }
 }
 
+/** Why people chose what they chose (migration 0036): { total, byReason: { color: n, ... }, bySpecimen: Map(stim -> { reason, n }) }.
+ * null on a database that does not have it yet (the page then simply has no such card). */
+export async function fetchReasonReport({ season, dim = null, family = null }) {
+  try {
+    const data = await rpc("arena_reason_report", { p_season: season, p_dim: dim, p_family: family });
+    return {
+      total: Number(data?.total ?? 0),
+      byReason: data?.byReason ?? {},
+      bySpecimen: new Map((data?.bySpecimen ?? []).map(([stim, reason, n]) => [stim, { reason, n: Number(n) }])),
+    };
+  } catch { return null; }
+}
+
 const tick = () => new Promise((r) => setTimeout(r, 0));
 
 /** Rows -> entries with the specimen's traits. Yields to the browser every few specimens (building one is not free);

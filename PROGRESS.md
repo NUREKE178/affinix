@@ -4686,3 +4686,11 @@ The shared `Glyph` renders icons with a heavy stroke, a tinted body and dots; at
 **Verified fine:** RLS on every table; the platform flags are locked (`platform_flags_locked`); users cannot write `arena_profiles` / `cash_*`; internal `_*` and admin functions are closed; no `service_role` in the browser.
 **Still open (documented):** `presence:online` / `dm:<id>` Realtime channels are public (anyone with the anon key sees online user UUIDs); Supabase Auth settings (email confirmation, min password length, CAPTCHA, rate limits) live in the dashboard; no external audit; messages are not end-to-end encrypted; full CSP still report-only.
 **Apply:** 0034 then 0035 (`supabase db push`, or the SQL Editor in order).
+
+## "Why this one?": reasons behind duel votes (migration 0036)
+
+**Idea taken from the competitor review:** PickFu-style "why did you choose it" so a marketer sees the reason, not just the percentage.
+- **DB (`0036_vote_reasons.sql`):** `arena_votes.reason` (color / type / layout / clear / trust / mood); `arena_set_reasons(jsonb)` (own votes only, once per vote, junk ignored, <= 100 per call); `arena_reason_report(season, dim, family)` -> `{ total, byReason, bySpecimen }` counted for the CHOSEN specimen (pair `season/family/i-j`, pick 0 = i), per specimen only with >= 3 reasons.
+- **Client:** `arenaStore`: `pending.reasons`, `setReason()` (only in the reveal phase, once, kept with the vote's id), flushed after the votes (`arena_set_reasons`; an older server that lacks it is tolerated), `result.voteId` / `result.reason`; `Play.js` `ReasonChips` in the reveal footer (optional, never blocks, response time untouched; with auto-advance a tapped reason moves on after 0.7 s); `styleInsights.fetchReasonReport` + `Styles.js` `WhyCard` (shown from 5 reasons) and a "mostly because of ..." line under the best designs. Strings `arena.reasons.*`, `styles.reasons.*` x3.
+- **Tests:** `tests/sql/vote_reasons.test.sql` (14), `e2e.cjs` step 2b (chips, tap, one per vote, stored with the vote id, gone on the next duel), `styles-preview.cjs` (the card), all other suites pass.
+- **Apply:** `supabase db push` (0036), or run the file in the SQL Editor.

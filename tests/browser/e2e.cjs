@@ -91,6 +91,27 @@ const ledgerOf = (page, uid) => page.evaluate((u) => JSON.parse(localStorage.get
     await p1.waitForTimeout(600);
     assert.equal(await p1.locator('[data-testid="arena-firstlook"]').count(), 0, "the welcome is gone once answers exist");
 
+    // 2b. "why this one?": after a vote the chips appear, a tap is kept with the vote and does not block the next duel
+    const pw = await open();
+    await pw.goto(`${BASE}?u=u7&name=${encodeURIComponent("Айдос Тестов")}&l=ru`);
+    await pw.waitForSelector('[data-testid="arena-firstlook-start"]', { timeout: 15000 });
+    await pw.click('[data-testid="arena-firstlook-start"]');
+    await pw.waitForSelector('[data-testid="arena-question"]', { timeout: 15000 });
+    await pw.keyboard.press("1");
+    await pw.waitForSelector('[data-testid="arena-why"]', { timeout: 5000 });
+    assert.equal(await pw.locator('[data-testid="arena-why"] button').count(), 6, "six reasons to tap");
+    await pw.screenshot({ path: `${OUT}/5-why-ru.png`, fullPage: true });
+    await pw.click('[data-testid="arena-why-color"]');
+    assert.equal(await pw.getAttribute('[data-testid="arena-why-color"]', "data-on"), "true", "the tapped reason is marked");
+    assert.equal(await pw.locator('[data-testid="arena-why-trust"]').isDisabled(), true, "only one reason per vote");
+    await pw.waitForTimeout(700); // the store writes to localStorage a moment later
+    const kept = await pw.evaluate(() => JSON.parse(localStorage.getItem("decisionos_arena_v1:u7") ?? "null")?.pending?.reasons ?? null);
+    assert.ok(Array.isArray(kept) && kept.length === 1 && kept[0].reason === "color" && /^[0-9a-f-]{36}$/.test(kept[0].id), "the reason is kept with the vote's id: " + JSON.stringify(kept));
+    await pw.keyboard.press(" ");
+    await pw.waitForTimeout(250);
+    assert.equal(await pw.locator('[data-testid="arena-why"]').count(), 0, "the next duel starts without the chips");
+    await pw.close();
+
     // 3. a friend opens the link: address cleaned, the welcome names the sender, the answers stay hidden
     const p2 = await open();
     const c = new URL(url).searchParams.get("c");
