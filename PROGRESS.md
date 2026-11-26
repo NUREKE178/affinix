@@ -4698,3 +4698,7 @@ The shared `Glyph` renders icons with a heavy stroke, a tinted body and dots; at
 ## Wallet balance rows on a phone: stray vertical line (no migration)
 
 The three readouts (Pending / This month / Earned in total) sit in `.sk-stat-strip`, whose side-by-side rule `.sk-stat + .sk-stat { border-left }` stayed on when the wallet strip became one column on phones: the 2nd row got a stray left line and no hairline above it, the 3rd got a top line, so the rows looked uneven. `arena.css` (phone block): `.ar-wl-balance .sk-stat-strip > .sk-stat` has no left border and equal padding, with a top hairline between rows. Verified on the cash e2e wallet screenshot (phone); `cash.e2e` 47 pass.
+
+## Wallet: the monthly-limit ring redrawn
+
+The ring beside "Available" was an 84 px dark filled disc with a thick track, drew a lone orange dot at 0 % (round line cap of a zero-length arc), said only "0 %" and sat tight against the well below. `Wallet.js` `MonthRing`: 72 px (66 on phones), thin 5 px track, no filled disc, no fill circle at 0, a minimum visible sliver below 1 % with the label "<1", a second line `cash.ringOf` ("от лимита" / "лимиттен" / "of limit"); `arena.css`: new ring rules, the svg scales to its box, a little room under the row. `cash.e2e` 47 pass (the ring still reports `data-ratio`).

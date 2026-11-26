@@ -32,14 +32,20 @@ function MonthRing({ month, cap, t }) {
   const ratio = cap > 0 ? Math.min(1, month / cap) : 0;
   const [on, setOn] = useState(false);
   useEffect(() => { const id = requestAnimationFrame(() => setOn(true)); return () => cancelAnimationFrame(id); }, []);
-  const R = 34, C = 2 * Math.PI * R;
+  const R = 30, C = 2 * Math.PI * R;
+  // a tiny share still shows a visible sliver; nothing at all is drawn at 0 (a round line cap would otherwise leave a lone dot)
+  const shown = ratio <= 0 ? 0 : Math.max(ratio, 0.025);
+  const pct = ratio > 0 && ratio < 0.01 ? "<1" : String(Math.round(ratio * 100));
   return html`
     <div class="ar-wl-ring" role="img" aria-label=${t("cash.monthHint", { cap: money(cap), left: money(Math.max(0, cap - month)) })} data-testid="wallet-ring" data-ratio=${ratio.toFixed(3)}>
-      <svg viewBox="0 0 84 84" width="84" height="84" aria-hidden="true">
-        <circle class="ar-wl-ring-track" cx="42" cy="42" r=${R} />
-        <circle class="ar-wl-ring-fill" cx="42" cy="42" r=${R} stroke-dasharray=${C.toFixed(2)} stroke-dashoffset=${(C * (on ? 1 - ratio : 1)).toFixed(2)} transform="rotate(-90 42 42)" />
+      <svg viewBox="0 0 72 72" width="72" height="72" aria-hidden="true">
+        <circle class="ar-wl-ring-track" cx="36" cy="36" r=${R} />
+        ${shown > 0 && html`<circle class="ar-wl-ring-fill" cx="36" cy="36" r=${R} stroke-dasharray=${C.toFixed(2)} stroke-dashoffset=${(C * (on ? 1 - shown : 1)).toFixed(2)} transform="rotate(-90 36 36)" />`}
       </svg>
-      <span class="ar-wl-ring-pct sk-num">${Math.round(ratio * 100)}<span class="sk-unit">%</span></span>
+      <span class="ar-wl-ring-in">
+        <b class="ar-wl-ring-pct sk-num">${pct}<small>%</small></b>
+        <span class="ar-wl-ring-of">${t("cash.ringOf")}</span>
+      </span>
     </div>`;
 }
 

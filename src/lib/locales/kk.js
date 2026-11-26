@@ -1044,6 +1044,7 @@ export default {
     releasing: "Бүгін ашылады",
     month: "Осы ай",
     monthHint: "Ай шегі {cap} · қалды {left}",
+    ringOf: "лимиттен",
     rate: "{xp} XP = 1 ₸",
     bonus: "Бонус",
     rewardTitle: "Бұл миссия әр жауапқа ақшалай бонус береді",
