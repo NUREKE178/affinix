@@ -587,10 +587,14 @@
   .ar-wallet-chip { display: none; }
   .ar-wl-big { font-size: 36px; }
   .ar-wl-balance .sk-stat-strip { grid-template-columns: minmax(0, 1fr); }
+  /* one column: the dividers are horizontal hairlines between the rows (the strip's side-by-side rule left a stray vertical line on the 2nd row
+     and no line above it, which made the rows look uneven) */
+  .ar-wl-balance .sk-stat-strip > .sk-stat { border-left: 0; border-top: 0; padding-left: 16px; padding-right: 16px; }
+  .ar-wl-balance .sk-stat-strip > .sk-stat + .sk-stat { border-top: 1px solid var(--hair); }
   .ar-wl-row { flex-wrap: wrap; }
   .ar-wl-row-main { flex-basis: 100%; }
 }
-.ar-wl-big-row { display: flex; align-items: center; justify-content: space-between; gap: 12px 16px; }
+.ar-wl-big-row { display: flex; align-items: center; justify-content: space-between; gap: 12px 16px; padding-bottom: 4px; }
 .ar-wl-big-col { display: flex; flex-direction: column; align-items: flex-start; gap: 12px; min-width: 0; }
 .ar-wl-rate {
   display: inline-flex; align-items: center; gap: 6px; padding: 6px 10px; border-radius: 999px; font-size: 12.5px; font-weight: 600;
@@ -607,12 +611,15 @@
 @keyframes arChipBump { 0% { transform: scale(1); } 35% { transform: scale(1.07); } 100% { transform: scale(1); } }
 
 /* the month against its limit: a ring that fills when the tab opens */
-.ar-wl-ring { position: relative; flex: none; width: 84px; height: 84px; display: grid; place-items: center; }
-.ar-wl-ring svg { position: absolute; inset: 0; overflow: visible; }
-.ar-wl-ring-track { fill: var(--well-fill, #0b0b0d); stroke: rgba(255,255,255,.07); stroke-width: 7; }
-.ar-wl-ring-fill { fill: none; stroke: var(--signal); stroke-width: 7; stroke-linecap: round; transition: stroke-dashoffset 1.4s var(--sk-ease-out) .25s; }
-.ar-wl-ring-pct { position: relative; font-size: 17px; color: var(--g-100); }
-.ar-wl-ring-pct .sk-unit { font-size: 11px; color: var(--g-400); }
+.ar-wl-ring { position: relative; flex: none; width: 72px; height: 72px; display: grid; place-items: center; }
+.ar-wl-ring svg { position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible; }
+/* a thin, quiet track (no filled disc): the ring reads as a gauge beside the number, not as a second dark button */
+.ar-wl-ring-track { fill: none; stroke: rgba(255,255,255,.08); stroke-width: 5; }
+.ar-wl-ring-fill { fill: none; stroke: var(--signal); stroke-width: 5; stroke-linecap: round; transition: stroke-dashoffset 1.4s var(--sk-ease-out) .25s; }
+.ar-wl-ring-in { position: relative; display: flex; flex-direction: column; align-items: center; line-height: 1; }
+.ar-wl-ring-pct { font-size: 17px; font-weight: 500; color: var(--g-50); letter-spacing: -.02em; }
+.ar-wl-ring-pct small { margin-left: 1px; font: 600 10px/1 Rubik, Inter, system-ui, sans-serif; color: var(--g-400); }
+.ar-wl-ring-of { margin-top: 3px; font-size: 10px; font-weight: 500; white-space: nowrap; color: var(--g-500); }
 
 /* the history: rows slide in one after another; the empty state has a coin turning on its edge */
 .ar-wl-row { animation: arRowIn .45s var(--sk-ease-out) backwards; animation-delay: calc(var(--i, 0) * 60ms + 120ms); }
@@ -637,8 +644,8 @@
 @keyframes arCashIn { 0% { transform: translateY(10px) scale(.8); opacity: 0; } 100% { transform: none; opacity: 1; } }
 
 @media (max-width: 640px) {
-  .ar-wl-ring { width: 68px; height: 68px; }
-  .ar-wl-ring-pct { font-size: 14px; }
+  .ar-wl-ring { width: 66px; height: 66px; }
+  .ar-wl-ring-pct { font-size: 15px; }
 }
 @media (prefers-reduced-motion: reduce) {
   .ar-coin, .ar-coin-sm, .ar-res-cash, .ar-wl-row, .ar-wallet-chip { animation: none !important; }
