@@ -1,0 +1,80 @@
+<!doctype html>
+<!-- The messenger on made-up data, with the REAL Bubble / Composer / ChatListItem components, to look at the design on a phone.
+     ?pane=list|chat   node tests/browser/messages-preview.cjs -->
+<html lang="ru" class="dark" translate="no">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>messages preview</title>
+<link rel="stylesheet" href="/vendor/tailwind.css" /><link rel="stylesheet" href="/styles.css" /><link rel="stylesheet" href="/shell.css" /><link rel="stylesheet" href="/messages.css" /><link rel="stylesheet" href="/arena.css" />
+<script type="importmap">
+{ "imports": { "preact": "/vendor/preact.module.js", "preact/hooks": "/vendor/hooks.module.js", "htm": "/vendor/htm.module.js",
+  "__ORIGIN__/src/lib/auth.js": "/__h/fake-auth.js", "__ORIGIN__/src/lib/supabaseClient.js": "/__h/fake-supabase.js", "__ORIGIN__/src/lib/org.js": "/__h/fake-org.js" } }
+</script>
+</head>
+<body class="bg-graphite-950 font-sans antialiased">
+<div id="app" style="padding: 12px"></div>
+<script type="module">
+import { render, html, useState } from "/src/lib/preact.js";
+import { setLocale, t as tr } from "/src/lib/i18n.js";
+import { Icon } from "/src/components/icons.js";
+import { Bubble } from "/src/pages/messages/Bubble.js";
+import { Composer } from "/src/pages/messages/Composer.js";
+import { ChatListItem } from "/src/pages/messages/ChatList.js";
+import { PersonAvatar } from "/src/pages/messages/parts.js";
+const q = new URLSearchParams(location.search);
+const L = q.get("l") ?? "ru"; setLocale(L);
+const t = (k, v) => tr(L, k, v);
+const now = Date.now(); const iso = (min) => new Date(now - min * 60000).toISOString();
+const me = "me";
+const msgs = [
+  { id: "1", senderId: "u2", body: "Салем! Сайттың жаңа нұсқасын көрдің бе?", createdAt: iso(52), reactions: [] },
+  { id: "2", senderId: me, body: "Иә, профиль беті өте жақсы болыпты 🔥", createdAt: iso(50), readAt: iso(49), reactions: [{ userId: "u2", emoji: "❤️" }] },
+  { id: "3", senderId: me, body: "Тек чаттың дизайнын әлі түзеу керек", createdAt: iso(49), readAt: iso(48), reactions: [] },
+  { id: "4", senderId: "u2", body: "Келістім. Мына сілтемені қара https://affinix.space/ — онда жаңа бетті көресің", createdAt: iso(30), reactions: [] },
+  { id: "5", senderId: "u2", body: "👍", createdAt: iso(29), reactions: [] },
+  { id: "6", senderId: me, body: "Қазір жасаймын", createdAt: iso(12), readAt: null, reactions: [], replyToId: "4", reply: { id: "4", senderId: "u2", body: "Келістім. Мына сілтемені қара", hasImage: false, deleted: false } },
+  { id: "7", senderId: me, body: "", deletedAt: iso(5), createdAt: iso(6), reactions: [] },
+  { id: "8", senderId: "u2", body: "Жақсы! Ертең кездесеміз ☺️", createdAt: iso(2), reactions: [] },
+];
+const byId = new Map(msgs.map((m) => [m.id, m]));
+const ctx = { t, locale: L, byId, myId: me, otherName: "Marzhan Rustamova", canReply: true, onMenu() {}, onReply() {}, onJump() {}, onImage() {}, onImageLoad() {}, onRetry() {}, onReact() {} };
+const items = [
+  { id: "c1", otherId: "u2", otherName: "Marzhan Rustamova", lastBody: "Жақсы! Ертең кездесеміз ☺️", lastAt: iso(2), lastSenderId: "u2", unread: 2, pinned: true },
+  { id: "c2", otherId: "u3", otherName: "Amina Seitova", lastBody: "Презентацияны жібердім", lastAt: iso(95), lastSenderId: "me", unread: 0 },
+  { id: "c3", otherId: "u4", otherName: "Ardana Nogaibaeva", lastBody: "salam", lastAt: iso(60 * 30), lastSenderId: "u4", unread: 0, muted: true },
+  { id: "c4", otherId: "u5", otherName: "Darkhan", lastBody: "", lastAt: iso(60 * 80), lastSenderId: "u5", lastDeleted: true, unread: 0 },
+  { id: "c5", otherId: "u6", otherName: "Asilay", lastBody: null, lastAt: null, unread: 0 },
+];
+function App() {
+  const [text, setText] = useState("");
+  const pane = q.get("pane") ?? "chat";
+  return html`
+    <div class="sk-chat sk-panel" data-pane=${pane} style="height: calc(100svh - 24px)">
+      <aside class="sk-chat-list">
+        <div class="sk-chat-list-head"><h2>${t("messages.title")}</h2><input class="sk-input sk-chat-search" type="search" placeholder=${t("messages.search")} /></div>
+        <div class="sk-chat-items">${items.map((it, i) => html`<${ChatListItem} key=${it.id} item=${it} active=${i === 0} online=${i < 2} typing=${false} draft="" myId=${me} onOpen=${() => {}} t=${t} locale=${L} />`)}</div>
+      </aside>
+      <section class="sk-chat-pane">
+        <header class="sk-chat-head">
+          <button type="button" class="sk-chat-back" aria-label="back"><${Icon} name="arrowLeft" size=${20} /></button>
+          <div class="sk-chat-head-who" style="display:flex;align-items:center;gap:10px;flex:1;min-width:0">
+            <${PersonAvatar} name="Marzhan Rustamova" url=${null} size=${40} online=${true} />
+            <div class="sk-chat-head-text"><div class="sk-chat-head-name">Marzhan Rustamova</div><div class="sk-chat-head-status sk-status-online">${t("messages.online")}</div></div>
+          </div>
+          <button type="button" class="sk-chat-iconbtn" aria-label="more"><${Icon} name="more" size=${20} /></button>
+        </header>
+        <div class="sk-chat-scroll">
+          <div class="sk-chat-day"><span>Бүгін</span></div>
+          ${msgs.map((m, i) => html`<${Bubble} key=${m.id} message=${m} mine=${m.senderId === me} grouped=${i > 0 && msgs[i - 1].senderId === m.senderId} highlighted=${false} ctx=${ctx} />`)}
+        </div>
+        <${Composer} t=${t} value=${text} onChange=${setText} onSubmit=${() => {}} onKeyDown=${() => {}} inputRef=${{ current: null }} emojiOpen=${false} setEmojiOpen=${() => {}}
+          replyInfo=${null} onCancelReply=${() => {}} editing=${null} onCancelEdit=${() => {}} attachment=${null} preparing=${false} canAttach=${true} onPickFiles=${() => {}} onRemoveAttachment=${() => {}} onPaste=${() => {}} />
+      </section>
+    </div>`;
+}
+render(html`<${App} />`, document.getElementById("app"));
+setTimeout(() => { window.__ready = true; }, 400);
+</script>
+</body>
+</html>

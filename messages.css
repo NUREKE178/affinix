@@ -26,6 +26,8 @@
 
 .sk-bubble.jumbo { background: transparent; box-shadow: none; padding: 0 2px; }
 .sk-bubble.jumbo .sk-bubble-text { font-size: 40px; line-height: 1.15; }
+/* the time of a lone emoji sits under it, not floating next to its top */
+.sk-bubble.jumbo .sk-bubble-meta { float: none; display: flex; justify-content: flex-end; margin: 2px 0 0; }
 .sk-bubble.deleted { background: transparent; box-shadow: inset 0 0 0 1px var(--hair); color: var(--g-500); }
 .msg-deleted { font-style: italic; }
 

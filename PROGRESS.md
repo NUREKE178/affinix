@@ -4635,3 +4635,9 @@ The shared `Glyph` renders icons with a heavy stroke, a tinted body and dots; at
 - **"New" tag:** `src/lib/newTag.js` (pure: `isNew(id)`, `markSeen(id)` in localStorage, cut-off 2027-01-15) and `components/NewBadge.js`; shown on Clear chat, Block (chat menu) and the push switch (profile), gone after first use.
 - **Tests:** `tests/sql/chat_clear.test.sql` (13 checks), `tests/newbadge.test.js` (2); `node --test` 38, e2e, profile preview pass; migrations run twice. The menu itself has no browser test.
 - **Apply:** `supabase db push` (0032), or run the file in the SQL Editor.
+
+## Design pass: the other profile tabs and the messenger look (no migration)
+
+- **Profile tabs:** Security / Notifications / Preferences / Sessions now use the `.pf` plates of the personal tab (no outer Card): password mismatch hint, email vs push plates, language as an equal-width segmented control, timezone with the save bar only when changed, sessions / account as a ruled list. Tab components are exported for the preview page (`profile-preview.html?tab=`); new strings `profile.notifications.sectionEmail / sectionPush`, `profile.sessions.sectionAccount` x3.
+- **Messenger:** my bubbles are a warm graphite (before: the same grey as theirs), a lone emoji's time sits under it. `tests/browser/messages-preview.html` + `messages-preview.cjs` render the REAL Bubble / Composer / ChatListItem on made-up data (390x760, 360x640; list and chat): no sideways scroll, my bubbles differ, the emoji time is below it.
+- **Not done:** the other Marketing pages (experiments, results, reports ...) and the chat list rows were only looked at, not changed; no screenshots of them were sent.

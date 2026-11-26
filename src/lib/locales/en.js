@@ -1963,6 +1963,8 @@ export default {
     notifications: {
       emailOnResponses: "Email on new participant responses",
       weeklyDigest: "Weekly results digest",
+      sectionEmail: "Email",
+      sectionPush: "Push notifications",
       pushLabel: "Push notifications about messages",
       pushHintOff: "A new message reaches your phone even when Affinix is closed.",
       pushHintOn: "On for this device.",
@@ -1983,6 +1985,7 @@ export default {
     },
     sessions: {
       currentSession: "Current session",
+      sectionAccount: "Account",
       active: "active",
       sessionNote: "Affinix uses secure Supabase Auth sessions. Managing multiple devices individually is coming later.",
       accountCreated: "Account created",

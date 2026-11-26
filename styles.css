@@ -1147,8 +1147,8 @@ select.sk-input option:checked {
   color: var(--g-200); font-size: 14.5px; line-height: 1.4;
   overflow-wrap: anywhere; animation: skBubbleIn .18s var(--sk-ease-out) backwards;
 }
-/* my messages: a raised graphite key, not a coloured balloon -- the signal colour is kept for "read" */
-.sk-bubble.mine { border-radius: 16px 16px 5px 16px; background: linear-gradient(180deg, #3d4048 0%, #30333a 100%); box-shadow: inset 0 0 0 1px rgba(0,0,0,.5), inset 0 1px 0 rgba(255,255,255,.12), 0 1px 0 rgba(0,0,0,.45); color: var(--g-50); }
+/* my messages: a raised, slightly warm graphite key (so they are told apart from theirs at a glance), not a coloured balloon -- the signal colour is kept for "read" */
+.sk-bubble.mine { border-radius: 16px 16px 5px 16px; background: linear-gradient(180deg, #4b413a 0%, #3b332e 100%); box-shadow: inset 0 0 0 1px rgba(255,140,80,.16), inset 0 1px 0 rgba(255,220,190,.12), 0 1px 0 rgba(0,0,0,.45); color: var(--g-50); }
 .sk-bubble.failed { background: rgba(244,63,94,.28); }
 .sk-bubble-text { white-space: pre-wrap; }
 .sk-bubble-meta { display: inline-flex; align-items: center; gap: 3px; float: right; margin: 6px 0 0 10px; font-size: 10.5px; opacity: .75; line-height: 1; }
@@ -1648,3 +1648,26 @@ select.sk-input option:checked {
 
 /* "New" on something added recently (components/NewBadge.js) */
 .sk-new { display: inline-flex; align-items: center; margin-left: 8px; padding: 1px 7px; border-radius: 999px; background: rgba(255,106,31,.16); box-shadow: inset 0 0 0 1px rgba(255,106,31,.5); color: var(--signal-hi); font-size: 10.5px; font-weight: 700; letter-spacing: .04em; line-height: 16px; text-transform: uppercase; vertical-align: middle; }
+
+/* the other profile tabs use the same plates */
+.pf-actions { display: flex; justify-content: flex-end; margin-top: 16px; }
+.pf-row-head + .pf-hint-first { margin: 10px 0 0; }
+@media (max-width: 520px) { .pf-actions > button { width: 100%; } }
+.pf-switches > label, .pf-sec > [data-testid="push-toggle"] > label { padding: 12px 0; }
+.pf-switches > label + label { border-top: 1px solid var(--hair); }
+.pf-sec > [data-testid="push-toggle"] > label { padding-top: 0; }
+.pf-seg { display: grid; grid-template-columns: repeat(auto-fit, minmax(72px, 1fr)); gap: 6px; padding: 4px; border-radius: 12px; background: var(--well); box-shadow: var(--sh-well); }
+.pf-seg button { border: 0; border-radius: 9px; padding: 9px 8px; background: transparent; color: var(--g-400); font-size: 14px; font-weight: 600; cursor: pointer; transition: background var(--sk-dur-fast), color var(--sk-dur-fast); }
+.pf-seg button:hover { color: var(--g-100); }
+.pf-seg button[data-on="true"] { background: rgba(255,106,31,.16); box-shadow: inset 0 0 0 1px rgba(255,106,31,.55); color: var(--signal-hi); }
+.pf-list { margin: 0; display: flex; flex-direction: column; }
+.pf-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 12px 0; font-size: 14px; }
+.pf-list .pf-row + .pf-row { border-top: 1px solid var(--hair); }
+.pf-list .pf-row:first-child { padding-top: 0; }
+.pf-list .pf-row:last-child { padding-bottom: 0; }
+.pf-row dt { color: var(--g-400); }
+.pf-row dd { margin: 0; color: var(--g-100); font-weight: 600; text-align: right; }
+.pf-row-head { padding: 0; }
+.pf-cap-inline { margin: 0; }
+.pf-error { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 10px 14px; border-radius: 12px; background: rgba(251,113,133,.1); box-shadow: inset 0 0 0 1px rgba(251,113,133,.3); font-size: 12.5px; color: #fda4af; }
+.pf-error button { flex: none; border: 0; background: none; color: inherit; font-weight: 600; text-decoration: underline; cursor: pointer; }

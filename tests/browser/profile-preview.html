@@ -16,7 +16,7 @@
 <script type="module">
 import { render, html } from "/src/lib/preact.js";
 import { setLocale } from "/src/lib/i18n.js";
-import { PersonalTab } from "/src/pages/Profile.js";
+import { PersonalTab, SecurityTab, NotificationsTab, PreferencesTab, SessionsTab } from "/src/pages/Profile.js";
 import { t } from "/src/lib/i18n.js";
 const q = new URLSearchParams(location.search);
 setLocale(q.get("l") ?? "ru");
@@ -24,7 +24,10 @@ const tt = (k, v) => t(q.get("l") ?? "ru", k, v);
 const profile = { id: "u1", full_name: "Nurlan Khudaybergen", username: "nu4lan", role_title: "Student", country: "Kazakhstan",
   bio: "Web Developer, Vibe Coder. Ibilim High School student.  CEO affinix https://affinix.space/", research_interests: [], public_profile_enabled: true, platform_role: q.get("role") ?? "owner" };
 const user = { id: "u1", email: "khudaybergennurlan@gmail.com" };
-render(html`<div style="max-width:760px"><${PersonalTab} profile=${profile} user=${user} org=${{ name: "Nurlan Company", role: "owner" }} t=${tt} /></div>`, document.getElementById("app"));
+const tab = q.get("tab") ?? "personal";
+const props = { profile, user, org: { name: "Nurlan Company", role: "owner" }, t: tt };
+const Tab = { personal: PersonalTab, security: SecurityTab, notifications: NotificationsTab, preferences: PreferencesTab, sessions: SessionsTab }[tab];
+render(html`<div style="max-width:760px"><${Tab} ...${props} /></div>`, document.getElementById("app"));
 window.__ready = true;
 </script>
 </body>

@@ -48,6 +48,17 @@ server.listen(0, "127.0.0.1", async () => {
       await page.click(".pf-discard");
       await page.waitForTimeout(350);
       assert.equal(await page.evaluate(() => getComputedStyle(document.querySelector('[data-testid="profile-savebar"]')).visibility), "hidden", `${name}: the save bar stays after discarding`);
+      // the other tabs: same plates, no sideways scroll, nothing cut off
+      for (const tab of ["security", "notifications", "preferences", "sessions"]) {
+        await page.goto(`${origin}/__h/profile-preview.html?u=u1&tab=${tab}`);
+        await page.waitForFunction(() => window.__ready, null, { timeout: 30000 });
+        await page.waitForTimeout(250);
+        const w2 = await page.evaluate(() => ({ docW: document.documentElement.scrollWidth, vw: innerWidth, plates: document.querySelectorAll(".pf-sec").length }));
+        assert.ok(w2.docW <= w2.vw, `${name}/${tab}: the page scrolls sideways (${w2.docW} > ${w2.vw})`);
+        assert.ok(w2.plates >= 1, `${name}/${tab}: no plate rendered`);
+        assert.deepEqual(errors, [], `${name}/${tab}: page errors`);
+        await page.screenshot({ path: path.join(os.tmpdir(), `profile-${name}-${tab}.png`), fullPage: true });
+      }
       await ctx.close();
     }
     console.log("PROFILE PAGE OK: no sideways scroll, fields full width, the save bar comes with an edit and goes with a discard (screenshots in", os.tmpdir() + ")");
