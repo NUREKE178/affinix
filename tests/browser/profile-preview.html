@@ -22,7 +22,7 @@ const q = new URLSearchParams(location.search);
 setLocale(q.get("l") ?? "ru");
 const tt = (k, v) => t(q.get("l") ?? "ru", k, v);
 const profile = { id: "u1", full_name: "Nurlan Khudaybergen", username: "nu4lan", role_title: "Student", country: "Kazakhstan",
-  bio: "Web Developer, Vibe Coder. Ibilim High School student.  CEO affinix https://affinix.space/", research_interests: [], public_profile_enabled: true, platform_role: "owner" };
+  bio: "Web Developer, Vibe Coder. Ibilim High School student.  CEO affinix https://affinix.space/", research_interests: [], public_profile_enabled: true, platform_role: q.get("role") ?? "owner" };
 const user = { id: "u1", email: "khudaybergennurlan@gmail.com" };
 render(html`<div style="max-width:760px"><${PersonalTab} profile=${profile} user=${user} org=${{ name: "Nurlan Company", role: "owner" }} t=${tt} /></div>`, document.getElementById("app"));
 window.__ready = true;
