@@ -58,7 +58,7 @@ function defaults(userId) {
     v: 2,
     userId,
     base: emptyBase(),
-    pending: { votes: [], slices: [], claims: [], slate: null },
+    pending: { votes: [], slices: [], claims: [], slate: null, reasons: [] },
     sliceAcc: 0,
     ledger: {},                 // season -> [duel code * 2 + pick] (v2 encoding, see arena/ledger.js)
     dnaAgg: null,               // Taste DNA folded so far: { done: { season: entries counted }, all, byDim }
@@ -93,7 +93,7 @@ function hydrateLocal(userId) {
   return {
     ...d,
     base,
-    pending: { votes: j.pending?.votes ?? [], slices: j.pending?.slices ?? [], claims: j.pending?.claims ?? [], slate: j.pending?.slate ?? null },
+    pending: { votes: j.pending?.votes ?? [], slices: j.pending?.slices ?? [], claims: j.pending?.claims ?? [], slate: j.pending?.slate ?? null, reasons: j.pending?.reasons ?? [] },
     sliceAcc: j.sliceAcc ?? 0,
     // v1 stored duels of pools of 32 with eight question slots; v2 packs the drop indexes too (and drops the DNA fold,
     // which refers to the old codes -- it is rebuilt once from the ledger)
@@ -272,7 +272,7 @@ let failures = 0;
 
 function hasPending() {
   const p = S.pending;
-  return p.votes.length > 0 || p.slices.length > 0 || p.claims.length > 0 || !!p.slate;
+  return p.votes.length > 0 || p.slices.length > 0 || p.claims.length > 0 || !!p.slate || (p.reasons?.length ?? 0) > 0;
 }
 
 export function scheduleFlush(ms = 3500) {
@@ -329,6 +329,15 @@ async function runFlush() {
       failures = 0;
       sentXp = true;
       announceServerBadges(res.newBadges);
+    }
+    // the reasons go after the votes they belong to are saved; an older server that does not know them simply drops them
+    while (S && S.userId === userId && !S.pending.votes.length && S.pending.reasons.length) {
+      const batch = S.pending.reasons.slice(0, BATCH);
+      try { await rpc("arena_set_reasons", { p_reasons: batch }); }
+      catch (err) { if (!isMissingFunction(err)) throw err; }
+      if (!S || S.userId !== userId) return;
+      const sent = new Set(batch.map((x) => x.id));
+      S.pending.reasons = S.pending.reasons.filter((x) => !sent.has(x.id));
     }
     while (S && S.userId === userId && S.pending.claims.length) {
       const c = S.pending.claims[0];
@@ -583,21 +592,36 @@ export function vote(side) {
   const eye = duel.objective ? pick === duel.truth : null;
   const xp = duel.repeat ? 0 : voteXp({ ms, bonus, pioneer });
 
+  let voteId = null;
   if (!duel.repeat) {
     const day = localDay();
-    S.pending.votes.push({ id: uuid(), pair: duel.pair, dim: duel.dim, pick, ms, bonus, day, daily: duel.daily, set: duel.set ?? 0, eye, combo, family: duel.family, xp, crowd });
+    voteId = uuid();
+    S.pending.votes.push({ id: voteId, pair: duel.pair, dim: duel.dim, pick, ms, bonus, day, daily: duel.daily, set: duel.set ?? 0, eye, combo, family: duel.family, xp, crowd });
     addToLedger(duel.season, encodeEntry(duel.family, duel.a, duel.b, duel.dim, pick));
     compactPending();
     scheduleFlush();
   }
   r.combo = combo;
   r.phase = "reveal";
-  const result = { duelId: duel.id, pick, side, xp, bonus, combo, eye, crowd, pioneer, ms, repeat: duel.repeat, tally };
+  const result = { duelId: duel.id, pick, side, xp, bonus, combo, eye, crowd, pioneer, ms, repeat: duel.repeat, tally, voteId, reason: null };
   r.results.push(result);
   r.last = result;
   notify();
   const after = getView();
   checkMilestones(before, after);
+  persist();
+}
+
+/** The optional "why?" after a duel: one of REASONS, kept with the vote (sent after the votes themselves, see runFlush). Only once per vote. */
+export const REASONS = ["color", "type", "layout", "clear", "trust", "mood"];
+export function setReason(reason) {
+  const r = S?.round;
+  const last = r?.phase === "reveal" ? r.last : null;
+  if (!last?.voteId || last.reason || !REASONS.includes(reason)) return;
+  last.reason = reason;
+  S.pending.reasons.push({ id: last.voteId, reason });
+  scheduleFlush();
+  notify();
   persist();
 }
 
@@ -980,7 +1004,7 @@ export function arenaRemote() {
   return S?.remote ?? "unknown";
 }
 
-export const actions = { startRound, startSet, startChallenge, startMission, retryMissionVote, vote, skip, next, endRound, claim, setPref, syncNow, flush };
+export const actions = { startRound, startSet, startChallenge, startMission, retryMissionVote, vote, setReason, skip, next, endRound, claim, setPref, syncNow, flush };
 
 export function useArena() {
   const [, setTick] = useState(0);
