@@ -45,6 +45,12 @@ server.listen(0, "127.0.0.1", async () => {
       const barBox = await page.evaluate(() => { const r = document.querySelector('[data-testid="profile-savebar"]').getBoundingClientRect(); return { bottom: r.bottom, vh: innerHeight, right: r.right, vw: innerWidth }; });
       assert.ok(barBox.bottom <= barBox.vh && barBox.right <= barBox.vw, `${name}: the save bar is cut off`);
       await page.screenshot({ path: path.join(os.tmpdir(), `profile-${name}-dirty.png`) });
+      // an obscene name: the bar says so and Save is off
+      await page.locator('.pf-sec input').nth(0).fill("Хуйло");
+      await page.waitForTimeout(250);
+      const bad = await page.evaluate(() => ({ text: document.querySelector('[data-testid="profile-profanity"]').textContent, off: document.querySelector('[data-testid="profile-savebar"] button.sk-btn, [data-testid="profile-savebar"] button:last-child').disabled }));
+      assert.ok(/нецензур/i.test(bad.text), `${name}: no warning for an obscene name (${bad.text})`);
+      assert.equal(bad.off, true, `${name}: Save stays on for an obscene name`);
       await page.click(".pf-discard");
       await page.waitForTimeout(350);
       assert.equal(await page.evaluate(() => getComputedStyle(document.querySelector('[data-testid="profile-savebar"]')).visibility), "hidden", `${name}: the save bar stays after discarding`);

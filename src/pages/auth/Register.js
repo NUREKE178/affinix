@@ -6,6 +6,7 @@ import { signUp, friendlyAuthError } from "../../lib/auth.js";
 import { GoogleButton, OrDivider } from "./SocialAuth.js";
 import { IS_CONFIGURED } from "../../lib/env.js";
 import { useT } from "../../lib/i18n.js";
+import { isProfane } from "../../lib/profanity.js";
 
 export function Register() {
   const t = useT();
@@ -19,6 +20,7 @@ export function Register() {
   async function onSubmit(e) {
     e.preventDefault();
     setError(null);
+    if (isProfane(fullName)) { setError(t("profile.personal.profanity")); return; }
     setLoading(true);
     try {
       const data = await signUp({ email, password, fullName });

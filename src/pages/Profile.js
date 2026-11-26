@@ -9,6 +9,7 @@ import { COUNTRIES, TIMEZONES } from "../lib/questionTypes.js";
 import { shortDate } from "../lib/format.js";
 import { useT, useLocale, setLocale as setAppLocale, LOCALES } from "../lib/i18n.js";
 import { withTimeout } from "../lib/async.js";
+import { isProfane } from "../lib/profanity.js";
 import { PushToggle } from "../components/PushToggle.js";
 import { PlatformBadge } from "../components/platformBadge.js";
 import { platformRoleOf } from "../lib/platformRole.js";
@@ -64,10 +65,12 @@ export function PersonalTab({ profile, user, t }) {
 
   // the save bar shows only when something differs from what is stored
   const dirty = JSON.stringify(form) !== JSON.stringify(formFrom(profile));
+  const profane = [form.full_name, form.username, form.role_title, form.bio, form.research_interests].some(isProfane);
   const usernameValid = !form.username || usernameAvailableLocally(form.username);
 
   async function save() {
     if (!usernameValid) { toast(t("profile.personal.usernameInvalid"), "rose"); return; }
+    if (profane) { toast(t("profile.personal.profanity"), "rose"); return; }
     setSaving(true);
     try {
       await updateMyProfile({
@@ -81,7 +84,8 @@ export function PersonalTab({ profile, user, t }) {
       });
       toast(t("profile.personal.profileSaved"));
     } catch (err) {
-      toast(err.message ?? String(err), "rose");
+      // the database refuses an obscene text too (migration 0033), in case the browser check was bypassed
+      toast(/inappropriate_text/.test(err?.message ?? "") ? t("profile.personal.profanity") : err.message ?? String(err), "rose");
     } finally {
       setSaving(false);
     }
@@ -117,7 +121,7 @@ export function PersonalTab({ profile, user, t }) {
       <section class="pf-sec">
         <h4 class="pf-cap">${pn("sectionBasic")}</h4>
         <div class="pf-grid">
-          <${Field} label=${pn("fullNameLabel")}>
+          <${Field} label=${pn("fullNameLabel")} hint=${isProfane(form.full_name) ? pn("profanity") : null}>
             <${TextInput} value=${form.full_name} onInput=${(e) => patch({ full_name: e.target.value })} />
           <//>
           <${Field} label=${pn("usernameLabel")} hint=${form.username && !usernameValid ? pn("usernameHintInvalid") : pn("usernameHint")}>
@@ -161,9 +165,9 @@ export function PersonalTab({ profile, user, t }) {
       </section>
 
       <div class="pf-savebar" data-show=${dirty} data-testid="profile-savebar" aria-hidden=${!dirty}>
-        <span class="pf-savebar-text">${pn("unsaved")}</span>
+        <span class=${`pf-savebar-text ${profane ? "pf-savebar-bad" : ""}`} data-testid="profile-profanity" role=${profane ? "alert" : undefined}>${profane ? pn("profanity") : pn("unsaved")}</span>
         <button type="button" class="pf-discard" tabindex=${dirty ? 0 : -1} onClick=${() => setForm(formFrom(profile))}>${pn("discard")}</button>
-        <${Button} onClick=${save} loading=${saving} disabled=${!dirty}>${saving ? t("common.saving") : pn("saveButton")}<//>
+        <${Button} onClick=${save} loading=${saving} disabled=${!dirty || profane}>${saving ? t("common.saving") : pn("saveButton")}<//>
       </div>
     </div>
   `;
