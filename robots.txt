@@ -1,0 +1,5 @@
+# Affinix: everything public may be crawled. The app itself lives behind sign-in (and in the "#/" part of the address, which search engines do not index).
+User-agent: *
+Allow: /
+
+Sitemap: https://affinix.space/sitemap.xml
