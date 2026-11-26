@@ -4702,3 +4702,7 @@ The three readouts (Pending / This month / Earned in total) sit in `.sk-stat-str
 ## Wallet: the monthly-limit ring redrawn
 
 The ring beside "Available" was an 84 px dark filled disc with a thick track, drew a lone orange dot at 0 % (round line cap of a zero-length arc), said only "0 %" and sat tight against the well below. `Wallet.js` `MonthRing`: 72 px (66 on phones), thin 5 px track, no filled disc, no fill circle at 0, a minimum visible sliver below 1 % with the label "<1", a second line `cash.ringOf` ("от лимита" / "лимиттен" / "of limit"); `arena.css`: new ring rules, the svg scales to its box, a little room under the row. `cash.e2e` 47 pass (the ring still reports `data-ratio`).
+
+## Search engines: robots.txt, sitemap.xml, description (no migration)
+
+For Google Search Console: `robots.txt` (allow all, points to the sitemap), `sitemap.xml` (the landing page only: the app is behind sign-in and in the `#/` fragment, which search engines do not index), a Russian / Kazakh meta description (it was English only while the page is `lang="ru"`), `<link rel="canonical">`, a small `WebSite` JSON-LD, and a commented place for the `google-site-verification` tag (the owner gets it from Search Console). Domain verification by a DNS TXT record needs no code at all.
