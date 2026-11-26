@@ -1,7 +1,6 @@
 import { html, useState, useEffect } from "../lib/preact.js";
 import { navigate } from "../router.js";
 import { useSession, updatePassword, requestEmailChange, friendlyAuthError } from "../lib/auth.js";
-import { useCurrentOrg } from "../lib/currentOrg.js";
 import { useMyProfile, updateMyProfile, uploadAvatar, fetchMyProfileStats, usernameAvailableLocally } from "../lib/profile.js";
 import { useFriends } from "../lib/friendsStore.js";
 import { Card, SectionHeading, Field, TextInput, TextArea, Select, Switch, Button, Badge, Tabs, toast, LoadingState, Spinner, Skeleton } from "../components/ui.js";
@@ -52,7 +51,7 @@ const formFrom = (profile) => ({
   public_profile_enabled: profile?.public_profile_enabled ?? false,
 });
 
-export function PersonalTab({ profile, user, org, t }) {
+export function PersonalTab({ profile, user, t }) {
   const { friends } = useFriends();
   const [form, setForm] = useState(() => formFrom(profile));
   const [saving, setSaving] = useState(false);
@@ -109,8 +108,6 @@ export function PersonalTab({ profile, user, org, t }) {
         <${AvatarEditor} profile=${profile} displayName=${form.full_name || user?.email || user?.phone} t=${t} />
         <h3 class="pf-name">${form.full_name || t("profile.noName")}</h3>
         <div class="pf-badges"><${PlatformBadge} role=${platformRoleOf(profile)} /></div>
-        <!-- the role in the company is shown only when it says something: everyone founds their own company, so "owner" is on everybody -->
-        <div class="pf-sub" data-testid="profile-org-line">${org?.name ?? ""}${org?.role && org.role !== "owner" ? ` · ${t(`team.roles.${org.role}`)}` : ""}</div>
         <div class="pf-meta">
           ${profile?.username && html`<span class="pf-url">${t("profile.publicProfileUrl", { username: profile.username })}</span>`}
           <button type="button" onClick=${() => navigate("/app/friends")} class="pf-friends">${t("friends.countLabel", { count: friends.length })}</button>
@@ -325,7 +322,6 @@ export function SessionsTab({ user, t }) {
 export function Profile() {
   const t = useT();
   const { user } = useSession();
-  const { org } = useCurrentOrg();
   const { profile, loading, error } = useMyProfile();
   const [tab, setTab] = useState("personal");
 
@@ -356,7 +352,7 @@ export function Profile() {
     <div class="fade-in max-w-3xl">
       <${SectionHeading} title=${t("profile.title")} subtitle=${t("profile.subtitle")} />
       <div class="mb-5 pf-tabs"><${Tabs} tabs=${TABS} active=${tab} onChange=${setTab} /></div>
-      ${tab === "personal" && html`<${PersonalTab} profile=${profile} user=${user} org=${org} t=${t} />`}
+      ${tab === "personal" && html`<${PersonalTab} profile=${profile} user=${user} t=${t} />`}
       ${tab === "security" && html`<${SecurityTab} t=${t} />`}
       ${tab === "notifications" && html`<${NotificationsTab} profile=${profile} t=${t} />`}
       ${tab === "preferences" && html`<${PreferencesTab} profile=${profile} t=${t} />`}

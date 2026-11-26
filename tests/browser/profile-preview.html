@@ -25,7 +25,7 @@ const profile = { id: "u1", full_name: "Nurlan Khudaybergen", username: "nu4lan"
   bio: "Web Developer, Vibe Coder. Ibilim High School student.  CEO affinix https://affinix.space/", research_interests: [], public_profile_enabled: true, platform_role: q.get("role") ?? "owner" };
 const user = { id: "u1", email: "khudaybergennurlan@gmail.com" };
 const tab = q.get("tab") ?? "personal";
-const props = { profile, user, org: { name: "Nurlan Company", role: "owner" }, t: tt };
+const props = { profile, user, t: tt };
 const Tab = { personal: PersonalTab, security: SecurityTab, notifications: NotificationsTab, preferences: PreferencesTab, sessions: SessionsTab }[tab];
 render(html`<div style="max-width:760px"><${Tab} ...${props} /></div>`, document.getElementById("app"));
 window.__ready = true;

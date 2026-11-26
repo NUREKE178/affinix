@@ -4649,3 +4649,10 @@ The shared `Glyph` renders icons with a heavy stroke, a tinted body and dots; at
 - **Fix:** `Composer.js`: the send button cancels the default of `mousedown` / `pointerdown` (focus stays in the box, the click still fires); `ChatPane.submit()` also calls `inputRef.current.focus()` synchronously inside the click before the old rAF refocus.
 - **Test:** `messages-preview.cjs` types text, presses send and asserts `document.activeElement` is the input; verified to FAIL without the fix (focus on `chat-send`) and pass with it. `node --test` 38, chat layout pass.
 - **Not verified:** a real phone keyboard (emulation has none): check on Android Chrome and iPhone Safari.
+
+## The organisation concept removed from the UI (no migration)
+
+**Request:** "the organisation thing must be deleted completely" (a screenshot of Settings -> Organisation).
+- **Removed:** the pages `Settings.js`, `Team.js`, `Billing.js` and `SettingsTabs` (their routes; `/app/settings|team|billing` now redirect to `/profile`), the idle preload of Settings, the sidebar item, the user-menu item and the search entries for them; the org name under the brand and under the user in the sidebar (the user line shows `@username`), the company line in the profile hero (`PersonalTab` no longer takes `org`), the organisation name on the public profile; the word "organization" from `profile.personal.publicHint` x3.
+- **Kept, on purpose:** the silent workspace made for every new person (`lib/firstRun.js`, `gateFor`) and the `organizations` tables: the old experiments feature (`experimentsStore`, builder, list) keys on `org.id` and RLS depends on it. Deleting them would need a database migration that reworks experiments; not done. Unused locale strings (`shell.workspace.team|billing|settings`, `team.*`, `billing.*`, `settings.*`) are left in place.
+- **Tests:** `node --test` 38, e2e (the real app shell), profile preview, preload check pass.

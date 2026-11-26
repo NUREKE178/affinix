@@ -1932,7 +1932,7 @@ export default {
       interestsHint: "Comma-separated.",
       interestsPlaceholder: "UX, pricing, packaging",
       publicToggle: "Public researcher profile",
-      publicHint: "When enabled, your name, title, organization and bio are visible to anyone at affinix.space/u/{username}. Your email and private research are never published.",
+      publicHint: "When enabled, your name, title and bio are visible to anyone at affinix.space/u/{username}. Your email and private research are never published.",
       saveButton: "Save changes",
       profileSaved: "Profile saved",
       sectionBasic: "Basics",
