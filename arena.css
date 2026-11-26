@@ -587,6 +587,10 @@
   .ar-wallet-chip { display: none; }
   .ar-wl-big { font-size: 36px; }
   .ar-wl-balance .sk-stat-strip { grid-template-columns: minmax(0, 1fr); }
+  /* one column: the dividers are horizontal hairlines between the rows (the strip's side-by-side rule left a stray vertical line on the 2nd row
+     and no line above it, which made the rows look uneven) */
+  .ar-wl-balance .sk-stat-strip > .sk-stat { border-left: 0; border-top: 0; padding-left: 16px; padding-right: 16px; }
+  .ar-wl-balance .sk-stat-strip > .sk-stat + .sk-stat { border-top: 1px solid var(--hair); }
   .ar-wl-row { flex-wrap: wrap; }
   .ar-wl-row-main { flex-basis: 100%; }
 }
