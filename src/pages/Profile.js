@@ -34,40 +34,37 @@ function AvatarEditor({ profile, displayName, t }) {
       setUploading(false);
     }
   }
+  // the camera badge is always visible: a phone has no hover, so nothing else says the picture can be changed
   return html`
-    <label class="relative group cursor-pointer shrink-0">
+    <label class="pf-avatar" title=${t("profile.personal.changePhoto")} data-testid="profile-avatar">
       ${profile?.avatar_url
-        ? html`<img src=${profile.avatar_url} class="h-20 w-20 rounded-full object-cover" />`
-        : html`<div class="h-20 w-20 rounded-full sk-avatar flex items-center justify-center text-2xl font-semibold">${initialsFor(displayName)}</div>`}
-      <div class="absolute inset-0 rounded-full bg-graphite-950/60 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity">
-        ${uploading ? html`<${Spinner} size=${18} />` : html`<${Icon} name="upload" size=${18} className="text-graphite-100" />`}
-      </div>
-      <input type="file" accept="image/jpeg,image/png,image/webp" class="hidden" disabled=${uploading} onChange=${(e) => onFile(e.target.files?.[0])} />
+        ? html`<img src=${profile.avatar_url} alt="" />`
+        : html`<span class="sk-avatar pf-avatar-initials">${initialsFor(displayName)}</span>`}
+      <span class="pf-avatar-badge">${uploading ? html`<${Spinner} size=${14} />` : html`<${Icon} name="image" size=${15} />`}</span>
+      <input type="file" accept="image/jpeg,image/png,image/webp" class="hidden" disabled=${uploading} aria-label=${t("profile.personal.changePhoto")} onChange=${(e) => onFile(e.target.files?.[0])} />
     </label>
   `;
 }
 
-function PersonalTab({ profile, user, org, t }) {
+const formFrom = (profile) => ({
+  full_name: profile?.full_name ?? "", username: profile?.username ?? "", role_title: profile?.role_title ?? "",
+  country: profile?.country ?? "", bio: profile?.bio ?? "", research_interests: (profile?.research_interests ?? []).join(", "),
+  public_profile_enabled: profile?.public_profile_enabled ?? false,
+});
+
+export function PersonalTab({ profile, user, org, t }) {
   const { friends } = useFriends();
-  const [form, setForm] = useState(() => ({
-    full_name: profile?.full_name ?? "", username: profile?.username ?? "", role_title: profile?.role_title ?? "",
-    country: profile?.country ?? "", bio: profile?.bio ?? "", research_interests: (profile?.research_interests ?? []).join(", "),
-    public_profile_enabled: profile?.public_profile_enabled ?? false,
-  }));
+  const [form, setForm] = useState(() => formFrom(profile));
   const [saving, setSaving] = useState(false);
   const [emailDraft, setEmailDraft] = useState("");
   const [changingEmail, setChangingEmail] = useState(false);
 
-  useEffect(() => {
-    setForm({
-      full_name: profile?.full_name ?? "", username: profile?.username ?? "", role_title: profile?.role_title ?? "",
-      country: profile?.country ?? "", bio: profile?.bio ?? "", research_interests: (profile?.research_interests ?? []).join(", "),
-      public_profile_enabled: profile?.public_profile_enabled ?? false,
-    });
-  }, [profile?.id]);
+  useEffect(() => { setForm(formFrom(profile)); }, [profile?.id]);
 
   function patch(fields) { setForm((f) => ({ ...f, ...fields })); }
 
+  // the save bar shows only when something differs from what is stored
+  const dirty = JSON.stringify(form) !== JSON.stringify(formFrom(profile));
   const usernameValid = !form.username || usernameAvailableLocally(form.username);
 
   async function save() {
@@ -105,64 +102,71 @@ function PersonalTab({ profile, user, org, t }) {
     }
   }
 
+  const pn = (k, vars) => t(`profile.personal.${k}`, vars);
   return html`
-    <div class="space-y-6">
-      <div class="flex items-center gap-4">
+    <div class="pf" data-testid="profile-personal">
+      <section class="pf-hero">
         <${AvatarEditor} profile=${profile} displayName=${form.full_name || user?.email || user?.phone} t=${t} />
-        <div>
-          <div class="flex items-center gap-2 flex-wrap">
-            <span class="font-semibold text-graphite-100">${form.full_name || t("profile.noName")}</span>
-            <${PlatformBadge} role=${platformRoleOf(profile)} />
-          </div>
-          <!-- the role in the company is shown only when it says something: everyone founds their own company, so "owner" is on everybody -->
-          <div class="text-sm text-graphite-500" data-testid="profile-org-line">${org?.name ?? ""}${org?.role && org.role !== "owner" ? ` · ${t(`team.roles.${org.role}`)}` : ""}</div>
-          ${profile?.username && html`<div class="text-xs text-graphite-600 mt-0.5">${t("profile.publicProfileUrl", { username: profile.username })}</div>`}
-          <button type="button" onClick=${() => navigate("/app/friends")} class="text-xs text-signal-300 hover:text-signal-200 mt-1">
-            ${t("friends.countLabel", { count: friends.length })}
-          </button>
+        <h3 class="pf-name">${form.full_name || t("profile.noName")}</h3>
+        <div class="pf-badges"><${PlatformBadge} role=${platformRoleOf(profile)} /></div>
+        <!-- the role in the company is shown only when it says something: everyone founds their own company, so "owner" is on everybody -->
+        <div class="pf-sub" data-testid="profile-org-line">${org?.name ?? ""}${org?.role && org.role !== "owner" ? ` · ${t(`team.roles.${org.role}`)}` : ""}</div>
+        <div class="pf-meta">
+          ${profile?.username && html`<span class="pf-url">${t("profile.publicProfileUrl", { username: profile.username })}</span>`}
+          <button type="button" onClick=${() => navigate("/app/friends")} class="pf-friends">${t("friends.countLabel", { count: friends.length })}</button>
         </div>
-      </div>
+      </section>
 
-      <div class="grid sm:grid-cols-2 gap-x-4">
-        <${Field} label=${t("profile.personal.fullNameLabel")}>
-          <${TextInput} value=${form.full_name} onInput=${(e) => patch({ full_name: e.target.value })} />
-        <//>
-        <${Field} label=${t("profile.personal.usernameLabel")} hint=${form.username && !usernameValid ? t("profile.personal.usernameHintInvalid") : t("profile.personal.usernameHint")}>
-          <${TextInput} value=${form.username} placeholder=${t("profile.personal.usernamePlaceholder")} onInput=${(e) => patch({ username: e.target.value.toLowerCase() })} />
-        <//>
-      </div>
-      <div class="grid sm:grid-cols-2 gap-x-4">
-        <${Field} label=${t("profile.personal.roleTitleLabel")} hint=${t("profile.personal.roleTitleHint")}>
-          <${TextInput} value=${form.role_title} onInput=${(e) => patch({ role_title: e.target.value })} />
-        <//>
-        <${Field} label=${t("profile.personal.countryLabel")}>
-          <${Select} options=${[{ value: "", label: t("profile.personal.countryNone") }, ...COUNTRIES.map((c) => ({ value: c, label: c }))]} value=${form.country} onChange=${(e) => patch({ country: e.target.value })} />
-        <//>
-      </div>
-      <${Field} label=${t("profile.personal.bioLabel")} hint=${t("profile.personal.bioHint")}>
-        <${TextArea} value=${form.bio} onInput=${(e) => patch({ bio: e.target.value })} />
-      <//>
-      <${Field} label=${t("profile.personal.interestsLabel")} hint=${t("profile.personal.interestsHint")}>
-        <${TextInput} value=${form.research_interests} placeholder=${t("profile.personal.interestsPlaceholder")} onInput=${(e) => patch({ research_interests: e.target.value })} />
-      <//>
-
-      <div class="sk-panel-flat rounded-lg p-3.5">
-        <${Switch} label=${t("profile.personal.publicToggle")} checked=${form.public_profile_enabled} onChange=${(v) => patch({ public_profile_enabled: v })} />
-        <p class="text-xs text-graphite-500 mt-1">${t("profile.personal.publicHint", { username: form.username || "username" })}</p>
-      </div>
-
-      <div class="flex justify-end">
-        <${Button} onClick=${save} loading=${saving}>${saving ? t("common.saving") : t("profile.personal.saveButton")}<//>
-      </div>
-
-      <div class="pt-5 border-t border-graphite-800">
-        <h4 class="text-sm font-semibold text-graphite-200 mb-3">${t("profile.personal.emailTitle")}</h4>
-        <p class="text-sm text-graphite-400 mb-3">${t("profile.personal.emailCurrent", { email: user?.email ?? user?.phone ?? "—" })}</p>
-        <div class="flex gap-2 max-w-md">
-          <${TextInput} type="email" placeholder=${t("profile.personal.emailPlaceholder")} value=${emailDraft} onInput=${(e) => setEmailDraft(e.target.value)} />
-          <${Button} variant="secondary" size="sm" loading=${changingEmail} disabled=${!emailDraft.trim()} onClick=${changeEmail}>${t("profile.personal.emailChange")}<//>
+      <section class="pf-sec">
+        <h4 class="pf-cap">${pn("sectionBasic")}</h4>
+        <div class="pf-grid">
+          <${Field} label=${pn("fullNameLabel")}>
+            <${TextInput} value=${form.full_name} onInput=${(e) => patch({ full_name: e.target.value })} />
+          <//>
+          <${Field} label=${pn("usernameLabel")} hint=${form.username && !usernameValid ? pn("usernameHintInvalid") : pn("usernameHint")}>
+            <${TextInput} value=${form.username} placeholder=${pn("usernamePlaceholder")} onInput=${(e) => patch({ username: e.target.value.toLowerCase() })} />
+          <//>
         </div>
-        <p class="text-xs text-graphite-500 mt-1.5">${t("profile.personal.emailHint")}</p>
+      </section>
+
+      <section class="pf-sec">
+        <h4 class="pf-cap">${pn("sectionAbout")}</h4>
+        <div class="pf-grid">
+          <${Field} label=${pn("roleTitleLabel")} hint=${pn("roleTitleHint")}>
+            <${TextInput} value=${form.role_title} onInput=${(e) => patch({ role_title: e.target.value })} />
+          <//>
+          <${Field} label=${pn("countryLabel")}>
+            <${Select} options=${[{ value: "", label: pn("countryNone") }, ...COUNTRIES.map((c) => ({ value: c, label: c }))]} value=${form.country} onChange=${(e) => patch({ country: e.target.value })} />
+          <//>
+        </div>
+        <${Field} label=${pn("bioLabel")} hint=${pn("bioHint")}>
+          <${TextArea} value=${form.bio} onInput=${(e) => patch({ bio: e.target.value })} />
+        <//>
+        <${Field} label=${pn("interestsLabel")} hint=${pn("interestsHint")}>
+          <${TextInput} value=${form.research_interests} placeholder=${pn("interestsPlaceholder")} onInput=${(e) => patch({ research_interests: e.target.value })} />
+        <//>
+      </section>
+
+      <section class="pf-sec">
+        <h4 class="pf-cap">${pn("sectionPublic")}</h4>
+        <${Switch} label=${pn("publicToggle")} checked=${form.public_profile_enabled} onChange=${(v) => patch({ public_profile_enabled: v })} />
+        <p class="pf-hint">${pn("publicHint", { username: form.username || "username" })}</p>
+      </section>
+
+      <section class="pf-sec">
+        <h4 class="pf-cap">${pn("emailTitle")}</h4>
+        <p class="pf-hint pf-hint-first">${pn("emailCurrent", { email: user?.email ?? user?.phone ?? "—" })}</p>
+        <div class="pf-email">
+          <${TextInput} type="email" placeholder=${pn("emailPlaceholder")} value=${emailDraft} onInput=${(e) => setEmailDraft(e.target.value)} />
+          <${Button} variant="secondary" size="sm" loading=${changingEmail} disabled=${!emailDraft.trim()} onClick=${changeEmail}>${pn("emailChange")}<//>
+        </div>
+        <p class="pf-hint">${pn("emailHint")}</p>
+      </section>
+
+      <div class="pf-savebar" data-show=${dirty} data-testid="profile-savebar" aria-hidden=${!dirty}>
+        <span class="pf-savebar-text">${pn("unsaved")}</span>
+        <button type="button" class="pf-discard" tabindex=${dirty ? 0 : -1} onClick=${() => setForm(formFrom(profile))}>${pn("discard")}</button>
+        <${Button} onClick=${save} loading=${saving} disabled=${!dirty}>${saving ? t("common.saving") : pn("saveButton")}<//>
       </div>
     </div>
   `;
@@ -331,9 +335,9 @@ export function Profile() {
   return html`
     <div class="fade-in max-w-3xl">
       <${SectionHeading} title=${t("profile.title")} subtitle=${t("profile.subtitle")} />
-      <div class="mb-5"><${Tabs} tabs=${TABS} active=${tab} onChange=${setTab} /></div>
-      <${Card} className="p-5 sm:p-7">
-        ${tab === "personal" && html`<${PersonalTab} profile=${profile} user=${user} org=${org} t=${t} />`}
+      <div class="mb-5 pf-tabs"><${Tabs} tabs=${TABS} active=${tab} onChange=${setTab} /></div>
+      ${tab === "personal" && html`<${PersonalTab} profile=${profile} user=${user} org=${org} t=${t} />`}
+      <${Card} className=${`p-5 sm:p-7 ${tab === "personal" ? "hidden" : ""}`}>
         ${tab === "security" && html`<${SecurityTab} t=${t} />`}
         ${tab === "notifications" && html`<${NotificationsTab} profile=${profile} t=${t} />`}
         ${tab === "preferences" && html`<${PreferencesTab} profile=${profile} t=${t} />`}
