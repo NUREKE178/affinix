@@ -1935,6 +1935,7 @@ export default {
       publicHint: "When enabled, your name, title and bio are visible to anyone at affinix.space/u/{username}. Your email and private research are never published.",
       saveButton: "Save changes",
       profileSaved: "Profile saved",
+      profanity: "Please do not use obscene words in your name, title or bio.",
       sectionBasic: "Basics",
       sectionAbout: "About you",
       sectionPublic: "Public page",
