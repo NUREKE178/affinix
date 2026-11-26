@@ -1,7 +1,6 @@
-"""Нейромаркетинг және цифрлық алгоритмдер · Affinix — 6 слайд + 8 резерв, Affinix «Instrument» стилі, нативті PPT анимациясы.
+"""Нейромаркетинг және цифрлық алгоритмдер · Affinix — 6 слайд, Affinix «Instrument» стилі, нативті PPT анимациясы.
 Негізгі 6 (жюри_баяндама.txt): титул, нейромаркетинг және ми, ПРОБЛЕМА, шешім (Affinix), ҚАУІПСІЗДІК, қорытынды + сайтқа QR.
-Резервте (жасырын, сұрақ кезінде ашылады): Котлердің «қара жәшігі», цифрлық шындық, Арена, маркетологқа, сезіну мен түсіну,
-ұсыныс жүйелері, таңдау эволюциясы, цифрлық ілмек. Арена слайдсыз, сайтта тікелей көрсетіледі.
+Арена слайдсыз, сайтта тікелей көрсетіледі.
 Түстер styles.css-тен: графит фон, күңгірт пластиналар, бір сигнал түсі (#ff6a1f), LED нүктелер, сандар mono."""
 import math
 from deckkit import *
@@ -11,8 +10,8 @@ G50, G300, G400, G500, G600, G700, G800 = 'F5F5F6', 'C3C5CB', 'A2A5AE', '868993'
 PLATE, PLATE_LN, WELL, WELL_LN, KEY = '1A1B1E', '2B2C31', '09090B', '000000', '2C2E34'
 OK, BAD, INFO, STEEL = '34D399', 'FB7185', '86A5D9', '668BC9'
 MONO = 'JetBrains Mono'
-N = 14      # all slides in the file
-MAIN = 6    # shown in the slideshow; the rest are hidden backups for questions
+N = 6       # all slides in the file
+MAIN = 6
 init(dict(font='Rubik', on_bg=G50, on_bg_soft=G400, accent=SIG, accent_ink=SIG_INK,
           card=PLATE, ink=G50, mute=G400, primary=SIG, dot=SIG), total=N)
 
@@ -246,196 +245,5 @@ text(g.shapes, 1292, 760, 460, 130, 'Камераны бағыттаңыз — �
 add('zoom', g, 1000, 650)
 finish(sl, '<p:fade/>')
 
-# ── 4. Котлердің «қара жәшігі» ─────────────────────────────────────────────
-sl = frame('Классикалық модель')
-head(sl, 'КЛАССИКАЛЫҚ МОДЕЛЬ', 'Ф. Котлердің «қара жәшігі»')
-for i, t in enumerate(['Тауар', 'Баға', 'Жылжыту']):
-    y = 380 + i * 92
-    add('left', key(sl.shapes, 330, y, t, w=240), 500 + i * 150, 450)
-    add('fade', chevron(sl.shapes, 500, y - 16, color=G600), 800 + i * 150, 300)
-add('fade', mono(sl.shapes, 210, 622, 240, 30, 'СТИМУЛДАР', 13, G500, align=C), 900, 400)
-g = group(sl, 'Жәшік'); well(g.shapes, 580, 330, 560, 320, rad=28)
-mono(g.shapes, 580, 360, 560, 200, '?', 110, G700, True, C, MID)
-mono(g.shapes, 580, 590, 560, 30, 'ТҰТЫНУШЫ САНАСЫ', 13, G500, align=C)
-add('zoom', g, 1100, 600)
-for j, y in enumerate([440, 520]):
-    add('fade', chevron(sl.shapes, 1180, y - 16), 1600 + j * 150, 300)
-add('right', text(sl.shapes, 1250, 410, 540, 110, 'Таңдау,\nсатып алу', 30, G50, True, spacing=1.1), 1800, 500)
-add('right', mono(sl.shapes, 1252, 566, 400, 30, 'РЕАКЦИЯ', 13, SIG), 1900, 400)
-for i, t in enumerate(['Мұқтаждық', 'Іздеу', 'Бағалау', 'Шешім', 'Реакция']):
-    a = outline(sl.shapes.add_shape(MSO_SHAPE.CHEVRON, e(128 + i * 330), e(690), e(344), e(84)), '3F4148' if i < 4 else 'C8420B')
-    a.fill.solid(); a.fill.fore_color.rgb = rgb(KEY if i < 4 else SIG); a.adjustments[0] = .32
-    a.text_frame.vertical_anchor = MID
-    style(a.text_frame, t, 18, G50 if i < 4 else SIG_INK, True, C)
-    add('left', a, 2200 + i * 150, 350)
-callout(sl, 820, 'Парадокс: жәшіктің ішінде не болатыны белгісіз еді. Бүгін оны екі күш ашып жатыр: нейромаркетинг (ми) және алгоритмдер (мінез-құлық).', 3100, h=120, pt=19)
-finish(sl, '<p:fade/>')
-
-# ── 2. Қазақстанның цифрлық шындығы ────────────────────────────────────────
-sl = frame('Цифрлық шындық')
-head(sl, 'КОНТЕКСТ', 'Қазақстанның цифрлық шындығы')
-for i, (v, lab) in enumerate([('93,4%', 'Интернетпен қамту\n19,5 млн адам'),
-                              ('80,8%', 'Әлеуметтік желіде\n16,9 млн аккаунт'),
-                              ('6,25 трлн', 'Электронды сауда\n2025 ж., теңге')]):
-    y = 326 + i * 160
-    g = group(sl, v)
-    mono(g.shapes, 128, y, 640, 110, v, 52, G50, True, anchor=MID)
-    text(g.shapes, 730, y + 10, 560, 90, lab, 20, G400, anchor=MID, spacing=1.2)
-    if i < 2: hline(g.shapes, 128, y + 136, 1132, .07)
-    add('left', g, 600 + i * 300, 550)
-g = group(sl, '84'); plate(g.shapes, 1320, 330, 472, 476, rad=32, ln='7A3510')
-led(g.shapes, 1364, 380, SIG, 12); mono(g.shapes, 1388, 372, 380, 30, 'МАРКЕТПЛЕЙСТЕР', 13, SIG)
-mono(g.shapes, 1362, 410, 400, 130, '84%', 76, G50, True)
-text(g.shapes, 1364, 570, 404, 140, '6,25 трлн теңгенің ұсыныс алгоритмдері арқылы өтетін үлесі', 17, G400, spacing=1.2)
-well(g.shapes, 1364, 742, 384, 32, rad=16)
-add('rise', g, 1500, 600)
-add('wipe', box(sl.shapes, 1372, 750, 368 * .84, 16, SIG, rad=8), 2100, 900)
-callout(sl, 846, 'Таңдау жасау процесі математикаға көшті.', 2600, h=96, pt=24)
-finish(sl, '<p:fade/>')
-
-# ── 10. Арена ──────────────────────────────────────────────────────────────
-sl = frame('Арена')
-head(sl, 'АРЕНА', 'Зерттеу — ойын ретінде')
-add('rise', pic(sl.shapes, 'phone-arena.kk.png', 170, 290, 330, 330 * 1748 / 864), 500, 700)
-for i, (ic, h, d) in enumerate([('duel', 'Дуэль A / B', 'XP, деңгей, күнделікті серия'),
-                                ('dna', 'Талғам ДНК-сы', '7 ось бойынша талғам бейіні'),
-                                ('eye', 'Көз тесті', 'Дұрыс жауап — WCAG контраст есебі'),
-                                ('clock', 'Адал сағат', 'Уақыт тек күн сынағында жүреді')]):
-    x, y = 600 + (i % 2) * 604, 330 + (i // 2) * 310
-    g = group(sl, h); plate(g.shapes, x, y, 584, 286, rad=28)
-    icon_well(g.shapes, ic, x + 36, y + 36, 88)
-    text(g.shapes, x + 36, y + 150, 520, 50, h, 26, G50, True)
-    text(g.shapes, x + 36, y + 204, 520, 60, d, 18, G400)
-    add('rise', g, 800 + i * 250, 500)
-finish(sl, '<p:push dir="l"/>')
-
-# ── 11. Ұсыныс ─────────────────────────────────────────────────────────────
-sl = frame('Ұсыныс')
-head(sl, 'ҰСЫНЫС', 'Нарыққа дейін — тексеріңіз')
-for i, (h, d) in enumerate([('Нұсқаңызды жүктеңіз', '2–4 логотип, постер, ат немесе ұран'),
-                            ('Көпшілік таңдайды', 'Арена ойыншылары — миссия ретінде'),
-                            ('Үкім аласыз', 'Жеңімпаз + сенім аралығы')]):
-    y = 340 + i * 150
-    g = group(sl, h)
-    mono(g.shapes, 128, y, 120, 70, f'0{i + 1}', 40, SIG, True)
-    text(g.shapes, 262, y + 2, 700, 50, h, 28, G50, True)
-    text(g.shapes, 262, y + 60, 740, 40, d, 19, G400)
-    add('left', g, 600 + i * 300, 500)
-g = group(sl, 'Үлгі'); plate(g.shapes, 1040, 330, 752, 440, rad=32)
-led(g.shapes, 1084, 382, 'FBBF24', 12); mono(g.shapes, 1106, 374, 400, 30, 'ҮЛГІ КӨРІНІС', 13, G400)
-text(g.shapes, 1084, 430, 660, 50, 'Қай логотип жақсы?', 26, G50, True)
-for j in range(2):
-    yy = 520 + j * 110
-    k = outline(box(g.shapes, 1084, yy, 64, 64, KEY, rad=14), '3F4148'); k.text_frame.vertical_anchor = MID
-    style(k.text_frame, 'AB'[j], 22, G50, True, C)
-    well(g.shapes, 1170, yy + 12, 520, 40, rad=20)
-add('rise', g, 800, 600)
-for j, (w, col) in enumerate([(500, SIG), (270, STEEL)]):
-    add('wipe', box(sl.shapes, 1180, 532 + 10 + j * 110, w, 20, col, rad=10), 1500 + j * 250, 700)
-g = group(sl, 'Жеңімпаз'); led(g.shapes, 1710, 540, OK, 28)
-add('zoom', g, 2300, 400); add('pulse', g, 2750, 400)
-add('wipe', hline(sl.shapes, 128, 822, 1664), 2900, 500)
-add('rise', rich(sl.shapes, 128, 846, 1664, 90, [('Сезіммен емес — дерекпен', 'Rubik', G50), ('.', 'Rubik', SIG)], 46, align=C), 3100, 600)
-finish(sl, '<p:fade/>')
-
-# ── 3. Негізгі мәселе: сезіну мен түсіну ───────────────────────────────────
-sl = frame('Резерв · Сезіну мен түсіну')
-head(sl, 'НЕГІЗГІ МӘСЕЛЕ', 'Сезіну мен түсіну алшақтығы')
-cx = 560
-g = group(sl, 'Шеңберлер')
-ring(g.shapes, cx, 600, 270, G600, 1.5)
-mono(g.shapes, cx - 150, 362, 300, 70, '83%', 44, G50, True, C)
-add('zoom', g, 600, 600)
-g = group(sl, '46'); ring(g.shapes, cx, 700, 170, '3F4148', 1, fill=G800)
-mono(g.shapes, cx - 120, 572, 240, 60, '46%', 38, G50, True, C)
-add('zoom', g, 1100, 550)
-g = group(sl, '9'); ring(g.shapes, cx, 800, 70, 'C8420B', 1, fill=SIG)
-mono(g.shapes, cx - 60, 770, 120, 60, '9%', 28, SIG_INK, True, C, MID)
-add('zoom', g, 1600, 500); add('pulse', g, 2000, 400)
-for i, (v, lab, d, col) in enumerate([('83%', 'СЕЗІНЕДІ', 'Желіде жоспарлағаннан ұзақ отырып қалатынын мойындайды.', G500),
-                                      ('46%', 'ТҮСІНЕДІ', 'Лентасын арнайы алгоритм іріктейтінін біледі.', STEEL),
-                                      ('9%', 'ӘРЕКЕТ ЕТЕДІ', 'Алгоритм параметрлерін өзгертіп көрген.', SIG)]):
-    y = 316 + i * 156
-    g = group(sl, lab)
-    led(g.shapes, 1000, y + 14, col, 14); mono(g.shapes, 1028, y + 6, 600, 30, f'{v} · {lab}', 15, G400, True)
-    text(g.shapes, 1000, y + 44, 792, 96, d, 19, G50, spacing=1.2)
-    add('right', g, 800 + i * 500, 500)
-g = group(sl, 'Қорытынды'); well(g.shapes, 1000, 800, 792, 130, rad=24)
-led(g.shapes, 1036, 859, SIG, 12)
-text(g.shapes, 1066, 800, 700, 130, 'Цифрлық қамту цифрлық сауаттылықтан қауіпті түрде озып кетті.', 21, G50, True, anchor=MID, spacing=1.2)
-add('rise', g, 2400, 500)
-finish(sl, '<p:push dir="l"/>')
-
-# ── 6. Мәселені ашу: ұсыныс жүйелері ───────────────────────────────────────
-sl = frame('Резерв · Ұсыныс жүйелері')
-head(sl, 'МӘСЕЛЕНІ АШУ · ЦИФРЛЫҚ ҚОЗҒАЛТҚЫШ', 'Ұсыныс жүйелері қалай істейді?')
-for i, (h, q, minus) in enumerate([('Бірлескен сүзгілеу', '«Саған ұқсас адамдарға ұнағанды ұсынамын».', 'Жаңа қолданушыға жұмыс істемейді.'),
-                                   ('Мазмұндық сүзгі', '«Сен көрген бейнеге ұқсастарды ұсынамын».', 'Бір шеңберде ұстап қалады.'),
-                                   ('Терең оқыту', 'Жүздеген сигналды бір мезгілде өлшейді: TikTok, Instagram.', 'Күрделі қара жәшік.')]):
-    x = 128 + i * 565
-    g = group(sl, h); plate(g.shapes, x, 326, 533, 474, rad=28)
-    mono(g.shapes, x + 40, 366, 100, 30, f'0{i + 1}', 16, G600, True)
-    text(g.shapes, x + 40, 404, 470, 50, h, 23, G50, True)
-    text(g.shapes, x + 40, 462, 460, 150, q, 19, G300, spacing=1.2)
-    hline(g.shapes, x + 40, 626, 453, .08)
-    led(g.shapes, x + 40, 650, BAD, 12); mono(g.shapes, x + 62, 642, 300, 30, 'КЕМШІЛІГІ', 13, BAD)
-    text(g.shapes, x + 40, 682, 460, 100, minus, 18, G50, True, spacing=1.15)
-    add('rise', g, 600 + i * 300, 550)
-callout(sl, 832, 'Басты алгоритмдік валюта — лайк (саналы Р жүйесі) емес, экрандағы кідіріс пен көру уақыты (бақыланбайтын И жүйесі).', 1800, h=104, pt=20)
-finish(sl, '<p:push dir="l"/>')
-
-# ── 7. Таңдау эволюциясы ───────────────────────────────────────────────────
-sl = frame('Резерв · Таңдау эволюциясы')
-head(sl, 'МӘСЕЛЕНІ АШУ · ТАҢДАУ ЭВОЛЮЦИЯСЫ', 'Классика мен алгоритм')
-add('fade', mono(sl.shapes, 160, 320, 300, 30, 'КЕЗЕҢ', 13, G500), 400, 400)
-add('fade', mono(sl.shapes, 460, 320, 500, 30, 'КЛАССИКАЛЫҚ МАРКЕТИНГ', 13, G500), 400, 400)
-add('fade', led(sl.shapes, 1080, 328, SIG, 12), 400, 300)
-add('fade', mono(sl.shapes, 1104, 320, 500, 30, 'АЛГОРИТМДІК ОРТА', 13, SIG), 400, 400)
-for i, (st, cl, al) in enumerate([('Іздеу', 'Өзің іздейсің', 'Ұсынысты қабылдау: Netflix — 80%, YouTube — 70% контент'),
-                                  ('Бағалау', 'Жиынтықты өзің құрайсың', 'Платформа іріктеген тар шеңбер (filter bubble)'),
-                                  ('Шешім', 'Сыртқы кездейсоқтықтар', 'Басқарылатын жасанды стимул: «қорда 2 дана қалды»')]):
-    y = 366 + i * 140
-    g = group(sl, st); plate(g.shapes, 128, y, 1664, 124, rad=24)
-    text(g.shapes, 160, y, 280, 124, st, 25, G50, True, anchor=MID)
-    text(g.shapes, 460, y, 460, 124, cl, 20, G400, anchor=MID)
-    text(g.shapes, 1080, y, 680, 124, al, 20, G50, True, anchor=MID, spacing=1.15)
-    add('left', g, 700 + i * 350, 500)
-    add('fade', chevron(sl.shapes, 990, y + 46), 1000 + i * 350, 300)
-callout(sl, 820, 'Қорытынды: алгоритм таңдауды жеңілдетпейді — ол таңдау кеңістігінің архитектурасын толық ауыстырады.', 2000, h=110, pt=21)
-finish(sl, '<p:fade/>')
-
-# ── 8. Цифрлық ілмек ───────────────────────────────────────────────────────
-sl = frame('Резерв · Цифрлық ілмек')
-head(sl, 'МӘСЕЛЕНІ АШУ · НЕГІЗГІ МОДЕЛЬ', '«Цифрлық ілмек» (The Digital Loop)')
-CX, CY, RR = 960, 610, 250
-add('fade', ring(sl.shapes, CX, CY, RR, G700, 2), 400, 600)
-labels = ['1. Дерек жинау (кідіріс, скролл)', '2. Профиль құру (85% дәлдікпен болжау)', '3. Іріктеу (лентаға шығару)',
-          '4. Эмоциялық түрткі (айнымалы сыйақы)', '5. Дофаминдік жауап', '6. Жаңа дерек']
-for i, lab in enumerate(labels):
-    a = math.radians(-90 + i * 60); nx, ny = CX + RR * math.cos(a), CY + RR * math.sin(a)
-    lit = i == 4
-    g = group(sl, lab)
-    outline(box(g.shapes, nx - 30, ny - 30, 60, 60, SIG if lit else WELL, MSO_SHAPE.OVAL), 'C8420B' if lit else '3F4148')
-    if not lit: led(g.shapes, nx - 7, ny - 7, G500, 14)
-    if i == 0: text(g.shapes, CX - 400, ny - 82, 800, 40, lab, 19, G50, True, C)
-    elif i == 3: text(g.shapes, CX - 500, ny + 40, 1000, 40, lab, 19, G50, True, C)
-    elif nx > CX: text(g.shapes, nx + 50, ny - 30, 520, 60, lab, 19, SIG if lit else G50, True)
-    else: text(g.shapes, nx - 570, ny - 30, 520, 60, lab, 19, SIG if lit else G50, True, R)
-    add('zoom', g, 700 + i * 300, 400)
-pts = [(CX + RR * math.cos(math.radians(-90 + k * 10)), CY + RR * math.sin(math.radians(-90 + k * 10))) for k in range(37)]
-path = 'M 0 0 ' + ' '.join(f'L {(x - pts[0][0]) / 1920:.4f} {(y - pts[0][1]) / 1080:.4f}' for x, y in pts[1:])
-dot = led(sl.shapes, pts[0][0] - 9, pts[0][1] - 9, SIG, 18)
-add('fade', dot, 2600, 200); add('path', dot, 2600, 3000, path=path)
-add('fade', text(sl.shapes, CX - 200, CY - 150, 400, 300, 'Түзу сызық өлді.\nБұл — дофаминмен қоректенетін жабық цикл.',
-                 21, G400, True, C, MID, spacing=1.2), 2400, 700)
-finish(sl, '<p:fade/>')
-
 assert S['n'] == S['total']
 save('neuromarketing.pptx')
-
-# the eight backup slides stay in the file but are hidden in the slideshow: open them from the slide sorter when a question needs them
-from pptx import Presentation as _P
-_prs = _P('neuromarketing.pptx')
-for _i, _s in enumerate(_prs.slides):
-    if _i >= MAIN: _s._element.set('show', '0')
-_prs.save('neuromarketing.pptx')

@@ -4714,3 +4714,7 @@ For Google Search Console: `robots.txt` (allow all, points to the sitemap), `sit
 ## Presentation: UX/UI pass on the 6 slides
 
 Cover: the "[ОҚУ ОРНЫ]" placeholder removed, the logo image (with an unreadable "Nurlan Company" line under it) replaced by the symbol + "Affinix", the travelling dot that sat on the word "Алгоритм" in any still frame removed. Slides 3–5: shorter copy (one idea, one short line), sizes chosen so text stays inside its plate in a LibreOffice render (Rubik Bold measured at ~0.62 em per character), more air between the cards and the takeaway bar, the Algorithm / Affinix contrast on one line, the six security titles on one line. Every slide checked as a rendered image; the QR still decodes to https://affinix.space. The "Д. Льюис · екі жүйе" attribution on slide 2 is unchanged (flagged to the owner: the two-systems model is usually credited to D. Kahneman).
+
+## Presentation: the hidden backup slides removed
+
+At the owner's request the 8 hidden slides are gone from `neuromarketing.pptx` (and their code from `build.py`; it is in the git history): the file has the 6 slides only (`N = 6`, no hidden-slide pass). The jury script no longer points to a hidden Arena slide (the offline fallback is a screenshot of a duel). QR re-checked; jury.html / jury.pdf rebuilt.
