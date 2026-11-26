@@ -4622,3 +4622,7 @@ ledger lines (the `cash_admin_void` RPC exists, no screen yet), the jury script 
 ## Platform badge ("Владелец платформы"): the crown chip no longer touches the outline
 
 The 22 px chip sat 3 px from the pill's outline (it looked like it merged with it) and the pill had an orange glow around it. `admin.css`: the pill is a fixed 28 px, the chip 20 px with 4 px around it, the outer glow is gone (only the inset outline stays); `platformBadge.js` passes size 20. Same class everywhere the badge is used (profile, public profile, admin).
+
+## Platform badge: the crown / shield drawn as clean silhouettes
+
+The shared `Glyph` renders icons with a heavy stroke, a tinted body and dots; at 13 px the crown became a lumpy blob. `platformBadge.js` now draws its own solid crown (owner) and shield with a check (admin) as inline SVG inside the same `.sk-glyph` chip (20 px). `tests/browser/profile-preview.html` takes `?role=admin` to look at the other badge.
