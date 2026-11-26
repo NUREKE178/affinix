@@ -8,12 +8,13 @@ import { openProfile } from "../../lib/profileViewer.js";
 import { t as translate } from "../../lib/i18n.js";
 import {
   useThread, useMessagingCaps, loadOlderMessages, sendMessage, retryMessage, editMessage, deleteMessage, reactToMessage,
-  setConversationPref, setBlocked, ensureMessageLoaded, prepareChatImage, signalTyping, getDraft, setDraft, EDIT_WINDOW_MS,
+  setConversationPref, setBlocked, clearConversation, ensureMessageLoaded, prepareChatImage, signalTyping, getDraft, setDraft, EDIT_WINDOW_MS,
 } from "../../lib/messagesStore.js";
 import { PersonAvatar, TypingDots, dayKey, dayLabel, quoteText } from "./parts.js";
 import { Bubble } from "./Bubble.js";
 import { Composer } from "./Composer.js";
 import { ActionMenu } from "./ActionMenu.js";
+import { NewBadge, markSeen } from "../../components/NewBadge.js";
 
 const GROUP_GAP_MS = 5 * 60 * 1000;
 const AWAY_PX = 280;
@@ -61,12 +62,22 @@ function HeadMenu({ conv, caps, t, errText, onClose }) {
         <button type="button" role="menuitem" class="msg-item" data-testid="chat-mute" onClick=${run(async () => fail(await setConversationPref(conv.id, { muted: !conv.muted })))}>
           <${Icon} name=${conv.muted ? "bell" : "bellOff"} size=${17} />${conv.muted ? t("messages.unmute") : t("messages.mute")}
         </button>`}
+      <button type="button" role="menuitem" class="msg-item danger" data-testid="chat-clear"
+        onClick=${run(async () => {
+          markSeen("chat-clear");
+          if (!window.confirm(t("messages.clearConfirm"))) return;
+          const res = await clearConversation(conv.id);
+          if (res.ok) toast(t("messages.cleared")); else toast(errText(res.error), "rose");
+        })}>
+        <${Icon} name="trash" size=${17} />${t("messages.clearChat")}<${NewBadge} id="chat-clear" />
+      </button>
       <button type="button" role="menuitem" class="msg-item danger" data-testid="chat-block"
         onClick=${run(async () => {
           if (!conv.blocked && !window.confirm(t("messages.blockConfirm", { name: conv.otherName ?? t("feed.unknownAuthor") }))) return;
+          markSeen("chat-block");
           fail(await setBlocked(conv.id, !conv.blocked));
         })}>
-        <${Icon} name="close" size=${17} />${conv.blocked ? t("messages.unblock") : t("messages.block")}
+        <${Icon} name="close" size=${17} />${conv.blocked ? t("messages.unblock") : t("messages.block")}<${NewBadge} id="chat-block" />
       </button>
     </div>
   `;

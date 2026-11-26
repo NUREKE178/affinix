@@ -1,6 +1,7 @@
 // "Notifications about messages on this device": a switch for the profile, a slim banner for the chat list.
 import { html, useState, useEffect } from "../lib/preact.js";
 import { Switch, Button, toast } from "./ui.js";
+import { NewBadge, markSeen } from "./NewBadge.js";
 import { pushStatus, enablePush, disablePush, subscribePushState } from "../lib/pushStore.js";
 
 const DISMISS_KEY = "affinix.pushBannerDismissed";
@@ -35,7 +36,7 @@ export function PushToggle({ t }) {
   const usable = status === "on" || status === "off";
   return html`
     <div data-testid="push-toggle">
-      <${Switch} label=${n("pushLabel")} checked=${status === "on"} onChange=${(v) => (usable ? (v ? turnOn(t) : disablePush()) : toast(note, "amber"))} />
+      <${Switch} label=${html`${n("pushLabel")} <${NewBadge} id="push" />`} checked=${status === "on"} onChange=${(v) => { markSeen("push"); if (usable) { if (v) turnOn(t); else disablePush(); } else toast(note, "amber"); }} />
       <p class="push-note">${note}</p>
     </div>
   `;
