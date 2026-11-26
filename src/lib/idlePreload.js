@@ -13,7 +13,6 @@ const APP = [
   () => import("../pages/Messages.js"),
   () => import("../pages/Friends.js"),
   () => import("../pages/Profile.js"),
-  () => import("../pages/Settings.js"),
 ];
 
 const AUTH = [

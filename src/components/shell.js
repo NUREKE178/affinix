@@ -1,7 +1,6 @@
 import { html, useState, useEffect, useRef } from "../lib/preact.js";
 import { navigate, HOME_PATH } from "../router.js";
 import { Icon, LogoMark } from "./icons.js";
-import { useCurrentOrg } from "../lib/currentOrg.js";
 import { useSession, signOut } from "../lib/auth.js";
 import { useMyProfile, updateMyProfile } from "../lib/profile.js";
 import { useThumb } from "../lib/thumb.js";
@@ -38,13 +37,11 @@ const COMMUNITY_NAV = [
   { id: "messages", key: "shell.community.messages", icon: "chat", path: "/app/messages" },
 ];
 
-// Team and billing are tabs of Settings (the organisation's own page), not sidebar items.
 // only platform admins (and the owner) see this one
 const ADMIN_NAV_ITEM = { id: "admin", key: "shell.workspace.admin", icon: "shield", path: "/app/admin" };
 
 const WORKSPACE_NAV = [
   { id: "profile", key: "shell.workspace.profile", icon: "user", path: "/profile" },
-  { id: "settings", key: "shell.workspace.settings", icon: "settings", path: "/app/settings", also: ["/app/team", "/app/billing"] },
   { id: "download", key: "shell.workspace.download", icon: "arrowDown", path: "/app/download" },
 ];
 
@@ -106,7 +103,6 @@ function MenuItem({ icon, label, onClick, danger = false }) {
 function UserMenu({ onNavigate, collapsed = false, sidebarMode, onChangeSidebarMode }) {
   const t = useT();
   const [open, setOpen] = useState(false);
-  const { org } = useCurrentOrg();
   const { user } = useSession();
   const { profile } = useMyProfile();
   const displayName = profile?.full_name || user?.email || user?.phone || "";
@@ -121,13 +117,12 @@ function UserMenu({ onNavigate, collapsed = false, sidebarMode, onChangeSidebarM
         </div>
         <div class="sk-fade min-w-0 flex-1 text-left">
           <div class="text-sm font-medium text-graphite-100 truncate">${displayName || html`<${Skeleton} className="h-4 w-24" />`}</div>
-          <div class="text-[11px] text-graphite-500 truncate">${org?.name ?? ""}</div>
+          <div class="text-[11px] text-graphite-500 truncate">${profile?.username ? `@${profile.username}` : ""}</div>
         </div>
         <${Icon} name="chevronDown" size=${14} className="sk-fade text-graphite-500 shrink-0" />
       </button>
       <${Dropdown} open=${open} onClose=${() => setOpen(false)}>
         <${MenuItem} icon="user" label=${t("shell.userMenu.profile")} onClick=${() => { setOpen(false); onNavigate("/profile"); }} />
-        <${MenuItem} icon="settings" label=${t("shell.userMenu.settings")} onClick=${() => { setOpen(false); onNavigate("/app/settings"); }} />
         ${onChangeSidebarMode && html`
           <div class="my-1 border-t border-graphite-800"></div>
           <div class="sk-caption px-3.5 pt-2 pb-1">${t("shell.sidebar.label")}</div>
@@ -190,7 +185,6 @@ function CollapseKey({ mode, collapsed, onToggle }) {
 
 function SidebarContent({ currentPath, onNavigate, collapsed = false, sidebarMode, onChangeSidebarMode, onToggleSidebar }) {
   const t = useT();
-  const { org } = useCurrentOrg();
   const { profile } = useMyProfile();
   const workspaceNav = profile?.is_admin ? [ADMIN_NAV_ITEM, ...WORKSPACE_NAV] : WORKSPACE_NAV;
   const { incoming } = useFriends();
@@ -207,7 +201,6 @@ function SidebarContent({ currentPath, onNavigate, collapsed = false, sidebarMod
         <${LogoMark} size=${34} />
         <div class="sk-fade min-w-0">
           <div class="font-semibold text-graphite-50 leading-tight tracking-tight whitespace-nowrap">affinix<span class="text-graphite-500">.space</span></div>
-          <div class="text-[11px] text-graphite-500 leading-tight truncate max-w-[9rem]">${org?.name ?? html`<${Skeleton} className="mt-1 h-3 w-20" />`}</div>
         </div>
       </button>
 
@@ -387,8 +380,6 @@ export function Shell({ currentPath, children }) {
     { id: "reports", key: "shell.nav.reports", icon: "reports", path: "/app/reports" },
     ...(profile?.is_admin ? [ADMIN_NAV_ITEM] : []),
     ...WORKSPACE_NAV,
-    { id: "team", key: "shell.workspace.team", icon: "team", path: "/app/team" },
-    { id: "billing", key: "shell.workspace.billing", icon: "card", path: "/app/billing" },
   ].map((p) => ({ id: p.id, label: t(p.key), path: p.path, icon: p.icon }));
 
   // The layout's reserved width only grows for a real "expanded" choice --

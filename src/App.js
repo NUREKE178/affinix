@@ -24,11 +24,8 @@ const ExperimentBuilder = lazyPage(() => import("./pages/ExperimentBuilder.js"),
 const Results = lazyPage(() => import("./pages/Results.js"), "Results");
 const Participants = lazyPage(() => import("./pages/Participants.js"), "Participants");
 const Reports = lazyPage(() => import("./pages/Reports.js"), "Reports");
-const Team = lazyPage(() => import("./pages/Team.js"), "Team");
-const Settings = lazyPage(() => import("./pages/Settings.js"), "Settings");
 const Profile = lazyPage(() => import("./pages/Profile.js"), "Profile");
 const PublicProfile = lazyPage(() => import("./pages/PublicProfile.js"), "PublicProfile");
-const Billing = lazyPage(() => import("./pages/Billing.js"), "Billing");
 const ParticipantRunner = lazyPage(() => import("./pages/ParticipantRunner.js"), "ParticipantRunner");
 const Login = lazyPage(() => import("./pages/auth/Login.js"), "Login");
 const Register = lazyPage(() => import("./pages/auth/Register.js"), "Register");
@@ -60,9 +57,6 @@ const DASHBOARD_ROUTES = [
   { pattern: "/app/messages", Page: Messages },
   { pattern: "/app/participants", Page: Participants },
   { pattern: "/app/reports", Page: Reports },
-  { pattern: "/app/team", Page: Team },
-  { pattern: "/app/billing", Page: Billing },
-  { pattern: "/app/settings", Page: Settings },
   { pattern: "/app/admin", Page: Admin },
   { pattern: "/app/styles", Page: Styles },
   { pattern: "/app/download", Page: DownloadPage },
@@ -184,7 +178,8 @@ function ProtectedApp({ path, query }) {
       `;
     }
   }
-  navigate(HOME_PATH);
+  // the old organisation pages are gone: their bookmarks land on the profile
+  navigate(["/app/settings", "/app/team", "/app/billing"].includes(path) ? "/profile" : HOME_PATH);
   return null;
 }
 
