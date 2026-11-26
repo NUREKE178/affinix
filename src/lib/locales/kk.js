@@ -1963,6 +1963,8 @@ export default {
     notifications: {
       emailOnResponses: "Қатысушылардың жаңа жауаптары туралы email",
       weeklyDigest: "Апта сайынғы нәтижелер дайджесті",
+      sectionEmail: "Пошта",
+      sectionPush: "Push-хабарландыру",
       pushLabel: "Хабарламалар туралы push-хабарландыру",
       pushHintOff: "Жаңа хабарлама Affinix жабық болса да телефонға келеді.",
       pushHintOn: "Осы құрылғыда қосулы.",
@@ -1983,6 +1985,7 @@ export default {
     },
     sessions: {
       currentSession: "Ағымдағы сеанс",
+      sectionAccount: "Аккаунт",
       active: "белсенді",
       sessionNote: "Affinix Supabase Auth-тың қауіпсіз сеанстарын пайдаланады. Бірнеше құрылғыны жеке басқару кейінірек қосылады.",
       accountCreated: "Аккаунт жасалды",

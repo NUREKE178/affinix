@@ -172,7 +172,7 @@ export function PersonalTab({ profile, user, org, t }) {
   `;
 }
 
-function SecurityTab({ t }) {
+export function SecurityTab({ t }) {
   const [password, setPassword] = useState("");
   const [confirm, setConfirm] = useState("");
   const [saving, setSaving] = useState(false);
@@ -192,21 +192,24 @@ function SecurityTab({ t }) {
     }
   }
 
+  const mismatch = confirm.length > 0 && password !== confirm;
   return html`
-    <div class="max-w-md space-y-4">
-      <h4 class="text-sm font-semibold text-graphite-200">${t("profile.security.changePassword")}</h4>
-      <${Field} label=${t("profile.security.newPasswordLabel")} hint=${t("profile.security.passwordHint")}>
-        <${TextInput} type="password" autocomplete="new-password" value=${password} onInput=${(e) => setPassword(e.target.value)} />
-      <//>
-      <${Field} label=${t("profile.security.repeatLabel")}>
-        <${TextInput} type="password" autocomplete="new-password" value=${confirm} onInput=${(e) => setConfirm(e.target.value)} />
-      <//>
-      <${Button} onClick=${save} loading=${saving} disabled=${!password}>${saving ? t("common.saving") : t("profile.security.updateButton")}<//>
+    <div class="pf" data-testid="profile-security">
+      <section class="pf-sec">
+        <h4 class="pf-cap">${t("profile.security.changePassword")}</h4>
+        <${Field} label=${t("profile.security.newPasswordLabel")} hint=${t("profile.security.passwordHint")}>
+          <${TextInput} type="password" autocomplete="new-password" value=${password} onInput=${(e) => setPassword(e.target.value)} />
+        <//>
+        <${Field} label=${t("profile.security.repeatLabel")} hint=${mismatch ? t("profile.security.mismatch") : null}>
+          <${TextInput} type="password" autocomplete="new-password" value=${confirm} onInput=${(e) => setConfirm(e.target.value)} />
+        <//>
+        <div class="pf-actions"><${Button} onClick=${save} loading=${saving} disabled=${!password}>${saving ? t("common.saving") : t("profile.security.updateButton")}<//></div>
+      </section>
     </div>
   `;
 }
 
-function NotificationsTab({ profile, t }) {
+export function NotificationsTab({ profile, t }) {
   const [responses, setResponses] = useState(profile?.notify_email_responses ?? true);
   const [digest, setDigest] = useState(profile?.notify_email_digest ?? true);
 
@@ -221,15 +224,23 @@ function NotificationsTab({ profile, t }) {
   }
 
   return html`
-    <div class="max-w-md divide-y divide-graphite-800">
-      <${Switch} label=${t("profile.notifications.emailOnResponses")} checked=${responses} onChange=${(v) => toggle("notify_email_responses", v, setResponses)} />
-      <${Switch} label=${t("profile.notifications.weeklyDigest")} checked=${digest} onChange=${(v) => toggle("notify_email_digest", v, setDigest)} />
-      <${PushToggle} t=${t} />
+    <div class="pf" data-testid="profile-notifications">
+      <section class="pf-sec">
+        <h4 class="pf-cap">${t("profile.notifications.sectionEmail")}</h4>
+        <div class="pf-switches">
+          <${Switch} label=${t("profile.notifications.emailOnResponses")} checked=${responses} onChange=${(v) => toggle("notify_email_responses", v, setResponses)} />
+          <${Switch} label=${t("profile.notifications.weeklyDigest")} checked=${digest} onChange=${(v) => toggle("notify_email_digest", v, setDigest)} />
+        </div>
+      </section>
+      <section class="pf-sec">
+        <h4 class="pf-cap">${t("profile.notifications.sectionPush")}</h4>
+        <${PushToggle} t=${t} />
+      </section>
     </div>
   `;
 }
 
-function PreferencesTab({ profile, t }) {
+export function PreferencesTab({ profile, t }) {
   const appLocale = useLocale();
   const [timezone, setTimezone] = useState(profile?.timezone ?? "Asia/Almaty");
   const [saving, setSaving] = useState(false);
@@ -246,25 +257,30 @@ function PreferencesTab({ profile, t }) {
     }
   }
 
+  const dirty = timezone !== (profile?.timezone ?? "Asia/Almaty");
   return html`
-    <div class="max-w-md space-y-4">
-      <${Field} label=${t("profile.preferences.languageLabel")}>
-        <div class="flex items-center gap-1.5">
-          ${LOCALES.map((l) => html`
-            <button key=${l.id} type="button" onClick=${() => setAppLocale(l.id)}
-              class=${`px-3 py-1.5 rounded-lg text-sm font-medium border transition-colors ${appLocale === l.id ? "border-signal-500 bg-signal-500/10 text-signal-200" : "border-graphite-700 text-graphite-400 hover:border-graphite-500"}`}>${l.label}</button>
-          `)}
+    <div class="pf" data-testid="profile-preferences">
+      <section class="pf-sec">
+        <h4 class="pf-cap">${t("profile.preferences.languageLabel")}</h4>
+        <div class="pf-seg" role="group">
+          ${LOCALES.map((l) => html`<button key=${l.id} type="button" data-on=${appLocale === l.id} aria-pressed=${appLocale === l.id} onClick=${() => setAppLocale(l.id)}>${l.label}</button>`)}
         </div>
-      <//>
-      <${Field} label=${t("profile.preferences.timezoneLabel")}>
+        <p class="pf-hint">${t("profile.preferences.languageHint")}</p>
+      </section>
+      <section class="pf-sec">
+        <h4 class="pf-cap">${t("profile.preferences.timezoneLabel")}</h4>
         <${Select} options=${TIMEZONES.map((tz) => ({ value: tz, label: tz }))} value=${timezone} onChange=${(e) => setTimezone(e.target.value)} />
-      <//>
-      <${Button} onClick=${save} loading=${saving}>${saving ? t("common.saving") : t("common.save")}<//>
+      </section>
+      <div class="pf-savebar" data-show=${dirty} aria-hidden=${!dirty}>
+        <span class="pf-savebar-text">${t("profile.personal.unsaved")}</span>
+        <button type="button" class="pf-discard" tabindex=${dirty ? 0 : -1} onClick=${() => setTimezone(profile?.timezone ?? "Asia/Almaty")}>${t("profile.personal.discard")}</button>
+        <${Button} onClick=${save} loading=${saving} disabled=${!dirty}>${saving ? t("common.saving") : t("common.save")}<//>
+      </div>
     </div>
   `;
 }
 
-function SessionsTab({ user, t }) {
+export function SessionsTab({ user, t }) {
   const [stats, setStats] = useState(null);
   const [statsError, setStatsError] = useState(false);
   const [retryTick, setRetryTick] = useState(0);
@@ -278,24 +294,28 @@ function SessionsTab({ user, t }) {
     return () => { cancelled = true; };
   }, [user?.id, retryTick]);
 
+  const val = (v) => (v != null ? v : statsError ? "—" : html`<${Skeleton} className="h-4 w-8" />`);
   return html`
-    <div class="max-w-md space-y-5">
-      <div class="sk-panel-flat rounded-lg p-3.5">
-        <div class="flex items-center justify-between text-sm">
-          <span class="text-graphite-300">${t("profile.sessions.currentSession")}</span>
+    <div class="pf" data-testid="profile-sessions">
+      <section class="pf-sec">
+        <div class="pf-row pf-row-head">
+          <h4 class="pf-cap pf-cap-inline">${t("profile.sessions.currentSession")}</h4>
           <${Badge} tone="emerald">${t("profile.sessions.active")}<//>
         </div>
-        <p class="text-xs text-graphite-500 mt-1.5">${t("profile.sessions.sessionNote")}</p>
-      </div>
-      <dl class="space-y-2.5 text-sm">
-        <div class="flex justify-between"><dt class="text-graphite-500">${t("profile.sessions.accountCreated")}</dt><dd class="text-graphite-200">${shortDate(user?.created_at)}</dd></div>
-        <div class="flex justify-between"><dt class="text-graphite-500">${t("profile.sessions.experimentsCreated")}</dt><dd class="text-graphite-200">${stats ? stats.experimentCount : statsError ? "—" : html`<${Skeleton} className="h-4 w-8" />`}</dd></div>
-        <div class="flex justify-between"><dt class="text-graphite-500">${t("profile.sessions.completedParticipants")}</dt><dd class="text-graphite-200">${stats ? stats.completedParticipants : statsError ? "—" : html`<${Skeleton} className="h-4 w-8" />`}</dd></div>
-      </dl>
+        <p class="pf-hint pf-hint-first">${t("profile.sessions.sessionNote")}</p>
+      </section>
+      <section class="pf-sec">
+        <h4 class="pf-cap">${t("profile.sessions.sectionAccount")}</h4>
+        <dl class="pf-list">
+          <div class="pf-row"><dt>${t("profile.sessions.accountCreated")}</dt><dd>${shortDate(user?.created_at)}</dd></div>
+          <div class="pf-row"><dt>${t("profile.sessions.experimentsCreated")}</dt><dd>${val(stats?.experimentCount)}</dd></div>
+          <div class="pf-row"><dt>${t("profile.sessions.completedParticipants")}</dt><dd>${val(stats?.completedParticipants)}</dd></div>
+        </dl>
+      </section>
       ${statsError && html`
-        <div class="flex items-center justify-between gap-3 rounded-lg border border-rose-500/30 bg-rose-500/10 px-3 py-2 text-xs text-rose-300">
+        <div class="pf-error">
           <span>${t("profile.sessions.statsError")}</span>
-          <button class="font-medium underline shrink-0" onClick=${() => setRetryTick((n) => n + 1)}>${t("common.retry")}</button>
+          <button type="button" onClick=${() => setRetryTick((n) => n + 1)}>${t("common.retry")}</button>
         </div>
       `}
     </div>
@@ -337,12 +357,10 @@ export function Profile() {
       <${SectionHeading} title=${t("profile.title")} subtitle=${t("profile.subtitle")} />
       <div class="mb-5 pf-tabs"><${Tabs} tabs=${TABS} active=${tab} onChange=${setTab} /></div>
       ${tab === "personal" && html`<${PersonalTab} profile=${profile} user=${user} org=${org} t=${t} />`}
-      <${Card} className=${`p-5 sm:p-7 ${tab === "personal" ? "hidden" : ""}`}>
-        ${tab === "security" && html`<${SecurityTab} t=${t} />`}
-        ${tab === "notifications" && html`<${NotificationsTab} profile=${profile} t=${t} />`}
-        ${tab === "preferences" && html`<${PreferencesTab} profile=${profile} t=${t} />`}
-        ${tab === "sessions" && html`<${SessionsTab} user=${user} t=${t} />`}
-      <//>
+      ${tab === "security" && html`<${SecurityTab} t=${t} />`}
+      ${tab === "notifications" && html`<${NotificationsTab} profile=${profile} t=${t} />`}
+      ${tab === "preferences" && html`<${PreferencesTab} profile=${profile} t=${t} />`}
+      ${tab === "sessions" && html`<${SessionsTab} user=${user} t=${t} />`}
     </div>
   `;
 }
