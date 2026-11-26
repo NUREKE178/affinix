@@ -4610,3 +4610,15 @@ ledger lines (the `cash_admin_void` RPC exists, no screen yet), the jury script 
 - `insights.css`: posters in a CSS grid (`auto-fill, minmax(150px, 1fr)`, 2 columns on phones, the "least chosen" ones 3 columns), thumbnails fill their cell (`width: 100% !important` over the inline size); on phones each filter is one horizontally scrolling line with a right-edge fade, period and audience on their own lines; trait rows are poles / bar / number + confidence; rows without a signal are dimmed and lose their pill (`Styles.js`); smaller reliability value.
 - **Test:** `tests/browser/styles-preview.html` + `fake-insights.js` (made-up numbers through the two RPCs, no backend) and `tests/browser/styles-preview.cjs`: 390x800, 360x740 and a desktop; posters per row >= 2, no empty strip on the right, filters <= 400 px, no sideways scroll. `node --test` 36, e2e pass.
 - **Not done:** the other marketing pages (crowd tests, experiments) were not touched; the screenshots shown were only of this page.
+
+## Profile, personal tab: phone redesign (no migration)
+
+**Report:** a phone screenshot of the profile, "I do not like it either". Seen: one long undivided form, the avatar's change affordance existed only on hover (invisible on a phone), a Save button always present in the middle, uneven vertical rhythm, a tab strip cut off ("Ув...") with no hint it scrolls.
+- `Profile.js`: `PersonalTab` (now exported) has a centered hero (96 px avatar with an always-visible camera badge, name, platform badge, company, public URL chip, friends chip), then one plate per topic (Basics / About you / Public page / Email) with a small caption; `formFrom(profile)` shared by the initial state, the reset and the dirty check; a sticky save bar (`.pf-savebar`) shown only while the form differs from the stored profile, with "Discard", above the phone dock (`--mtb-dock`). The personal tab no longer sits inside an outer Card (the other tabs do). New strings `profile.personal.sectionBasic / sectionAbout / sectionPublic / changePhoto / unsaved / discard` x3 locales.
+- `styles.css`: `.pf*` rules; `.pf-tabs` fades the right edge of the tab strip on phones.
+- **Test:** `tests/browser/profile-preview.html` + `profile-preview.cjs` (harness fakes): 390x800, 360x740, desktop; no sideways scroll, no squeezed field, the save bar hidden at first, visible after an edit and inside the screen, hidden again after Discard. `node --test` 36, e2e, styles preview pass.
+- **Not done:** the Security / Notifications / Preferences / Sessions tabs are unchanged apart from the card they sit in.
+
+## Platform badge ("Владелец платформы"): the crown chip no longer touches the outline
+
+The 22 px chip sat 3 px from the pill's outline (it looked like it merged with it) and the pill had an orange glow around it. `admin.css`: the pill is a fixed 28 px, the chip 20 px with 4 px around it, the outer glow is gone (only the inset outline stays); `platformBadge.js` passes size 20. Same class everywhere the badge is used (profile, public profile, admin).

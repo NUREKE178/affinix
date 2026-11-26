@@ -1,0 +1,31 @@
+<!doctype html>
+<!-- The personal tab of the profile on made-up data (the harness fakes for auth / supabase). node tests/browser/profile-preview.cjs -->
+<html lang="ru" class="dark" translate="no">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>profile preview</title>
+<link rel="stylesheet" href="/vendor/tailwind.css" /><link rel="stylesheet" href="/styles.css" /><link rel="stylesheet" href="/shell.css" /><link rel="stylesheet" href="/arena.css" /><link rel="stylesheet" href="/admin.css" /><link rel="stylesheet" href="/crowd.css" /><link rel="stylesheet" href="/messages.css" /><link rel="stylesheet" href="/feed.css" />
+<script type="importmap">
+{ "imports": { "preact": "/vendor/preact.module.js", "preact/hooks": "/vendor/hooks.module.js", "htm": "/vendor/htm.module.js",
+  "__ORIGIN__/src/lib/auth.js": "/__h/fake-auth.js", "__ORIGIN__/src/lib/supabaseClient.js": "/__h/fake-supabase.js", "__ORIGIN__/src/lib/org.js": "/__h/fake-org.js" } }
+</script>
+</head>
+<body class="bg-graphite-950 font-sans antialiased">
+<div id="app" style="padding: 16px"></div>
+<script type="module">
+import { render, html } from "/src/lib/preact.js";
+import { setLocale } from "/src/lib/i18n.js";
+import { PersonalTab } from "/src/pages/Profile.js";
+import { t } from "/src/lib/i18n.js";
+const q = new URLSearchParams(location.search);
+setLocale(q.get("l") ?? "ru");
+const tt = (k, v) => t(q.get("l") ?? "ru", k, v);
+const profile = { id: "u1", full_name: "Nurlan Khudaybergen", username: "nu4lan", role_title: "Student", country: "Kazakhstan",
+  bio: "Web Developer, Vibe Coder. Ibilim High School student.  CEO affinix https://affinix.space/", research_interests: [], public_profile_enabled: true, platform_role: "owner" };
+const user = { id: "u1", email: "khudaybergennurlan@gmail.com" };
+render(html`<div style="max-width:760px"><${PersonalTab} profile=${profile} user=${user} org=${{ name: "Nurlan Company", role: "owner" }} t=${tt} /></div>`, document.getElementById("app"));
+window.__ready = true;
+</script>
+</body>
+</html>

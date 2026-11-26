@@ -1603,3 +1603,45 @@ select.sk-input option:checked {
 @media (prefers-reduced-motion: reduce) { .ic, .ic * { animation: none !important; } }
 
 .push-note { margin: -4px 0 8px; font-size: 12px; line-height: 1.45; color: var(--g-500); }
+
+/* ---------- Profile (personal tab): a hero and one plate per topic, a save bar that appears only when something changed ---------- */
+.pf { display: flex; flex-direction: column; gap: 14px; max-width: 760px; }
+.pf-hero { display: flex; flex-direction: column; align-items: center; text-align: center; gap: 6px; padding: 22px 18px 18px; border-radius: 16px; background: linear-gradient(180deg, rgba(255,255,255,.035), rgba(255,255,255,.015)); box-shadow: inset 0 0 0 1px var(--hair); }
+.pf-avatar { position: relative; display: block; width: 96px; height: 96px; margin-bottom: 6px; border-radius: 50%; cursor: pointer; box-shadow: 0 0 0 3px var(--g-900, #16171a), 0 0 0 4px var(--hair-2); }
+.pf-avatar img, .pf-avatar-initials { display: flex; align-items: center; justify-content: center; width: 100%; height: 100%; border-radius: 50%; object-fit: cover; font-size: 30px; font-weight: 600; }
+.pf-avatar-badge { position: absolute; right: -2px; bottom: -2px; display: inline-flex; align-items: center; justify-content: center; width: 30px; height: 30px; border-radius: 50%; background: var(--key); color: var(--g-100); box-shadow: var(--sh-key), 0 0 0 3px var(--g-900, #16171a); }
+.pf-avatar:hover .pf-avatar-badge { color: var(--signal-hi); }
+.pf-name { margin: 0; font-size: 20px; line-height: 1.25; font-weight: 650; color: var(--g-50); overflow-wrap: anywhere; }
+.pf-badges { display: flex; justify-content: center; }
+.pf-sub { font-size: 13.5px; color: var(--g-400); }
+.pf-sub:empty { display: none; }
+.pf-meta { display: flex; flex-wrap: wrap; justify-content: center; gap: 6px 10px; margin-top: 4px; }
+.pf-url { padding: 3px 10px; border-radius: 999px; background: var(--well); box-shadow: var(--sh-well); font-size: 12px; color: var(--g-400); overflow-wrap: anywhere; }
+.pf-friends { padding: 3px 10px; border: 0; border-radius: 999px; background: rgba(255,106,31,.12); box-shadow: inset 0 0 0 1px rgba(255,106,31,.35); font-size: 12px; color: var(--signal-hi); cursor: pointer; }
+
+.pf-sec { padding: 16px 18px; border-radius: 16px; background: rgba(255,255,255,.025); box-shadow: inset 0 0 0 1px var(--hair); }
+.pf-cap { margin: 0 0 14px; font-size: 11.5px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: var(--g-500); }
+.pf-grid { display: grid; grid-template-columns: 1fr; column-gap: 16px; }
+@media (min-width: 640px) { .pf-grid { grid-template-columns: 1fr 1fr; } }
+.pf-sec label:last-child, .pf-grid > label:last-child { margin-bottom: 0; }
+.pf-grid { margin-bottom: 16px; }
+.pf-grid:last-child { margin-bottom: 0; }
+.pf-grid > label { margin-bottom: 16px; }
+.pf-sec > label { margin-bottom: 16px; }
+.pf-sec > label:last-of-type { margin-bottom: 0; }
+.pf-hint { margin: 8px 0 0; font-size: 12.5px; line-height: 1.5; color: var(--g-500); }
+.pf-hint-first { margin: 0 0 12px; font-size: 14px; color: var(--g-300); overflow-wrap: anywhere; }
+.pf-email { display: flex; flex-wrap: wrap; gap: 8px; }
+.pf-email > input { flex: 1 1 200px; min-width: 0; }
+
+.pf-savebar { position: sticky; bottom: calc(var(--mtb-dock, 0px) + 10px); z-index: 12; display: flex; align-items: center; gap: 10px; padding: 10px 12px 10px 16px; border-radius: 16px; background: #1c1d21; box-shadow: 0 10px 30px rgba(0,0,0,.5), inset 0 0 0 1px rgba(255,106,31,.4);
+  opacity: 0; transform: translateY(12px); pointer-events: none; visibility: hidden; transition: opacity .2s, transform .2s, visibility 0s .2s; }
+.pf-savebar[data-show="true"] { opacity: 1; transform: none; pointer-events: auto; visibility: visible; transition: opacity .2s, transform .2s; }
+.pf-savebar-text { flex: 1; min-width: 0; font-size: 13px; color: var(--g-300); }
+.pf-discard { border: 0; background: none; color: var(--g-400); font-size: 13px; cursor: pointer; padding: 6px 4px; }
+.pf-discard:hover { color: var(--g-100); }
+@media (max-width: 520px) { .pf-savebar-text { display: none; } .pf-savebar { justify-content: flex-end; } .pf-sec { padding: 14px 16px; } }
+
+/* the tab strip scrolls sideways on a phone: fade its right edge so a cut-off tab reads as "more" */
+@media (max-width: 720px) { .pf-tabs { -webkit-mask-image: linear-gradient(90deg, #000 calc(100% - 28px), transparent); mask-image: linear-gradient(90deg, #000 calc(100% - 28px), transparent); } }
+@media (prefers-reduced-motion: reduce) { .pf-savebar { transition: none; } }
