@@ -297,6 +297,7 @@ export function ChatPane({ conv, online, canSend, myId, onBack, locale, jumpTarg
     setAttachment(null);
     setEmojiOpen(false);
     stick.current = true;
+    inputRef.current?.focus(); // synchronously, inside the tap: keeps the phone keyboard open
     focusInput();
   }
 
