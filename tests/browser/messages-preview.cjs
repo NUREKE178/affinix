@@ -43,6 +43,14 @@ server.listen(0, "127.0.0.1", async () => {
           assert.notEqual(m.mine, m.theirs, `${tag}: my bubbles look the same as theirs`);
           assert.equal(m.metaBelow, true, `${tag}: the time of a lone emoji is not under it`);
         }
+        if (pane === "chat") {
+          // pressing "send" must leave the focus in the text box (otherwise the phone keyboard closes after every message)
+          await page.fill('[data-testid="chat-input"]', "hello");
+          await page.focus('[data-testid="chat-input"]');
+          await page.click('[data-testid="chat-send"]');
+          const focused = await page.evaluate(() => document.activeElement?.getAttribute("data-testid"));
+          assert.equal(focused, "chat-input", `${tag}: after pressing send the focus is on ${focused} (the keyboard would close)`);
+        }
         await page.screenshot({ path: path.join(os.tmpdir(), `messages-${w}-${pane}.png`) });
         await ctx.close();
       }

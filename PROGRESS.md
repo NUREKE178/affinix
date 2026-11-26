@@ -4641,3 +4641,11 @@ The shared `Glyph` renders icons with a heavy stroke, a tinted body and dots; at
 - **Profile tabs:** Security / Notifications / Preferences / Sessions now use the `.pf` plates of the personal tab (no outer Card): password mismatch hint, email vs push plates, language as an equal-width segmented control, timezone with the save bar only when changed, sessions / account as a ruled list. Tab components are exported for the preview page (`profile-preview.html?tab=`); new strings `profile.notifications.sectionEmail / sectionPush`, `profile.sessions.sectionAccount` x3.
 - **Messenger:** my bubbles are a warm graphite (before: the same grey as theirs), a lone emoji's time sits under it. `tests/browser/messages-preview.html` + `messages-preview.cjs` render the REAL Bubble / Composer / ChatListItem on made-up data (390x760, 360x640; list and chat): no sideways scroll, my bubbles differ, the emoji time is below it.
 - **Not done:** the other Marketing pages (experiments, results, reports ...) and the chat list rows were only looked at, not changed; no screenshots of them were sent.
+
+## Chat: the phone keyboard no longer closes after every sent message (no migration)
+
+**Report:** "in the chat, the keyboard closes after each message I send".
+- **Cause:** tapping the send button moved the focus from the textarea to the button; a phone closes the keyboard when the text box loses focus, and the later `requestAnimationFrame(focus)` (not inside the tap) does not reopen it.
+- **Fix:** `Composer.js`: the send button cancels the default of `mousedown` / `pointerdown` (focus stays in the box, the click still fires); `ChatPane.submit()` also calls `inputRef.current.focus()` synchronously inside the click before the old rAF refocus.
+- **Test:** `messages-preview.cjs` types text, presses send and asserts `document.activeElement` is the input; verified to FAIL without the fix (focus on `chat-send`) and pass with it. `node --test` 38, chat layout pass.
+- **Not verified:** a real phone keyboard (emulation has none): check on Android Chrome and iPhone Safari.

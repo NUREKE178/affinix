@@ -14,6 +14,10 @@ export function Composer({
 }) {
   const fileRef = useRef(null);
   const nothing = !value.trim() && !attachment;
+  // Tapping "send" must not take the focus away from the text box: on a phone the keyboard closes the moment the box loses focus, and
+  // focus() called later from code (not from the tap itself) does not bring it back. So the press on the button is cancelled for focus purposes
+  // (the click still happens) and the page refocuses the box synchronously inside the click.
+  const keepFocus = (e) => e.preventDefault();
 
   function autosize() {
     const el = inputRef.current;
@@ -95,7 +99,7 @@ export function Composer({
           ></textarea>
           ${value.length > 3600 && html`<span class="msg-count">${value.length}/${MAX_LEN}</span>`}
         </div>
-        <button type="button" class="sk-chat-send" data-testid="chat-send" onClick=${onSubmit} disabled=${nothing || preparing} aria-label=${editing ? t("messages.save") : t("messages.send")}>
+        <button type="button" class="sk-chat-send" data-testid="chat-send" onClick=${onSubmit} onMouseDown=${keepFocus} onPointerDown=${keepFocus} disabled=${nothing || preparing} aria-label=${editing ? t("messages.save") : t("messages.send")}>
           <${Icon} name=${editing ? "check" : "send"} size=${20} />
         </button>
       </div>
