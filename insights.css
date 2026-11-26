@@ -56,15 +56,44 @@
 }
 
 .sty-recipe p { margin: 0; font-size: 15px; line-height: 1.6; color: var(--g-100); }
-.sty-grid { display: flex; flex-wrap: wrap; gap: 14px; }
-.sty-spec { margin: 0; display: flex; flex-direction: column; gap: 7px; }
-.sty-spec .ar-thumb { border-radius: 10px; box-shadow: var(--sh-plate-sm), 0 0 0 1px var(--hair-2); }
-.sty-spec figcaption { display: flex; flex-direction: column; font-size: 11.5px; line-height: 1.35; color: var(--g-500); max-width: 140px; }
-.sty-spec figcaption b { font-size: 15px; color: var(--g-50); }
+.sty-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 14px 12px; }
+.sty-grid-dim { grid-template-columns: repeat(auto-fill, minmax(96px, 1fr)); }
+.sty-spec { margin: 0; min-width: 0; display: flex; flex-direction: column; gap: 7px; }
+/* a poster fills its cell (the thumbnail's own pixel size is only a default) */
+.sty-spec .ar-thumb { width: 100% !important; height: auto !important; aspect-ratio: 1; border-radius: 10px; box-shadow: var(--sh-plate-sm), 0 0 0 1px var(--hair-2); }
+.sty-spec figcaption { display: flex; flex-direction: column; font-size: 11.5px; line-height: 1.35; color: var(--g-500); }
+.sty-spec figcaption b { font-size: 16px; color: var(--g-50); }
 .sty-grid-dim .sty-spec { opacity: .8; }
+.sty-grid-dim .sty-spec figcaption b { font-size: 14px; }
 .sty-actions { display: flex; justify-content: flex-end; }
 .sty-note { margin: 0; font-size: 12px; line-height: 1.55; color: var(--g-500); }
 
 /* a quiet door to the old experiments, for those who still use them */
 .sty-advanced { align-self: flex-start; padding: 0; border: 0; background: none; color: var(--g-500); font-size: 12.5px; cursor: pointer; transition: color var(--sk-dur-fast); }
 .sty-advanced:hover { color: var(--g-200); }
+
+/* ---------- phone ---------- */
+@media (max-width: 720px) {
+  .sty-filters { gap: 12px; padding: 14px 16px; }
+  /* one tidy line per filter that scrolls sideways (with a fade on the right edge), instead of a wall of wrapped chips */
+  .sty-chips { flex-wrap: nowrap; overflow-x: auto; margin-right: -16px; padding: 1px 16px 2px 0; scrollbar-width: none;
+    -webkit-mask-image: linear-gradient(90deg, #000 calc(100% - 32px), transparent); mask-image: linear-gradient(90deg, #000 calc(100% - 32px), transparent); }
+  .sty-chips::-webkit-scrollbar { display: none; }
+  .sty-chips button { flex: none; white-space: nowrap; padding: 6px 13px; }
+  .sty-filter-row { flex-direction: column; align-items: stretch; gap: 12px; }
+  .sty-filter-row > div { min-width: 0; }
+  .sty-select { min-width: 0; width: 100%; }
+  .sty-summary .sk-stat-value { font-size: 20px; }
+  .sty-summary .sty-rel { font-size: 15px; line-height: 1.25; }
+  .sty-card { padding: 14px 16px; }
+  .sty-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .sty-grid-dim { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  /* a trait row: the two poles, the bar, then the number and (only when there is a signal) how sure we are */
+  .sty-fp-row { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); row-gap: 8px; padding: 12px 0; }
+  .sty-pole-lo { grid-column: 1; grid-row: 1; }
+  .sty-pole-hi { grid-column: 2; grid-row: 1; text-align: right; }
+  .sty-track { grid-column: 1 / -1; grid-row: 2; height: 14px; }
+  .sty-val { grid-column: 1; grid-row: 3; text-align: left; font-size: 14px; }
+  .sty-conf { grid-column: 2; grid-row: 3; justify-self: end; }
+  .sty-fp-row[data-level="none"] { opacity: .62; }
+}

@@ -4602,3 +4602,11 @@ ledger lines (the `cash_admin_void` RPC exists, no screen yet), the jury script 
 - **Not done, on purpose:** end-to-end encryption (separate large project: keys on devices, search and push previews change); private Realtime channels for the typing indicator and the `presence:online` list (needs `realtime.messages` policies that cannot be tested here); "report a message"; disappearing messages.
 - **Tests:** `tests/sql/chat_security.test.sql` (19 checks: blocks both ways, raw inserts refused, no leak of the block, flood limit, bucket); all migrations run twice; `node --test` 36, e2e, chat layout pass. The block menu / bar have no browser test (there is no fake chat backend); syntax-checked only.
 - **Apply:** `supabase db push` (0031); redeploy `notify-message` (paste the new `index.ts` in the dashboard editor).
+
+## Marketer section ("What people love", /app/styles): phone redesign (no migration)
+
+**Report:** screenshots of the Marketing tab on a phone, "I do not like the design at all". Seen: a wall of wrapped filter chips (~half a screen), the best-designs posters in a single narrow column (the flex row wrapped at 168 + 14 + 168 > the panel width) leaving the right half empty, the style portrait rows crammed (pole names, number and a "no difference" pill on every row), a large pink "early signal" value.
+
+- `insights.css`: posters in a CSS grid (`auto-fill, minmax(150px, 1fr)`, 2 columns on phones, the "least chosen" ones 3 columns), thumbnails fill their cell (`width: 100% !important` over the inline size); on phones each filter is one horizontally scrolling line with a right-edge fade, period and audience on their own lines; trait rows are poles / bar / number + confidence; rows without a signal are dimmed and lose their pill (`Styles.js`); smaller reliability value.
+- **Test:** `tests/browser/styles-preview.html` + `fake-insights.js` (made-up numbers through the two RPCs, no backend) and `tests/browser/styles-preview.cjs`: 390x800, 360x740 and a desktop; posters per row >= 2, no empty strip on the right, filters <= 400 px, no sideways scroll. `node --test` 36, e2e pass.
+- **Not done:** the other marketing pages (crowd tests, experiments) were not touched; the screenshots shown were only of this page.

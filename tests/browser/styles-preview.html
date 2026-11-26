@@ -1,0 +1,25 @@
+<!doctype html>
+<!-- The marketer's "What people love" page on made-up data (fake-insights.js). Look at it on a phone: node tests/browser/styles-preview.cjs -->
+<html lang="ru" class="dark" translate="no">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>styles preview</title>
+<link rel="stylesheet" href="/vendor/tailwind.css" /><link rel="stylesheet" href="/styles.css" /><link rel="stylesheet" href="/arena.css" /><link rel="stylesheet" href="/shell.css" /><link rel="stylesheet" href="/insights.css" />
+<script type="importmap">
+{ "imports": { "preact": "/vendor/preact.module.js", "preact/hooks": "/vendor/hooks.module.js", "htm": "/vendor/htm.module.js",
+  "__ORIGIN__/src/lib/supabaseClient.js": "/__h/fake-insights.js" } }
+</script>
+</head>
+<body class="bg-graphite-950 font-sans antialiased">
+<div style="padding: 16px" id="app"></div>
+<script type="module">
+import { render, html } from "/src/lib/preact.js";
+import { setLocale } from "/src/lib/i18n.js";
+setLocale(new URLSearchParams(location.search).get("l") ?? "ru");
+const { Styles } = await import("/src/pages/Styles.js");
+render(html`<${Styles} />`, document.getElementById("app"));
+const wait = setInterval(() => { if (document.querySelector('[data-testid="styles-ready"],[data-testid="styles-empty"]')) { clearInterval(wait); window.__ready = true; } }, 100);
+</script>
+</body>
+</html>

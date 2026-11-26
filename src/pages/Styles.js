@@ -48,7 +48,7 @@ function Fingerprint({ lifts, overall, t, country }) {
             </span>
             <span class="sty-pole sty-pole-hi" data-win=${l.level !== "none" && side === "hi"}>${t(`arena.traits.${l.trait}.hi`)}</span>
             <span class="sty-val sk-num" data-testid=${`styles-lift-${l.trait}`}>${pts(l.lift)}<small>${t("styles.fingerprint.pts")}</small></span>
-            <span class="sty-conf" data-level=${l.level}>${t(`styles.level.${l.level}`)}</span>
+            ${l.level !== "none" && html`<span class="sty-conf" data-level=${l.level}>${t(`styles.level.${l.level}`)}</span>`}
           </div>`;
       })}
       ${country && html`<p class="sty-legend"><i class="sty-ghost sty-ghost-static"></i>${t("styles.fingerprint.ghost")}</p>`}
