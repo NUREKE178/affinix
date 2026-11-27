@@ -4718,3 +4718,7 @@ Cover: the "[ОҚУ ОРНЫ]" placeholder removed, the logo image (with an unre
 ## Presentation: the hidden backup slides removed
 
 At the owner's request the 8 hidden slides are gone from `neuromarketing.pptx` (and their code from `build.py`; it is in the git history): the file has the 6 slides only (`N = 6`, no hidden-slide pass). The jury script no longer points to a hidden Arena slide (the offline fallback is a screenshot of a duel). QR re-checked; jury.html / jury.pdf rebuilt.
+
+## Jury cheat sheet
+
+`presentation/jury/cheatsheet.html` (+ `cheatsheet.pdf`, one A4 page): the one-sentence pitch, the five sentences that carry the talk, slides and timing, the numbers (★ = know the source), one-line answers to the usual questions (why, audience, money, security, AI, XP, maths, the name), what not to say, and how to behave on stage. Plain HTML, prints on one page (print styles), readable on a phone.
